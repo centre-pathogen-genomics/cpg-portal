@@ -135,10 +135,10 @@ class WorkflowBase(SQLModel):
     name: str
     description: str | None = None
     image: str | None = None
-    run_command: str  # hello-world run --text "Hello, World!"
+    command: list[str]  # ["hello-world", "run", "{verbose_flag}", "--text", "{text}"]
     setup_command: str | None = None  # command -v hello-world >/dev/null 2>&1 || snk install wytamma/hello-world
     target_files: list[str] | None = None  # hello.txt these are the files that the workflow will generate that we want to keep (comma separated)
-    results_json_path: str | None = None  # "results.json" this is the default names for the results file that will be save into the database
+    json_results_file: str | None = None  # results file that will be save into the database
     enabled: bool = True
 
 # Properties to receive on Workflow creation
@@ -148,12 +148,14 @@ class WorkflowCreate(WorkflowBase):
 # Properties to receive on Workflow update
 class WorkflowUpdate(WorkflowBase):
     name: str | None = None  # type: ignore
+    command: list[str] | None = None
 
 
 # Database model, database table inferred from class name
 class Workflow(WorkflowBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     name: str
+    command: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     owner_id: int | None = Field(default=None, foreign_key="user.id", nullable=False)
     owner: User | None = Relationship(back_populates="workflows")
     params: list["Param"] = Relationship(back_populates="workflow")
@@ -236,7 +238,7 @@ class TaskStatus(str, enum.Enum):
 
 class Task(TaskBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    taskiq_id: str
+    taskiq_id: str | None = None
     status: TaskStatus = Field(sa_column=Column(Enum(TaskStatus)))
     params: dict = Field(default_factory=dict, sa_column=Column(JSON))
     workflow_id: int | None = Field(default=None, foreign_key="workflow.id", nullable=False)
@@ -270,7 +272,7 @@ class TasksPublic(SQLModel):
 
 class Result(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    results_json: dict = Field(default_factory=dict, sa_column=Column(JSON))
+    results: dict = Field(default_factory=dict, sa_column=Column(JSON))
     files: list["File"] = Relationship(back_populates="result")
     owner_id: int | None = Field(default=None, foreign_key="user.id", nullable=False)
     owner: User | None = Relationship(back_populates="results")
