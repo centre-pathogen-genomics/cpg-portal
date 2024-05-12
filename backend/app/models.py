@@ -275,7 +275,7 @@ class FileBase(SQLModel):
 class File(FileBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     name: str
-    path: str
+    location: str
     owner_id: int | None = Field(default=None, foreign_key="user.id", nullable=False)
     owner: User | None = Relationship(back_populates="files")
     result_id: int | None = Field(default=None, foreign_key="result.id", nullable=True)
