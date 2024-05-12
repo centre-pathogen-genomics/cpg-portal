@@ -2,9 +2,9 @@ import enum
 from datetime import datetime
 from typing import Optional
 
+from sqlalchemy.dialects.postgresql import JSONB as JSON
 from sqlalchemy.orm import RelationshipProperty
 from sqlmodel import (
-    JSON,
     Column,
     Enum,
     Field,
@@ -309,8 +309,8 @@ class FilesPublic(SQLModel):
 
 class ResultPublicWithFiles(SQLModel):
     id: int
-    results_json: dict
-    files: list[FilePublic]
+    results: dict = None
+    files: list[FilePublic] = []
     owner_id: int
     task_id: int
     created_at: datetime
