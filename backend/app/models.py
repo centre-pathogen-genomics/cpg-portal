@@ -1,4 +1,17 @@
-from sqlmodel import Field, Relationship, SQLModel
+import enum
+from datetime import datetime
+from typing import Optional
+
+from sqlalchemy.orm import RelationshipProperty
+from sqlmodel import (
+    JSON,
+    Column,
+    Enum,
+    Field,
+    ForeignKey,
+    Relationship,
+    SQLModel,
+)
 
 
 # Shared properties
@@ -45,6 +58,10 @@ class User(UserBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     hashed_password: str
     items: list["Item"] = Relationship(back_populates="owner")
+    workflows: list["Workflow"] = Relationship(back_populates="owner")
+    files: list["File"] = Relationship(back_populates="owner")
+    tasks: list["Task"] = Relationship(back_populates="owner")
+    results: list["Result"] = Relationship(back_populates="owner")
 
 
 # Properties to return via API, id is always required
@@ -111,3 +128,156 @@ class TokenPayload(SQLModel):
 class NewPassword(SQLModel):
     token: str
     new_password: str
+
+
+# Shared properties
+class WorkflowBase(SQLModel):
+    name: str
+    description: str | None = None
+    image: str | None = None
+    run_command: str  # hello-world run --text "Hello, World!"
+    setup_command: str | None = None  # command -v hello-world >/dev/null 2>&1 || snk install wytamma/hello-world
+    target_files: list[str] | None = None  # hello.txt these are the files that the workflow will generate that we want to keep (comma separated)
+    results_json_path: str | None = None  # "results.json" this is the default names for the results file that will be save into the database
+    enabled: bool = True
+
+# Properties to receive on Workflow creation
+class WorkflowCreate(WorkflowBase):
+    name: str
+
+# Properties to receive on Workflow update
+class WorkflowUpdate(WorkflowBase):
+    name: str | None = None  # type: ignore
+
+
+# Database model, database table inferred from class name
+class Workflow(WorkflowBase, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    name: str
+    owner_id: int | None = Field(default=None, foreign_key="user.id", nullable=False)
+    owner: User | None = Relationship(back_populates="workflows")
+    params: list["Param"] = Relationship(back_populates="workflow")
+    tasks: list["Task"] = Relationship(back_populates="workflow")
+    target_files: list[str] = Field(default_factory=list, sa_column=Column(JSON))
+
+
+# Properties to return via API, id is always required
+class WorkflowPublic(WorkflowBase):
+    id: int
+    owner_id: int
+
+
+class WorkflowsPublic(SQLModel):
+    data: list[WorkflowPublic]
+    count: int
+
+
+class ParamType(str, enum.Enum):
+    str = "str"
+    int = "int"
+    float = "float"
+    upload = "upload"
+    path = "path"
+
+class ParamBase(SQLModel):
+    name: str
+    description: str | None = None
+    param_type: ParamType
+    default: str | None = None
+    required: bool = False
+
+
+class ParamCreate(ParamBase):
+    name: str
+
+
+class ParamUpdate(ParamBase):
+    name: str | None = None
+    description: str | None = None
+    param_type: ParamType | None = None
+    default: str | None = None
+    required: bool | None = None
+
+
+class Param(ParamBase, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    param_type: ParamType = Field(sa_column=Column(Enum(ParamType)))
+    workflow_id: int | None = Field(default=None, foreign_key="workflow.id", nullable=False)
+    workflow: Workflow | None = Relationship(back_populates="params")
+
+
+class ParamPublic(ParamBase):
+    id: int
+    workflow_id: int
+
+
+class WorkflowCreateWithParams(WorkflowCreate):
+    params: ParamCreate = []
+
+
+class WorkflowPublicWithParams(WorkflowPublic):
+    params: list[ParamPublic]
+
+
+class WorkflowsPublicWithParams(SQLModel):
+    data: list[WorkflowPublicWithParams]
+    count: int
+
+
+class TaskBase(SQLModel):
+    taskiq_id: str
+
+
+class TaskStatus(str, enum.Enum):
+    pending = "pending"
+    running = "running"
+    completed = "completed"
+    failed = "failed"
+
+class Task(TaskBase, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    taskiq_id: str
+    status: TaskStatus = Field(sa_column=Column(Enum(TaskStatus)))
+    params: dict = Field(default_factory=dict, sa_column=Column(JSON))
+    workflow_id: int | None = Field(default=None, foreign_key="workflow.id", nullable=False)
+    workflow: Workflow | None = Relationship(back_populates="tasks")
+    owner_id: int | None = Field(default=None, foreign_key="user.id", nullable=False)
+    owner: User | None = Relationship(back_populates="tasks")
+    result: Optional["Result"] = Relationship(
+        sa_relationship=RelationshipProperty(
+            "Result", back_populates="task", uselist=False
+        ),
+    )
+    created_at: datetime = Field(default=datetime.utcnow(), nullable=False)
+    started_at: datetime | None = Field(default=None, nullable=True)
+    finished_at: datetime | None = Field(default=None, nullable=True)
+
+class Result(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    results_json: dict = Field(default_factory=dict, sa_column=Column(JSON))
+    files: list["File"] = Relationship(back_populates="result")
+    owner_id: int | None = Field(default=None, foreign_key="user.id", nullable=False)
+    owner: User | None = Relationship(back_populates="results")
+    task_id: int | None = Field(
+        sa_column=Column("task_id", ForeignKey("task.id"), nullable=False)
+    )
+    task: Task = Relationship(
+        sa_relationship=RelationshipProperty("Task", back_populates="result")
+    )
+    created_at: datetime = Field(default=datetime.utcnow(), nullable=False)
+
+
+class FileBase(SQLModel):
+    name: str
+    path: str
+
+
+class File(FileBase, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    name: str
+    path: str
+    owner_id: int | None = Field(default=None, foreign_key="user.id", nullable=False)
+    owner: User | None = Relationship(back_populates="files")
+    result_id: int | None = Field(default=None, foreign_key="result.id", nullable=True)
+    result: Result | None = Relationship(back_populates="files")
+    created_at: datetime = Field(default=datetime.utcnow(), nullable=False)
