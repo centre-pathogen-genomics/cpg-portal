@@ -252,6 +252,22 @@ class Task(TaskBase, table=True):
     started_at: datetime | None = Field(default=None, nullable=True)
     finished_at: datetime | None = Field(default=None, nullable=True)
 
+
+class TaskPublic(TaskBase):
+    id: int
+    owner_id: int
+    workflow_id: int
+    result_id: int | None = None
+    status: TaskStatus
+    created_at: datetime
+    started_at: datetime | None
+    finished_at: datetime | None
+
+
+class TasksPublic(SQLModel):
+    data: list[TaskPublic]
+    count: int
+
 class Result(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     results_json: dict = Field(default_factory=dict, sa_column=Column(JSON))
@@ -266,11 +282,8 @@ class Result(SQLModel, table=True):
     )
     created_at: datetime = Field(default=datetime.utcnow(), nullable=False)
 
-
 class FileBase(SQLModel):
     name: str
-    path: str
-
 
 class File(FileBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
@@ -281,3 +294,24 @@ class File(FileBase, table=True):
     result_id: int | None = Field(default=None, foreign_key="result.id", nullable=True)
     result: Result | None = Relationship(back_populates="files")
     created_at: datetime = Field(default=datetime.utcnow(), nullable=False)
+
+class FilePublic(FileBase):
+    id: int
+    result_id: int | None = None
+    created_at: datetime
+
+
+class FilesPublic(SQLModel):
+    data: list[FilePublic]
+    count: int
+
+class ResultPublicWithFiles(SQLModel):
+    id: int
+    results_json: dict
+    files: list[FilePublic]
+    owner_id: int
+    task_id: int
+    created_at: datetime
+
+class TaskPublicWithResult(TaskPublic):
+    result: ResultPublicWithFiles
