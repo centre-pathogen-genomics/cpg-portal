@@ -65,7 +65,7 @@ def upgrade():
     op.create_table('task',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('taskiq_id', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-    sa.Column('status', sa.Enum('pending', 'running', 'completed', 'failed', name='taskstatus'), nullable=True),
+    sa.Column('status', sa.Enum('pending', 'running', 'completed', 'failed', 'cancelled', name='taskstatus'), nullable=True),
     sa.Column('params', sa.JSON(), nullable=True),
     sa.Column('workflow_id', sa.Integer(), nullable=False),
     sa.Column('owner_id', sa.Integer(), nullable=False),
