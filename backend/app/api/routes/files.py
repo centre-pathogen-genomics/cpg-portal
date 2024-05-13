@@ -1,5 +1,6 @@
 import os
 import shutil
+from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
@@ -88,7 +89,9 @@ def delete_file(session: SessionDep, current_user: CurrentUser, id: int) -> Any:
         raise HTTPException(status_code=400, detail="Not enough permissions")
     try:
         # remove file
-        os.remove(file_metadata.location)
+        file_path = Path(file_metadata.location)
+        if file_path.exists():
+            file_path.unlink()
         session.delete(file_metadata)
         session.commit()
     except Exception as e:
