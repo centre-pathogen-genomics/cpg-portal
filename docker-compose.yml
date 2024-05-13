@@ -11,6 +11,45 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
       - POSTGRES_USER=${POSTGRES_USER?Variable not set}
       - POSTGRES_DB=${POSTGRES_DB?Variable not set}
+    healthcheck:
+      test: pg_isready -U postgres
+      interval: 2s
+      timeout: 3s
+      retries: 40
+
+  nats:
+    image: nats:2.9.15-alpine
+    hostname: nats
+    command:
+      - "-m"
+      - "8222"
+    networks:
+      - traefik-public
+      - default
+    healthcheck:
+      test:
+        - "CMD"
+        - "sh"
+        - "-c"
+        - "wget http://localhost:8222/healthz -q -O - | xargs | grep ok || exit 1"
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: bitnami/redis:6.2.5
+    hostname: redis
+    restart: always
+    networks:
+      - traefik-public
+      - default
+    environment:
+      ALLOW_EMPTY_PASSWORD: "yes"
+    healthcheck:
+      test: redis-cli ping
+      interval: 1s
+      timeout: 3s
+      retries: 50
 
   adminer:
     image: adminer
@@ -36,13 +75,24 @@ services:
       - traefik.http.services.${STACK_NAME?Variable not set}-adminer.loadbalancer.server.port=8080
 
   backend:
+    &backend
     image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}'
     restart: always
+    volumes:
+      - app-storage-data:/storage
     networks:
       - traefik-public
       - default
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      worker:
+        condition: service_started
+
     env_file:
       - .env
     environment:
@@ -86,6 +136,19 @@ services:
 
       - traefik.http.routers.${STACK_NAME?Variable not set}-backend-http.middlewares=https-redirect,${STACK_NAME?Variable not set}-www-redirect
       - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.middlewares=${STACK_NAME?Variable not set}-www-redirect
+  
+  worker:
+    <<: *backend
+    ports: []
+    labels: []
+    command: [ taskiq, worker, app.tkq:broker, app.tasks]
+    depends_on:
+      db:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   frontend:
     image: '${DOCKER_IMAGE_FRONTEND?Variable not set}:${TAG-latest}'
@@ -126,6 +189,7 @@ services:
       - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-http.middlewares=https-redirect,${STACK_NAME?Variable not set}-www-redirect
 volumes:
   app-db-data:
+  app-storage-data:
 
 networks:
   traefik-public:

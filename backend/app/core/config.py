@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     DOMAIN: str = "localhost"
     ENVIRONMENT: Literal["local", "staging", "production"] = "local"
 
+    STORAGE_PATH: str = "/storage"
+    TMP_PATH: str = "/tmp/cpg-portal"
+
     @computed_field  # type: ignore[misc]
     @property
     def server_host(self) -> str:
@@ -65,6 +68,9 @@ class Settings(BaseSettings):
             port=self.POSTGRES_PORT,
             path=self.POSTGRES_DB,
         )
+
+    NATS_URIS: str = "nats://nats:4222/"
+    REDIS_URI: str = "redis://redis/"
 
     SMTP_TLS: bool = True
     SMTP_SSL: bool = False

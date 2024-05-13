@@ -1,9 +1,13 @@
+import shutil
+from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 from sqlmodel import Session, select
 
+from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
-from app.models import Item, ItemCreate, User, UserCreate, UserUpdate
+from app.models import File, Item, ItemCreate, User, UserCreate, UserUpdate
 
 
 def create_user(*, session: Session, user_create: UserCreate) -> User:
@@ -51,3 +55,30 @@ def create_item(*, session: Session, item_in: ItemCreate, owner_id: int) -> Item
     session.commit()
     session.refresh(db_item)
     return db_item
+
+def _save_single_file(session: Session, file_path: Path, owner_id: int) -> File:
+    """Helper function to save a single file."""
+    file_id = str(uuid4())
+    file_storage_location = Path(settings.STORAGE_PATH) / f"{file_id}_{file_path.name}"
+    with open(file_storage_location, "wb") as fdst, open(file_path, "rb") as fsrc:
+        shutil.copyfileobj(fsrc, fdst)
+    file_metadata = File(
+        name=file_path.name,
+        owner_id=owner_id,
+        location=str(file_storage_location),
+    )
+    session.add(file_metadata)
+    return file_metadata
+
+def save_file(*, session: Session, file_path: Path, owner_id: int) -> File:
+    """Save a single file and commit the session."""
+    file_metadata = _save_single_file(session, file_path, owner_id)
+    session.commit()
+    session.refresh(file_metadata)
+    return file_metadata
+
+def save_file_multiple(*, session: Session, file_paths: list[Path], owner_id: int) -> list[File]:
+    """Save multiple files and commit the session after adding all files."""
+    files = [_save_single_file(session, file_path, owner_id) for file_path in file_paths]
+    session.commit()
+    return files

@@ -5,6 +5,7 @@ from starlette.middleware.cors import CORSMiddleware
 
 from app.api.main import api_router
 from app.core.config import settings
+from app.lifetime import shutdown, startup
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
@@ -31,5 +32,8 @@ if settings.BACKEND_CORS_ORIGINS:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+app.add_event_handler("startup", startup(app))
+app.add_event_handler("shutdown", shutdown(app))
 
 app.include_router(api_router, prefix=settings.API_V1_STR)

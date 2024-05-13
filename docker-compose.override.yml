@@ -63,6 +63,24 @@ services:
     # command: sleep infinity  # Infinite loop to keep container alive doing nothing
     command: /start-reload.sh
 
+  worker:
+    restart: "no"
+    volumes:
+      - ./backend/:/app
+      - /tmp:/tmp
+    command: [ taskiq, worker, app.tkq:broker, app.tasks, -w 4, --reload ]
+
+  nats:
+    restart: "no"
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+
+  redis:
+    restart: "no"
+    ports:
+      - "6379:6379"
+
   frontend:
     restart: "no"
     build:
