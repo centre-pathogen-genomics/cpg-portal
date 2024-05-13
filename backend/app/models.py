@@ -186,21 +186,20 @@ class ParamBase(SQLModel):
     name: str
     description: str | None = None
     param_type: ParamType
-    default: Any | None = None
+    default: int | float | str | bool
     options: list[str] | None = None
+    flag: str | None = None
     required: bool = False
 
 
 class ParamCreate(ParamBase):
     name: str
-    default: Any | None = None
-
 
 class ParamUpdate(ParamBase):
     name: str | None = None
     description: str | None = None
     param_type: ParamType | None = None
-    default: Any | None = None
+    default: int | float | str | bool | None = None
     required: bool | None = None
 
 
@@ -208,7 +207,7 @@ class Param(ParamBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     param_type: ParamType = Field(sa_column=Column(Enum(ParamType)))
     options: list[str] = Field(default_factory=list, sa_column=Column(JSON))
-    default: Any | None = Field(default=None, sa_column=Column(JSON))
+    default: int | float | str | bool | None = Field(default=None, sa_column=Column(JSON))
     workflow_id: int | None = Field(default=None, foreign_key="workflow.id", nullable=False)
     workflow: Workflow | None = Relationship(back_populates="params")
 
