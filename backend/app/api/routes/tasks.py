@@ -141,6 +141,46 @@ def read_active_tasks(
 
     return TasksPublic(data=tasks, count=count)
 
+@router.get("/active", response_model=TasksPublic)
+def read_active_tasks(
+    session: SessionDep, current_user: CurrentUser, skip: int = 0, limit: int = 100
+) -> Any:
+    """
+    Retrieve active tasks with status pending or running.
+    """
+    if current_user.is_superuser:
+        count_statement = (
+            select(func.count())
+            .select_from(Task)
+            .where(Task.status.in_(["pending", "running"]))
+        )
+        count = session.exec(count_statement).one()
+        statement = (
+            select(Task)
+            .where(Task.status.in_(["pending", "running"]))
+            .offset(skip)
+            .limit(limit)
+        )
+        tasks = session.exec(statement).all()
+    else:
+        count_statement = (
+            select(func.count())
+            .select_from(Task)
+            .where(Task.owner_id == current_user.id)
+            .where(Task.status.in_(["pending", "running"]))
+        )
+        count = session.exec(count_statement).one()
+        statement = (
+            select(Task)
+            .where(Task.owner_id == current_user.id)
+            .where(Task.status.in_(["pending", "running"]))
+            .offset(skip)
+            .limit(limit)
+        )
+        tasks = session.exec(statement).all()
+
+    return TasksPublic(data=tasks, count=count)
+
 @router.get("/{id}", response_model=TaskPublicWithResult)
 def read_task(session: SessionDep, current_user: CurrentUser, id: int) -> Any:
     """
