@@ -186,7 +186,7 @@ class ParamBase(SQLModel):
     name: str
     description: str | None = None
     param_type: ParamType
-    default: str | None = None
+    default: Any | None = None
     options: list[str] | None = None
     required: bool = False
 
@@ -208,6 +208,7 @@ class Param(ParamBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     param_type: ParamType = Field(sa_column=Column(Enum(ParamType)))
     options: list[str] = Field(default_factory=list, sa_column=Column(JSON))
+    default: Any | None = Field(default=None, sa_column=Column(JSON))
     workflow_id: int | None = Field(default=None, foreign_key="workflow.id", nullable=False)
     workflow: Workflow | None = Relationship(back_populates="params")
 
