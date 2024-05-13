@@ -63,6 +63,11 @@ async def run_workflow(
     if files is None:
         files = []
     task: Task = session.get(Task, task_id)
+    if task is None:
+        return False
+    # only run the task if it is pending
+    if task.status != "pending":
+        return False
     print(f"Starting Task(id={task_id}) for Workflow(id={task.workflow_id})")
     task.status = "running"
     task.started_at = datetime.utcnow()
