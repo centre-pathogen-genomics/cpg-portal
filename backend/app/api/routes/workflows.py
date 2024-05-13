@@ -9,8 +9,10 @@ from sqlmodel import func, select
 from app.api.deps import CurrentUser, SessionDep
 from app.models import (
     File,
+    Message,
     Param,
     ParamCreate,
+    ParamUpdate,
     Task,
     TaskPublic,
     Workflow,
@@ -69,7 +71,7 @@ def create_workflow(
     return workflow
 
 
-@router.get("/{workflow_id}", response_model=WorkflowPublic)
+@router.get("/{workflow_id}", response_model=WorkflowPublicWithParams)
 def read_workflow(
     *, session: SessionDep, current_user: CurrentUser, workflow_id: int
 ) -> Any:
@@ -124,7 +126,7 @@ def read_workflow_params(
     return workflow.params
 
 
-@router.post("/{workflow_id}/params", response_model=WorkflowPublicWithParams)
+@router.post("/{workflow_id}/params", response_model=Param)
 def add_param_to_workflow(
     *,
     session: SessionDep,
@@ -150,16 +152,16 @@ def add_param_to_workflow(
     session.add(param)
     session.commit()
     session.refresh(param)
-    return workflow
+    return param
 
-@router.patch("/{workflow_id}/params/{param_id}", response_model=WorkflowPublicWithParams)
+@router.patch("/{workflow_id}/params/{param_id}", response_model=Param)
 def update_param_in_workflow(
     *,
     session: SessionDep,
     current_user: CurrentUser,
     workflow_id: int,
     param_id: int,
-    param: ParamCreate,
+    in_param: ParamUpdate,
 ) -> Any:
     """
     Update param in workflow by workflow ID and param ID.
@@ -172,16 +174,18 @@ def update_param_in_workflow(
     param = session.get(Param, param_id)
     if not param:
         raise HTTPException(status_code=404, detail="Param not found")
-    param_data = param.dict(exclude_unset=True)
+    if param.workflow_id != workflow_id:
+        raise HTTPException(status_code=400, detail="Param does not belong to this workflow")
+    param_data = in_param.dict(exclude_unset=True)
     for key, value in param_data.items():
         setattr(param, key, value)
     session.add(param)
     session.commit()
     session.refresh(param)
-    return workflow
+    return param
 
 
-@router.delete("/{workflow_id}/params/{param_id}", response_model=WorkflowPublicWithParams)
+@router.delete("/{workflow_id}/params/{param_id}", response_model=Message)
 def delete_param_from_workflow(
     *, session: SessionDep, current_user: CurrentUser, workflow_id: int, param_id: int
 ) -> Any:
@@ -198,12 +202,7 @@ def delete_param_from_workflow(
         raise HTTPException(status_code=404, detail="Param not found")
     session.delete(param)
     session.commit()
-    return workflow
-
-# create a separate endpoint to upload files
-# this will be used to upload files and pass them as parameters to the workflow
-# when you upload a file you'll get a file id back, which you can then pass as a parameter to the workflow
-# this would also for for s3 uploads, etc
+    return Message(message="Param deleted successfully")
 
 
 @router.post("/{workflow_id}/run", response_model=TaskPublic)
