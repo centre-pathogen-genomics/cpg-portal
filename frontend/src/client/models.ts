@@ -194,6 +194,111 @@ export type TasksPublic = {
 
 
 
+export type Param = {
+	name: string;
+	description?: string | null;
+	param_type: ParamType;
+	default?: (number | string | boolean | null);
+	options?: Array<string>;
+	flag?: string | null;
+	required?: boolean;
+	id?: number | null;
+	workflow_id?: number | null;
+};
+
+
+
+export type ParamCreate = {
+	name: string;
+	description?: string | null;
+	param_type: ParamType;
+	default: (number | string | boolean);
+	options?: Array<string> | null;
+	flag?: string | null;
+	required?: boolean;
+};
+
+
+
+export type ParamPublic = {
+	name: string;
+	description?: string | null;
+	param_type: ParamType;
+	default: (number | string | boolean);
+	options?: Array<string> | null;
+	flag?: string | null;
+	required?: boolean;
+	id: number;
+	workflow_id: number;
+};
+
+
+
+export type ParamType = 'str' | 'int' | 'float' | 'bool' | 'enum' | 'file';
+
+
+
+export type ParamUpdate = {
+	name?: string | null;
+	description?: string | null;
+	param_type?: ParamType | null;
+	default?: (number | string | boolean | null);
+	options?: Array<string> | null;
+	flag?: string | null;
+	required?: boolean | null;
+};
+
+
+
+export type ResultPublicWithFiles = {
+	id: number;
+	results?: Record<string, unknown> | null;
+	files?: Array<FilePublic>;
+	owner_id: number;
+	task_id: number;
+	created_at: string;
+};
+
+
+
+export type TaskPublic = {
+	taskiq_id: string;
+	id: number;
+	owner_id: number;
+	workflow_id: number;
+	status: TaskStatus;
+	created_at: string;
+	started_at: string | null;
+	finished_at: string | null;
+};
+
+
+
+export type TaskPublicWithResult = {
+	taskiq_id: string;
+	id: number;
+	owner_id: number;
+	workflow_id: number;
+	status: TaskStatus;
+	created_at: string;
+	started_at: string | null;
+	finished_at: string | null;
+	result?: ResultPublicWithFiles | null;
+};
+
+
+
+export type TaskStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+
+
+
+export type TasksPublic = {
+	data: Array<TaskPublic>;
+	count: number;
+};
+
+
+
 export type Token = {
   access_token: string
   token_type?: string
