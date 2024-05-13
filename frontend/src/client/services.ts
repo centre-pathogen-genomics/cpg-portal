@@ -2,7 +2,7 @@ import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
 
-import type { Body_login_login_access_token,Message,NewPassword,Token,UserPublic,UpdatePassword,UserCreate,UserRegister,UsersPublic,UserUpdate,UserUpdateMe,ItemCreate,ItemPublic,ItemsPublic,ItemUpdate } from './models';
+import type { Body_login_login_access_token,Message,NewPassword,Token,UserPublic,UpdatePassword,UserCreate,UserRegister,UsersPublic,UserUpdate,UserUpdateMe,ItemCreate,ItemPublic,ItemsPublic,ItemUpdate,Param,ParamCreate,ParamUpdate,TaskPublic,WorkflowCreateWithParams,WorkflowPublic,WorkflowPublicWithParams,WorkflowsPublicWithParams,WorkflowUpdate,Body_files_upload_file,FilePublic,FilesPublic,TaskPublicWithResult,TasksPublic } from './models';
 
 export type TDataLoginAccessToken = {
                 formData: Body_login_login_access_token
@@ -214,6 +214,19 @@ requestBody,
 	public static readUserMe(): CancelablePromise<UserPublic> {
 				return __request(OpenAPI, {
 			method: 'GET',
+			url: '/api/v1/users/me',
+		});
+	}
+
+	/**
+	 * Delete User Me
+	 * Delete own user.
+	 * @returns Message Successful Response
+	 * @throws ApiError
+	 */
+	public static deleteUserMe(): CancelablePromise<Message> {
+				return __request(OpenAPI, {
+			method: 'DELETE',
 			url: '/api/v1/users/me',
 		});
 	}
@@ -512,6 +525,568 @@ id,
 		return __request(OpenAPI, {
 			method: 'DELETE',
 			url: '/api/v1/items/{id}',
+			path: {
+				id
+			},
+			errors: {
+				422: `Validation Error`,
+			},
+		});
+	}
+
+}
+
+export type TDataReadWorkflows = {
+                limit?: number
+skip?: number
+                
+            }
+export type TDataCreateWorkflow = {
+                requestBody: WorkflowCreateWithParams
+                
+            }
+export type TDataReadWorkflow = {
+                workflowId: number
+                
+            }
+export type TDataUpdateWorkflow = {
+                requestBody: WorkflowUpdate
+workflowId: number
+                
+            }
+export type TDataReadWorkflowParams = {
+                workflowId: number
+                
+            }
+export type TDataAddParamToWorkflow = {
+                requestBody: ParamCreate
+workflowId: number
+                
+            }
+export type TDataUpdateParamInWorkflow = {
+                paramId: number
+requestBody: ParamUpdate
+workflowId: number
+                
+            }
+export type TDataDeleteParamFromWorkflow = {
+                paramId: number
+workflowId: number
+                
+            }
+export type TDataRunWorkflow = {
+                requestBody: Record<string, unknown>
+workflowId: number
+                
+            }
+
+export class WorkflowsService {
+
+	/**
+	 * Read Workflows
+	 * Retrieve workflows.
+	 * @returns WorkflowsPublicWithParams Successful Response
+	 * @throws ApiError
+	 */
+	public static readWorkflows(data: TDataReadWorkflows = {}): CancelablePromise<WorkflowsPublicWithParams> {
+		const {
+limit = 100,
+skip = 0,
+} = data;
+		return __request(OpenAPI, {
+			method: 'GET',
+			url: '/api/v1/workflows/',
+			query: {
+				skip, limit
+			},
+			errors: {
+				422: `Validation Error`,
+			},
+		});
+	}
+
+	/**
+	 * Create Workflow
+	 * Create new workflow along with its params.
+	 * @returns WorkflowPublic Successful Response
+	 * @throws ApiError
+	 */
+	public static createWorkflow(data: TDataCreateWorkflow): CancelablePromise<WorkflowPublic> {
+		const {
+requestBody,
+} = data;
+		return __request(OpenAPI, {
+			method: 'POST',
+			url: '/api/v1/workflows/',
+			body: requestBody,
+			mediaType: 'application/json',
+			errors: {
+				422: `Validation Error`,
+			},
+		});
+	}
+
+	/**
+	 * Read Workflow
+	 * Retrieve workflow by ID.
+	 * @returns WorkflowPublicWithParams Successful Response
+	 * @throws ApiError
+	 */
+	public static readWorkflow(data: TDataReadWorkflow): CancelablePromise<WorkflowPublicWithParams> {
+		const {
+workflowId,
+} = data;
+		return __request(OpenAPI, {
+			method: 'GET',
+			url: '/api/v1/workflows/{workflow_id}',
+			path: {
+				workflow_id: workflowId
+			},
+			errors: {
+				422: `Validation Error`,
+			},
+		});
+	}
+
+	/**
+	 * Update Workflow
+	 * Update workflow by ID.
+	 * @returns WorkflowPublic Successful Response
+	 * @throws ApiError
+	 */
+	public static updateWorkflow(data: TDataUpdateWorkflow): CancelablePromise<WorkflowPublic> {
+		const {
+requestBody,
+workflowId,
+} = data;
+		return __request(OpenAPI, {
+			method: 'PATCH',
+			url: '/api/v1/workflows/{workflow_id}',
+			path: {
+				workflow_id: workflowId
+			},
+			body: requestBody,
+			mediaType: 'application/json',
+			errors: {
+				422: `Validation Error`,
+			},
+		});
+	}
+
+	/**
+	 * Read Workflow Params
+	 * Retrieve workflow params by workflow ID.
+	 * @returns Param Successful Response
+	 * @throws ApiError
+	 */
+	public static readWorkflowParams(data: TDataReadWorkflowParams): CancelablePromise<Array<Param>> {
+		const {
+workflowId,
+} = data;
+		return __request(OpenAPI, {
+			method: 'GET',
+			url: '/api/v1/workflows/{workflow_id}/params',
+			path: {
+				workflow_id: workflowId
+			},
+			errors: {
+				422: `Validation Error`,
+			},
+		});
+	}
+
+	/**
+	 * Add Param To Workflow
+	 * Add param to workflow by workflow ID.
+	 * @returns Param Successful Response
+	 * @throws ApiError
+	 */
+	public static addParamToWorkflow(data: TDataAddParamToWorkflow): CancelablePromise<Param> {
+		const {
+requestBody,
+workflowId,
+} = data;
+		return __request(OpenAPI, {
+			method: 'POST',
+			url: '/api/v1/workflows/{workflow_id}/params',
+			path: {
+				workflow_id: workflowId
+			},
+			body: requestBody,
+			mediaType: 'application/json',
+			errors: {
+				422: `Validation Error`,
+			},
+		});
+	}
+
+	/**
+	 * Update Param In Workflow
+	 * Update param in workflow by workflow ID and param ID.
+	 * @returns Param Successful Response
+	 * @throws ApiError
+	 */
+	public static updateParamInWorkflow(data: TDataUpdateParamInWorkflow): CancelablePromise<Param> {
+		const {
+paramId,
+requestBody,
+workflowId,
+} = data;
+		return __request(OpenAPI, {
+			method: 'PATCH',
+			url: '/api/v1/workflows/{workflow_id}/params/{param_id}',
+			path: {
+				workflow_id: workflowId, param_id: paramId
+			},
+			body: requestBody,
+			mediaType: 'application/json',
+			errors: {
+				422: `Validation Error`,
+			},
+		});
+	}
+
+	/**
+	 * Delete Param From Workflow
+	 * Delete param from workflow by workflow ID and param ID.
+	 * @returns Message Successful Response
+	 * @throws ApiError
+	 */
+	public static deleteParamFromWorkflow(data: TDataDeleteParamFromWorkflow): CancelablePromise<Message> {
+		const {
+paramId,
+workflowId,
+} = data;
+		return __request(OpenAPI, {
+			method: 'DELETE',
+			url: '/api/v1/workflows/{workflow_id}/params/{param_id}',
+			path: {
+				workflow_id: workflowId, param_id: paramId
+			},
+			errors: {
+				422: `Validation Error`,
+			},
+		});
+	}
+
+	/**
+	 * Run Workflow
+	 * Run workflow by ID, validating against predefined workflow parameters.
+ * Accepts both files and regular parameters dynamically.
+	 * @returns TaskPublic Successful Response
+	 * @throws ApiError
+	 */
+	public static runWorkflow(data: TDataRunWorkflow): CancelablePromise<TaskPublic> {
+		const {
+requestBody,
+workflowId,
+} = data;
+		return __request(OpenAPI, {
+			method: 'POST',
+			url: '/api/v1/workflows/{workflow_id}/run',
+			path: {
+				workflow_id: workflowId
+			},
+			body: requestBody,
+			mediaType: 'application/json',
+			errors: {
+				422: `Validation Error`,
+			},
+		});
+	}
+
+}
+
+export type TDataReadFiles = {
+                limit?: number
+skip?: number
+                
+            }
+export type TDataUploadFile = {
+                formData: Body_files_upload_file
+                
+            }
+export type TDataReadFile = {
+                id: number
+                
+            }
+export type TDataDeleteFile = {
+                id: number
+                
+            }
+export type TDataDownloadFile = {
+                id: number
+                
+            }
+
+export class FilesService {
+
+	/**
+	 * Read Files
+	 * Retrieve files.
+	 * @returns FilesPublic Successful Response
+	 * @throws ApiError
+	 */
+	public static readFiles(data: TDataReadFiles = {}): CancelablePromise<FilesPublic> {
+		const {
+limit = 100,
+skip = 0,
+} = data;
+		return __request(OpenAPI, {
+			method: 'GET',
+			url: '/api/v1/files/',
+			query: {
+				skip, limit
+			},
+			errors: {
+				422: `Validation Error`,
+			},
+		});
+	}
+
+	/**
+	 * Upload File
+	 * Upload a new file.
+	 * @returns FilePublic Successful Response
+	 * @throws ApiError
+	 */
+	public static uploadFile(data: TDataUploadFile): CancelablePromise<FilePublic> {
+		const {
+formData,
+} = data;
+		return __request(OpenAPI, {
+			method: 'POST',
+			url: '/api/v1/files/',
+			formData: formData,
+			mediaType: 'multipart/form-data',
+			errors: {
+				422: `Validation Error`,
+			},
+		});
+	}
+
+	/**
+	 * Read File
+	 * Retrieve file metadata.
+	 * @returns FilePublic Successful Response
+	 * @throws ApiError
+	 */
+	public static readFile(data: TDataReadFile): CancelablePromise<FilePublic> {
+		const {
+id,
+} = data;
+		return __request(OpenAPI, {
+			method: 'GET',
+			url: '/api/v1/files/{id}',
+			path: {
+				id
+			},
+			errors: {
+				422: `Validation Error`,
+			},
+		});
+	}
+
+	/**
+	 * Delete File
+	 * Delete file.
+	 * @returns unknown Successful Response
+	 * @throws ApiError
+	 */
+	public static deleteFile(data: TDataDeleteFile): CancelablePromise<unknown> {
+		const {
+id,
+} = data;
+		return __request(OpenAPI, {
+			method: 'DELETE',
+			url: '/api/v1/files/{id}',
+			path: {
+				id
+			},
+			errors: {
+				422: `Validation Error`,
+			},
+		});
+	}
+
+	/**
+	 * Download File
+	 * Download file.
+	 * @returns unknown Successful Response
+	 * @throws ApiError
+	 */
+	public static downloadFile(data: TDataDownloadFile): CancelablePromise<unknown> {
+		const {
+id,
+} = data;
+		return __request(OpenAPI, {
+			method: 'GET',
+			url: '/api/v1/files/{id}/download',
+			path: {
+				id
+			},
+			errors: {
+				422: `Validation Error`,
+			},
+		});
+	}
+
+}
+
+export type TDataReadTasks = {
+                limit?: number
+skip?: number
+                
+            }
+export type TDataReadActiveTasks = {
+                limit?: number
+skip?: number
+                
+            }
+export type TDataReadTask = {
+                id: number
+                
+            }
+export type TDataDeleteTask = {
+                id: number
+                
+            }
+export type TDataCancelTask = {
+                id: number
+                
+            }
+
+export class TasksService {
+
+	/**
+	 * Read Tasks
+	 * Retrieve tasks.
+	 * @returns TasksPublic Successful Response
+	 * @throws ApiError
+	 */
+	public static readTasks(data: TDataReadTasks = {}): CancelablePromise<TasksPublic> {
+		const {
+limit = 100,
+skip = 0,
+} = data;
+		return __request(OpenAPI, {
+			method: 'GET',
+			url: '/api/v1/tasks/',
+			query: {
+				skip, limit
+			},
+			errors: {
+				422: `Validation Error`,
+			},
+		});
+	}
+
+	/**
+	 * Delete Tasks
+	 * Delete all inactive tasks.
+	 * @returns Message Successful Response
+	 * @throws ApiError
+	 */
+	public static deleteTasks(): CancelablePromise<Message> {
+				return __request(OpenAPI, {
+			method: 'DELETE',
+			url: '/api/v1/tasks/',
+		});
+	}
+
+	/**
+	 * Cancel Tasks
+	 * Cancel all active tasks with status pending or running.
+	 * @returns Message Successful Response
+	 * @throws ApiError
+	 */
+	public static cancelTasks(): CancelablePromise<Message> {
+				return __request(OpenAPI, {
+			method: 'PATCH',
+			url: '/api/v1/tasks/cancel',
+		});
+	}
+
+	/**
+	 * Read Active Tasks
+	 * Retrieve active tasks with status pending or running.
+	 * @returns TasksPublic Successful Response
+	 * @throws ApiError
+	 */
+	public static readActiveTasks(data: TDataReadActiveTasks = {}): CancelablePromise<TasksPublic> {
+		const {
+limit = 100,
+skip = 0,
+} = data;
+		return __request(OpenAPI, {
+			method: 'GET',
+			url: '/api/v1/tasks/active',
+			query: {
+				skip, limit
+			},
+			errors: {
+				422: `Validation Error`,
+			},
+		});
+	}
+
+	/**
+	 * Read Task
+	 * Retrieve task metadata.
+	 * @returns TaskPublicWithResult Successful Response
+	 * @throws ApiError
+	 */
+	public static readTask(data: TDataReadTask): CancelablePromise<TaskPublicWithResult> {
+		const {
+id,
+} = data;
+		return __request(OpenAPI, {
+			method: 'GET',
+			url: '/api/v1/tasks/{id}',
+			path: {
+				id
+			},
+			errors: {
+				422: `Validation Error`,
+			},
+		});
+	}
+
+	/**
+	 * Delete Task
+	 * Delete task.
+	 * @returns Message Successful Response
+	 * @throws ApiError
+	 */
+	public static deleteTask(data: TDataDeleteTask): CancelablePromise<Message> {
+		const {
+id,
+} = data;
+		return __request(OpenAPI, {
+			method: 'DELETE',
+			url: '/api/v1/tasks/{id}',
+			path: {
+				id
+			},
+			errors: {
+				422: `Validation Error`,
+			},
+		});
+	}
+
+	/**
+	 * Cancel Task
+	 * Cancel task.
+	 * @returns TaskPublic Successful Response
+	 * @throws ApiError
+	 */
+	public static cancelTask(data: TDataCancelTask): CancelablePromise<TaskPublic> {
+		const {
+id,
+} = data;
+		return __request(OpenAPI, {
+			method: 'PATCH',
+			url: '/api/v1/tasks/{id}/cancel',
 			path: {
 				id
 			},
