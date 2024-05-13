@@ -252,7 +252,7 @@ class Task(TaskBase, table=True):
     owner: User | None = Relationship(back_populates="tasks")
     result: Optional["Result"] = Relationship(
         sa_relationship=RelationshipProperty(
-            "Result", back_populates="task", uselist=False
+            "Result", back_populates="task", uselist=False, cascade="all, delete, delete-orphan"
         ),
     )
     created_at: datetime = Field(default=datetime.utcnow(), nullable=False)
@@ -265,20 +265,19 @@ class TaskPublic(TaskBase):
     owner_id: int
     workflow_id: int
     status: TaskStatus
-    result: Optional["Result"] = None
     created_at: datetime
     started_at: datetime | None
     finished_at: datetime | None
 
 
-class TasksPublic(SQLModel):
-    data: list[TaskPublic]
-    count: int
-
 class Result(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     results: dict | None = Field(default_factory=dict, sa_column=Column(JSON))
-    files: list["File"] = Relationship(back_populates="result")
+    files: list["File"] = Relationship(
+        sa_relationship=RelationshipProperty(
+            "File", back_populates="result", uselist=True, cascade="all, delete, delete-orphan"
+        ),
+    )
     owner_id: int | None = Field(default=None, foreign_key="user.id", nullable=False)
     owner: User | None = Relationship(back_populates="results")
     task_id: int | None = Field(
@@ -312,6 +311,7 @@ class FilesPublic(SQLModel):
     data: list[FilePublic]
     count: int
 
+
 class ResultPublicWithFiles(SQLModel):
     id: int
     results: dict | None = None
@@ -320,5 +320,15 @@ class ResultPublicWithFiles(SQLModel):
     task_id: int
     created_at: datetime
 
+
 class TaskPublicWithResult(TaskPublic):
     result: ResultPublicWithFiles | None = None
+
+
+class TasksPublic(SQLModel):
+    data: list[TaskPublic]
+    count: int
+
+class TasksPublicWithResult(SQLModel):
+    data: list[TaskPublicWithResult]
+    count: int
