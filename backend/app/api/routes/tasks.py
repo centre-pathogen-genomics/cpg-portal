@@ -101,7 +101,7 @@ def cancel_task(session: SessionDep, current_user: CurrentUser, id: int) -> Any:
         raise HTTPException(status_code=404, detail="Task not found")
     if not current_user.is_superuser and (task.owner_id != current_user.id):
         raise HTTPException(status_code=400, detail="Not enough permissions")
-    if task.status == "finished":
+    if task.status == "completed":
         raise HTTPException(status_code=400, detail="Task already finished")
     task.status = "cancelled"
     session.add(task)

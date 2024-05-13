@@ -1,13 +1,15 @@
 import asyncio
 import json
+import os
 import shutil
+import signal
 import subprocess
 from datetime import datetime
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Union
 from uuid import uuid4
 
-from sqlmodel import Session
+from sqlmodel import Session, select
 from taskiq import Context, TaskiqDepends
 
 from app.api.deps import get_db
@@ -21,28 +23,45 @@ SessionDep = Annotated[Session, TaskiqDepends(get_db)]
 async def run_task_in_subprocess(session: Session, task_id: int, run_command: list[str] | str, tmp_dir: Path, shell: bool = False) -> subprocess.Popen:
     if isinstance(run_command, list) and shell:
         raise ValueError("Cannot use shell=True with a list command")
+
+    # Start the process in a new session
+    preexec_fn = os.setsid if shell else None
+    print(f"Running command: {run_command}")
     res = subprocess.Popen(
         run_command,
         shell=shell,
         text=True,
         cwd=tmp_dir,
+        preexec_fn=preexec_fn
     )
-    while res.poll() is None:
-        # check if the task is cancelled
-        task = session.get(Task, task_id)
-        if task.status == "cancelled":
-            print(f"Task(id={task_id}) was cancelled")
-            res.kill()
-            return res
-        await asyncio.sleep(1)
+    print(f"Task(id={task_id}) started with PID: {res.pid}")
+    try:
+        while res.poll() is None:
+            # Check if the task is cancelled
+            task = session.execute(select(Task).where(Task.id == task_id)).scalar_one()
+            session.refresh(task)
+            if task.status == "cancelled":
+                print(f"Task(id={task_id}) was cancelled")
+                # Send SIGTERM to the entire process group
+                os.killpg(os.getpgid(res.pid), signal.SIGTERM)
+                return res
+            await asyncio.sleep(1)
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        os.killpg(os.getpgid(res.pid), signal.SIGTERM)  # Ensure to kill the group on error
+        raise e
+
     return res
 
 @broker.task
 async def run_workflow(
         task_id: int,
         run_command: list[str],
+        files: list[File] | None = None,
         session: Session = TaskiqDepends(get_db),
     ) -> bool:
+    if files is None:
+        files = []
     task: Task = session.get(Task, task_id)
     print(f"Starting Task(id={task_id}) for Workflow(id={task.workflow_id})")
     task.status = "running"
@@ -52,6 +71,11 @@ async def run_workflow(
     # create tmp directory to run the workflow
     tmp_dir = Path(settings.TMP_PATH) / str(task_id)
     tmp_dir.mkdir(parents=True, exist_ok=True)
+    # symlink the files to the tmp directory
+    print(f"Symlinking files to {tmp_dir}")
+    for file in files:
+        print(f"Symlinking {file.location} to {tmp_dir / file.name}")
+        os.symlink(file.location, tmp_dir / file.name)
     # Set up the workflow
     if task.workflow.setup_command:
         setup_command = task.workflow.setup_command
