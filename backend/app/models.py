@@ -1,6 +1,6 @@
 import enum
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 
 from sqlalchemy.dialects.postgresql import JSONB as JSON
 from sqlalchemy.orm import RelationshipProperty
@@ -178,32 +178,36 @@ class ParamType(str, enum.Enum):
     str = "str"
     int = "int"
     float = "float"
-    upload = "upload"
-    path = "path"
+    bool = "bool"
+    enum = "enum"
+    file = "file"
 
 class ParamBase(SQLModel):
     name: str
     description: str | None = None
     param_type: ParamType
     default: str | None = None
+    options: list[str] | None = None
     required: bool = False
 
 
 class ParamCreate(ParamBase):
     name: str
+    default: Any | None = None
 
 
 class ParamUpdate(ParamBase):
     name: str | None = None
     description: str | None = None
     param_type: ParamType | None = None
-    default: str | None = None
+    default: Any | None = None
     required: bool | None = None
 
 
 class Param(ParamBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     param_type: ParamType = Field(sa_column=Column(Enum(ParamType)))
+    options: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     workflow_id: int | None = Field(default=None, foreign_key="workflow.id", nullable=False)
     workflow: Workflow | None = Relationship(back_populates="params")
 
@@ -235,6 +239,7 @@ class TaskStatus(str, enum.Enum):
     running = "running"
     completed = "completed"
     failed = "failed"
+    cancelled = "cancelled"
 
 class Task(TaskBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
@@ -259,8 +264,8 @@ class TaskPublic(TaskBase):
     id: int
     owner_id: int
     workflow_id: int
-    result_id: int | None = None
     status: TaskStatus
+    result: Optional["Result"] = None
     created_at: datetime
     started_at: datetime | None
     finished_at: datetime | None
@@ -272,7 +277,7 @@ class TasksPublic(SQLModel):
 
 class Result(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    results: dict = Field(default_factory=dict, sa_column=Column(JSON))
+    results: dict | None = Field(default_factory=dict, sa_column=Column(JSON))
     files: list["File"] = Relationship(back_populates="result")
     owner_id: int | None = Field(default=None, foreign_key="user.id", nullable=False)
     owner: User | None = Relationship(back_populates="results")
@@ -309,11 +314,11 @@ class FilesPublic(SQLModel):
 
 class ResultPublicWithFiles(SQLModel):
     id: int
-    results: dict = None
+    results: dict | None = None
     files: list[FilePublic] = []
     owner_id: int
     task_id: int
     created_at: datetime
 
 class TaskPublicWithResult(TaskPublic):
-    result: ResultPublicWithFiles
+    result: ResultPublicWithFiles | None = None
