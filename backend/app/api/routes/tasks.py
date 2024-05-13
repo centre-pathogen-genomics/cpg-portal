@@ -1,10 +1,18 @@
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from sqlmodel import func, select
 
 from app.api.deps import CurrentUser, SessionDep
-from app.models import Task, TaskPublic, TaskPublicWithResult, TasksPublic
+from app.models import (
+    File,
+    Message,
+    Task,
+    TaskPublic,
+    TaskPublicWithResult,
+    TasksPublic,
+)
 
 router = APIRouter()
 
@@ -37,6 +45,54 @@ def read_tasks(
         tasks = session.exec(statement).all()
 
     return TasksPublic(data=tasks, count=count)
+
+@router.patch("/cancel", response_model=Message)
+def cancel_tasks(session: SessionDep, current_user: CurrentUser) -> Any:
+    """
+    Cancel all active tasks with status pending or running.
+    """
+    # Select tasks based on user permissions and status
+    if current_user.is_superuser:
+        statement = select(Task).where(Task.status.in_(["pending", "running"]))
+    else:
+        statement = select(Task).where(Task.owner_id == current_user.id).where(Task.status.in_(["pending", "running"]))
+
+    tasks: list[Task] = session.exec(statement).all()
+
+    # Update task status
+    for task in tasks:
+        task.status = "cancelled"
+        session.add(task)
+    session.commit()
+    return Message(message=f"Cancelled {len(tasks)} tasks")
+
+@router.delete("/", response_model=Message)
+def delete_tasks(session: SessionDep, current_user: CurrentUser) -> Any:
+    """
+    Delete all inactive tasks.
+    """
+    # Select tasks based on user permissions and status
+    if current_user.is_superuser:
+        statement = select(Task).where(Task.status != "pending").where(Task.status != "running")
+    else:
+        statement = select(Task).where(Task.owner_id == current_user.id).where(Task.status != "pending").where(Task.status != "running")
+
+    tasks: list[Task] = session.exec(statement).all()
+
+    # Cascading delete handles the removal of related Results and Files
+    files: list[File] = []
+    for task in tasks:
+        if task.result:
+            files.extend(getattr(task.result, "files", []))
+        session.delete(task)
+    session.commit()
+    for file in files:
+        file_path = Path(file.location)
+        if file_path.exists():
+            file_path.unlink()
+    return Message(message=f"Deleted {len(tasks)} tasks and {len(files)} files")
+
+
 
 @router.get("/active", response_model=TasksPublic)
 def read_active_tasks(
@@ -108,3 +164,25 @@ def cancel_task(session: SessionDep, current_user: CurrentUser, id: int) -> Any:
     session.commit()
     return task
 
+@router.delete("/{id}", response_model=Message)
+def delete_task(session: SessionDep, current_user: CurrentUser, id: int) -> Any:
+    """
+    Delete task.
+    """
+    task = session.get(Task, id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    if not current_user.is_superuser and (task.owner_id != current_user.id):
+        raise HTTPException(status_code=400, detail="Not enough permissions")
+    if task.status == "running" or task.status == "pending":
+        raise HTTPException(status_code=400, detail="Task is active")
+    files = []
+    if task.result:
+        files.extend(getattr(task.result, "files", []))
+    session.delete(task)
+    session.commit()
+    for file in files:
+        file_path = Path(file.location)
+        if file_path.exists():
+            file_path.unlink()
+    return Message(message=f"Deleted task {id} and {len(files)} files")
