@@ -35,6 +35,10 @@ def upgrade():
                existing_type=postgresql.JSON(astext_type=sa.Text()),
                type_=postgresql.JSONB(astext_type=sa.Text()),
                existing_nullable=True)
+    op.alter_column('param', 'default',
+                existing_type=postgresql.JSON(astext_type=sa.Text()),
+                type_=postgresql.JSONB(astext_type=sa.Text()),
+                existing_nullable=True)
     # ### end Alembic commands ###
 
 
@@ -56,4 +60,8 @@ def downgrade():
                existing_type=postgresql.JSONB(astext_type=sa.Text()),
                type_=postgresql.JSON(astext_type=sa.Text()),
                existing_nullable=True)
+    op.alter_column('param', 'default',
+                existing_type=postgresql.JSONB(astext_type=sa.Text()),
+                type_=postgresql.JSON(astext_type=sa.Text()),
+                existing_nullable=True)
     # ### end Alembic commands ###

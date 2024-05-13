@@ -54,7 +54,7 @@ def upgrade():
     op.create_table('param',
     sa.Column('name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('description', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-    sa.Column('default', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+    sa.Column('default', sa.JSON(), nullable=True),
     sa.Column('required', sa.Boolean(), nullable=False),
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('param_type', sa.Enum('str', 'int', 'float', 'upload', 'path', name='paramtype'), nullable=True),
