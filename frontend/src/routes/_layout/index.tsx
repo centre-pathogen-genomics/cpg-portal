@@ -10,8 +10,9 @@ import { useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { Suspense } from "react"
 import { ErrorBoundary } from "react-error-boundary"
-import { WorkflowsService } from "../../client"
+import { WorkflowsService} from "../../client"
 import WorkflowCard from "../../components/Workflows/WorkflowCard"
+
 
 export const Route = createFileRoute("/_layout/")({
   component: Workflows,
@@ -25,9 +26,11 @@ function WorkflowCards() {
 
   return (
     <>
+      
       {workflows.data.map((workflow) => (
         <WorkflowCard key={workflow.id} workflow={workflow} />
       ))}
+      
     </>
   )
 }
