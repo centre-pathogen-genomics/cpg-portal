@@ -1,28 +1,61 @@
-import { Box, Container, Text } from "@chakra-ui/react"
-import { useQueryClient } from "@tanstack/react-query"
+import { Box, Container, Text, Skeleton, SimpleGrid, Heading } from "@chakra-ui/react"
+import { useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
+import { Suspense } from "react"
+import { ErrorBoundary } from "react-error-boundary"
+import { WorkflowsService} from "../../client"
+import WorkflowCard from "../../components/Workflows/WorkflowCard"
 
-import type { UserPublic } from "../../client"
 
 export const Route = createFileRoute("/_layout/")({
-  component: Dashboard,
+  component: Workflows,
 })
 
-function Dashboard() {
-  const queryClient = useQueryClient()
+function WorkflowCards() {
 
-  const currentUser = queryClient.getQueryData<UserPublic>(["currentUser"])
+  const { data: workflows } = useSuspenseQuery({
+    queryKey: ["workflows"],
+    queryFn: () => WorkflowsService.readWorkflows({}),
+  })
 
   return (
     <>
-      <Container maxW="full">
-        <Box pt={12} m={4}>
-          <Text fontSize="2xl">
-            Hi, {currentUser?.full_name || currentUser?.email} 👋🏼
-          </Text>
-          <Text>Welcome back, nice to see you again!</Text>
-        </Box>
-      </Container>
+      
+      {workflows.data.map((workflow) => (
+        <WorkflowCard key={workflow.id} workflow={workflow} />
+      ))}
+      
     </>
+  )
+}
+
+
+function WorkflowsGrid() {
+  return (
+      <Suspense fallback={<Skeleton height="20px" />}>
+        <ErrorBoundary fallbackRender={
+          ({ error }) => (
+            <Box>
+              <Text>Error: {error.message}</Text>
+            </Box>
+          )
+        }>
+          <SimpleGrid minChildWidth='250px' spacing='20px'>
+            <WorkflowCards />
+          </SimpleGrid>
+        </ErrorBoundary>
+      </Suspense>
+  )
+}
+
+
+function Workflows() {
+  return (
+    <Container maxW="full">
+    <Heading size="lg" textAlign={{ base: "center", md: "left" }} pt={12} pb={8}>
+      CPG Workflows
+    </Heading>
+    <WorkflowsGrid />
+  </Container>
   )
 }

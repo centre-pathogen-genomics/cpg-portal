@@ -15,7 +15,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query"
 import { FiLogOut, FiMenu } from "react-icons/fi"
 
-import Logo from "../../assets/images/fastapi-logo.svg"
+import Logo from "../../assets/images/cpg-logo.png"
 import type { UserPublic } from "../../client"
 import useAuth from "../../hooks/useAuth"
 import SidebarItems from "./SidebarItems"
@@ -49,10 +49,10 @@ const Sidebar = () => {
         <DrawerOverlay />
         <DrawerContent maxW="250px">
           <DrawerCloseButton />
-          <DrawerBody py={8}>
+          <DrawerBody py={0}>
             <Flex flexDir="column" justify="space-between">
-              <Box>
-                <Image src={Logo} alt="logo" p={6} />
+              <Box >
+                <Image src={Logo} alt="logo" p={4} />
                 <SidebarItems onClose={onClose} />
                 <Flex
                   as="button"
@@ -93,7 +93,7 @@ const Sidebar = () => {
           borderRadius={12}
         >
           <Box>
-            <Image src={Logo} alt="Logo" w="180px" maxW="2xs" p={6} />
+            <Image src={Logo} alt="Logo" w="180px" maxW="2xs" p={2} />
             <SidebarItems />
           </Box>
           {currentUser?.email && (
