@@ -169,6 +169,10 @@ class WorkflowPublic(WorkflowBase):
     owner_id: int
 
 
+class WorkflowMinimalPublic(SQLModel):
+    id: int
+    name: str
+
 class WorkflowsPublic(SQLModel):
     data: list[WorkflowPublic]
     count: int
@@ -263,7 +267,7 @@ class Task(TaskBase, table=True):
 class TaskPublic(TaskBase):
     id: int
     owner_id: int
-    workflow_id: int
+    workflow: WorkflowMinimalPublic
     status: TaskStatus
     created_at: datetime
     started_at: datetime | None
