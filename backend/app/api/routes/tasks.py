@@ -1,7 +1,8 @@
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
+from sqlalchemy import desc
 from sqlmodel import func, select
 
 from app.api.deps import CurrentUser, SessionDep
@@ -18,31 +19,37 @@ router = APIRouter()
 
 @router.get("/", response_model=TasksPublic)
 def read_tasks(
-    session: SessionDep, current_user: CurrentUser, skip: int = 0, limit: int = 100
+    session: SessionDep,
+    current_user: CurrentUser,
+    skip: int = 0,
+    limit: int = 100,
+    order_by: str = Query("-created_at", regex=r"^-?[a-zA-Z_]+$")
 ) -> Any:
     """
-    Retrieve tasks.
+    Retrieve tasks with optional ordering.
     """
 
-    if current_user.is_superuser:
-        count_statement = select(func.count()).select_from(Task)
-        count = session.exec(count_statement).one()
-        statement = select(Task).offset(skip).limit(limit)
-        tasks = session.exec(statement).all()
+    # Parse the order_by string to determine the column and direction
+    descending = order_by.startswith('-')
+    column_name = order_by[1:] if descending else order_by
+
+    # Validate and obtain the actual column object from the Task model
+    if hasattr(Task, column_name):
+        column = getattr(Task, column_name)
+        order_expression = desc(column) if descending else column
     else:
-        count_statement = (
-            select(func.count())
-            .select_from(Task)
-            .where(Task.owner_id == current_user.id)
-        )
-        count = session.exec(count_statement).one()
-        statement = (
-            select(Task)
-            .where(Task.owner_id == current_user.id)
-            .offset(skip)
-            .limit(limit)
-        )
-        tasks = session.exec(statement).all()
+        raise HTTPException(status_code=400, detail=f"Invalid column name: {column_name}")
+
+    # Build the query based on user role
+    query_base = select(Task).where(Task.owner_id == current_user.id) if not current_user.is_superuser else select(Task)
+    
+    # Apply ordering, pagination and execute
+    tasks_query = query_base.order_by(order_expression).offset(skip).limit(limit)
+    tasks = session.exec(tasks_query).all()
+    
+    # Counting for pagination
+    count_query = select(func.count()).select_from(Task).where(Task.owner_id == current_user.id) if not current_user.is_superuser else select(func.count()).select_from(Task)
+    count = session.exec(count_query).one()
 
     return TasksPublic(data=tasks, count=count)
 

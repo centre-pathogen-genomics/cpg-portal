@@ -255,7 +255,7 @@ class Task(TaskBase, table=True):
             "Result", back_populates="task", uselist=False, cascade="all, delete, delete-orphan"
         ),
     )
-    created_at: datetime = Field(default=datetime.utcnow(), nullable=False)
+    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     started_at: datetime | None = Field(default=None, nullable=True)
     finished_at: datetime | None = Field(default=None, nullable=True)
 
@@ -286,7 +286,7 @@ class Result(SQLModel, table=True):
     task: Task = Relationship(
         sa_relationship=RelationshipProperty("Task", back_populates="result")
     )
-    created_at: datetime = Field(default=datetime.utcnow(), nullable=False)
+    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 
 class FileBase(SQLModel):
     name: str
@@ -299,7 +299,7 @@ class File(FileBase, table=True):
     owner: User | None = Relationship(back_populates="files")
     result_id: int | None = Field(default=None, foreign_key="result.id", nullable=True)
     result: Result | None = Relationship(back_populates="files")
-    created_at: datetime = Field(default=datetime.utcnow(), nullable=False)
+    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 
 class FilePublic(FileBase):
     id: int
