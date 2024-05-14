@@ -59,11 +59,12 @@ def create_item(*, session: Session, item_in: ItemCreate, owner_id: int) -> Item
 def _save_single_file(session: Session, file_path: Path, owner_id: int) -> File:
     """Helper function to save a single file."""
     file_id = str(uuid4())
-    file_storage_location = Path(settings.STORAGE_PATH) / f"{file_id}_{file_path.name}"
+    file_name = file_path.name.replace(" ", "_")
+    file_storage_location = Path(settings.STORAGE_PATH) / f"{file_id}_{file_name}"
     with open(file_storage_location, "wb") as fdst, open(file_path, "rb") as fsrc:
         shutil.copyfileobj(fsrc, fdst)
     file_metadata = File(
-        name=file_path.name,
+        name=file_name,
         owner_id=owner_id,
         location=str(file_storage_location),
     )

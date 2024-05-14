@@ -10,6 +10,7 @@ from sqlmodel import func, select
 
 from app.api.deps import CurrentUser, SessionDep
 from app.models import File, FilePublic, FilesPublic, Message
+from app.crud import save_file
 
 router = APIRouter()
 
@@ -47,22 +48,11 @@ async def upload_file(
     """
     Upload a new file.
     """
-    file_id = str(uuid4())
-    file_location = f"storage/{file_id}_{file.filename}"
-    try:
-        with open(file_location, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-        file_metadata = File(
-            name=file.filename,
-            owner_id=current_user.id,
-            location=file_location,
-        )
-        session.add(file_metadata)
-        session.commit()
-        session.refresh(file_metadata)
-    except Exception as e:
-        os.remove(file_location)
-        raise HTTPException(status_code=500, detail="Failed to upload file")
+    file_metadata = save_file(
+        session=session,
+        file_path=Path(file.file),
+        owner_id=current_user.id
+    )
     return file_metadata
 
 @router.get("/{id}", response_model=FilePublic)
