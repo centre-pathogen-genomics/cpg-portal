@@ -769,8 +769,131 @@ id,
 requestBody,
 } = data;
 		return __request(OpenAPI, {
-			method: 'PUT',
-			url: '/api/v1/items/{id}',
+			method: 'GET',
+			url: '/api/v1/files/{id}/download',
+			path: {
+				id
+			},
+			errors: {
+				422: `Validation Error`,
+			},
+		});
+	}
+
+}
+
+export type TDataReadTasks = {
+                limit?: number
+orderBy?: string
+skip?: number
+                
+            }
+export type TDataReadActiveTasks = {
+                limit?: number
+skip?: number
+                
+            }
+export type TDataReadTask = {
+                id: number
+                
+            }
+export type TDataDeleteTask = {
+                id: number
+                
+            }
+export type TDataCancelTask = {
+                id: number
+                
+            }
+
+export class TasksService {
+
+	/**
+	 * Read Tasks
+	 * Retrieve tasks with optional ordering.
+	 * @returns TasksPublic Successful Response
+	 * @throws ApiError
+	 */
+	public static readTasks(data: TDataReadTasks = {}): CancelablePromise<TasksPublic> {
+		const {
+limit = 100,
+orderBy = '-created_at',
+skip = 0,
+} = data;
+		return __request(OpenAPI, {
+			method: 'GET',
+			url: '/api/v1/tasks/',
+			query: {
+				skip, limit, order_by: orderBy
+			},
+			errors: {
+				422: `Validation Error`,
+			},
+		});
+	}
+
+	/**
+	 * Delete Tasks
+	 * Delete all inactive tasks.
+	 * @returns Message Successful Response
+	 * @throws ApiError
+	 */
+	public static deleteTasks(): CancelablePromise<Message> {
+				return __request(OpenAPI, {
+			method: 'DELETE',
+			url: '/api/v1/tasks/',
+		});
+	}
+
+	/**
+	 * Cancel Tasks
+	 * Cancel all active tasks with status pending or running.
+	 * @returns Message Successful Response
+	 * @throws ApiError
+	 */
+	public static cancelTasks(): CancelablePromise<Message> {
+				return __request(OpenAPI, {
+			method: 'PATCH',
+			url: '/api/v1/tasks/cancel',
+		});
+	}
+
+	/**
+	 * Read Active Tasks
+	 * Retrieve active tasks with status pending or running.
+	 * @returns TasksPublic Successful Response
+	 * @throws ApiError
+	 */
+	public static readActiveTasks(data: TDataReadActiveTasks = {}): CancelablePromise<TasksPublic> {
+		const {
+limit = 100,
+skip = 0,
+} = data;
+		return __request(OpenAPI, {
+			method: 'GET',
+			url: '/api/v1/tasks/active',
+			query: {
+				skip, limit
+			},
+			errors: {
+				422: `Validation Error`,
+			},
+		});
+	}
+
+	/**
+	 * Read Task
+	 * Retrieve task metadata.
+	 * @returns TaskPublicWithResult Successful Response
+	 * @throws ApiError
+	 */
+	public static readTask(data: TDataReadTask): CancelablePromise<TaskPublicWithResult> {
+		const {
+id,
+} = data;
+		return __request(OpenAPI, {
+			method: 'GET',
+			url: '/api/v1/tasks/{id}',
 			path: {
 				id
 			},

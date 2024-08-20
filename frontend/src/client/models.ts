@@ -265,7 +265,7 @@ export type TaskPublic = {
 	taskiq_id: string;
 	id: number;
 	owner_id: number;
-	workflow_id: number;
+	workflow: WorkflowMinimalPublic;
 	status: TaskStatus;
 	created_at: string;
 	started_at: string | null;
@@ -278,7 +278,7 @@ export type TaskPublicWithResult = {
 	taskiq_id: string;
 	id: number;
 	owner_id: number;
-	workflow_id: number;
+	workflow: WorkflowMinimalPublic;
 	status: TaskStatus;
 	created_at: string;
 	started_at: string | null;

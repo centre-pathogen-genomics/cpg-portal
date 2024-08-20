@@ -204,6 +204,442 @@ export const $NewPassword = {
 	},
 } as const;
 
+export const $Param = {
+	properties: {
+		name: {
+	type: 'string',
+	isRequired: true,
+},
+		description: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+}, {
+	type: 'null',
+}],
+},
+		param_type: {
+	type: 'ParamType',
+	isRequired: true,
+},
+		default: {
+	type: 'any-of',
+	contains: [{
+	type: 'number',
+}, {
+	type: 'number',
+}, {
+	type: 'string',
+}, {
+	type: 'boolean',
+}, {
+	type: 'null',
+}],
+},
+		options: {
+	type: 'array',
+	contains: {
+	type: 'string',
+},
+},
+		flag: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+}, {
+	type: 'null',
+}],
+},
+		required: {
+	type: 'boolean',
+	default: false,
+},
+		id: {
+	type: 'any-of',
+	contains: [{
+	type: 'number',
+}, {
+	type: 'null',
+}],
+},
+		workflow_id: {
+	type: 'any-of',
+	contains: [{
+	type: 'number',
+}, {
+	type: 'null',
+}],
+},
+	},
+} as const;
+
+export const $ParamCreate = {
+	properties: {
+		name: {
+	type: 'string',
+	isRequired: true,
+},
+		description: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+}, {
+	type: 'null',
+}],
+},
+		param_type: {
+	type: 'ParamType',
+	isRequired: true,
+},
+		default: {
+	type: 'any-of',
+	contains: [{
+	type: 'number',
+}, {
+	type: 'number',
+}, {
+	type: 'string',
+}, {
+	type: 'boolean',
+}],
+	isRequired: true,
+},
+		options: {
+	type: 'any-of',
+	contains: [{
+	type: 'array',
+	contains: {
+	type: 'string',
+},
+}, {
+	type: 'null',
+}],
+},
+		flag: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+}, {
+	type: 'null',
+}],
+},
+		required: {
+	type: 'boolean',
+	default: false,
+},
+	},
+} as const;
+
+export const $ParamPublic = {
+	properties: {
+		name: {
+	type: 'string',
+	isRequired: true,
+},
+		description: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+}, {
+	type: 'null',
+}],
+},
+		param_type: {
+	type: 'ParamType',
+	isRequired: true,
+},
+		default: {
+	type: 'any-of',
+	contains: [{
+	type: 'number',
+}, {
+	type: 'number',
+}, {
+	type: 'string',
+}, {
+	type: 'boolean',
+}],
+	isRequired: true,
+},
+		options: {
+	type: 'any-of',
+	contains: [{
+	type: 'array',
+	contains: {
+	type: 'string',
+},
+}, {
+	type: 'null',
+}],
+},
+		flag: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+}, {
+	type: 'null',
+}],
+},
+		required: {
+	type: 'boolean',
+	default: false,
+},
+		id: {
+	type: 'number',
+	isRequired: true,
+},
+		workflow_id: {
+	type: 'number',
+	isRequired: true,
+},
+	},
+} as const;
+
+export const $ParamType = {
+	type: 'Enum',
+	enum: ['str','int','float','bool','enum','file',],
+} as const;
+
+export const $ParamUpdate = {
+	properties: {
+		name: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+}, {
+	type: 'null',
+}],
+},
+		description: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+}, {
+	type: 'null',
+}],
+},
+		param_type: {
+	type: 'any-of',
+	contains: [{
+	type: 'ParamType',
+}, {
+	type: 'null',
+}],
+},
+		default: {
+	type: 'any-of',
+	contains: [{
+	type: 'number',
+}, {
+	type: 'number',
+}, {
+	type: 'string',
+}, {
+	type: 'boolean',
+}, {
+	type: 'null',
+}],
+},
+		options: {
+	type: 'any-of',
+	contains: [{
+	type: 'array',
+	contains: {
+	type: 'string',
+},
+}, {
+	type: 'null',
+}],
+},
+		flag: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+}, {
+	type: 'null',
+}],
+},
+		required: {
+	type: 'any-of',
+	contains: [{
+	type: 'boolean',
+}, {
+	type: 'null',
+}],
+},
+	},
+} as const;
+
+export const $ResultPublicWithFiles = {
+	properties: {
+		id: {
+	type: 'number',
+	isRequired: true,
+},
+		results: {
+	type: 'any-of',
+	contains: [{
+	type: 'dictionary',
+	contains: {
+	properties: {
+	},
+},
+}, {
+	type: 'null',
+}],
+},
+		files: {
+	type: 'array',
+	contains: {
+		type: 'FilePublic',
+	},
+	default: [],
+},
+		owner_id: {
+	type: 'number',
+	isRequired: true,
+},
+		task_id: {
+	type: 'number',
+	isRequired: true,
+},
+		created_at: {
+	type: 'string',
+	isRequired: true,
+	format: 'date-time',
+},
+	},
+} as const;
+
+export const $TaskPublic = {
+	properties: {
+		taskiq_id: {
+	type: 'string',
+	isRequired: true,
+},
+		id: {
+	type: 'number',
+	isRequired: true,
+},
+		owner_id: {
+	type: 'number',
+	isRequired: true,
+},
+		workflow: {
+	type: 'WorkflowMinimalPublic',
+	isRequired: true,
+},
+		status: {
+	type: 'TaskStatus',
+	isRequired: true,
+},
+		created_at: {
+	type: 'string',
+	isRequired: true,
+	format: 'date-time',
+},
+		started_at: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+	format: 'date-time',
+}, {
+	type: 'null',
+}],
+	isRequired: true,
+},
+		finished_at: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+	format: 'date-time',
+}, {
+	type: 'null',
+}],
+	isRequired: true,
+},
+	},
+} as const;
+
+export const $TaskPublicWithResult = {
+	properties: {
+		taskiq_id: {
+	type: 'string',
+	isRequired: true,
+},
+		id: {
+	type: 'number',
+	isRequired: true,
+},
+		owner_id: {
+	type: 'number',
+	isRequired: true,
+},
+		workflow: {
+	type: 'WorkflowMinimalPublic',
+	isRequired: true,
+},
+		status: {
+	type: 'TaskStatus',
+	isRequired: true,
+},
+		created_at: {
+	type: 'string',
+	isRequired: true,
+	format: 'date-time',
+},
+		started_at: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+	format: 'date-time',
+}, {
+	type: 'null',
+}],
+	isRequired: true,
+},
+		finished_at: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+	format: 'date-time',
+}, {
+	type: 'null',
+}],
+	isRequired: true,
+},
+		result: {
+	type: 'any-of',
+	contains: [{
+	type: 'ResultPublicWithFiles',
+}, {
+	type: 'null',
+}],
+},
+	},
+} as const;
+
+export const $TaskStatus = {
+	type: 'Enum',
+	enum: ['pending','running','completed','failed','cancelled',],
+} as const;
+
+export const $TasksPublic = {
+	properties: {
+		data: {
+	type: 'array',
+	contains: {
+		type: 'TaskPublic',
+	},
+	isRequired: true,
+},
+		count: {
+	type: 'number',
+	isRequired: true,
+},
+	},
+} as const;
+
 export const $Token = {
   properties: {
     access_token: {
@@ -453,6 +889,325 @@ export const $ValidationError = {
 },
 		type: {
 	type: 'string',
+	isRequired: true,
+},
+	},
+} as const;
+
+export const $WorkflowCreateWithParams = {
+	properties: {
+		name: {
+	type: 'string',
+	isRequired: true,
+},
+		description: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+}, {
+	type: 'null',
+}],
+},
+		image: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+}, {
+	type: 'null',
+}],
+},
+		command: {
+	type: 'array',
+	contains: {
+	type: 'string',
+},
+	isRequired: true,
+},
+		setup_command: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+}, {
+	type: 'null',
+}],
+},
+		target_files: {
+	type: 'any-of',
+	contains: [{
+	type: 'array',
+	contains: {
+	type: 'string',
+},
+}, {
+	type: 'null',
+}],
+},
+		json_results_file: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+}, {
+	type: 'null',
+}],
+},
+		enabled: {
+	type: 'boolean',
+	default: true,
+},
+		params: {
+	type: 'array',
+	contains: {
+		type: 'ParamCreate',
+	},
+	default: [],
+},
+	},
+} as const;
+
+export const $WorkflowMinimalPublic = {
+	properties: {
+		id: {
+	type: 'number',
+	isRequired: true,
+},
+		name: {
+	type: 'string',
+	isRequired: true,
+},
+	},
+} as const;
+
+export const $WorkflowPublic = {
+	properties: {
+		name: {
+	type: 'string',
+	isRequired: true,
+},
+		description: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+}, {
+	type: 'null',
+}],
+},
+		image: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+}, {
+	type: 'null',
+}],
+},
+		command: {
+	type: 'array',
+	contains: {
+	type: 'string',
+},
+	isRequired: true,
+},
+		setup_command: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+}, {
+	type: 'null',
+}],
+},
+		target_files: {
+	type: 'any-of',
+	contains: [{
+	type: 'array',
+	contains: {
+	type: 'string',
+},
+}, {
+	type: 'null',
+}],
+},
+		json_results_file: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+}, {
+	type: 'null',
+}],
+},
+		enabled: {
+	type: 'boolean',
+	default: true,
+},
+		id: {
+	type: 'number',
+	isRequired: true,
+},
+		owner_id: {
+	type: 'number',
+	isRequired: true,
+},
+	},
+} as const;
+
+export const $WorkflowPublicWithParams = {
+	properties: {
+		name: {
+	type: 'string',
+	isRequired: true,
+},
+		description: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+}, {
+	type: 'null',
+}],
+},
+		image: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+}, {
+	type: 'null',
+}],
+},
+		command: {
+	type: 'array',
+	contains: {
+	type: 'string',
+},
+	isRequired: true,
+},
+		setup_command: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+}, {
+	type: 'null',
+}],
+},
+		target_files: {
+	type: 'any-of',
+	contains: [{
+	type: 'array',
+	contains: {
+	type: 'string',
+},
+}, {
+	type: 'null',
+}],
+},
+		json_results_file: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+}, {
+	type: 'null',
+}],
+},
+		enabled: {
+	type: 'boolean',
+	default: true,
+},
+		id: {
+	type: 'number',
+	isRequired: true,
+},
+		owner_id: {
+	type: 'number',
+	isRequired: true,
+},
+		params: {
+	type: 'array',
+	contains: {
+		type: 'ParamPublic',
+	},
+	isRequired: true,
+},
+	},
+} as const;
+
+export const $WorkflowUpdate = {
+	properties: {
+		name: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+}, {
+	type: 'null',
+}],
+},
+		description: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+}, {
+	type: 'null',
+}],
+},
+		image: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+}, {
+	type: 'null',
+}],
+},
+		command: {
+	type: 'any-of',
+	contains: [{
+	type: 'array',
+	contains: {
+	type: 'string',
+},
+}, {
+	type: 'null',
+}],
+},
+		setup_command: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+}, {
+	type: 'null',
+}],
+},
+		target_files: {
+	type: 'any-of',
+	contains: [{
+	type: 'array',
+	contains: {
+	type: 'string',
+},
+}, {
+	type: 'null',
+}],
+},
+		json_results_file: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+}, {
+	type: 'null',
+}],
+},
+		enabled: {
+	type: 'boolean',
+	default: true,
+},
+	},
+} as const;
+
+export const $WorkflowsPublicWithParams = {
+	properties: {
+		data: {
+	type: 'array',
+	contains: {
+		type: 'WorkflowPublicWithParams',
+	},
+	isRequired: true,
+},
+		count: {
+	type: 'number',
 	isRequired: true,
 },
 	},
