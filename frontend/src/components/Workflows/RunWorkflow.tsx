@@ -1,5 +1,6 @@
 import {
   Button,
+  Checkbox,
   FormControl,
   FormErrorMessage,
   FormLabel,
@@ -11,73 +12,90 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
-} from "@chakra-ui/react";
-import { Select } from "chakra-react-select";
+} from "@chakra-ui/react"
+import { Select } from "chakra-react-select"
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useForm, SubmitHandler } from "react-hook-form";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { type SubmitHandler, useForm } from "react-hook-form"
 
-import { WorkflowsService, type Param, type TDataRunWorkflow } from "../../client";
-import useCustomToast from "../../hooks/useCustomToast";
+import { FilesService, type Param, WorkflowsService } from "../../client"
+import useCustomToast from "../../hooks/useCustomToast"
 
 interface RunWorkflowProps {
-  isOpen: boolean;
-  onClose: () => void;
-  workflowId: number;
+  isOpen: boolean
+  onClose: () => void
+  workflowId: number
 }
 
 const RunWorkflow = ({ isOpen, onClose, workflowId }: RunWorkflowProps) => {
-  const queryClient = useQueryClient();
-  const showToast = useCustomToast();
+  const queryClient = useQueryClient()
+  const showToast = useCustomToast()
 
   const { data: params, isLoading } = useQuery({
     queryKey: ["workflowParams", workflowId],
-    queryFn: () => 
-      WorkflowsService.readWorkflowParams({ workflowId })
-  });
+    queryFn: () => WorkflowsService.readWorkflowParams({ workflowId }),
+  })
+
+  const { data: files } = useQuery({
+    queryKey: ["files"],
+    queryFn: () =>
+      FilesService.readFiles().then((data) =>
+        data.data.map((file) => ({ label: file.name, value: file.id })),
+      ),
+  })
 
   // Initialize default values
   const defaultValues = params?.reduce((acc, param) => {
-    acc[param.name] = param.default;
-    return acc;
-  }, {});
+    acc[param.name] = param.default
+    return acc
+  }, {} as Record<string, any>) ?? {}
+
+  
+  interface FormData {
+    [key: string]: any;
+  }
 
   // Form initialization with default values
   const {
     register,
     handleSubmit,
     reset,
+    setValue, // Add setValue here
     formState: { errors, isSubmitting },
-  } = useForm({
+  } = useForm<FormData>({
     mode: "onBlur",
     criteriaMode: "all",
     defaultValues,
-  });
+  })
 
   // Reset the form with initial values on params change
-  
   const mutation = useMutation({
-    mutationFn: (data: Record<string, unknown>) => WorkflowsService.runWorkflow({
-      requestBody: data,
-      workflowId
-    }),
+    mutationFn: (data: Record<string, unknown>) =>
+      WorkflowsService.runWorkflow({
+        requestBody: data,
+        workflowId,
+      }),
     onSuccess: (task) => {
-      showToast("Success!", `Workflow run successfully. Task ID: ${task.id}`, "success");
-      onClose();
+      showToast(
+        "Success!",
+        `Workflow run successfully. Task ID: ${task.id}`,
+        "success",
+      )
+      onClose()
     },
     onError: (error) => {
-      showToast("Error", error.message, "error");
+      showToast("Error", error.message, "error")
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['workflowRuns']});
+      queryClient.invalidateQueries({ queryKey: ["workflowRuns"] })
     },
-  });
+  })
 
   const onSubmit: SubmitHandler<any> = (formData) => {
-    mutation.mutate({ ...formData });
-  };
+    mutation.mutate({ ...formData })
+  }
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <div>Loading...</div>
 
   return (
     <>
@@ -88,7 +106,11 @@ const RunWorkflow = ({ isOpen, onClose, workflowId }: RunWorkflowProps) => {
           <ModalCloseButton />
           <ModalBody pb={6}>
             {params?.map((param: Param) => (
-              <FormControl key={param.id} isRequired={param.required} isInvalid={errors[param.name]}>
+              <FormControl
+                key={param.id}
+                isRequired={param.required}
+                isInvalid={errors[param.name] !==  undefined}
+              >
                 <FormLabel htmlFor={param.name}>{param.name}</FormLabel>
                 {param.param_type === "str" && (
                   <Input
@@ -112,25 +134,74 @@ const RunWorkflow = ({ isOpen, onClose, workflowId }: RunWorkflowProps) => {
                     type="number"
                   />
                 )}
+                {param.param_type === "float" && (
+                  <Input
+                    id={param.name}
+                    {...register(param.name, {
+                      required: param.required ? "Required" : false,
+                      valueAsNumber: true,
+                    })}
+                    placeholder={param.description || param.name}
+                    defaultValue={param.default as number}
+                    type="number"
+                    step="0.01"
+                  />
+                )}
                 {param.param_type === "enum" && (
-                <Select
-                  id={param.name}
-                  options={param.options?.map((option) => ({
-                    label: option, // Assuming that the label is the same as the value
-                    value: option,
-                  }))}
-                  placeholder={param.description || "Select an option"}
-                  defaultValue={param.default ? { label: param.default, value: param.default } : undefined}
-                  isMulti={false} // Set true if multiple selections are allowed
-                  onChange={(selectedOption) => register(param.name, {
-                    required: param.required ? "Required" : false,
-                    value: selectedOption ? selectedOption.value : ""
-                  })}
-                  selectedOptionStyle="check" // Optional: customize the selected option style
-                />
-              )}
+                  <Select
+                    id={param.name}
+                    options={param.options?.map((option) => ({
+                      label: option, // Assuming that the label is the same as the value
+                      value: option,
+                    }))}
+                    placeholder={param.description || "Select an option"}
+                    defaultValue={
+                      param.default
+                        ? { label: param.default, value: param.default }
+                        : undefined
+                    }
+                    isMulti={false} // Set true if multiple selections are allowed
+                    onChange={(selectedOption) => {
+                      setValue(
+                        param.name,
+                        selectedOption ? selectedOption.value : "",
+                      ) // Update setValue
+                    }}
+                    selectedOptionStyle="check" // Optional: customize the selected option style
+                  />
+                )}
+                {param.param_type === "bool" && (
+                  <Checkbox
+                    id={param.name}
+                    {...register(param.name, {
+                      required: param.required ? "Required" : false,
+                    })}
+                    defaultChecked={param.default as boolean}
+                  >
+                    {param.description || param.name}
+                  </Checkbox>
+                )}
+                {param.param_type === "file" && (
+                  <Select // File input is a select with multiple selections
+                    id={param.name}
+                    options={files}
+                    placeholder={param.description || "Select a file"}
+                    isMulti={false}
+                    onChange={(selectedOption) => {
+                      setValue(
+                        param.name,
+                        selectedOption ? selectedOption.value : "",
+                      ) // Update setValue
+                    }}
+                    selectedOptionStyle="check" // Optional: customize the selected option style
+                  />
+                )}
 
-                {errors[param.name] && <FormErrorMessage>{errors[param.name].message}</FormErrorMessage>}
+                {errors[param.name] && (
+                  <FormErrorMessage>
+                    {errors[param.name]?.message as React.ReactNode}
+                  </FormErrorMessage>
+                )}
               </FormControl>
             ))}
           </ModalBody>
@@ -138,13 +209,15 @@ const RunWorkflow = ({ isOpen, onClose, workflowId }: RunWorkflowProps) => {
             <Button variant="primary" type="submit" isLoading={isSubmitting}>
               Start Workflow
             </Button>
-            <Button onClick={onClose} variant='outline'>Cancel</Button>
+            <Button onClick={onClose} variant="outline">
+              Cancel
+            </Button>
             <Button onClick={() => reset(defaultValues)}>Reset</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
     </>
-  );
-};
+  )
+}
 
-export default RunWorkflow;
+export default RunWorkflow

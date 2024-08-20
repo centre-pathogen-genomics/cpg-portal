@@ -11,17 +11,16 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import React from "react"
 import { useForm } from "react-hook-form"
 
-import { TasksService, UsersService } from "../../client"
+import { TasksService } from "../../client" // Ensure you have the TasksService correctly set up
 import useCustomToast from "../../hooks/useCustomToast"
 
-interface DeleteProps {
-  type: string
+interface CancelProps {
   id: number
   isOpen: boolean
   onClose: () => void
 }
 
-const Delete = ({ type, id, isOpen, onClose }: DeleteProps) => {
+const Cancel = ({ id, isOpen, onClose }: CancelProps) => {
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
   const cancelRef = React.useRef<HTMLButtonElement | null>(null)
@@ -30,40 +29,26 @@ const Delete = ({ type, id, isOpen, onClose }: DeleteProps) => {
     formState: { isSubmitting },
   } = useForm()
 
-  const deleteEntity = async (id: number) => {
-    console.log("Deleting entity with id: ", id)
-
-    if (type === "User") {
-      await UsersService.deleteUser({ userId: id })
-    } else if (type === "Task") {
-      console.log("Deleting task with id: ", id)
-
-      await TasksService.deleteTask({ id: id })
-    } else {
-      throw new Error(`Unexpected type: ${type}`)
-    }
+  const cancelTask = async (id: number) => {
+    await TasksService.cancelTask({ id: id }) // Use the cancelTask method
   }
 
   const mutation = useMutation({
-    mutationFn: deleteEntity,
+    mutationFn: cancelTask,
     onSuccess: () => {
-      showToast(
-        "Success",
-        `The ${type.toLowerCase()} was deleted successfully.`,
-        "success",
-      )
+      showToast("Success", "The task was cancelled successfully.", "success")
       onClose()
     },
     onError: () => {
       showToast(
         "An error occurred.",
-        `An error occurred while deleting the ${type.toLowerCase()}.`,
+        "An error occurred while cancelling the task.",
         "error",
       )
     },
     onSettled: () => {
       queryClient.invalidateQueries({
-        queryKey: [`${type.toLowerCase()}s`],
+        queryKey: ["tasks"], // Invalidate queries related to tasks
       })
     },
   })
@@ -83,30 +68,21 @@ const Delete = ({ type, id, isOpen, onClose }: DeleteProps) => {
       >
         <AlertDialogOverlay>
           <AlertDialogContent as="form" onSubmit={handleSubmit(onSubmit)}>
-            <AlertDialogHeader>
-              Delete {type} ({id})
-            </AlertDialogHeader>
-
+            <AlertDialogHeader>Cancel Task</AlertDialogHeader>
             <AlertDialogBody>
-              {type === "User" && (
-                <span>
-                  All items associated with this user will also be{" "}
-                  <strong>permantly deleted. </strong>
-                </span>
-              )}
-              Are you sure? You will not be able to undo this action.
+              Are you sure you want to cancel this task? This action cannot be
+              undone.
             </AlertDialogBody>
-
             <AlertDialogFooter gap={3}>
               <Button variant="danger" type="submit" isLoading={isSubmitting}>
-                Delete
+                Cancel Task
               </Button>
               <Button
                 ref={cancelRef}
                 onClick={onClose}
                 isDisabled={isSubmitting}
               >
-                Cancel
+                Close
               </Button>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -116,4 +92,4 @@ const Delete = ({ type, id, isOpen, onClose }: DeleteProps) => {
   )
 }
 
-export default Delete
+export default Cancel

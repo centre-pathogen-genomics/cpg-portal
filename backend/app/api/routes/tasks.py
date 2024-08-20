@@ -42,11 +42,11 @@ def read_tasks(
 
     # Build the query based on user role
     query_base = select(Task).where(Task.owner_id == current_user.id) if not current_user.is_superuser else select(Task)
-    
+
     # Apply ordering, pagination and execute
     tasks_query = query_base.order_by(order_expression).offset(skip).limit(limit)
     tasks = session.exec(tasks_query).all()
-    
+
     # Counting for pagination
     count_query = select(func.count()).select_from(Task).where(Task.owner_id == current_user.id) if not current_user.is_superuser else select(func.count()).select_from(Task)
     count = session.exec(count_query).one()

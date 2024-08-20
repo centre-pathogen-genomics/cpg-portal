@@ -37,36 +37,6 @@ export type HTTPValidationError = {
 
 
 
-export type ItemCreate = {
-	title: string;
-	description?: string | null;
-};
-
-
-
-export type ItemPublic = {
-	title: string;
-	description?: string | null;
-	id: number;
-	owner_id: number;
-};
-
-
-
-export type ItemUpdate = {
-	title?: string | null;
-	description?: string | null;
-};
-
-
-
-export type ItemsPublic = {
-	data: Array<ItemPublic>;
-	count: number;
-};
-
-
-
 export type Message = {
 	message: string;
 };
@@ -151,7 +121,7 @@ export type TaskPublic = {
 	taskiq_id: string;
 	id: number;
 	owner_id: number;
-	workflow_id: number;
+	workflow: WorkflowMinimalPublic;
 	status: TaskStatus;
 	created_at: string;
 	started_at: string | null;
@@ -164,7 +134,7 @@ export type TaskPublicWithResult = {
 	taskiq_id: string;
 	id: number;
 	owner_id: number;
-	workflow_id: number;
+	workflow: WorkflowMinimalPublic;
 	status: TaskStatus;
 	created_at: string;
 	started_at: string | null;
@@ -268,7 +238,14 @@ export type WorkflowCreateWithParams = {
 	target_files?: Array<string> | null;
 	json_results_file?: string | null;
 	enabled?: boolean;
-	params?: ParamCreate;
+	params?: Array<ParamCreate>;
+};
+
+
+
+export type WorkflowMinimalPublic = {
+	id: number;
+	name: string;
 };
 
 

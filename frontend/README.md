@@ -78,6 +78,10 @@ But it would be only to clean them up, leaving them won't really have any effect
 
 * Download the OpenAPI JSON file from `http://localhost/api/v1/openapi.json` and copy it to a new file `openapi.json` at the root of the `frontend` directory.
 
+```bash
+wget http://localhost/api/v1/openapi.json -O openapi.json
+```
+
 * To simplify the names in the generated frontend client code, modify the `openapi.json` file by running the following script:
 
 ```bash

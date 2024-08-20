@@ -19,7 +19,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import { Suspense } from "react"
 import { type UserPublic, UsersService } from "../../client"
 import ActionsMenu from "../../components/Common/ActionsMenu"
-import Navbar from "../../components/Common/Navbar"
+import Navbar from "../../components/Common/Addbar"
 
 export const Route = createFileRoute("/_layout/admin")({
   component: Admin,
@@ -64,7 +64,7 @@ const MembersTableBody = () => {
             <ActionsMenu
               type="User"
               value={user}
-              disabled={currentUser?.id === user.id ? true : false}
+              disabled={currentUser?.id === user.id}
             />
           </Td>
         </Tr>

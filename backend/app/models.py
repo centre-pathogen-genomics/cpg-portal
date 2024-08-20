@@ -222,7 +222,7 @@ class ParamPublic(ParamBase):
 
 
 class WorkflowCreateWithParams(WorkflowCreate):
-    params: ParamCreate = []
+    params: list[ParamCreate] = []
 
 
 class WorkflowPublicWithParams(WorkflowPublic):

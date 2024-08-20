@@ -103,85 +103,6 @@ export const $HTTPValidationError = {
 	},
 } as const;
 
-export const $ItemCreate = {
-	properties: {
-		title: {
-	type: 'string',
-	isRequired: true,
-},
-		description: {
-	type: 'any-of',
-	contains: [{
-	type: 'string',
-}, {
-	type: 'null',
-}],
-},
-	},
-} as const;
-
-export const $ItemPublic = {
-	properties: {
-		title: {
-	type: 'string',
-	isRequired: true,
-},
-		description: {
-	type: 'any-of',
-	contains: [{
-	type: 'string',
-}, {
-	type: 'null',
-}],
-},
-		id: {
-	type: 'number',
-	isRequired: true,
-},
-		owner_id: {
-	type: 'number',
-	isRequired: true,
-},
-	},
-} as const;
-
-export const $ItemUpdate = {
-	properties: {
-		title: {
-	type: 'any-of',
-	contains: [{
-	type: 'string',
-}, {
-	type: 'null',
-}],
-},
-		description: {
-	type: 'any-of',
-	contains: [{
-	type: 'string',
-}, {
-	type: 'null',
-}],
-},
-	},
-} as const;
-
-export const $ItemsPublic = {
-	properties: {
-		data: {
-	type: 'array',
-	contains: {
-		type: 'ItemPublic',
-	},
-	isRequired: true,
-},
-		count: {
-	type: 'number',
-	isRequired: true,
-},
-	},
-} as const;
-
 export const $Message = {
 	properties: {
 		message: {
@@ -525,8 +446,8 @@ export const $TaskPublic = {
 	type: 'number',
 	isRequired: true,
 },
-		workflow_id: {
-	type: 'number',
+		workflow: {
+	type: 'WorkflowMinimalPublic',
 	isRequired: true,
 },
 		status: {
@@ -575,8 +496,8 @@ export const $TaskPublicWithResult = {
 	type: 'number',
 	isRequired: true,
 },
-		workflow_id: {
-	type: 'number',
+		workflow: {
+	type: 'WorkflowMinimalPublic',
 	isRequired: true,
 },
 		status: {
@@ -905,10 +826,24 @@ export const $WorkflowCreateWithParams = {
 	default: true,
 },
 		params: {
-	type: 'all-of',
-	contains: [{
-	type: 'ParamCreate',
-}],
+	type: 'array',
+	contains: {
+		type: 'ParamCreate',
+	},
+	default: [],
+},
+	},
+} as const;
+
+export const $WorkflowMinimalPublic = {
+	properties: {
+		id: {
+	type: 'number',
+	isRequired: true,
+},
+		name: {
+	type: 'string',
+	isRequired: true,
 },
 	},
 } as const;

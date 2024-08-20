@@ -41,17 +41,19 @@ const Sidebar = () => {
         display={{ base: "flex", md: "none" }}
         aria-label="Open Menu"
         position="absolute"
+        top="0rem"
+        right="0rem"
         fontSize="20px"
         m={4}
         icon={<FiMenu />}
       />
-      <Drawer isOpen={isOpen} placement="left" onClose={onClose}>
+      <Drawer isOpen={isOpen} placement="right" onClose={onClose}>
         <DrawerOverlay />
         <DrawerContent maxW="250px">
           <DrawerCloseButton />
           <DrawerBody py={0}>
             <Flex flexDir="column" justify="space-between">
-              <Box >
+              <Box>
                 <Image src={Logo} alt="logo" p={4} />
                 <SidebarItems onClose={onClose} />
                 <Flex
@@ -79,19 +81,12 @@ const Sidebar = () => {
       {/* Desktop */}
       <Box
         bg={bgColor}
-        p={3}
         h="100vh"
         position="sticky"
         top="0"
         display={{ base: "none", md: "flex" }}
       >
-        <Flex
-          flexDir="column"
-          justify="space-between"
-          bg={secBgColor}
-          p={4}
-          borderRadius={12}
-        >
+        <Flex flexDir="column" justify="space-between" bg={secBgColor} p={4}>
           <Box>
             <Image src={Logo} alt="Logo" w="180px" maxW="2xs" p={2} />
             <SidebarItems />

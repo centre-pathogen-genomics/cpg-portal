@@ -43,7 +43,7 @@ def read_workflows(
     return WorkflowsPublicWithParams(data=workflows, count=count)
 
 
-@router.post("/", response_model=WorkflowPublic)
+@router.post("/", response_model=WorkflowPublicWithParams)
 def create_workflow(
     *,
     session: SessionDep,
@@ -277,15 +277,14 @@ async def run_workflow(
             raise HTTPException(
                 status_code=500, detail=f"Unknown parameter type: {param.param_type}"
             )
-
     cmd = workflow.command.copy()
     # format the command with the parameters
     for part in cmd:
         for key, value in params.items():
             if f"{{{key}}}" in part:
+                print(f"Replacing {key} with {value}")
                 cmd[cmd.index(part)] = part.format(**{key: value})
 
-    print(cmd)
     # create a task
     task = Task(
         workflow_id=workflow_id,
@@ -298,7 +297,7 @@ async def run_workflow(
     session.refresh(task)
 
     # run the command
-    taskiq_task = await run_workflow_task.kiq(task.id, cmd, files=files)
+    taskiq_task = await run_workflow_task.kiq(task.id, cmd, file_ids=[file.id for file in files])
 
     task.taskiq_id = taskiq_task.task_id
     session.add(task)

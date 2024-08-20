@@ -50,18 +50,21 @@ async def run_task_in_subprocess(session: Session, task_id: int, run_command: li
         print(f"An error occurred: {e}")
         os.killpg(os.getpgid(res.pid), signal.SIGTERM)  # Ensure to kill the group on error
         raise e
-
+    if res.returncode != 0:
+        task.status = "failed"
+        session.add(task)
+        session.commit()
     return res
 
 @broker.task
 async def run_workflow(
         task_id: int,
         run_command: list[str],
-        files: list[File] | None = None,
+        file_ids: list[int] | None = None,
         session: Session = TaskiqDepends(get_db),
     ) -> bool:
-    if files is None:
-        files = []
+    if file_ids is None:
+        file_ids = []
     task: Task = session.get(Task, task_id)
     if task is None:
         return False
@@ -78,9 +81,17 @@ async def run_workflow(
     tmp_dir.mkdir(parents=True, exist_ok=True)
     # symlink the files to the tmp directory
     print(f"Symlinking files to {tmp_dir}")
-    for file in files:
-        print(f"Symlinking {file.location} to {tmp_dir / file.name}")
-        os.symlink(file.location, tmp_dir / file.name)
+    try:
+        for file_id in file_ids: # do in batches?
+            file = session.get(File, file_id)
+            print(f"Symlinking {file.location} to {tmp_dir / file.name}")
+            os.symlink(Path(file.location), tmp_dir / file.name)
+    except Exception as e:
+        print(f"Error symlinking files: {e}")
+        task.status = "failed"
+        session.add(task)
+        session.commit()
+        return False
     # Set up the workflow
     if task.workflow.setup_command:
         setup_command = task.workflow.setup_command
@@ -88,15 +99,11 @@ async def run_workflow(
                 session, task_id, setup_command, tmp_dir, shell=True
             )
         if setup_res.returncode != 0:
-            task.status = "failed"
-            session.add(task)
-            session.commit()
             return False
     # Run the workflow
     res = await run_task_in_subprocess(session, task_id, run_command, tmp_dir)
     task.finished_at = datetime.utcnow()
     if res.returncode != 0:
-        task.status = "failed"
         session.add(task)
         session.commit()
         return False
@@ -113,12 +120,20 @@ async def run_workflow(
     if task.workflow.json_results_file:
         json_results_file = tmp_dir / task.workflow.json_results_file
         if not json_results_file.exists():
+            print(f"JSON results file not found: {json_results_file}")
             task.status = "failed"
             session.add(task)
             session.commit()
             return False
         with open(json_results_file) as f:
-            results = json.load(f)
+            try:
+                results = json.load(f)
+            except json.JSONDecodeError as e:
+                print(f"Error loading JSON results file: {e}")
+                task.status = "failed"
+                session.add(task)
+                session.commit()
+                return False
     files = save_file_multiple(
         session=session,
         file_paths=target_files,
