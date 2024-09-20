@@ -39,3 +39,5 @@ COPY ./prestart.sh /app/
 COPY ./tests-start.sh /app/
 
 COPY ./app /app/app
+
+CMD ["fastapi", "run", "--workers", "4", "app/main.py"]
