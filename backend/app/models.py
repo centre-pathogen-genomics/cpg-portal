@@ -156,7 +156,7 @@ class Workflow(WorkflowBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str
     command: list[str] = Field(default_factory=list, sa_column=Column(JSON))
-    owner_id: int | None = Field(default=None, foreign_key="user.id", nullable=False)
+    owner_id: uuid.UUID | None = Field(default=None, foreign_key="user.id", nullable=False)
     owner: User | None = Relationship(back_populates="workflows")
     params: list["Param"] = Relationship(back_populates="workflow")
     tasks: list["Task"] = Relationship(back_populates="workflow")
@@ -212,7 +212,7 @@ class Param(ParamBase, table=True):
     param_type: ParamType = Field(sa_column=Column(Enum(ParamType)))
     options: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     default: int | float | str | bool | None = Field(default=None, sa_column=Column(JSON))
-    workflow_id: int | None = Field(default=None, foreign_key="workflow.id", nullable=False)
+    workflow_id: uuid.UUID | None = Field(default=None, foreign_key="workflow.id", nullable=False)
     workflow: Workflow | None = Relationship(back_populates="params")
 
 
