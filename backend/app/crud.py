@@ -1,7 +1,7 @@
 import shutil
+import uuid
 from pathlib import Path
 from typing import Any
-from uuid import uuid4
 
 from sqlmodel import Session, select
 
@@ -56,9 +56,9 @@ def create_item(*, session: Session, item_in: ItemCreate, owner_id: uuid.UUID) -
     session.refresh(db_item)
     return db_item
 
-def _save_single_file(session: Session, file_path: Path, owner_id: int) -> File:
+def _save_single_file(session: Session, file_path: Path, owner_id: uuid.UUID) -> File:
     """Helper function to save a single file."""
-    file_id = str(uuid4())
+    file_id = str(uuid.uuid4())
     file_name = file_path.name.replace(" ", "_")
     file_storage_location = Path(settings.STORAGE_PATH) / f"{file_id}_{file_name}"
     with open(file_storage_location, "wb") as fdst, open(file_path, "rb") as fsrc:
@@ -71,14 +71,14 @@ def _save_single_file(session: Session, file_path: Path, owner_id: int) -> File:
     session.add(file_metadata)
     return file_metadata
 
-def save_file(*, session: Session, file_path: Path, owner_id: int) -> File:
+def save_file(*, session: Session, file_path: Path, owner_id: uuid.UUID) -> File:
     """Save a single file and commit the session."""
     file_metadata = _save_single_file(session, file_path, owner_id)
     session.commit()
     session.refresh(file_metadata)
     return file_metadata
 
-def save_file_multiple(*, session: Session, file_paths: list[Path], owner_id: int) -> list[File]:
+def save_file_multiple(*, session: Session, file_paths: list[Path], owner_id: uuid.UUID) -> list[File]:
     """Save multiple files and commit the session after adding all files."""
     files = [_save_single_file(session, file_path, owner_id) for file_path in file_paths]
     session.commit()

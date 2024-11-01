@@ -1,3 +1,4 @@
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -182,7 +183,7 @@ def read_active_tasks(
     return TasksPublic(data=tasks, count=count)
 
 @router.get("/{id}", response_model=TaskPublicWithResult)
-def read_task(session: SessionDep, current_user: CurrentUser, id: int) -> Any:
+def read_task(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
     """
     Retrieve task metadata.
     """
@@ -195,7 +196,7 @@ def read_task(session: SessionDep, current_user: CurrentUser, id: int) -> Any:
     return task
 
 @router.patch("/{id}/cancel", response_model=TaskPublic)
-def cancel_task(session: SessionDep, current_user: CurrentUser, id: int) -> Any:
+def cancel_task(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
     """
     Cancel task.
     """
@@ -212,7 +213,7 @@ def cancel_task(session: SessionDep, current_user: CurrentUser, id: int) -> Any:
     return task
 
 @router.delete("/{id}", response_model=Message)
-def delete_task(session: SessionDep, current_user: CurrentUser, id: int) -> Any:
+def delete_task(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
     """
     Delete task.
     """

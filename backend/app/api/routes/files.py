@@ -1,9 +1,9 @@
 import os
 import shutil
+import uuid
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any
-from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, UploadFile
 from fastapi.responses import FileResponse
@@ -68,7 +68,7 @@ async def upload_file(
     return file_metadata
 
 @router.get("/{id}", response_model=FilePublic)
-def read_file(session: SessionDep, current_user: CurrentUser, id: int) -> Any:
+def read_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
     """
     Retrieve file metadata.
     """
@@ -80,7 +80,7 @@ def read_file(session: SessionDep, current_user: CurrentUser, id: int) -> Any:
     return file_metadata
 
 @router.delete("/{id}")
-def delete_file(session: SessionDep, current_user: CurrentUser, id: int) -> Any:
+def delete_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
     """
     Delete file.
     """
@@ -101,14 +101,13 @@ def delete_file(session: SessionDep, current_user: CurrentUser, id: int) -> Any:
     return Message(message="File deleted successfully")
 
 @router.get("/{id}/download")
-def download_file(session: SessionDep, id: int) -> Any:
+def download_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
     """
     Download file.
     """
     file_metadata = session.get(File, id)
     if not file_metadata:
         raise HTTPException(status_code=404, detail="File not found")
-    print("DOWNLOAD FILE SECURITY CHECK DISABLED!")
-    # if not current_user.is_superuser and (file_metadata.owner_id != current_user.id):
-    #     raise HTTPException(status_code=400, detail="Not enough permissions")
+    if not current_user.is_superuser and (file_metadata.owner_id != current_user.id):
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     return FileResponse(file_metadata.location, filename=file_metadata.name)

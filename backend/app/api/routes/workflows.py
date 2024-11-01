@@ -1,5 +1,4 @@
-import os
-import subprocess
+import uuid
 from typing import Any
 
 from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile
@@ -73,7 +72,7 @@ def create_workflow(
 
 @router.get("/{workflow_id}", response_model=WorkflowPublicWithParams)
 def read_workflow(
-    *, session: SessionDep, current_user: CurrentUser, workflow_id: int
+    *, session: SessionDep, current_user: CurrentUser, workflow_id: uuid.UUID
 ) -> Any:
     """
     Retrieve workflow by ID.
@@ -91,7 +90,7 @@ def update_workflow(
     *,
     session: SessionDep,
     current_user: CurrentUser,
-    workflow_id: int,
+    workflow_id: uuid.UUID,
     workflow_in: WorkflowUpdate,
 ) -> Any:
     """
@@ -113,7 +112,7 @@ def update_workflow(
 
 @router.get("/{workflow_id}/params", response_model=list[Param])
 def read_workflow_params(
-    *, session: SessionDep, current_user: CurrentUser, workflow_id: int
+    *, session: SessionDep, current_user: CurrentUser, workflow_id: uuid.UUID
 ) -> Any:
     """
     Retrieve workflow params by workflow ID.
@@ -131,7 +130,7 @@ def add_param_to_workflow(
     *,
     session: SessionDep,
     current_user: CurrentUser,
-    workflow_id: int,
+    workflow_id: uuid.UUID,
     param: ParamCreate,
 ) -> Any:
     """
@@ -159,8 +158,8 @@ def update_param_in_workflow(
     *,
     session: SessionDep,
     current_user: CurrentUser,
-    workflow_id: int,
-    param_id: int,
+    workflow_id: uuid.UUID,
+    param_id: uuid.UUID,
     in_param: ParamUpdate,
 ) -> Any:
     """
@@ -187,7 +186,7 @@ def update_param_in_workflow(
 
 @router.delete("/{workflow_id}/params/{param_id}", response_model=Message)
 def delete_param_from_workflow(
-    *, session: SessionDep, current_user: CurrentUser, workflow_id: int, param_id: int
+    *, session: SessionDep, current_user: CurrentUser, workflow_id: uuid.UUID, param_id: uuid.UUID
 ) -> Any:
     """
     Delete param from workflow by workflow ID and param ID.
@@ -207,7 +206,7 @@ def delete_param_from_workflow(
 
 @router.post("/{workflow_id}/run", response_model=TaskPublic)
 async def run_workflow(
-    *, session: SessionDep, current_user: CurrentUser, workflow_id: int, params: dict
+    *, session: SessionDep, current_user: CurrentUser, workflow_id: uuid.UUID, params: dict
 ) -> Any:
     """
     Run workflow by ID, validating against predefined workflow parameters.

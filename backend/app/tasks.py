@@ -4,6 +4,7 @@ import os
 import shutil
 import signal
 import subprocess
+import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Annotated, Union
@@ -20,7 +21,7 @@ from app.tkq import broker
 
 SessionDep = Annotated[Session, TaskiqDepends(get_db)]
 
-async def run_task_in_subprocess(session: Session, task_id: int, run_command: list[str] | str, tmp_dir: Path, shell: bool = False) -> subprocess.Popen:
+async def run_task_in_subprocess(session: Session, task_id: uuid.UUID, run_command: list[str] | str, tmp_dir: Path, shell: bool = False) -> subprocess.Popen:
     if isinstance(run_command, list) and shell:
         raise ValueError("Cannot use shell=True with a list command")
 
@@ -58,9 +59,9 @@ async def run_task_in_subprocess(session: Session, task_id: int, run_command: li
 
 @broker.task
 async def run_workflow(
-        task_id: int,
+        task_id: uuid.UUID,
         run_command: list[str],
-        file_ids: list[int] | None = None,
+        file_ids: list[uuid.UUID] | None = None,
         session: Session = TaskiqDepends(get_db),
     ) -> bool:
     if file_ids is None:
@@ -78,7 +79,14 @@ async def run_workflow(
     session.commit()
     # create tmp directory to run the workflow
     tmp_dir = Path(settings.TMP_PATH) / str(task_id)
-    tmp_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        tmp_dir.mkdir(parents=True, exist_ok=False)
+    except FileExistsError:
+        print(f"Task(id={task_id}) directory already exists")
+        task.status = "failed"
+        session.add(task)
+        session.commit()
+        return
     # symlink the files to the tmp directory
     print(f"Symlinking files to {tmp_dir}")
     try:
