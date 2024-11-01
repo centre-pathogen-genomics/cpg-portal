@@ -13,7 +13,7 @@ import RunWorkflowForm from "./RunWorkflowForm"
 interface RunWorkflowModalProps {
   isOpen: boolean
   onClose: () => void
-  workflowId: number
+  workflowId: string
 }
 const RunWorkflowModal = ({
   isOpen,

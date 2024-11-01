@@ -30,7 +30,7 @@ const Delete = ({ type, id, isOpen, onClose }: DeleteProps) => {
     formState: { isSubmitting },
   } = useForm()
 
-  const deleteEntity = async (id: number) => {
+  const deleteEntity = async (id: string) => {
     console.log("Deleting entity with id: ", id)
 
     if (type === "User") {

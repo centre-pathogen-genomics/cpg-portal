@@ -30,13 +30,12 @@ export const Route = createFileRoute("/_layout/tasks/$taskid")({
 
 function TaskDetail() {
   const { taskid } = Route.useParams()
-  const id = Number.parseInt(taskid, 10)
 
   // Using useSuspenseQuery for data fetching
 
   const { data: task } = useSuspenseQuery({
-    queryKey: ["task", { id }],
-    queryFn: () => TasksService.readTask({ id }),
+    queryKey: ["task", { id: taskid }],
+    queryFn: () => TasksService.readTask({ id: taskid }),
     refetchInterval: (task) => {
       return (task && task.state.data?.status === "running") ||
         task.state.data?.status === "pending"
@@ -46,7 +45,7 @@ function TaskDetail() {
     refetchIntervalInBackground: true,
   })
 
-  const handleDownload = (fileId: number) => {
+  const handleDownload = (fileId: string) => {
     const downloadUrl = `${import.meta.env.VITE_API_URL}/api/v1/files/${fileId}/download`
     window.open(downloadUrl, "_blank")
   }

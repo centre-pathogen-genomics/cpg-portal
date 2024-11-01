@@ -15,7 +15,7 @@ import { TasksService } from "../../client" // Ensure you have the TasksService 
 import useCustomToast from "../../hooks/useCustomToast"
 
 interface CancelProps {
-  id: number
+  id: string
   isOpen: boolean
   onClose: () => void
 }
@@ -29,7 +29,7 @@ const Cancel = ({ id, isOpen, onClose }: CancelProps) => {
     formState: { isSubmitting },
   } = useForm()
 
-  const cancelTask = async (id: number) => {
+  const cancelTask = async (id: string) => {
     await TasksService.cancelTask({ id: id }) // Use the cancelTask method
   }
 

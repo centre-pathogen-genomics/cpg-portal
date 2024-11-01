@@ -12,11 +12,10 @@ function Workflow() {
   const navigate = useNavigate()
 
   const { workflowid } = Route.useParams()
-  const id = Number.parseInt(workflowid, 10)
 
   const { isError, data: workflow } = useQuery({
     queryKey: ["workflow", workflowid],
-    queryFn: () => WorkflowsService.readWorkflow({ workflowId: id }),
+    queryFn: () => WorkflowsService.readWorkflow({ workflowId: workflowid }),
     retry: false,
   })
 
@@ -37,11 +36,11 @@ function Workflow() {
       <Heading size="lg">{workflow?.name}</Heading>
       <Text pb={4}>{workflow?.description}</Text>
       <RunWorkflowForm
-        workflowId={id}
+        workflowId={workflowid}
         onSuccess={(task) => {
           navigate({
-            to: `/tasks/${task.id.toString()}`,
-            params: { taskid: task.id.toString() },
+            to: `/tasks/${task.id}`,
+            params: { taskid: task.id },
             replace: false,
             resetScroll: true,
           })

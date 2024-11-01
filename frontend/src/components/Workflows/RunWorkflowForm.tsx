@@ -20,7 +20,7 @@ import {
 import useCustomToast from "../../hooks/useCustomToast"
 
 interface RunWorkflowFormProps {
-  workflowId: number
+  workflowId: string
   onSuccess?: (task: TaskPublic) => void
 }
 
