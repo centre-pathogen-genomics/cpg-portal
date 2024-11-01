@@ -39,7 +39,7 @@ const RunWorkflowForm = ({ workflowId, onSuccess }: RunWorkflowFormProps) => {
       FilesService.readFiles().then((data) =>
         data.data
           .map((file) => ({
-            label: `${file.name} (Analysis: ${file.result_id})`,
+            label: `${file.name} (Task: ${file.result_id})`,
             value: file.id,
           }))
           .reverse(),

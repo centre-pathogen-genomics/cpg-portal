@@ -7,7 +7,7 @@ import type { UserPublic } from "../../client"
 
 const items = [
   { icon: FiHome, title: "Workflows", path: "/" },
-  { icon: FiCodesandbox, title: "Analyses", path: "/tasks" },
+  { icon: FiCodesandbox, title: "Tasks", path: "/tasks" },
   // { icon: FiBriefcase, title: "Items", path: "/items" },
   { icon: FiSettings, title: "User Settings", path: "/settings" },
 ]

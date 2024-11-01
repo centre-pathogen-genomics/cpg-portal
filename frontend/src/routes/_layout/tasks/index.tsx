@@ -26,7 +26,7 @@ import TaskRuntime from "../../../components/Tasks/RunTime"
 import StatusIcon from "../../../components/Tasks/StatusIcon"
 
 export const Route = createFileRoute("/_layout/tasks/")({
-  component: Analyses,
+  component: Tasks,
 })
 
 // Custom hook to poll tasks with status "running"
@@ -163,7 +163,7 @@ function TasksTable() {
 //   )
 // }
 
-function Analyses() {
+function Tasks() {
   return (
     <Container maxW="full">
       <Heading
@@ -172,7 +172,7 @@ function Analyses() {
         pt={12}
         pb={8}
       >
-        Analyses
+        Tasks
       </Heading>
       {/* <TaskStats /> */}
       <TasksTable />

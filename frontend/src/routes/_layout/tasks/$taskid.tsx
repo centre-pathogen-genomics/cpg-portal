@@ -63,7 +63,7 @@ function TaskDetail() {
           separator={<ChevronRightIcon color="gray.500" />}
         >
           <BreadcrumbItem>
-            <BreadcrumbLink href="/tasks">Analyses</BreadcrumbLink>
+            <BreadcrumbLink href="/tasks">Tasks</BreadcrumbLink>
           </BreadcrumbItem>
 
           <BreadcrumbItem isCurrentPage>
