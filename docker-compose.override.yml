@@ -94,9 +94,9 @@ services:
 
   worker:
     restart: "no"
-    volumes:
-      - ./backend/:/app
-      - /tmp:/tmp
+    # volumes:
+    #   - ./backend/:/app
+    #   - /tmp:/tmp
     command: [ taskiq, worker, app.tkq:broker, app.tasks, -w 4, --reload ]
 
   nats:
