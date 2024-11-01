@@ -1,8 +1,6 @@
 export type Body_files_upload_file = {
-	file: Blob | File;
-};
-
-
+  file: Blob | File
+}
 
 export type Body_login_login_access_token = {
   grant_type?: string | null
@@ -14,290 +12,119 @@ export type Body_login_login_access_token = {
 }
 
 export type FilePublic = {
-	name: string;
-	id: number;
-	result_id?: number | null;
-	created_at: string;
-};
-
-
+  name: string
+  id: string
+  result_id?: string | null
+  created_at: string
+}
 
 export type FilesPublic = {
-	data: Array<FilePublic>;
-	count: number;
-};
-
-
+  data: Array<FilePublic>
+  count: number
+}
 
 export type HTTPValidationError = {
-	detail?: Array<ValidationError>;
-};
+  detail?: Array<ValidationError>
+}
 
-
-
-export type ItemCreate = {
-	title: string;
-	description?: string | null;
-};
-
-
-
-export type ItemPublic = {
-	title: string;
-	description?: string | null;
-	id: number;
-	owner_id: number;
-};
-
-
-
-export type ItemUpdate = {
-	title?: string | null;
-	description?: string | null;
-};
-
-
-
-export type ResultPublicWithFiles = {
-	id: number;
-	results?: Record<string, unknown> | null;
-	files?: Array<FilePublic>;
-	owner_id: number;
-	task_id: number;
-	created_at: string;
-};
-
-
-
-export type TaskPublic = {
-	taskiq_id: string;
-	id: number;
-	owner_id: number;
-	workflow: WorkflowMinimalPublic;
-	status: TaskStatus;
-	created_at: string;
-	started_at: string | null;
-	finished_at: string | null;
-};
-
-
+export type Message = {
+  message: string
+}
 
 export type NewPassword = {
-	token: string;
-	new_password: string;
-};
-
-
+  token: string
+  new_password: string
+}
 
 export type Param = {
-	name: string;
-	description?: string | null;
-	param_type: ParamType;
-	default?: (number | string | boolean | null);
-	options?: Array<string>;
-	flag?: string | null;
-	required?: boolean;
-	id?: number | null;
-	workflow_id?: number | null;
-};
-
-
+  name: string
+  description?: string | null
+  param_type: ParamType
+  default?: number | string | boolean | null
+  options?: Array<string>
+  flag?: string | null
+  required?: boolean
+  id?: string
+  workflow_id?: number | null
+}
 
 export type ParamCreate = {
-	name: string;
-	description?: string | null;
-	param_type: ParamType;
-	default: (number | string | boolean);
-	options?: Array<string> | null;
-	flag?: string | null;
-	required?: boolean;
-};
-
-
+  name: string
+  description?: string | null
+  param_type: ParamType
+  default: number | string | boolean
+  options?: Array<string> | null
+  flag?: string | null
+  required?: boolean
+}
 
 export type ParamPublic = {
-	name: string;
-	description?: string | null;
-	param_type: ParamType;
-	default: (number | string | boolean);
-	options?: Array<string> | null;
-	flag?: string | null;
-	required?: boolean;
-	id: number;
-	workflow_id: number;
-};
+  name: string
+  description?: string | null
+  param_type: ParamType
+  default: number | string | boolean
+  options?: Array<string> | null
+  flag?: string | null
+  required?: boolean
+  id: string
+  workflow_id: string
+}
 
-
-
-export type ParamType = 'str' | 'int' | 'float' | 'bool' | 'enum' | 'file';
-
-
+export type ParamType = "str" | "int" | "float" | "bool" | "enum" | "file"
 
 export type ParamUpdate = {
-	name?: string | null;
-	description?: string | null;
-	param_type?: ParamType | null;
-	default?: (number | string | boolean | null);
-	options?: Array<string> | null;
-	flag?: string | null;
-	required?: boolean | null;
-};
-
-
+  name?: string | null
+  description?: string | null
+  param_type?: ParamType | null
+  default?: number | string | boolean | null
+  options?: Array<string> | null
+  flag?: string | null
+  required?: boolean | null
+}
 
 export type ResultPublicWithFiles = {
-	id: number;
-	results?: Record<string, unknown> | null;
-	files?: Array<FilePublic>;
-	owner_id: number;
-	task_id: number;
-	created_at: string;
-};
-
-
+  id: string
+  results?: Record<string, unknown> | null
+  files?: Array<FilePublic>
+  owner_id: string
+  task_id: string
+  created_at: string
+}
 
 export type TaskPublic = {
-	taskiq_id: string;
-	id: number;
-	owner_id: number;
-	workflow: WorkflowMinimalPublic;
-	status: TaskStatus;
-	created_at: string;
-	started_at: string | null;
-	finished_at: string | null;
-};
-
-
+  taskiq_id: string
+  id: string
+  owner_id: string
+  workflow: WorkflowMinimalPublic
+  status: TaskStatus
+  created_at: string
+  started_at: string | null
+  finished_at: string | null
+}
 
 export type TaskPublicWithResult = {
-	taskiq_id: string;
-	id: number;
-	owner_id: number;
-	workflow: WorkflowMinimalPublic;
-	status: TaskStatus;
-	created_at: string;
-	started_at: string | null;
-	finished_at: string | null;
-	result?: ResultPublicWithFiles | null;
-};
+  taskiq_id: string
+  id: string
+  owner_id: string
+  workflow: WorkflowMinimalPublic
+  status: TaskStatus
+  created_at: string
+  started_at: string | null
+  finished_at: string | null
+  result?: ResultPublicWithFiles | null
+}
 
-
-
-export type TaskStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
-
-
-
-export type TasksPublic = {
-	data: Array<TaskPublic>;
-	count: number;
-};
-
-
-
-export type Param = {
-	name: string;
-	description?: string | null;
-	param_type: ParamType;
-	default?: (number | string | boolean | null);
-	options?: Array<string>;
-	flag?: string | null;
-	required?: boolean;
-	id?: number | null;
-	workflow_id?: number | null;
-};
-
-
-
-export type ParamCreate = {
-	name: string;
-	description?: string | null;
-	param_type: ParamType;
-	default: (number | string | boolean);
-	options?: Array<string> | null;
-	flag?: string | null;
-	required?: boolean;
-};
-
-
-
-export type ParamPublic = {
-	name: string;
-	description?: string | null;
-	param_type: ParamType;
-	default: (number | string | boolean);
-	options?: Array<string> | null;
-	flag?: string | null;
-	required?: boolean;
-	id: number;
-	workflow_id: number;
-};
-
-
-
-export type ParamType = 'str' | 'int' | 'float' | 'bool' | 'enum' | 'file';
-
-
-
-export type ParamUpdate = {
-	name?: string | null;
-	description?: string | null;
-	param_type?: ParamType | null;
-	default?: (number | string | boolean | null);
-	options?: Array<string> | null;
-	flag?: string | null;
-	required?: boolean | null;
-};
-
-
-
-export type ResultPublicWithFiles = {
-	id: number;
-	results?: Record<string, unknown> | null;
-	files?: Array<FilePublic>;
-	owner_id: number;
-	task_id: number;
-	created_at: string;
-};
-
-
-
-export type TaskPublic = {
-	taskiq_id: string;
-	id: number;
-	owner_id: number;
-	workflow: WorkflowMinimalPublic;
-	status: TaskStatus;
-	created_at: string;
-	started_at: string | null;
-	finished_at: string | null;
-};
-
-
-
-export type TaskPublicWithResult = {
-	taskiq_id: string;
-	id: number;
-	owner_id: number;
-	workflow: WorkflowMinimalPublic;
-	status: TaskStatus;
-	created_at: string;
-	started_at: string | null;
-	finished_at: string | null;
-	result?: ResultPublicWithFiles | null;
-};
-
-
-
-export type TaskStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
-
-
+export type TaskStatus =
+  | "pending"
+  | "running"
+  | "completed"
+  | "failed"
+  | "cancelled"
 
 export type TasksPublic = {
-	data: Array<TaskPublic>;
-	count: number;
-};
-
-
+  data: Array<TaskPublic>
+  count: number
+}
 
 export type Token = {
   access_token: string
@@ -350,80 +177,67 @@ export type UsersPublic = {
 }
 
 export type ValidationError = {
-	loc: Array<string | number>;
-	msg: string;
-	type: string;
-};
-
-
+  loc: Array<string | number>
+  msg: string
+  type: string
+}
 
 export type WorkflowCreateWithParams = {
-	name: string;
-	description?: string | null;
-	image?: string | null;
-	command: Array<string>;
-	setup_command?: string | null;
-	target_files?: Array<string> | null;
-	json_results_file?: string | null;
-	enabled?: boolean;
-	params?: Array<ParamCreate>;
-};
-
-
+  name: string
+  description?: string | null
+  image?: string | null
+  command: Array<string>
+  setup_command?: string | null
+  target_files?: Array<string> | null
+  json_results_file?: string | null
+  enabled?: boolean
+  params?: Array<ParamCreate>
+}
 
 export type WorkflowMinimalPublic = {
-	id: number;
-	name: string;
-};
-
-
+  id: string
+  name: string
+}
 
 export type WorkflowPublic = {
-	name: string;
-	description?: string | null;
-	image?: string | null;
-	command: Array<string>;
-	setup_command?: string | null;
-	target_files?: Array<string> | null;
-	json_results_file?: string | null;
-	enabled?: boolean;
-	id: number;
-	owner_id: number;
-};
-
-
+  name: string
+  description?: string | null
+  image?: string | null
+  command: Array<string>
+  setup_command?: string | null
+  target_files?: Array<string> | null
+  json_results_file?: string | null
+  enabled?: boolean
+  id: string
+  owner_id: string
+}
 
 export type WorkflowPublicWithParams = {
-	name: string;
-	description?: string | null;
-	image?: string | null;
-	command: Array<string>;
-	setup_command?: string | null;
-	target_files?: Array<string> | null;
-	json_results_file?: string | null;
-	enabled?: boolean;
-	id: number;
-	owner_id: number;
-	params: Array<ParamPublic>;
-};
-
-
+  name: string
+  description?: string | null
+  image?: string | null
+  command: Array<string>
+  setup_command?: string | null
+  target_files?: Array<string> | null
+  json_results_file?: string | null
+  enabled?: boolean
+  id: string
+  owner_id: string
+  params: Array<ParamPublic>
+}
 
 export type WorkflowUpdate = {
-	name?: string | null;
-	description?: string | null;
-	image?: string | null;
-	command?: Array<string> | null;
-	setup_command?: string | null;
-	target_files?: Array<string> | null;
-	json_results_file?: string | null;
-	enabled?: boolean;
-};
-
-
+  name?: string | null
+  description?: string | null
+  image?: string | null
+  command?: Array<string> | null
+  setup_command?: string | null
+  target_files?: Array<string> | null
+  json_results_file?: string | null
+  enabled?: boolean
+}
 
 export type WorkflowsPublicWithParams = {
-	data: Array<WorkflowPublicWithParams>;
-	count: number;
-};
-
+  data: Array<WorkflowPublicWithParams>
+  count: number
+}
