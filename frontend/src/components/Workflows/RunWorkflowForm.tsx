@@ -75,7 +75,7 @@ const RunWorkflowForm = ({ workflowId, onSuccess }: RunWorkflowFormProps) => {
     onSuccess: (task) => {
       showToast(
         "Success!",
-        `Workflow run successfully. Task ID: ${task.id}`,
+        `Workflow run successfully.\nTask ID: ${task.id}`,
         "success",
       )
       if (onSuccess) onSuccess(task)

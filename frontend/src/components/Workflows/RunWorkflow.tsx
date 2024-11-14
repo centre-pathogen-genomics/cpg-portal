@@ -20,11 +20,12 @@ import { type SubmitHandler, useForm } from "react-hook-form"
 
 import { FilesService, type Param, WorkflowsService } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
+import React from "react"
 
 interface RunWorkflowProps {
   isOpen: boolean
   onClose: () => void
-  workflowId: number
+  workflowId: string
 }
 
 const RunWorkflow = ({ isOpen, onClose, workflowId }: RunWorkflowProps) => {
@@ -78,7 +79,7 @@ const RunWorkflow = ({ isOpen, onClose, workflowId }: RunWorkflowProps) => {
     onSuccess: (task) => {
       showToast(
         "Success!",
-        `Workflow run successfully. Task ID: ${task.id}`,
+        `Workflow run successfully.\nTask ID: ${task.id}`,
         "success",
       )
       onClose()

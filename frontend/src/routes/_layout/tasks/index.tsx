@@ -1,11 +1,13 @@
-import { ViewIcon } from "@chakra-ui/icons"
+import { LinkIcon, ViewIcon } from "@chakra-ui/icons"
 import {
+  Badge,
   Button,
   ButtonGroup,
   Code,
   Container,
   Flex,
   Heading,
+  Link,
   Skeleton,
   Table,
   TableContainer,
@@ -13,6 +15,7 @@ import {
   Td,
   Th,
   Thead,
+  Tooltip,
   Tr,
 } from "@chakra-ui/react"
 import { useSuspenseQuery } from "@tanstack/react-query"
@@ -59,15 +62,32 @@ function TasksTableBody() {
           task, // Update task iteration
         ) => (
           <Tr key={task.taskiq_id}>
-            <Td>{task.id}</Td>
+            <Td>
+              <Tooltip placement="top" hasArrow label={task.id} bg="gray.300" color="black">
+                <Badge variant='outline' colorScheme='green'>
+                  {task.id.split("-")[0]}
+                </Badge>
+              </Tooltip>
+            </Td>
+            <Td>
+              <Link 
+                onClick={() => {
+                  navigate({
+                    to: `/workflows/${task.workflow.id.toString()}`,
+                    params: { taskid: task.id.toString() },
+                    replace: false,
+                    resetScroll: true,
+                  })
+                }}
+              >
+                {task.workflow.name}
+              </Link>
+            </Td>
             <Td>
               <StatusIcon status={task.status} />
             </Td>
             <Td>
               <TaskRuntime task={task} />
-            </Td>
-            <Td>
-              <Code>{task.workflow.name}</Code>
             </Td>
             <Td>
               <ButtonGroup size="sm">
@@ -108,9 +128,9 @@ function TasksTable() {
         <Thead>
           <Tr>
             <Th>ID</Th>
+            <Th>Workflow</Th>
             <Th>Status</Th>
             <Th>Runtime</Th>
-            <Th>Workflow</Th>
             <Th>Actions</Th>
             <Th />
           </Tr>
