@@ -1,9 +1,9 @@
 import { useSuspenseQuery } from "@tanstack/react-query"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { createFileRoute } from "@tanstack/react-router"
 import { Suspense } from "react"
 import { ErrorBoundary } from "react-error-boundary"
 import { FilesPublic, FilesService } from "../../../client" // Import updated service
-import { Button, ButtonGroup, Container, Flex, Heading, Input, InputProps, Skeleton, Table, TableContainer, Tbody, Td, Th, Thead, Tr, useMultiStyleConfig } from '@chakra-ui/react'
+import { Button, ButtonGroup, Container, Flex, Heading, Skeleton, Table, TableContainer, Tbody, Td, Th, Thead, Tr } from '@chakra-ui/react'
 import FileDropZone from "../../../components/Files/FileUploadButton"
 import DeleteFileButton from "../../../components/Files/DeleteFileButton"
 import { DownloadIcon } from "@chakra-ui/icons"

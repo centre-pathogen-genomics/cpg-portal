@@ -2,7 +2,6 @@ import { IconButton, useDisclosure } from "@chakra-ui/react"
 import { FiTrash2 } from "react-icons/fi"
 import type { FilePublic } from "../../client"
 import Delete from "../Common/DeleteAlert"
-import React from "react"
 
 interface DeleteButtonProps {
   file: FilePublic

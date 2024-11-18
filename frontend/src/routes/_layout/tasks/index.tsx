@@ -1,9 +1,8 @@
-import { LinkIcon, ViewIcon } from "@chakra-ui/icons"
+import { ViewIcon } from "@chakra-ui/icons"
 import {
   Badge,
   Button,
   ButtonGroup,
-  Code,
   Container,
   Flex,
   Heading,
