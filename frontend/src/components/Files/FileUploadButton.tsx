@@ -1,7 +1,7 @@
 import { ReactNode, useRef } from "react";
-import { Button, Icon } from "@chakra-ui/react";
+import { Button, Flex, Icon } from "@chakra-ui/react";
 import { FiFile } from "react-icons/fi";
-import { Body_files_upload_file, FilesService, TDataUploadFile } from "../../client";
+import { Body_files_upload_file, FilePublic, FilesService, TDataUploadFile } from "../../client";
 import useCustomToast from "../../hooks/useCustomToast"
 
 type FileUploadProps = {
@@ -33,7 +33,7 @@ const FileUpload = (props: FileUploadProps) => {
 };
 
 type AppProps = {
-  onUpload: () => void;
+  onUpload: (file: FilePublic) => void;
 };
 
 const App = (props: AppProps) => {
@@ -60,7 +60,7 @@ const App = (props: AppProps) => {
             `File (${response.name}) uploaded successfully!`,
             "success",
         )
-      props.onUpload();
+      props.onUpload(response);
     } catch (error) {
         showToast(
             "Error!",
@@ -72,7 +72,7 @@ const App = (props: AppProps) => {
   };
 
   return (
-    <>
+    <Flex>
       <FileUpload
         onChange={handleFileUpload} // Trigger upload directly when files are selected
       >
@@ -81,7 +81,7 @@ const App = (props: AppProps) => {
           fontSize={{ base: "sm", md: "inherit" }}
           leftIcon={<Icon as={FiFile} />}>Upload</Button>
       </FileUpload>
-    </>
+    </Flex>
   );
 };
 

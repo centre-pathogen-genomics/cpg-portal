@@ -32,7 +32,7 @@ function Workflow() {
   }
 
   return (
-    <Box maxW="lg" width="100%" mx={4} pt={12} pb={8}>
+    <Box maxW="2xl" width="100%" mx={4} pt={12} pb={8}>
       <Heading size="lg">{workflow?.name}</Heading>
       <Text pb={4}>{workflow?.description}</Text>
       <RunWorkflowForm

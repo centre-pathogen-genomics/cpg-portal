@@ -3,13 +3,16 @@ import {
   Button,
   ButtonGroup,
   Checkbox,
+  Flex,
   FormControl,
   FormErrorMessage,
   FormLabel,
+  Grid,
   Input,
 } from "@chakra-ui/react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Select } from "chakra-react-select"
+import FileDropZone from "../Files/FileUploadButton"
+import { Select, SelectInstance } from "chakra-react-select"
 import { type SubmitHandler, useForm } from "react-hook-form"
 import {
   FilesService,
@@ -18,6 +21,7 @@ import {
   WorkflowsService,
 } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
+import React from "react"
 
 interface RunWorkflowFormProps {
   workflowId: string
@@ -33,11 +37,11 @@ const RunWorkflowForm = ({ workflowId, onSuccess }: RunWorkflowFormProps) => {
     queryFn: () => WorkflowsService.readWorkflowParams({ workflowId }),
   })
 
-  const { data: files, isLoading: filesLoading } = useQuery({
+  const { data: files, isLoading: filesLoading, refetch } = useQuery({
     queryKey: ["files"],
     queryFn: () =>
-      FilesService.readFiles().then((data) =>
-        data.data
+      FilesService.readFiles().then((files) =>
+        files.data
           .map((file) => ({
             label: `${file.name} (Task: ${file.result_id})`,
             value: file.id,
@@ -45,7 +49,7 @@ const RunWorkflowForm = ({ workflowId, onSuccess }: RunWorkflowFormProps) => {
           .reverse(),
       ),
   })
-
+  const selectRef = React.createRef<SelectInstance<{label:string, value:string}>>()
   const defaultValues = params?.reduce((acc, param) => {
     acc[param.name] = param.default
     return acc
@@ -66,6 +70,7 @@ const RunWorkflowForm = ({ workflowId, onSuccess }: RunWorkflowFormProps) => {
     defaultValues,
   })
 
+  
   const mutation = useMutation({
     mutationFn: (data: Record<string, unknown>) =>
       WorkflowsService.runWorkflow({
@@ -175,19 +180,36 @@ const RunWorkflowForm = ({ workflowId, onSuccess }: RunWorkflowFormProps) => {
               </Checkbox>
             )}
             {param.param_type === "file" && (
-              <Select
-                id={param.name}
-                options={files}
-                placeholder={param.description || "Select a file"}
-                isMulti={false}
-                onChange={(selectedOption) => {
-                  setValue(
-                    param.name,
-                    selectedOption ? selectedOption.value : "",
-                  )
-                }}
-                selectedOptionStyle="check"
-              />
+             <Flex
+              gap={4}
+              direction={"column"}
+            >
+                <Select
+                  id={param.name}
+                  ref={selectRef}
+                  options={files}
+                  placeholder={param.description || "Select a file"}
+                  isMulti={false}
+                  onChange={(selectedOption) => {
+                    setValue(
+                      param.name,
+                      selectedOption ? selectedOption.value : "",
+                    )
+                  }}
+                  selectedOptionStyle="check"
+                />
+                <Flex  justifyContent={"end"}>
+                  <FileDropZone onUpload={(file) => {
+                    refetch().then(() => {
+                      selectRef.current?.setValue({value: file.id, label:file.name}, 'select-option')
+                      setValue(
+                        param.name,
+                        file.id
+                      )
+                    })
+                  }}/>
+                </Flex>
+              </Flex>
             )}
             {errors[param.name] && (
               <FormErrorMessage>
