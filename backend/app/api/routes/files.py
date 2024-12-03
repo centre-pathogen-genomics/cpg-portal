@@ -1,4 +1,3 @@
-import os
 import shutil
 import uuid
 from pathlib import Path
@@ -22,25 +21,19 @@ def read_files(
     """
     Retrieve files.
     """
-    if current_user.is_superuser:
-        count_statement = select(func.count()).select_from(File)
-        count = session.exec(count_statement).one()
-        statement = select(File).offset(skip).limit(limit)
-        files = session.exec(statement).all()
-    else:
-        count_statement = (
-            select(func.count())
-            .select_from(File)
-            .where(File.owner_id == current_user.id)
-        )
-        count = session.exec(count_statement).one()
-        statement = (
-            select(File)
-            .where(File.owner_id == current_user.id)
-            .offset(skip)
-            .limit(limit)
-        )
-        files = session.exec(statement).all()
+    count_statement = (
+        select(func.count())
+        .select_from(File)
+        .where(File.owner_id == current_user.id)
+    )
+    count = session.exec(count_statement).one()
+    statement = (
+        select(File)
+        .where(File.owner_id == current_user.id)
+        .offset(skip)
+        .limit(limit)
+    )
+    files = session.exec(statement).all()
     return FilesPublic(data=files, count=count)
 
 @router.post("/", response_model=FilePublic)
@@ -75,7 +68,7 @@ def read_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> 
     file_metadata = session.get(File, id)
     if not file_metadata:
         raise HTTPException(status_code=404, detail="File not found")
-    if not current_user.is_superuser and (file_metadata.owner_id != current_user.id):
+    if file_metadata.owner_id != current_user.id:
         raise HTTPException(status_code=400, detail="Not enough permissions")
     return file_metadata
 
@@ -87,7 +80,7 @@ def delete_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -
     file_metadata = session.get(File, id)
     if not file_metadata:
         raise HTTPException(status_code=404, detail="File not found")
-    if not current_user.is_superuser and (file_metadata.owner_id != current_user.id):
+    if file_metadata.owner_id != current_user.id:
         raise HTTPException(status_code=400, detail="Not enough permissions")
     try:
         # remove file
@@ -96,7 +89,7 @@ def delete_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -
             file_path.unlink()
         session.delete(file_metadata)
         session.commit()
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=500, detail="Failed to delete file")
     return Message(message="File deleted successfully")
 
@@ -108,6 +101,6 @@ def download_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID)
     file_metadata = session.get(File, id)
     if not file_metadata:
         raise HTTPException(status_code=404, detail="File not found")
-    if not current_user.is_superuser and (file_metadata.owner_id != current_user.id):
+    if file_metadata.owner_id != current_user.id:
         raise HTTPException(status_code=400, detail="Not enough permissions")
     return FileResponse(file_metadata.location, filename=file_metadata.name)
