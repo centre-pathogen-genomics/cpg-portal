@@ -17,7 +17,6 @@ export function PaginationFooter({
     <Flex
       gap={4}
       alignItems="center"
-      mt={4}
       direction="row"
       justifyContent="flex-end"
     >

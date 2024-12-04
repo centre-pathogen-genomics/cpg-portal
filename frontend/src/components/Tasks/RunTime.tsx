@@ -1,26 +1,31 @@
 import { useEffect, useState } from "react"
-import type { TaskPublic } from "../../client"
+
+interface TaskRuntimeProps {
+  finished_at: string | null
+  started_at: string | null
+  status: string
+}
 
 // Component that displays the runtime of a task, handling UTC time
-const TaskRuntime = ({ task }: { task: TaskPublic }) => {
+const TaskRuntime = ({ started_at, finished_at, status }: TaskRuntimeProps) => {
   const [runtime, setRuntime] = useState("...")
 
   useEffect(() => {
-    if (!task.started_at) {
+    if (!started_at) {
       setRuntime("...")
       return
     }
 
     // Initialize start time from UTC string
-    const start = new Date(`${task.started_at}Z`) // Ensure UTC by appending 'Z' if not already present
+    const start = new Date(`${started_at}Z`) // Ensure UTC by appending 'Z' if not already present
 
     let intervalId: NodeJS.Timeout | null = null
 
     const updateRuntime = () => {
       let end: Date
-      if (task.finished_at) {
-        end = new Date(`${task.finished_at}Z`) // Parse finished_at as UTC
-      } else if (task.status === "running") {
+      if (finished_at) {
+        end = new Date(`${finished_at}Z`) // Parse finished_at as UTC
+      } else if (status === "running") {
         end = new Date() // Create a Date object for the current time
         end = new Date(
           Date.UTC(
@@ -46,7 +51,7 @@ const TaskRuntime = ({ task }: { task: TaskPublic }) => {
 
     // Update runtime immediately and set an interval if the task is running
     updateRuntime()
-    if (task.status === "running") {
+    if (status === "running") {
       intervalId = setInterval(updateRuntime, 1000)
     }
 
@@ -55,7 +60,7 @@ const TaskRuntime = ({ task }: { task: TaskPublic }) => {
         clearInterval(intervalId) // Clear interval on component unmount
       }
     }
-  }, [task.started_at, task.finished_at, task.status]) // Dependencies for effect
+  }, [started_at, finished_at, status]) // Dependencies for effect
 
   return <span>{runtime}</span>
 }

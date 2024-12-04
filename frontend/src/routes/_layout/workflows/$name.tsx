@@ -4,22 +4,22 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { WorkflowsService } from "../../../client"
 import RunWorkflowForm from "../../../components/Workflows/RunWorkflowForm"
 
-export const Route = createFileRoute("/_layout/workflows/$workflowid")({
+export const Route = createFileRoute("/_layout/workflows/$name")({
   component: Workflow,
 })
 
 function Workflow() {
   const navigate = useNavigate()
 
-  const { workflowid } = Route.useParams()
+  const { name } = Route.useParams()
 
   const { isError, data: workflow } = useQuery({
-    queryKey: ["workflow", workflowid],
-    queryFn: () => WorkflowsService.readWorkflow({ workflowId: workflowid }),
+    queryKey: ["workflow", name],
+    queryFn: () => WorkflowsService.readWorkflowByName({ workflowName: name }),
     retry: false,
   })
 
-  if (isError) {
+  if (isError || !workflow) {
     return (
       <Container maxW="lg">
         <Heading>Workflow Not Found</Heading>
@@ -36,7 +36,7 @@ function Workflow() {
       <Heading size="lg">{workflow?.name}</Heading>
       <Text pb={4}>{workflow?.description}</Text>
       <RunWorkflowForm
-        workflowId={workflowid}
+        workflowId={workflow.id}
         onSuccess={(task) => {
           navigate({
             to: `/tasks/${task.id}`,

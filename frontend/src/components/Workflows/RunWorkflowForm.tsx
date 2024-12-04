@@ -19,6 +19,7 @@ import {
   type Param,
   type TaskPublic,
   WorkflowsService,
+  TasksService,
 } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
 import React from "react"
@@ -43,7 +44,7 @@ const RunWorkflowForm = ({ workflowId, onSuccess }: RunWorkflowFormProps) => {
       FilesService.readFiles().then((files) =>
         files.data
           .map((file) => ({
-            label: `${file.name} (Task: ${file.result_id})`,
+            label: `${file.name}`,
             value: file.id,
           }))
           .reverse(),
@@ -73,7 +74,7 @@ const RunWorkflowForm = ({ workflowId, onSuccess }: RunWorkflowFormProps) => {
   
   const mutation = useMutation({
     mutationFn: (data: Record<string, unknown>) =>
-      WorkflowsService.runWorkflow({
+      TasksService.createTask({
         requestBody: data,
         workflowId,
       }),

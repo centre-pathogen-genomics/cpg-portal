@@ -1,13 +1,12 @@
 import { IconButton, useDisclosure } from "@chakra-ui/react"
 import { FiX } from "react-icons/fi"
-import type { TaskPublic } from "../../client"
 import Cancel from "./CancelAlert"
 
 interface CancelButtonProps {
-  task: TaskPublic
+  task_id: string
 }
 
-const CancelTaskButton = ({ task }: CancelButtonProps) => {
+const CancelTaskButton = ({ task_id }: CancelButtonProps) => {
   const { isOpen, onOpen, onClose } = useDisclosure()
 
   return (
@@ -20,7 +19,7 @@ const CancelTaskButton = ({ task }: CancelButtonProps) => {
         variant="outline"
         size="sm"
       />
-      <Cancel id={task.id} isOpen={isOpen} onClose={onClose} />
+      <Cancel id={task_id} isOpen={isOpen} onClose={onClose} />
     </>
   )
 }

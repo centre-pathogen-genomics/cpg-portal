@@ -1,13 +1,12 @@
 import { IconButton, useDisclosure } from "@chakra-ui/react"
 import { FiTrash2 } from "react-icons/fi"
-import type { TaskPublic } from "../../client"
 import Delete from "../Common/DeleteAlert"
 
 interface DeleteButtonProps {
-  task: TaskPublic
+  task_id: string
 }
 
-const DeleteTaskButton = ({ task }: DeleteButtonProps) => {
+const DeleteTaskButton = ({ task_id }: DeleteButtonProps) => {
   const { isOpen, onOpen, onClose } = useDisclosure()
 
   return (
@@ -20,7 +19,7 @@ const DeleteTaskButton = ({ task }: DeleteButtonProps) => {
         variant="outline"
         size="sm"
       />
-      <Delete type="Task" id={task.id} isOpen={isOpen} onClose={onClose} />
+      <Delete type="Task" id={task_id} isOpen={isOpen} onClose={onClose} />
     </>
   )
 }

@@ -1,32 +1,56 @@
 import { ChevronRightIcon } from "@chakra-ui/icons"
 import {
+  Accordion,
+  AccordionButton,
+  AccordionIcon,
+  AccordionItem,
+  AccordionPanel,
   Badge,
   Box,
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
-  Button,
-  Card,
-  CardBody,
-  Center,
   Code,
   Container,
+  Flex,
   Heading,
-  SimpleGrid,
   Skeleton,
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
   Text,
 } from "@chakra-ui/react"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { Suspense } from "react"
 import { ErrorBoundary } from "react-error-boundary"
-import { FiFileText } from "react-icons/fi"
-import { TasksService } from "../../../client"
+import { ResultPublicWithFileAndTarget, TasksService } from "../../../client"
 import TaskRuntime from "../../../components/Tasks/RunTime"
+import CsvFileToTable from "../../../components/Render/CsvFileToTable"
+import JsonFile from "../../../components/Render/JsonFile"
+import CodeBlock from "../../../components/Common/CodeBlock"
+import DownloadFileButton from "../../../components/Files/DownloadFileButton"
 
 export const Route = createFileRoute("/_layout/tasks/$taskid")({
   component: Task,
 })
+
+function renderResult(result: ResultPublicWithFileAndTarget) {
+  if (result.target.display) {
+    switch (result.target.target_type) {
+      case "csv":
+      case "tsv":
+        return <CsvFileToTable fileId={result.file.id} />
+      case "json":
+        return <JsonFile fileId={result.file.id} />
+      default:
+        return <DownloadFileButton fileId={result.file.id} />
+    }
+  }
+  return null
+}
 
 function TaskDetail() {
   const { taskid } = Route.useParams()
@@ -40,14 +64,17 @@ function TaskDetail() {
       return (task && task.state.data?.status === "running") ||
         task.state.data?.status === "pending"
         ? 3000
-        : false // Poll every 5 seconds
+        : false // Poll every 3 seconds if task is running or pending
     },
     refetchIntervalInBackground: true,
   })
 
-  const handleDownload = (fileId: string) => {
-    const downloadUrl = `${import.meta.env.VITE_API_URL}/api/v1/files/${fileId}/download`
-    window.open(downloadUrl, "_blank")
+  const command = []
+  if (task?.workflow?.setup_command) {
+    command.push(task.workflow.setup_command)
+  } 
+  if (task?.command) {
+    command.push(task.command)
   }
 
   return (
@@ -77,60 +104,114 @@ function TaskDetail() {
         </Text>
         <Text>
           Status:{" "}
-          <Badge borderRadius="full" px="2" colorScheme="teal">
+          <Badge borderRadius="full" px="2" colorScheme={task.status == "failed" ? "red" :"teal"}>
             {task.status}
           </Badge>
         </Text>
         <Text>
-          Runtime: <TaskRuntime task={task} />
+          Runtime: <TaskRuntime started_at={task.started_at} finished_at={task.finished_at} status={task.status}  />
         </Text>
         <Text>Started: {task.started_at}</Text>
         <Text>Completed: {task.finished_at}</Text>
       </Box>
-      {task.result?.files && (
-        <Heading mb={2} size="lg">
-          Files: {task.result.files.length}
-        </Heading>
+      {task.results.length > 0 && (
+        <Tabs  variant="enclosed" >
+          <TabList mb='1em'>
+          {task.results?.map((result) => (
+            <>
+              {result.target.display && (
+                <Tab key={result.id}>{result.file.name}</Tab>
+              )}
+            </>
+          ))} 
+          </TabList>
+          <TabPanels>
+          {task.results?.map((result) => (
+            <>
+              {result.target.display && (
+                <TabPanel>
+                  {renderResult(result)} 
+                </TabPanel>
+              )}
+            </>
+          ))}
+          </TabPanels>
+        </Tabs>
       )}
-      <SimpleGrid
-        pb={4}
-        spacing={4}
-        templateColumns="repeat(auto-fill, minmax(400px, 1fr))"
-      >
-        {task.result?.files?.map((file) => (
-          <Card p={4} key={file.id} direction="row" borderWidth={3}>
-            <Center>
-              <FiFileText strokeWidth={1} size={60} />
-            </Center>
-            <CardBody p={0} pl={2}>
-              <Box
-                overflow="hidden"
-                textOverflow="ellipsis"
-                whiteSpace="nowrap"
-              >
-                <Heading size="md" pb={1}>
-                  {file.name}
-                </Heading>
+      <Accordion allowToggle allowMultiple mb={4}>
+        <AccordionItem>
+          <h2>
+            <AccordionButton>
+              <Box as='span' flex='1' textAlign='left'>
+                Command
               </Box>
-              <Button size="sm" mt={2} onClick={() => handleDownload(file.id)}>
-                Download
-              </Button>
-            </CardBody>
-          </Card>
-        ))}
-      </SimpleGrid>
-      {task.result?.results && (
-        <>
-          <Heading mb={2} size="lg">
-            Output
-          </Heading>
-          <Card>
-            <CardBody>
-              <Text>{JSON.stringify(task.result.results, null, 2)}</Text>
-            </CardBody>
-          </Card>
-        </>
-      )}
+              <AccordionIcon />
+            </AccordionButton>
+          </h2>
+          <AccordionPanel pb={4}>
+          { task.command ? (
+            <>
+            <CodeBlock code={command.join("\n")} language="bash" />
+
+            </>
+          ) : (
+            <Text>...</Text>
+          )}
+          </AccordionPanel>
+        </AccordionItem>
+        <AccordionItem>
+          <h2>
+            <AccordionButton>
+              <Box as='span' flex='1' textAlign='left'>
+                <Flex alignItems="center">
+                <Text>
+                  Stdout 
+                </Text>
+                <Badge borderRadius="full" ml="2" px="2"colorScheme="teal">
+                  {(task.stdout?.length && task.stdout?.length > 0) ? task.stdout?.trim().split("\n").length : 0}
+                </Badge>
+                </Flex>
+              </Box>
+            <AccordionIcon />
+            </AccordionButton>
+          </h2>
+          <AccordionPanel pb={4}>
+          { task.stdout?.length && task.stdout?.length > 0 ? (
+            <Text style={{ whiteSpace: "pre-wrap" }}>
+              {task.stdout}
+            </Text>
+          ) : (
+            <Text>No output</Text>
+           )}
+          </AccordionPanel>
+        </AccordionItem>
+        <AccordionItem>
+          <h2>
+            <AccordionButton>
+            <Box as='span' flex='1' textAlign='left'>
+                <Flex alignItems="center">
+                <Text>
+                  Stderr 
+                </Text>
+                <Badge borderRadius="full" ml="2" px="2"colorScheme="teal">
+                {(task.stderr?.length && task.stderr?.length > 0) ? task.stderr?.trim().split("\n").length : 0}
+                </Badge>
+                </Flex>
+              </Box>
+              <AccordionIcon />
+            </AccordionButton>
+          </h2>
+          <AccordionPanel pb={4}>
+          { task.stderr?.length && task.stderr.length > 0 ? (
+            <Text style={{ whiteSpace: "pre-wrap" }}>
+              {task.stderr}
+            </Text>
+          ) : (
+            <Text>No output</Text>
+           )}
+          </AccordionPanel>
+        </AccordionItem>
+      </Accordion>
     </>
   )
 }

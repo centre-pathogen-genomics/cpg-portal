@@ -137,12 +137,14 @@ function UsersTable() {
           )}
         </Table>
       </TableContainer>
-      <PaginationFooter
-        onChangePage={setPage}
-        page={page}
-        hasNextPage={hasNextPage}
-        hasPreviousPage={hasPreviousPage}
-      />
+      <Flex justify="end" my={4}>
+        <PaginationFooter
+          onChangePage={setPage}
+          page={page}
+          hasNextPage={hasNextPage}
+          hasPreviousPage={hasPreviousPage}
+        />
+      </Flex>
     </>
   )
 }
