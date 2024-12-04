@@ -45,7 +45,7 @@ export type Param = {
   flag?: string | null
   required?: boolean
   id?: string
-  workflow_id?: number | null
+  workflow_id: string
 }
 
 export type ParamCreate = {
@@ -82,36 +82,82 @@ export type ParamUpdate = {
   required?: boolean | null
 }
 
-export type ResultPublicWithFiles = {
+export type ResultPublicWithFileAndTarget = {
   id: string
-  results?: Record<string, unknown> | null
-  files?: Array<FilePublic>
+  file: FilePublic
+  target: TargetPublic
   owner_id: string
   task_id: string
   created_at: string
 }
 
-export type TaskPublic = {
-  taskiq_id: string
-  id: string
-  owner_id: string
-  workflow: WorkflowMinimalPublic
-  status: TaskStatus
-  created_at: string
-  started_at: string | null
-  finished_at: string | null
+export type Target = {
+  path: string
+  name?: string | null
+  description?: string | null
+  target_type: TargetType
+  display?: boolean
+  required?: boolean
+  id?: string
+  workflow_id: string
 }
 
-export type TaskPublicWithResult = {
-  taskiq_id: string
+export type TargetCreate = {
+  path: string
+  name: string
+  description?: string | null
+  target_type: TargetType
+  display?: boolean
+  required?: boolean
+}
+
+export type TargetPublic = {
+  path: string
+  name?: string | null
+  description?: string | null
+  target_type: TargetType
+  display?: boolean
+  required?: boolean
   id: string
-  owner_id: string
-  workflow: WorkflowMinimalPublic
+  workflow_id: string
+}
+
+export type TargetType = "text" | "image" | "csv" | "tsv" | "json" | "unknown"
+
+export type TargetUpdate = {
+  path?: string | null
+  name?: string | null
+  description?: string | null
+  target_type?: TargetType | null
+  display?: boolean | null
+  required?: boolean
+}
+
+export type TaskPublic = {
+  taskiq_id: string
   status: TaskStatus
   created_at: string
   started_at: string | null
   finished_at: string | null
-  result?: ResultPublicWithFiles | null
+  id: string
+  owner_id: string
+  workflow: WorkflowPublic
+  stderr?: string | null
+  stdout?: string | null
+  command?: string | null
+  params: Record<string, unknown>
+  results: Array<ResultPublicWithFileAndTarget>
+}
+
+export type TaskPublicMinimal = {
+  taskiq_id: string
+  status: TaskStatus
+  created_at: string
+  started_at: string | null
+  finished_at: string | null
+  id: string
+  owner_id: string
+  workflow: WorkflowPublic
 }
 
 export type TaskStatus =
@@ -121,8 +167,8 @@ export type TaskStatus =
   | "failed"
   | "cancelled"
 
-export type TasksPublic = {
-  data: Array<TaskPublic>
+export type TasksPublicMinimal = {
+  data: Array<TaskPublicMinimal>
   count: number
 }
 
@@ -182,21 +228,15 @@ export type ValidationError = {
   type: string
 }
 
-export type WorkflowCreateWithParams = {
+export type WorkflowCreateWithParamsAndTargets = {
   name: string
   description?: string | null
   image?: string | null
   command: Array<string>
   setup_command?: string | null
-  target_files?: Array<string> | null
-  json_results_file?: string | null
   enabled?: boolean
   params?: Array<ParamCreate>
-}
-
-export type WorkflowMinimalPublic = {
-  id: string
-  name: string
+  targets?: Array<TargetCreate>
 }
 
 export type WorkflowPublic = {
@@ -205,25 +245,22 @@ export type WorkflowPublic = {
   image?: string | null
   command: Array<string>
   setup_command?: string | null
-  target_files?: Array<string> | null
-  json_results_file?: string | null
   enabled?: boolean
   id: string
   owner_id: string
 }
 
-export type WorkflowPublicWithParams = {
+export type WorkflowPublicWithParamsAndTargets = {
   name: string
   description?: string | null
   image?: string | null
   command: Array<string>
   setup_command?: string | null
-  target_files?: Array<string> | null
-  json_results_file?: string | null
   enabled?: boolean
   id: string
   owner_id: string
   params: Array<ParamPublic>
+  targets: Array<TargetPublic>
 }
 
 export type WorkflowUpdate = {
@@ -232,12 +269,10 @@ export type WorkflowUpdate = {
   image?: string | null
   command?: Array<string> | null
   setup_command?: string | null
-  target_files?: Array<string> | null
-  json_results_file?: string | null
   enabled?: boolean
 }
 
-export type WorkflowsPublicWithParams = {
-  data: Array<WorkflowPublicWithParams>
+export type WorkflowsPublicWithParamsAndTargets = {
+  data: Array<WorkflowPublicWithParamsAndTargets>
   count: number
 }

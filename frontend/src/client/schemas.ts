@@ -206,15 +206,9 @@ export const $Param = {
       format: "uuid",
     },
     workflow_id: {
-      type: "any-of",
-      contains: [
-        {
-          type: "number",
-        },
-        {
-          type: "null",
-        },
-      ],
+      type: "string",
+      isRequired: true,
+      format: "uuid",
     },
   },
 } as const
@@ -470,33 +464,20 @@ export const $ParamUpdate = {
   },
 } as const
 
-export const $ResultPublicWithFiles = {
+export const $ResultPublicWithFileAndTarget = {
   properties: {
     id: {
       type: "string",
       isRequired: true,
       format: "uuid",
     },
-    results: {
-      type: "any-of",
-      contains: [
-        {
-          type: "dictionary",
-          contains: {
-            properties: {},
-          },
-        },
-        {
-          type: "null",
-        },
-      ],
+    file: {
+      type: "FilePublic",
+      isRequired: true,
     },
-    files: {
-      type: "array",
-      contains: {
-        type: "FilePublic",
-      },
-      default: [],
+    target: {
+      type: "TargetPublic",
+      isRequired: true,
     },
     owner_id: {
       type: "string",
@@ -516,26 +497,222 @@ export const $ResultPublicWithFiles = {
   },
 } as const
 
+export const $Target = {
+  properties: {
+    path: {
+      type: "string",
+      isRequired: true,
+    },
+    name: {
+      type: "any-of",
+      contains: [
+        {
+          type: "string",
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    description: {
+      type: "any-of",
+      contains: [
+        {
+          type: "string",
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    target_type: {
+      type: "TargetType",
+      isRequired: true,
+    },
+    display: {
+      type: "boolean",
+      default: false,
+    },
+    required: {
+      type: "boolean",
+      default: true,
+    },
+    id: {
+      type: "string",
+      format: "uuid",
+    },
+    workflow_id: {
+      type: "string",
+      isRequired: true,
+      format: "uuid",
+    },
+  },
+} as const
+
+export const $TargetCreate = {
+  properties: {
+    path: {
+      type: "string",
+      isRequired: true,
+    },
+    name: {
+      type: "string",
+      isRequired: true,
+    },
+    description: {
+      type: "any-of",
+      contains: [
+        {
+          type: "string",
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    target_type: {
+      type: "TargetType",
+      isRequired: true,
+    },
+    display: {
+      type: "boolean",
+      default: false,
+    },
+    required: {
+      type: "boolean",
+      default: true,
+    },
+  },
+} as const
+
+export const $TargetPublic = {
+  properties: {
+    path: {
+      type: "string",
+      isRequired: true,
+    },
+    name: {
+      type: "any-of",
+      contains: [
+        {
+          type: "string",
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    description: {
+      type: "any-of",
+      contains: [
+        {
+          type: "string",
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    target_type: {
+      type: "TargetType",
+      isRequired: true,
+    },
+    display: {
+      type: "boolean",
+      default: false,
+    },
+    required: {
+      type: "boolean",
+      default: true,
+    },
+    id: {
+      type: "string",
+      isRequired: true,
+      format: "uuid",
+    },
+    workflow_id: {
+      type: "string",
+      isRequired: true,
+      format: "uuid",
+    },
+  },
+} as const
+
+export const $TargetType = {
+  type: "Enum",
+  enum: ["text", "image", "csv", "tsv", "json", "unknown"],
+} as const
+
+export const $TargetUpdate = {
+  properties: {
+    path: {
+      type: "any-of",
+      contains: [
+        {
+          type: "string",
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    name: {
+      type: "any-of",
+      contains: [
+        {
+          type: "string",
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    description: {
+      type: "any-of",
+      contains: [
+        {
+          type: "string",
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    target_type: {
+      type: "any-of",
+      contains: [
+        {
+          type: "TargetType",
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    display: {
+      type: "any-of",
+      contains: [
+        {
+          type: "boolean",
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    required: {
+      type: "boolean",
+      default: true,
+    },
+  },
+} as const
+
 export const $TaskPublic = {
   properties: {
     taskiq_id: {
       type: "string",
       isRequired: true,
     },
-    id: {
-      type: "string",
-      isRequired: true,
-      format: "uuid",
-    },
-    owner_id: {
-      type: "string",
-      isRequired: true,
-      format: "uuid",
-    },
-    workflow: {
-      type: "WorkflowMinimalPublic",
-      isRequired: true,
-    },
     status: {
       type: "TaskStatus",
       isRequired: true,
@@ -569,29 +746,76 @@ export const $TaskPublic = {
           type: "null",
         },
       ],
+      isRequired: true,
+    },
+    id: {
+      type: "string",
+      isRequired: true,
+      format: "uuid",
+    },
+    owner_id: {
+      type: "string",
+      isRequired: true,
+      format: "uuid",
+    },
+    workflow: {
+      type: "WorkflowPublic",
+      isRequired: true,
+    },
+    stderr: {
+      type: "any-of",
+      contains: [
+        {
+          type: "string",
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    stdout: {
+      type: "any-of",
+      contains: [
+        {
+          type: "string",
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    command: {
+      type: "any-of",
+      contains: [
+        {
+          type: "string",
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    params: {
+      type: "dictionary",
+      contains: {
+        properties: {},
+      },
+      isRequired: true,
+    },
+    results: {
+      type: "array",
+      contains: {
+        type: "ResultPublicWithFileAndTarget",
+      },
       isRequired: true,
     },
   },
 } as const
 
-export const $TaskPublicWithResult = {
+export const $TaskPublicMinimal = {
   properties: {
     taskiq_id: {
       type: "string",
-      isRequired: true,
-    },
-    id: {
-      type: "string",
-      isRequired: true,
-      format: "uuid",
-    },
-    owner_id: {
-      type: "string",
-      isRequired: true,
-      format: "uuid",
-    },
-    workflow: {
-      type: "WorkflowMinimalPublic",
       isRequired: true,
     },
     status: {
@@ -629,16 +853,19 @@ export const $TaskPublicWithResult = {
       ],
       isRequired: true,
     },
-    result: {
-      type: "any-of",
-      contains: [
-        {
-          type: "ResultPublicWithFiles",
-        },
-        {
-          type: "null",
-        },
-      ],
+    id: {
+      type: "string",
+      isRequired: true,
+      format: "uuid",
+    },
+    owner_id: {
+      type: "string",
+      isRequired: true,
+      format: "uuid",
+    },
+    workflow: {
+      type: "WorkflowPublic",
+      isRequired: true,
     },
   },
 } as const
@@ -648,12 +875,12 @@ export const $TaskStatus = {
   enum: ["pending", "running", "completed", "failed", "cancelled"],
 } as const
 
-export const $TasksPublic = {
+export const $TasksPublicMinimal = {
   properties: {
     data: {
       type: "array",
       contains: {
-        type: "TaskPublic",
+        type: "TaskPublicMinimal",
       },
       isRequired: true,
     },
@@ -921,7 +1148,7 @@ export const $ValidationError = {
   },
 } as const
 
-export const $WorkflowCreateWithParams = {
+export const $WorkflowCreateWithParamsAndTargets = {
   properties: {
     name: {
       type: "string",
@@ -967,34 +1194,9 @@ export const $WorkflowCreateWithParams = {
         },
       ],
     },
-    target_files: {
-      type: "any-of",
-      contains: [
-        {
-          type: "array",
-          contains: {
-            type: "string",
-          },
-        },
-        {
-          type: "null",
-        },
-      ],
-    },
-    json_results_file: {
-      type: "any-of",
-      contains: [
-        {
-          type: "string",
-        },
-        {
-          type: "null",
-        },
-      ],
-    },
     enabled: {
       type: "boolean",
-      default: true,
+      default: false,
     },
     params: {
       type: "array",
@@ -1003,19 +1205,12 @@ export const $WorkflowCreateWithParams = {
       },
       default: [],
     },
-  },
-} as const
-
-export const $WorkflowMinimalPublic = {
-  properties: {
-    id: {
-      type: "string",
-      isRequired: true,
-      format: "uuid",
-    },
-    name: {
-      type: "string",
-      isRequired: true,
+    targets: {
+      type: "array",
+      contains: {
+        type: "TargetCreate",
+      },
+      default: [],
     },
   },
 } as const
@@ -1066,34 +1261,9 @@ export const $WorkflowPublic = {
         },
       ],
     },
-    target_files: {
-      type: "any-of",
-      contains: [
-        {
-          type: "array",
-          contains: {
-            type: "string",
-          },
-        },
-        {
-          type: "null",
-        },
-      ],
-    },
-    json_results_file: {
-      type: "any-of",
-      contains: [
-        {
-          type: "string",
-        },
-        {
-          type: "null",
-        },
-      ],
-    },
     enabled: {
       type: "boolean",
-      default: true,
+      default: false,
     },
     id: {
       type: "string",
@@ -1108,7 +1278,7 @@ export const $WorkflowPublic = {
   },
 } as const
 
-export const $WorkflowPublicWithParams = {
+export const $WorkflowPublicWithParamsAndTargets = {
   properties: {
     name: {
       type: "string",
@@ -1154,34 +1324,9 @@ export const $WorkflowPublicWithParams = {
         },
       ],
     },
-    target_files: {
-      type: "any-of",
-      contains: [
-        {
-          type: "array",
-          contains: {
-            type: "string",
-          },
-        },
-        {
-          type: "null",
-        },
-      ],
-    },
-    json_results_file: {
-      type: "any-of",
-      contains: [
-        {
-          type: "string",
-        },
-        {
-          type: "null",
-        },
-      ],
-    },
     enabled: {
       type: "boolean",
-      default: true,
+      default: false,
     },
     id: {
       type: "string",
@@ -1197,6 +1342,13 @@ export const $WorkflowPublicWithParams = {
       type: "array",
       contains: {
         type: "ParamPublic",
+      },
+      isRequired: true,
+    },
+    targets: {
+      type: "array",
+      contains: {
+        type: "TargetPublic",
       },
       isRequired: true,
     },
@@ -1263,44 +1415,19 @@ export const $WorkflowUpdate = {
         },
       ],
     },
-    target_files: {
-      type: "any-of",
-      contains: [
-        {
-          type: "array",
-          contains: {
-            type: "string",
-          },
-        },
-        {
-          type: "null",
-        },
-      ],
-    },
-    json_results_file: {
-      type: "any-of",
-      contains: [
-        {
-          type: "string",
-        },
-        {
-          type: "null",
-        },
-      ],
-    },
     enabled: {
       type: "boolean",
-      default: true,
+      default: false,
     },
   },
 } as const
 
-export const $WorkflowsPublicWithParams = {
+export const $WorkflowsPublicWithParamsAndTargets = {
   properties: {
     data: {
       type: "array",
       contains: {
-        type: "WorkflowPublicWithParams",
+        type: "WorkflowPublicWithParamsAndTargets",
       },
       isRequired: true,
     },

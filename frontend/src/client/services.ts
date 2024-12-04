@@ -17,17 +17,19 @@ import type {
   Param,
   ParamCreate,
   ParamUpdate,
-  TaskPublic,
-  WorkflowCreateWithParams,
+  Target,
+  TargetCreate,
+  TargetUpdate,
+  WorkflowCreateWithParamsAndTargets,
   WorkflowPublic,
-  WorkflowPublicWithParams,
-  WorkflowsPublicWithParams,
+  WorkflowPublicWithParamsAndTargets,
+  WorkflowsPublicWithParamsAndTargets,
   WorkflowUpdate,
   Body_files_upload_file,
   FilePublic,
   FilesPublic,
-  TaskPublicWithResult,
-  TasksPublic,
+  TaskPublic,
+  TasksPublicMinimal,
 } from "./models"
 
 export type TDataLoginAccessToken = {
@@ -415,7 +417,7 @@ export type TDataReadWorkflows = {
   skip?: number
 }
 export type TDataCreateWorkflow = {
-  requestBody: WorkflowCreateWithParams
+  requestBody: WorkflowCreateWithParamsAndTargets
 }
 export type TDataReadWorkflow = {
   workflowId: string
@@ -423,6 +425,12 @@ export type TDataReadWorkflow = {
 export type TDataUpdateWorkflow = {
   requestBody: WorkflowUpdate
   workflowId: string
+}
+export type TDataDeleteWorkflow = {
+  workflowId: string
+}
+export type TDataReadWorkflowByName = {
+  workflowName: string
 }
 export type TDataReadWorkflowParams = {
   workflowId: string
@@ -440,8 +448,20 @@ export type TDataDeleteParamFromWorkflow = {
   paramId: string
   workflowId: string
 }
-export type TDataRunWorkflow = {
-  requestBody: Record<string, unknown>
+export type TDataReadWorkflowTargets = {
+  workflowId: string
+}
+export type TDataAddTargetToWorkflow = {
+  requestBody: TargetCreate
+  workflowId: string
+}
+export type TDataUpdateTargetInWorkflow = {
+  requestBody: TargetUpdate
+  targetId: string
+  workflowId: string
+}
+export type TDataDeleteTargetFromWorkflow = {
+  targetId: string
   workflowId: string
 }
 
@@ -449,12 +469,12 @@ export class WorkflowsService {
   /**
    * Read Workflows
    * Retrieve workflows.
-   * @returns WorkflowsPublicWithParams Successful Response
+   * @returns WorkflowsPublicWithParamsAndTargets Successful Response
    * @throws ApiError
    */
   public static readWorkflows(
     data: TDataReadWorkflows = {},
-  ): CancelablePromise<WorkflowsPublicWithParams> {
+  ): CancelablePromise<WorkflowsPublicWithParamsAndTargets> {
     const { limit = 100, skip = 0 } = data
     return __request(OpenAPI, {
       method: "GET",
@@ -472,12 +492,12 @@ export class WorkflowsService {
   /**
    * Create Workflow
    * Create new workflow along with its params.
-   * @returns WorkflowPublicWithParams Successful Response
+   * @returns WorkflowPublicWithParamsAndTargets Successful Response
    * @throws ApiError
    */
   public static createWorkflow(
     data: TDataCreateWorkflow,
-  ): CancelablePromise<WorkflowPublicWithParams> {
+  ): CancelablePromise<WorkflowPublicWithParamsAndTargets> {
     const { requestBody } = data
     return __request(OpenAPI, {
       method: "POST",
@@ -493,12 +513,12 @@ export class WorkflowsService {
   /**
    * Read Workflow
    * Retrieve workflow by ID.
-   * @returns WorkflowPublicWithParams Successful Response
+   * @returns WorkflowPublicWithParamsAndTargets Successful Response
    * @throws ApiError
    */
   public static readWorkflow(
     data: TDataReadWorkflow,
-  ): CancelablePromise<WorkflowPublicWithParams> {
+  ): CancelablePromise<WorkflowPublicWithParamsAndTargets> {
     const { workflowId } = data
     return __request(OpenAPI, {
       method: "GET",
@@ -530,6 +550,50 @@ export class WorkflowsService {
       },
       body: requestBody,
       mediaType: "application/json",
+      errors: {
+        422: `Validation Error`,
+      },
+    })
+  }
+
+  /**
+   * Delete Workflow
+   * Delete workflow by ID.
+   * @returns Message Successful Response
+   * @throws ApiError
+   */
+  public static deleteWorkflow(
+    data: TDataDeleteWorkflow,
+  ): CancelablePromise<Message> {
+    const { workflowId } = data
+    return __request(OpenAPI, {
+      method: "DELETE",
+      url: "/api/v1/workflows/{workflow_id}",
+      path: {
+        workflow_id: workflowId,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    })
+  }
+
+  /**
+   * Read Workflow By Name
+   * Retrieve workflow by name.
+   * @returns WorkflowPublicWithParamsAndTargets Successful Response
+   * @throws ApiError
+   */
+  public static readWorkflowByName(
+    data: TDataReadWorkflowByName,
+  ): CancelablePromise<WorkflowPublicWithParamsAndTargets> {
+    const { workflowName } = data
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/workflows/name/{workflow_name}",
+      path: {
+        workflow_name: workflowName,
+      },
       errors: {
         422: `Validation Error`,
       },
@@ -631,19 +695,40 @@ export class WorkflowsService {
   }
 
   /**
-   * Run Workflow
-   * Run workflow by ID, validating against predefined workflow parameters.
-   * Accepts both files and regular parameters dynamically.
-   * @returns TaskPublic Successful Response
+   * Read Workflow Targets
+   * Retrieve workflow targets by workflow ID.
+   * @returns Target Successful Response
    * @throws ApiError
    */
-  public static runWorkflow(
-    data: TDataRunWorkflow,
-  ): CancelablePromise<TaskPublic> {
+  public static readWorkflowTargets(
+    data: TDataReadWorkflowTargets,
+  ): CancelablePromise<Array<Target>> {
+    const { workflowId } = data
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/workflows/{workflow_id}/targets",
+      path: {
+        workflow_id: workflowId,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    })
+  }
+
+  /**
+   * Add Target To Workflow
+   * Add target to workflow by workflow ID.
+   * @returns Target Successful Response
+   * @throws ApiError
+   */
+  public static addTargetToWorkflow(
+    data: TDataAddTargetToWorkflow,
+  ): CancelablePromise<Target> {
     const { requestBody, workflowId } = data
     return __request(OpenAPI, {
       method: "POST",
-      url: "/api/v1/workflows/{workflow_id}/run",
+      url: "/api/v1/workflows/{workflow_id}/targets",
       path: {
         workflow_id: workflowId,
       },
@@ -654,10 +739,59 @@ export class WorkflowsService {
       },
     })
   }
+
+  /**
+   * Update Target In Workflow
+   * Update target in workflow by workflow ID and target ID.
+   * @returns Target Successful Response
+   * @throws ApiError
+   */
+  public static updateTargetInWorkflow(
+    data: TDataUpdateTargetInWorkflow,
+  ): CancelablePromise<Target> {
+    const { requestBody, targetId, workflowId } = data
+    return __request(OpenAPI, {
+      method: "PATCH",
+      url: "/api/v1/workflows/{workflow_id}/targets/{target_id}",
+      path: {
+        workflow_id: workflowId,
+        target_id: targetId,
+      },
+      body: requestBody,
+      mediaType: "application/json",
+      errors: {
+        422: `Validation Error`,
+      },
+    })
+  }
+
+  /**
+   * Delete Target From Workflow
+   * Delete target from workflow by workflow ID and target ID.
+   * @returns Message Successful Response
+   * @throws ApiError
+   */
+  public static deleteTargetFromWorkflow(
+    data: TDataDeleteTargetFromWorkflow,
+  ): CancelablePromise<Message> {
+    const { targetId, workflowId } = data
+    return __request(OpenAPI, {
+      method: "DELETE",
+      url: "/api/v1/workflows/{workflow_id}/targets/{target_id}",
+      path: {
+        workflow_id: workflowId,
+        target_id: targetId,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    })
+  }
 }
 
 export type TDataReadFiles = {
   limit?: number
+  orderBy?: string
   skip?: number
 }
 export type TDataUploadFile = {
@@ -672,6 +806,13 @@ export type TDataDeleteFile = {
 export type TDataDownloadFile = {
   id: string
 }
+export type TDataGetDownloadToken = {
+  id: string
+  minutes?: number
+}
+export type TDataDownloadFileWithToken = {
+  token: string
+}
 
 export class FilesService {
   /**
@@ -683,13 +824,14 @@ export class FilesService {
   public static readFiles(
     data: TDataReadFiles = {},
   ): CancelablePromise<FilesPublic> {
-    const { limit = 100, skip = 0 } = data
+    const { limit = 100, orderBy = "-created_at", skip = 0 } = data
     return __request(OpenAPI, {
       method: "GET",
       url: "/api/v1/files/",
       query: {
         skip,
         limit,
+        order_by: orderBy,
       },
       errors: {
         422: `Validation Error`,
@@ -715,6 +857,19 @@ export class FilesService {
       errors: {
         422: `Validation Error`,
       },
+    })
+  }
+
+  /**
+   * Delete Files
+   * Delete all files.
+   * @returns unknown Successful Response
+   * @throws ApiError
+   */
+  public static deleteFiles(): CancelablePromise<unknown> {
+    return __request(OpenAPI, {
+      method: "DELETE",
+      url: "/api/v1/files/",
     })
   }
 
@@ -779,12 +934,63 @@ export class FilesService {
       },
     })
   }
+
+  /**
+   * Get Download Token
+   * Get signed file download token.
+   * @returns string Successful Response
+   * @throws ApiError
+   */
+  public static getDownloadToken(
+    data: TDataGetDownloadToken,
+  ): CancelablePromise<string> {
+    const { id, minutes = 1 } = data
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/files/{id}/token",
+      path: {
+        id,
+      },
+      query: {
+        minutes,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    })
+  }
+
+  /**
+   * Download File With Token
+   * Download file by token.
+   * @returns unknown Successful Response
+   * @throws ApiError
+   */
+  public static downloadFileWithToken(
+    data: TDataDownloadFileWithToken,
+  ): CancelablePromise<unknown> {
+    const { token } = data
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/files/download/{token}",
+      path: {
+        token,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    })
+  }
 }
 
 export type TDataReadTasks = {
   limit?: number
   orderBy?: string
   skip?: number
+}
+export type TDataCreateTask = {
+  requestBody: Record<string, unknown>
+  workflowId: string
 }
 export type TDataReadActiveTasks = {
   limit?: number
@@ -804,12 +1010,12 @@ export class TasksService {
   /**
    * Read Tasks
    * Retrieve tasks with optional ordering.
-   * @returns TasksPublic Successful Response
+   * @returns TasksPublicMinimal Successful Response
    * @throws ApiError
    */
   public static readTasks(
     data: TDataReadTasks = {},
-  ): CancelablePromise<TasksPublic> {
+  ): CancelablePromise<TasksPublicMinimal> {
     const { limit = 100, orderBy = "-created_at", skip = 0 } = data
     return __request(OpenAPI, {
       method: "GET",
@@ -819,6 +1025,31 @@ export class TasksService {
         limit,
         order_by: orderBy,
       },
+      errors: {
+        422: `Validation Error`,
+      },
+    })
+  }
+
+  /**
+   * Create Task
+   * Create and run a task of a specific workflow, validating against predefined workflow parameters.
+   * Accepts both files and regular parameters dynamically.
+   * @returns TaskPublic Successful Response
+   * @throws ApiError
+   */
+  public static createTask(
+    data: TDataCreateTask,
+  ): CancelablePromise<TaskPublic> {
+    const { requestBody, workflowId } = data
+    return __request(OpenAPI, {
+      method: "POST",
+      url: "/api/v1/tasks/",
+      query: {
+        workflow_id: workflowId,
+      },
+      body: requestBody,
+      mediaType: "application/json",
       errors: {
         422: `Validation Error`,
       },
@@ -854,12 +1085,12 @@ export class TasksService {
   /**
    * Read Active Tasks
    * Retrieve active tasks with status pending or running.
-   * @returns TasksPublic Successful Response
+   * @returns TasksPublicMinimal Successful Response
    * @throws ApiError
    */
   public static readActiveTasks(
     data: TDataReadActiveTasks = {},
-  ): CancelablePromise<TasksPublic> {
+  ): CancelablePromise<TasksPublicMinimal> {
     const { limit = 100, skip = 0 } = data
     return __request(OpenAPI, {
       method: "GET",
@@ -877,12 +1108,10 @@ export class TasksService {
   /**
    * Read Task
    * Retrieve task metadata.
-   * @returns TaskPublicWithResult Successful Response
+   * @returns TaskPublic Successful Response
    * @throws ApiError
    */
-  public static readTask(
-    data: TDataReadTask,
-  ): CancelablePromise<TaskPublicWithResult> {
+  public static readTask(data: TDataReadTask): CancelablePromise<TaskPublic> {
     const { id } = data
     return __request(OpenAPI, {
       method: "GET",
