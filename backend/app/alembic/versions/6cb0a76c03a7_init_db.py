@@ -1,8 +1,8 @@
-"""init db
+"""init_db
 
-Revision ID: 39c92dd526fc
+Revision ID: 6cb0a76c03a7
 Revises: 
-Create Date: 2024-11-01 17:46:28.858047
+Create Date: 2024-12-03 14:13:07.485109
 
 """
 from alembic import op
@@ -11,7 +11,7 @@ import sqlmodel.sql.sqltypes
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '39c92dd526fc'
+revision = '6cb0a76c03a7'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -29,28 +29,28 @@ def upgrade():
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_user_email'), 'user', ['email'], unique=True)
-    op.create_table('item',
-    sa.Column('description', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=True),
+    op.create_table('file',
     sa.Column('id', sa.Uuid(), nullable=False),
-    sa.Column('title', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=False),
+    sa.Column('name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('location', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('owner_id', sa.Uuid(), nullable=False),
-    sa.ForeignKeyConstraint(['owner_id'], ['user.id'], ondelete='CASCADE'),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.ForeignKeyConstraint(['owner_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('workflow',
     sa.Column('description', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('image', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('setup_command', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-    sa.Column('json_results_file', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('enabled', sa.Boolean(), nullable=False),
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('command', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
     sa.Column('owner_id', sa.Uuid(), nullable=False),
-    sa.Column('target_files', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
     sa.ForeignKeyConstraint(['owner_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_index(op.f('ix_workflow_name'), 'workflow', ['name'], unique=True)
     op.create_table('param',
     sa.Column('name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('description', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
@@ -60,6 +60,18 @@ def upgrade():
     sa.Column('flag', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('required', sa.Boolean(), nullable=False),
     sa.Column('id', sa.Uuid(), nullable=False),
+    sa.Column('workflow_id', sa.Uuid(), nullable=False),
+    sa.ForeignKeyConstraint(['workflow_id'], ['workflow.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('target',
+    sa.Column('path', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('name', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+    sa.Column('description', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+    sa.Column('display', sa.Boolean(), nullable=False),
+    sa.Column('required', sa.Boolean(), nullable=False),
+    sa.Column('id', sa.Uuid(), nullable=False),
+    sa.Column('target_type', sa.Enum('text', 'image', 'csv', 'tsv', 'json', 'unknown', name='targettype'), nullable=True),
     sa.Column('workflow_id', sa.Uuid(), nullable=False),
     sa.ForeignKeyConstraint(['workflow_id'], ['workflow.id'], ),
     sa.PrimaryKeyConstraint('id')
@@ -80,23 +92,15 @@ def upgrade():
     )
     op.create_table('result',
     sa.Column('id', sa.Uuid(), nullable=False),
-    sa.Column('results', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+    sa.Column('file_id', sa.Uuid(), nullable=True),
+    sa.Column('target_id', sa.Uuid(), nullable=False),
     sa.Column('owner_id', sa.Uuid(), nullable=False),
     sa.Column('task_id', sa.Uuid(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.ForeignKeyConstraint(['file_id'], ['file.id'], ),
     sa.ForeignKeyConstraint(['owner_id'], ['user.id'], ),
+    sa.ForeignKeyConstraint(['target_id'], ['target.id'], ),
     sa.ForeignKeyConstraint(['task_id'], ['task.id'], ),
-    sa.PrimaryKeyConstraint('id')
-    )
-    op.create_table('file',
-    sa.Column('id', sa.Uuid(), nullable=False),
-    sa.Column('name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-    sa.Column('location', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-    sa.Column('owner_id', sa.Uuid(), nullable=False),
-    sa.Column('result_id', sa.Uuid(), nullable=True),
-    sa.Column('created_at', sa.DateTime(), nullable=False),
-    sa.ForeignKeyConstraint(['owner_id'], ['user.id'], ),
-    sa.ForeignKeyConstraint(['result_id'], ['result.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     # ### end Alembic commands ###
@@ -104,12 +108,13 @@ def upgrade():
 
 def downgrade():
     # ### commands auto generated by Alembic - please adjust! ###
-    op.drop_table('file')
     op.drop_table('result')
     op.drop_table('task')
+    op.drop_table('target')
     op.drop_table('param')
+    op.drop_index(op.f('ix_workflow_name'), table_name='workflow')
     op.drop_table('workflow')
-    op.drop_table('item')
+    op.drop_table('file')
     op.drop_index(op.f('ix_user_email'), table_name='user')
     op.drop_table('user')
     # ### end Alembic commands ###
