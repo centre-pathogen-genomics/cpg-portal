@@ -11,7 +11,7 @@ from sqlmodel import Session
 from app.core import security
 from app.core.config import settings
 from app.core.db import engine
-from app.models import TokenPayload, User
+from app.models import File, TokenPayload, User
 
 reusable_oauth2 = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_V1_STR}/login/access-token"
@@ -55,3 +55,25 @@ def get_current_active_superuser(current_user: CurrentUser) -> User:
             status_code=403, detail="The user doesn't have enough privileges"
         )
     return current_user
+
+
+SuperUser = Annotated[User, Depends(get_current_active_superuser)]
+
+
+def get_file(session: SessionDep, token: str) -> User:
+    try:
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
+        )
+        token_data = TokenPayload(**payload)
+    except (InvalidTokenError, ValidationError):
+        raise HTTPException(
+            status_code=403,
+            detail="Could not validate credentials",
+        )
+    file_metadata = session.get(File, token_data.sub)
+    if not file_metadata:
+        raise HTTPException(status_code=404, detail="File not found")
+    return file_metadata
+
+FileDep = Annotated[File, Depends(get_file)]

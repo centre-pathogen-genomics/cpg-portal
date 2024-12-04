@@ -13,7 +13,6 @@ from app.api.deps import (
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
 from app.models import (
-    Item,
     Message,
     UpdatePassword,
     User,
@@ -134,14 +133,15 @@ def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Any:
         raise HTTPException(
             status_code=403, detail="Super users are not allowed to delete themselves"
         )
-    statement = delete(Item).where(col(Item.owner_id) == current_user.id)
-    session.exec(statement)  # type: ignore
+    # TODO: delete all items owned by the user
+    # statement = delete(Item).where(col(Item.owner_id) == current_user.id)
+    # session.exec(statement)  # type: ignore
     session.delete(current_user)
     session.commit()
     return Message(message="User deleted successfully")
 
 
-@router.post("/signup", response_model=UserPublic)
+@router.post("/signup", dependencies=[Depends(get_current_active_superuser)], response_model=UserPublic)
 def register_user(session: SessionDep, user_in: UserRegister) -> Any:
     """
     Create new user without the need to be logged in.
@@ -221,8 +221,9 @@ def delete_user(
         raise HTTPException(
             status_code=403, detail="Super users are not allowed to delete themselves"
         )
-    statement = delete(Item).where(col(Item.owner_id) == user_id)
-    session.exec(statement)  # type: ignore
+    # TODO: delete all items owned by the user
+    # statement = delete(Item).where(col(Item.owner_id) == user_id)
+    # session.exec(statement)  # type: ignore
     session.delete(user)
     session.commit()
     return Message(message="User deleted successfully")

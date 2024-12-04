@@ -1,7 +1,7 @@
 import enum
 import uuid
 from datetime import datetime
-from typing import Any, Optional
+from typing import Optional
 
 from pydantic import EmailStr
 from sqlalchemy.dialects.postgresql import JSONB as JSON
@@ -10,7 +10,6 @@ from sqlmodel import (
     Column,
     Enum,
     Field,
-    ForeignKey,
     Relationship,
     SQLModel,
 )
@@ -55,7 +54,6 @@ class UpdatePassword(SQLModel):
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
-    items: list["Item"] = Relationship(back_populates="owner")
     workflows: list["Workflow"] = Relationship(back_populates="owner")
     files: list["File"] = Relationship(back_populates="owner")
     tasks: list["Task"] = Relationship(back_populates="owner")
@@ -70,44 +68,6 @@ class UserPublic(UserBase):
 class UsersPublic(SQLModel):
     data: list[UserPublic]
     count: int
-
-
-# Shared properties
-class ItemBase(SQLModel):
-    title: str = Field(min_length=1, max_length=255)
-    description: str | None = Field(default=None, max_length=255)
-
-
-# Properties to receive on item creation
-class ItemCreate(ItemBase):
-    pass
-
-
-# Properties to receive on item update
-class ItemUpdate(ItemBase):
-    title: str | None = Field(default=None, min_length=1, max_length=255)  # type: ignore
-
-
-# Database model, database table inferred from class name
-class Item(ItemBase, table=True):
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    title: str = Field(max_length=255)
-    owner_id: uuid.UUID = Field(
-        foreign_key="user.id", nullable=False, ondelete="CASCADE"
-    )
-    owner: User | None = Relationship(back_populates="items")
-
-
-# Properties to return via API, id is always required
-class ItemPublic(ItemBase):
-    id: uuid.UUID
-    owner_id: uuid.UUID
-
-
-class ItemsPublic(SQLModel):
-    data: list[ItemPublic]
-    count: int
-
 
 # Generic message
 class Message(SQLModel):
@@ -137,9 +97,7 @@ class WorkflowBase(SQLModel):
     image: str | None = None
     command: list[str]  # ["hello-world", "run", "{verbose_flag}", "--text", "{text}"]
     setup_command: str | None = None  # command -v hello-world >/dev/null 2>&1 || snk install wytamma/hello-world
-    target_files: list[str] | None = None  # hello.txt these are the files that the workflow will generate that we want to keep (comma separated)
-    json_results_file: str | None = None  # results file that will be save into the database
-    enabled: bool = True
+    enabled: bool = False
 
 # Properties to receive on Workflow creation
 class WorkflowCreate(WorkflowBase):
@@ -150,17 +108,31 @@ class WorkflowUpdate(WorkflowBase):
     name: str | None = None  # type: ignore
     command: list[str] | None = None
 
-
 # Database model, database table inferred from class name
 class Workflow(WorkflowBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    name: str
+    name: str = Field(index=True, unique=True)
     command: list[str] = Field(default_factory=list, sa_column=Column(JSON))
-    owner_id: uuid.UUID | None = Field(default=None, foreign_key="user.id", nullable=False)
-    owner: User | None = Relationship(back_populates="workflows")
-    params: list["Param"] = Relationship(back_populates="workflow")
-    tasks: list["Task"] = Relationship(back_populates="workflow")
-    target_files: list[str] = Field(default_factory=list, sa_column=Column(JSON))
+    params: list["Param"] = Relationship(
+        back_populates="workflow",
+        sa_relationship=RelationshipProperty(
+            "Param", cascade="all, delete, delete-orphan"
+        )
+    )
+    targets: list["Target"] = Relationship(
+        back_populates="workflow",
+        sa_relationship=RelationshipProperty(
+            "Target", cascade="all, delete, delete-orphan"
+        )
+    )
+    tasks: list["Task"] = Relationship(
+        back_populates="workflow",
+        sa_relationship=RelationshipProperty(
+            "Task", cascade="all, delete, delete-orphan"
+        )
+    )
+    owner_id: uuid.UUID = Field(foreign_key="user.id", nullable=False)
+    owner: User = Relationship(back_populates="workflows")
 
 
 # Properties to return via API, id is always required
@@ -177,6 +149,45 @@ class WorkflowsPublic(SQLModel):
     data: list[WorkflowPublic]
     count: int
 
+class TargetType(str, enum.Enum):
+    text = "text"
+    image = "image"
+    csv = "csv"
+    tsv = "tsv"
+    json = "json"
+    unknown = "unknown"
+
+
+class TargetBase(SQLModel):
+    path: str
+    name: str | None = None
+    description: str | None = None
+    target_type: TargetType
+    display: bool = False
+    required: bool = True
+
+
+class TargetCreate(TargetBase):
+    name: str
+
+class TargetUpdate(TargetBase):
+    path: str | None = None
+    name: str | None = None
+    description: str | None = None
+    target_type: TargetType | None = None
+    display: bool | None = None
+
+class Target(TargetBase, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    target_type: TargetType = Field(sa_column=Column(Enum(TargetType)))
+    results: list["Result"] = Relationship(back_populates="target")
+    workflow_id: uuid.UUID = Field(foreign_key="workflow.id", nullable=False)
+    workflow: Workflow = Relationship(back_populates="targets")
+
+
+class TargetPublic(TargetBase):
+    id: uuid.UUID
+    workflow_id: uuid.UUID
 
 class ParamType(str, enum.Enum):
     str = "str"
@@ -212,8 +223,8 @@ class Param(ParamBase, table=True):
     param_type: ParamType = Field(sa_column=Column(Enum(ParamType)))
     options: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     default: int | float | str | bool | None = Field(default=None, sa_column=Column(JSON))
-    workflow_id: uuid.UUID | None = Field(default=None, foreign_key="workflow.id", nullable=False)
-    workflow: Workflow | None = Relationship(back_populates="params")
+    workflow_id: uuid.UUID = Field(foreign_key="workflow.id", nullable=False)
+    workflow: Workflow = Relationship(back_populates="params")
 
 
 class ParamPublic(ParamBase):
@@ -221,21 +232,19 @@ class ParamPublic(ParamBase):
     workflow_id: uuid.UUID
 
 
-class WorkflowCreateWithParams(WorkflowCreate):
+class WorkflowCreateWithParamsAndTargets(WorkflowCreate):
     params: list[ParamCreate] = []
+    targets: list[TargetCreate] = []
 
 
-class WorkflowPublicWithParams(WorkflowPublic):
+class WorkflowPublicWithParamsAndTargets(WorkflowPublic):
     params: list[ParamPublic]
+    targets: list[TargetPublic]
 
 
-class WorkflowsPublicWithParams(SQLModel):
-    data: list[WorkflowPublicWithParams]
+class WorkflowsPublicWithParamsAndTargets(SQLModel):
+    data: list[WorkflowPublicWithParamsAndTargets]
     count: int
-
-
-class TaskBase(SQLModel):
-    taskiq_id: str
 
 
 class TaskStatus(str, enum.Enum):
@@ -245,65 +254,88 @@ class TaskStatus(str, enum.Enum):
     failed = "failed"
     cancelled = "cancelled"
 
-class Task(TaskBase, table=True):
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    taskiq_id: str | None = None
-    status: TaskStatus = Field(sa_column=Column(Enum(TaskStatus)))
-    params: dict = Field(default_factory=dict, sa_column=Column(JSON))
-    workflow_id: uuid.UUID | None = Field(default=None, foreign_key="workflow.id", nullable=False)
-    workflow: Workflow | None = Relationship(back_populates="tasks")
-    owner_id: uuid.UUID | None = Field(default=None, foreign_key="user.id", nullable=False)
-    owner: User | None = Relationship(back_populates="tasks")
-    result: Optional["Result"] = Relationship(
-        sa_relationship=RelationshipProperty(
-            "Result", back_populates="task", uselist=False, cascade="all, delete, delete-orphan"
-        ),
-    )
-    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
-    started_at: datetime | None = Field(default=None, nullable=True)
-    finished_at: datetime | None = Field(default=None, nullable=True)
 
-
-class TaskPublic(TaskBase):
-    id: uuid.UUID
-    owner_id: uuid.UUID
-    workflow: WorkflowMinimalPublic
+class TaskBase(SQLModel):
+    taskiq_id: str
     status: TaskStatus
     created_at: datetime
     started_at: datetime | None
     finished_at: datetime | None
 
 
-class Result(SQLModel, table=True):
+class Task(TaskBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    results: dict | None = Field(default_factory=dict, sa_column=Column(JSON))
-    files: list["File"] = Relationship(
+    taskiq_id: str | None = None
+    status: TaskStatus = Field(sa_column=Column(Enum(TaskStatus)))
+    params: dict = Field(default_factory=dict, sa_column=Column(JSON))
+    results: list["Result"] = Relationship(
+        back_populates="task",
         sa_relationship=RelationshipProperty(
-            "File", back_populates="result", uselist=True, cascade="all, delete, delete-orphan"
+            "Result", cascade="all, delete, delete-orphan"
         ),
     )
-    owner_id: uuid.UUID | None = Field(default=None, foreign_key="user.id", nullable=False)
-    owner: User | None = Relationship(back_populates="results")
-    task_id: uuid.UUID | None = Field(
-        sa_column=Column("task_id", ForeignKey("task.id"), nullable=False)
-    )
-    task: Task = Relationship(
-        sa_relationship=RelationshipProperty("Task", back_populates="result")
-    )
+    command: str | None = None
+    stderr: str | None = None
+    stdout: str | None = None
+    workflow_id: uuid.UUID = Field(foreign_key="workflow.id", nullable=False)
+    workflow: Workflow = Relationship(back_populates="tasks")
+    owner_id: uuid.UUID = Field(foreign_key="user.id", nullable=False)
+    owner: User = Relationship(back_populates="tasks")
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    started_at: datetime | None = Field(default=None, nullable=True)
+    finished_at: datetime | None = Field(default=None, nullable=True)
+
+
+class TaskPublicMinimal(TaskBase):
+    id: uuid.UUID
+    owner_id: uuid.UUID
+    workflow: WorkflowPublic
+
+
+class Result(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    file_id: uuid.UUID | None = Field(foreign_key="file.id", nullable=True)  # Allow NULL for files without a result
+    file: Optional["File"] = Relationship(
+        back_populates="result",
+        sa_relationship=RelationshipProperty(
+            "File",
+            cascade="all, delete, delete-orphan",
+            uselist=False,  # Enforce one-to-one relationship
+            single_parent=True,  # Enforce single parent
+            foreign_keys="[Result.file_id]",  # Specify foreign key
+        ),
+    )
+    target_id: uuid.UUID = Field(foreign_key="target.id", nullable=False)
+    target: "Target" = Relationship(back_populates="results")
+    owner_id: uuid.UUID = Field(foreign_key="user.id", nullable=False)
+    owner: "User" = Relationship(back_populates="results")
+    task_id: uuid.UUID = Field(foreign_key="task.id", nullable=False)
+    task: "Task" = Relationship(back_populates="results")
+    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+
 
 class FileBase(SQLModel):
     name: str
+
 
 class File(FileBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str
     location: str
-    owner_id: uuid.UUID | None = Field(default=None, foreign_key="user.id", nullable=False)
-    owner: User | None = Relationship(back_populates="files")
-    result_id: uuid.UUID | None = Field(default=None, foreign_key="result.id", nullable=True)
-    result: Result | None = Relationship(back_populates="files")
+    owner_id: uuid.UUID = Field(foreign_key="user.id", nullable=False)
+    owner: "User" = Relationship(back_populates="files")
+    result: Optional["Result"] = Relationship(
+        back_populates="file",
+        sa_relationship=RelationshipProperty(
+            "Result",
+            cascade="all, delete, delete-orphan",
+            uselist=False,  # Enforce one-to-one relationship
+            single_parent=True,  # Enforce single parent
+            foreign_keys="[Result.file_id]",  # Specify foreign key
+        ),
+    )
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+
 
 class FilePublic(FileBase):
     id: uuid.UUID
@@ -316,23 +348,26 @@ class FilesPublic(SQLModel):
     count: int
 
 
-class ResultPublicWithFiles(SQLModel):
+class ResultPublicWithFileAndTarget(SQLModel):
     id: uuid.UUID
-    results: dict | None = None
-    files: list[FilePublic] = []
+    file: FilePublic
+    target: TargetPublic
     owner_id: uuid.UUID
     task_id: uuid.UUID
     created_at: datetime
 
+class TaskPublic(TaskPublicMinimal):
+    stderr: str | None = None
+    stdout: str | None = None
+    command: str | None = None
+    params: dict
+    results: list[ResultPublicWithFileAndTarget]
 
-class TaskPublicWithResult(TaskPublic):
-    result: ResultPublicWithFiles | None = None
 
+class TasksPublicMinimal(SQLModel):
+    data: list[TaskPublicMinimal]
+    count: int
 
 class TasksPublic(SQLModel):
     data: list[TaskPublic]
-    count: int
-
-class TasksPublicWithResult(SQLModel):
-    data: list[TaskPublicWithResult]
     count: int
