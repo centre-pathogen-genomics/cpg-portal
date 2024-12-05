@@ -63,8 +63,8 @@ const WorkflowCard = ({ workflow }: WorkflowCardProps) => {
                 variant="outline"
                 onClick={() => {
                   navigate({
-                    to: `/workflows/${workflow.id.toString()}`,
-                    params: { workflowid: workflow.id.toString() },
+                    to: `/workflows/${workflow.name}`,
+                    params: { name: workflow.name },
                     replace: false,
                     resetScroll: true,
                   })

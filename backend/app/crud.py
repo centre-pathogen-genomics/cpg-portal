@@ -1,13 +1,13 @@
 import shutil
+import uuid
 from pathlib import Path
 from typing import Any
-from uuid import uuid4
 
 from sqlmodel import Session, select
 
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
-from app.models import File, Item, ItemCreate, User, UserCreate, UserUpdate
+from app.models import File, User, UserCreate, UserUpdate
 
 
 def create_user(*, session: Session, user_create: UserCreate) -> User:
@@ -49,16 +49,9 @@ def authenticate(*, session: Session, email: str, password: str) -> User | None:
     return db_user
 
 
-def create_item(*, session: Session, item_in: ItemCreate, owner_id: int) -> Item:
-    db_item = Item.model_validate(item_in, update={"owner_id": owner_id})
-    session.add(db_item)
-    session.commit()
-    session.refresh(db_item)
-    return db_item
-
-def _save_single_file(session: Session, file_path: Path, owner_id: int) -> File:
+def _save_single_file(session: Session, file_path: Path, owner_id: uuid.UUID) -> File:
     """Helper function to save a single file."""
-    file_id = str(uuid4())
+    file_id = str(uuid.uuid4())
     file_name = file_path.name.replace(" ", "_")
     file_storage_location = Path(settings.STORAGE_PATH) / f"{file_id}_{file_name}"
     with open(file_storage_location, "wb") as fdst, open(file_path, "rb") as fsrc:
@@ -71,14 +64,14 @@ def _save_single_file(session: Session, file_path: Path, owner_id: int) -> File:
     session.add(file_metadata)
     return file_metadata
 
-def save_file(*, session: Session, file_path: Path, owner_id: int) -> File:
+def save_file(*, session: Session, file_path: Path, owner_id: uuid.UUID) -> File:
     """Save a single file and commit the session."""
     file_metadata = _save_single_file(session, file_path, owner_id)
     session.commit()
     session.refresh(file_metadata)
     return file_metadata
 
-def save_file_multiple(*, session: Session, file_paths: list[Path], owner_id: int) -> list[File]:
+def save_file_multiple(*, session: Session, file_paths: list[Path], owner_id: uuid.UUID) -> list[File]:
     """Save multiple files and commit the session after adding all files."""
     files = [_save_single_file(session, file_path, owner_id) for file_path in file_paths]
     session.commit()

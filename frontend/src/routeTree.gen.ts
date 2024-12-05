@@ -11,6 +11,7 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as SignupImport } from './routes/signup'
 import { Route as ResetPasswordImport } from './routes/reset-password'
 import { Route as RecoverPasswordImport } from './routes/recover-password'
 import { Route as LoginImport } from './routes/login'
@@ -19,10 +20,16 @@ import { Route as LayoutIndexImport } from './routes/_layout/index'
 import { Route as LayoutSettingsImport } from './routes/_layout/settings'
 import { Route as LayoutAdminImport } from './routes/_layout/admin'
 import { Route as LayoutTasksIndexImport } from './routes/_layout/tasks/index'
-import { Route as LayoutWorkflowsWorkflowidImport } from './routes/_layout/workflows/$workflowid'
+import { Route as LayoutFilesIndexImport } from './routes/_layout/files/index'
+import { Route as LayoutWorkflowsNameImport } from './routes/_layout/workflows/$name'
 import { Route as LayoutTasksTaskidImport } from './routes/_layout/tasks/$taskid'
 
 // Create/Update Routes
+
+const SignupRoute = SignupImport.update({
+  path: '/signup',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const ResetPasswordRoute = ResetPasswordImport.update({
   path: '/reset-password',
@@ -64,8 +71,13 @@ const LayoutTasksIndexRoute = LayoutTasksIndexImport.update({
   getParentRoute: () => LayoutRoute,
 } as any)
 
-const LayoutWorkflowsWorkflowidRoute = LayoutWorkflowsWorkflowidImport.update({
-  path: '/workflows/$workflowid',
+const LayoutFilesIndexRoute = LayoutFilesIndexImport.update({
+  path: '/files/',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
+const LayoutWorkflowsNameRoute = LayoutWorkflowsNameImport.update({
+  path: '/workflows/$name',
   getParentRoute: () => LayoutRoute,
 } as any)
 
@@ -94,6 +106,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResetPasswordImport
       parentRoute: typeof rootRoute
     }
+    '/signup': {
+      preLoaderRoute: typeof SignupImport
+      parentRoute: typeof rootRoute
+    }
     '/_layout/admin': {
       preLoaderRoute: typeof LayoutAdminImport
       parentRoute: typeof LayoutImport
@@ -110,8 +126,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutTasksTaskidImport
       parentRoute: typeof LayoutImport
     }
-    '/_layout/workflows/$workflowid': {
-      preLoaderRoute: typeof LayoutWorkflowsWorkflowidImport
+    '/_layout/workflows/$name': {
+      preLoaderRoute: typeof LayoutWorkflowsNameImport
+      parentRoute: typeof LayoutImport
+    }
+    '/_layout/files/': {
+      preLoaderRoute: typeof LayoutFilesIndexImport
       parentRoute: typeof LayoutImport
     }
     '/_layout/tasks/': {
@@ -129,12 +149,14 @@ export const routeTree = rootRoute.addChildren([
     LayoutSettingsRoute,
     LayoutIndexRoute,
     LayoutTasksTaskidRoute,
-    LayoutWorkflowsWorkflowidRoute,
+    LayoutWorkflowsNameRoute,
+    LayoutFilesIndexRoute,
     LayoutTasksIndexRoute,
   ]),
   LoginRoute,
   RecoverPasswordRoute,
   ResetPasswordRoute,
+  SignupRoute,
 ])
 
 /* prettier-ignore-end */
