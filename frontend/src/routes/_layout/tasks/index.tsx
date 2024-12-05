@@ -7,7 +7,6 @@ import {
   Flex,
   Heading,
   Link,
-  Skeleton,
   SkeletonText,
   Table,
   TableContainer,

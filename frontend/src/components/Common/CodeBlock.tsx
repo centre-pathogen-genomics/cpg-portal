@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Box, Button, IconButton, Text, useToast, Flex, useColorModeValue } from '@chakra-ui/react';
+import { useState } from 'react';
+import { Box, IconButton, useToast, Flex, useColorModeValue } from '@chakra-ui/react';
 import { IoIosCopy, IoIosCheckmarkCircleOutline } from 'react-icons/io';
 import SyntaxHighlighter from 'react-syntax-highlighter';
 import { vs2015, githubGist } from 'react-syntax-highlighter/dist/cjs/styles/hljs';
