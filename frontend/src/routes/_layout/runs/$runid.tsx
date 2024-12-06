@@ -26,15 +26,15 @@ import { useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { Suspense } from "react"
 import { ErrorBoundary } from "react-error-boundary"
-import { ResultPublicWithFileAndTarget, TasksService } from "../../../client"
-import TaskRuntime from "../../../components/Tasks/RunTime"
+import { ResultPublicWithFileAndTarget, RunsService } from "../../../client"
+import RunRuntime from "../../../components/Runs/RunTime"
 import CsvFileToTable from "../../../components/Render/CsvFileToTable"
 import JsonFile from "../../../components/Render/JsonFile"
 import CodeBlock from "../../../components/Common/CodeBlock"
 import DownloadFileButton from "../../../components/Files/DownloadFileButton"
 
-export const Route = createFileRoute("/_layout/runs/$taskid")({
-  component: Task,
+export const Route = createFileRoute("/_layout/runs/$runid")({
+  component: Run,
 })
 
 function renderResult(result: ResultPublicWithFileAndTarget) {
@@ -52,29 +52,29 @@ function renderResult(result: ResultPublicWithFileAndTarget) {
   return null
 }
 
-function TaskDetail() {
-  const { taskid } = Route.useParams()
+function RunDetail() {
+  const { runid } = Route.useParams()
 
   // Using useSuspenseQuery for data fetching
 
-  const { data: task } = useSuspenseQuery({
-    queryKey: ["task", { id: taskid }],
-    queryFn: () => TasksService.readTask({ id: taskid }),
-    refetchInterval: (task) => {
-      return (task && task.state.data?.status === "running") ||
-        task.state.data?.status === "pending"
+  const { data: run } = useSuspenseQuery({
+    queryKey: ["run", { id: runid }],
+    queryFn: () => RunsService.readRun({ id: runid }),
+    refetchInterval: (run) => {
+      return (run && run.state.data?.status === "running") ||
+        run.state.data?.status === "pending"
         ? 3000
-        : false // Poll every 3 seconds if task is running or pending
+        : false // Poll every 3 seconds if run is running or pending
     },
     refetchIntervalInBackground: true,
   })
 
   const command = []
-  if (task?.tool?.setup_command) {
-    command.push(task.tool.setup_command)
+  if (run?.tool?.setup_command) {
+    command.push(run.tool.setup_command)
   } 
-  if (task?.command) {
-    command.push(task.command)
+  if (run?.command) {
+    command.push(run.command)
   }
 
   return (
@@ -94,30 +94,30 @@ function TaskDetail() {
           </BreadcrumbItem>
 
           <BreadcrumbItem isCurrentPage>
-            <BreadcrumbLink href="#">{task.id}</BreadcrumbLink>
+            <BreadcrumbLink href="#">{run.id}</BreadcrumbLink>
           </BreadcrumbItem>
         </Breadcrumb>
       </Heading>
       <Box mb={4}>
         <Text>
-          Tool: <Code>{task.tool.name}</Code>
+          Tool: <Code>{run.tool.name}</Code>
         </Text>
         <Text>
           Status:{" "}
-          <Badge borderRadius="full" px="2" colorScheme={task.status == "failed" ? "red" :"teal"}>
-            {task.status}
+          <Badge borderRadius="full" px="2" colorScheme={run.status == "failed" ? "red" :"teal"}>
+            {run.status}
           </Badge>
         </Text>
         <Text>
-          Runtime: <TaskRuntime started_at={task.started_at} finished_at={task.finished_at} status={task.status}  />
+          Runtime: <RunRuntime started_at={run.started_at} finished_at={run.finished_at} status={run.status}  />
         </Text>
-        <Text>Started: {task.started_at}</Text>
-        <Text>Completed: {task.finished_at}</Text>
+        <Text>Started: {run.started_at}</Text>
+        <Text>Completed: {run.finished_at}</Text>
       </Box>
-      {task.results.length > 0 && (
+      {run.results.length > 0 && (
         <Tabs  variant="enclosed" >
           <TabList mb='1em'>
-          {task.results?.map((result) => (
+          {run.results?.map((result) => (
             <>
               {result.target.display && (
                 <Tab key={result.id}>{result.file.name}</Tab>
@@ -126,7 +126,7 @@ function TaskDetail() {
           ))} 
           </TabList>
           <TabPanels>
-          {task.results?.map((result) => (
+          {run.results?.map((result) => (
             <>
               {result.target.display && (
                 <TabPanel>
@@ -149,7 +149,7 @@ function TaskDetail() {
             </AccordionButton>
           </h2>
           <AccordionPanel pb={4}>
-          { task.command ? (
+          { run.command ? (
             <>
             <CodeBlock code={command.join("\n")} language="bash" />
 
@@ -168,7 +168,7 @@ function TaskDetail() {
                   Stdout 
                 </Text>
                 <Badge borderRadius="full" ml="2" px="2"colorScheme="teal">
-                  {(task.stdout?.length && task.stdout?.length > 0) ? task.stdout?.trim().split("\n").length : 0}
+                  {(run.stdout?.length && run.stdout?.length > 0) ? run.stdout?.trim().split("\n").length : 0}
                 </Badge>
                 </Flex>
               </Box>
@@ -176,9 +176,9 @@ function TaskDetail() {
             </AccordionButton>
           </h2>
           <AccordionPanel pb={4}>
-          { task.stdout?.length && task.stdout?.length > 0 ? (
+          { run.stdout?.length && run.stdout?.length > 0 ? (
             <Text style={{ whiteSpace: "pre-wrap" }}>
-              {task.stdout}
+              {run.stdout}
             </Text>
           ) : (
             <Text>No output</Text>
@@ -194,7 +194,7 @@ function TaskDetail() {
                   Stderr 
                 </Text>
                 <Badge borderRadius="full" ml="2" px="2"colorScheme="teal">
-                {(task.stderr?.length && task.stderr?.length > 0) ? task.stderr?.trim().split("\n").length : 0}
+                {(run.stderr?.length && run.stderr?.length > 0) ? run.stderr?.trim().split("\n").length : 0}
                 </Badge>
                 </Flex>
               </Box>
@@ -202,9 +202,9 @@ function TaskDetail() {
             </AccordionButton>
           </h2>
           <AccordionPanel pb={4}>
-          { task.stderr?.length && task.stderr.length > 0 ? (
+          { run.stderr?.length && run.stderr.length > 0 ? (
             <Text style={{ whiteSpace: "pre-wrap" }}>
-              {task.stderr}
+              {run.stderr}
             </Text>
           ) : (
             <Text>No output</Text>
@@ -216,7 +216,7 @@ function TaskDetail() {
   )
 }
 
-function Task() {
+function Run() {
   return (
     <Container maxW="full">
       <Suspense fallback={<Skeleton height="20px" />}>
@@ -227,11 +227,11 @@ function Task() {
             </Box>
           )}
         >
-          <TaskDetail />
+          <RunDetail />
         </ErrorBoundary>
       </Suspense>
     </Container>
   )
 }
 
-export default Task
+export default Run

@@ -28,8 +28,8 @@ import type {
   Body_files_upload_file,
   FilePublic,
   FilesPublic,
-  TaskPublic,
-  TasksPublicMinimal,
+  RunPublic,
+  RunsPublicMinimal,
 } from "./models"
 
 export type TDataLoginAccessToken = {
@@ -981,43 +981,43 @@ export class FilesService {
   }
 }
 
-export type TDataReadTasks = {
+export type TDataReadRuns = {
   limit?: number
   orderBy?: string
   skip?: number
 }
-export type TDataCreateTask = {
+export type TDataCreateRun = {
   requestBody: Record<string, unknown>
   toolId: string
 }
-export type TDataReadActiveTasks = {
+export type TDataReadActiveRuns = {
   limit?: number
   skip?: number
 }
-export type TDataReadTask = {
+export type TDataReadRun = {
   id: string
 }
-export type TDataDeleteTask = {
+export type TDataDeleteRun = {
   id: string
 }
-export type TDataCancelTask = {
+export type TDataCancelRun = {
   id: string
 }
 
-export class TasksService {
+export class RunsService {
   /**
-   * Read Tasks
-   * Retrieve tasks with optional ordering.
-   * @returns TasksPublicMinimal Successful Response
+   * Read Runs
+   * Retrieve runs with optional ordering.
+   * @returns RunsPublicMinimal Successful Response
    * @throws ApiError
    */
-  public static readTasks(
-    data: TDataReadTasks = {},
-  ): CancelablePromise<TasksPublicMinimal> {
+  public static readRuns(
+    data: TDataReadRuns = {},
+  ): CancelablePromise<RunsPublicMinimal> {
     const { limit = 100, orderBy = "-created_at", skip = 0 } = data
     return __request(OpenAPI, {
       method: "GET",
-      url: "/api/v1/tasks/",
+      url: "/api/v1/runs/",
       query: {
         skip,
         limit,
@@ -1030,19 +1030,17 @@ export class TasksService {
   }
 
   /**
-   * Create Task
-   * Create and run a task of a specific tool, validating against predefined tool parameters.
+   * Create Run
+   * Create and run a run of a specific tool, validating against predefined tool parameters.
    * Accepts both files and regular parameters dynamically.
-   * @returns TaskPublic Successful Response
+   * @returns RunPublic Successful Response
    * @throws ApiError
    */
-  public static createTask(
-    data: TDataCreateTask,
-  ): CancelablePromise<TaskPublic> {
+  public static createRun(data: TDataCreateRun): CancelablePromise<RunPublic> {
     const { requestBody, toolId } = data
     return __request(OpenAPI, {
       method: "POST",
-      url: "/api/v1/tasks/",
+      url: "/api/v1/runs/",
       query: {
         tool_id: toolId,
       },
@@ -1055,44 +1053,44 @@ export class TasksService {
   }
 
   /**
-   * Delete Tasks
-   * Delete all inactive tasks.
+   * Delete Runs
+   * Delete all inactive runs.
    * @returns Message Successful Response
    * @throws ApiError
    */
-  public static deleteTasks(): CancelablePromise<Message> {
+  public static deleteRuns(): CancelablePromise<Message> {
     return __request(OpenAPI, {
       method: "DELETE",
-      url: "/api/v1/tasks/",
+      url: "/api/v1/runs/",
     })
   }
 
   /**
-   * Cancel Tasks
-   * Cancel all active tasks with status pending or running.
+   * Cancel Runs
+   * Cancel all active runs with status pending or running.
    * @returns Message Successful Response
    * @throws ApiError
    */
-  public static cancelTasks(): CancelablePromise<Message> {
+  public static cancelRuns(): CancelablePromise<Message> {
     return __request(OpenAPI, {
       method: "PATCH",
-      url: "/api/v1/tasks/cancel",
+      url: "/api/v1/runs/cancel",
     })
   }
 
   /**
-   * Read Active Tasks
-   * Retrieve active tasks with status pending or running.
-   * @returns TasksPublicMinimal Successful Response
+   * Read Active Runs
+   * Retrieve active runs with status pending or running.
+   * @returns RunsPublicMinimal Successful Response
    * @throws ApiError
    */
-  public static readActiveTasks(
-    data: TDataReadActiveTasks = {},
-  ): CancelablePromise<TasksPublicMinimal> {
+  public static readActiveRuns(
+    data: TDataReadActiveRuns = {},
+  ): CancelablePromise<RunsPublicMinimal> {
     const { limit = 100, skip = 0 } = data
     return __request(OpenAPI, {
       method: "GET",
-      url: "/api/v1/tasks/active",
+      url: "/api/v1/runs/active",
       query: {
         skip,
         limit,
@@ -1104,16 +1102,16 @@ export class TasksService {
   }
 
   /**
-   * Read Task
-   * Retrieve task metadata.
-   * @returns TaskPublic Successful Response
+   * Read Run
+   * Retrieve run metadata.
+   * @returns RunPublic Successful Response
    * @throws ApiError
    */
-  public static readTask(data: TDataReadTask): CancelablePromise<TaskPublic> {
+  public static readRun(data: TDataReadRun): CancelablePromise<RunPublic> {
     const { id } = data
     return __request(OpenAPI, {
       method: "GET",
-      url: "/api/v1/tasks/{id}",
+      url: "/api/v1/runs/{id}",
       path: {
         id,
       },
@@ -1124,16 +1122,16 @@ export class TasksService {
   }
 
   /**
-   * Delete Task
-   * Delete task.
+   * Delete Run
+   * Delete run.
    * @returns Message Successful Response
    * @throws ApiError
    */
-  public static deleteTask(data: TDataDeleteTask): CancelablePromise<Message> {
+  public static deleteRun(data: TDataDeleteRun): CancelablePromise<Message> {
     const { id } = data
     return __request(OpenAPI, {
       method: "DELETE",
-      url: "/api/v1/tasks/{id}",
+      url: "/api/v1/runs/{id}",
       path: {
         id,
       },
@@ -1144,18 +1142,16 @@ export class TasksService {
   }
 
   /**
-   * Cancel Task
-   * Cancel task.
-   * @returns TaskPublic Successful Response
+   * Cancel Run
+   * Cancel run.
+   * @returns RunPublic Successful Response
    * @throws ApiError
    */
-  public static cancelTask(
-    data: TDataCancelTask,
-  ): CancelablePromise<TaskPublic> {
+  public static cancelRun(data: TDataCancelRun): CancelablePromise<RunPublic> {
     const { id } = data
     return __request(OpenAPI, {
       method: "PATCH",
-      url: "/api/v1/tasks/{id}/cancel",
+      url: "/api/v1/runs/{id}/cancel",
       path: {
         id,
       },

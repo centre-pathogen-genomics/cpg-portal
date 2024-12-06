@@ -6,10 +6,10 @@ import {
   WarningIcon,
 } from "@chakra-ui/icons"
 import { Tooltip } from "@chakra-ui/react"
-import type { TaskStatus } from "../../client"
+import type { RunStatus } from "../../client"
 
-const StatusIcon = ({ status }: { status: TaskStatus }) => {
-  const getIconDetails = (status: TaskStatus) => {
+const StatusIcon = ({ status }: { status: RunStatus }) => {
+  const getIconDetails = (status: RunStatus) => {
     switch (status) {
       case "completed":
         return {

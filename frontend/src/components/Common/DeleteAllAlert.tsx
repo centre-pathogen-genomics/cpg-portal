@@ -11,11 +11,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import React from "react"
 import { useForm } from "react-hook-form"
 
-import { TasksService, FilesService } from "../../client"
+import { RunsService, FilesService } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
 
 interface DeleteAllProps {
-  type: "Tasks" | "Files"
+  type: "Runs" | "Files"
   isOpen: boolean
   onClose: () => void
 }
@@ -30,8 +30,8 @@ const DeleteAll = ({ type, isOpen, onClose }: DeleteAllProps) => {
   } = useForm()
 
   const deleteEntities = async (type: string) => {
-    if (type === "Tasks") {
-      await TasksService.deleteTasks()
+    if (type === "Runs") {
+      await RunsService.deleteRuns()
     } else if (type === "Files") {
       // Implement the deleteFiles method
       await FilesService.deleteFiles()
@@ -55,7 +55,7 @@ const DeleteAll = ({ type, isOpen, onClose }: DeleteAllProps) => {
     },
     onSettled: () => {
       queryClient.invalidateQueries({
-        queryKey: ["tasks", "files"], // Invalidate queries related to tasks
+        queryKey: ["runs", "files"], // Invalidate queries related to runs
       })
     },
   })
@@ -77,7 +77,7 @@ const DeleteAll = ({ type, isOpen, onClose }: DeleteAllProps) => {
           <AlertDialogContent as="form" onSubmit={handleSubmit(onSubmit)}>
             <AlertDialogHeader>{`Delete All ${type}`}</AlertDialogHeader>
             <AlertDialogBody>
-              {`Are you sure you want to delete all ${type == "Tasks" ? "(non-running) tasks" : "files"}? This action cannot be undone.`}
+              {`Are you sure you want to delete all ${type == "Runs" ? "(non-running) runs" : "files"}? This action cannot be undone.`}
             </AlertDialogBody>
             <AlertDialogFooter gap={3}>
               <Button variant="danger" type="submit" isLoading={isSubmitting}>

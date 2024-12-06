@@ -1,7 +1,7 @@
 import { Button, useDisclosure } from "@chakra-ui/react"
 import DeleteAll from "../Common/DeleteAllAlert"
 
-const DeleteTasksButton = () => {
+const DeleteRunsButton = () => {
   const { isOpen, onOpen, onClose } = useDisclosure()
 
   return (
@@ -19,4 +19,4 @@ const DeleteTasksButton = () => {
   )
 }
 
-export default DeleteTasksButton
+export default DeleteRunsButton

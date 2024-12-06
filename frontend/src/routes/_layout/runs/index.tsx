@@ -20,39 +20,39 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useEffect } from "react"
-import { TasksService } from "../../../client" // Import updated service
-import CancelTaskButton from "../../../components/Tasks/CancelTaskButton"
-import CancelTasksButton from "../../../components/Tasks/CancelTasksButton"
-import DeleteTaskButton from "../../../components/Tasks/DeleteTaskButton"
-import DeleteTasksButton from "../../../components/Tasks/DeleteTasksButton"
-import TaskRuntime from "../../../components/Tasks/RunTime"
-import StatusIcon from "../../../components/Tasks/StatusIcon"
+import { RunsService } from "../../../client" // Import updated service
+import CancelRunButton from "../../../components/Runs/CancelRunButton"
+import CancelRunsButton from "../../../components/Runs/CancelRunsButton"
+import DeleteRunButton from "../../../components/Runs/DeleteRunButton"
+import DeleteRunsButton from "../../../components/Runs/DeleteRunsButton"
+import RunRuntime from "../../../components/Runs/RunTime"
+import StatusIcon from "../../../components/Runs/StatusIcon"
 import { PaginationFooter } from "../../../components/Common/PaginationFooter"
 import { z } from "zod"
 
-const tasksSearchSchema = z.object({
+const runsSearchSchema = z.object({
   page: z.number().catch(1),
 })
 
 export const Route = createFileRoute("/_layout/runs/")({
-  component: Tasks,
-  validateSearch: (search) => tasksSearchSchema.parse(search),
+  component: Runs,
+  validateSearch: (search) => runsSearchSchema.parse(search),
 })
 
 const PER_PAGE = 8
 
-function getTasksQueryOptions({ page }: { page: number }) {
+function getRunsQueryOptions({ page }: { page: number }) {
   return {
     queryFn: () =>
-      TasksService.readTasks({ skip: (page - 1) * PER_PAGE, limit: PER_PAGE }),
-    queryKey: ["tasks", { page }],
+      RunsService.readRuns({ skip: (page - 1) * PER_PAGE, limit: PER_PAGE }),
+    queryKey: ["runs", { page }],
   }
 }
 
-// Custom hook to poll tasks
-function usePollTasks({ page }: { page: number }) {
-  const fetchTasks = async () => {
-    const response = await TasksService.readTasks({
+// Custom hook to poll runs
+function usePollRuns({ page }: { page: number }) {
+  const fetchRuns = async () => {
+    const response = await RunsService.readRuns({
       skip: (page - 1) * PER_PAGE,
       limit: PER_PAGE,
     })
@@ -60,8 +60,8 @@ function usePollTasks({ page }: { page: number }) {
   }
 
   const { data, isPending, isPlaceholderData } = useQuery({
-    queryKey: ["tasks", { page }],
-    queryFn: fetchTasks,
+    queryKey: ["runs", { page }],
+    queryFn: fetchRuns,
     refetchInterval: 5000,
     refetchIntervalInBackground: true,
   })
@@ -69,7 +69,7 @@ function usePollTasks({ page }: { page: number }) {
   return { data, isPending, isPlaceholderData }
 }
 
-function TasksTable() {
+function RunsTable() {
   const { page } = Route.useSearch()
   const navigate = useNavigate({ from: Route.fullPath })
   const setPage = (page: number) =>
@@ -77,15 +77,15 @@ function TasksTable() {
 
   const queryClient = useQueryClient()
 
-  // Use usePollTasks with pagination
-  const { data: tasks, isPending, isPlaceholderData } = usePollTasks({ page })
+  // Use usePollRuns with pagination
+  const { data: runs, isPending, isPlaceholderData } = usePollRuns({ page })
 
-  const hasNextPage = !isPlaceholderData && tasks?.data.length === PER_PAGE
+  const hasNextPage = !isPlaceholderData && runs?.data.length === PER_PAGE
   const hasPreviousPage = page > 1
 
   useEffect(() => {
     if (hasNextPage) {
-      queryClient.prefetchQuery(getTasksQueryOptions({ page: page + 1 }))
+      queryClient.prefetchQuery(getRunsQueryOptions({ page: page + 1 }))
     }
   }, [page, queryClient, hasNextPage])
 
@@ -114,11 +114,11 @@ function TasksTable() {
         </Tbody>
         ) : (
             <Tbody>
-              {tasks?.data.map((task) => (
-                <Tr cursor="pointer" key={task.taskiq_id} onClick={() =>
+              {runs?.data.map((run) => (
+                <Tr cursor="pointer" key={run.id} onClick={() =>
                     navigate({
-                      to: `/runs/${task.id.toString()}`,
-                      params: { taskid: task.id.toString() },
+                      to: `/runs/${run.id.toString()}`,
+                      params: { runid: run.id.toString() },
                       replace: false,
                       resetScroll: true,
                     })
@@ -127,12 +127,12 @@ function TasksTable() {
                     <Tooltip
                       placement="top"
                       hasArrow
-                      label={task.id}
+                      label={run.id}
                       bg="gray.300"
                       color="black"
                     >
                       <Badge variant="outline" colorScheme="green">
-                        {task.id.split("-")[0]}
+                        {run.id.split("-")[0]}
                       </Badge>
                     </Tooltip>
                   </Td>
@@ -141,24 +141,24 @@ function TasksTable() {
                       onClick={(e) =>{
                           e.stopPropagation();
                           navigate({
-                            to: `/tools/${task.tool.name}`,
+                            to: `/tools/${run.tool.name}`,
                             replace: false,
                             resetScroll: true,
                           })
                         }
                       }
                     >
-                      {task.tool.name}
+                      {run.tool.name}
                     </Link>
                   </Td>
                   <Td>
-                    <StatusIcon status={task.status} />
+                    <StatusIcon status={run.status} />
                   </Td>
                   <Td>
-                    <TaskRuntime
-                      started_at={task.started_at}
-                      finished_at={task.finished_at}
-                      status={task.status}
+                    <RunRuntime
+                      started_at={run.started_at}
+                      finished_at={run.finished_at}
+                      status={run.status}
                     />
                   </Td>
                   <Td >
@@ -172,8 +172,8 @@ function TasksTable() {
                         leftIcon={<ViewIcon />}
                         onClick={() =>
                           navigate({
-                            to: `/runs/${task.id.toString()}`,
-                            params: { taskid: task.id.toString() },
+                            to: `/runs/${run.id.toString()}`,
+                            params: { runid: run.id.toString() },
                             replace: false,
                             resetScroll: true,
                           })
@@ -181,10 +181,10 @@ function TasksTable() {
                       >
                         View
                       </Button>
-                      {["running", "pending"].includes(task.status) ? (
-                        <CancelTaskButton task_id={task.id} />
+                      {["running", "pending"].includes(run.status) ? (
+                        <CancelRunButton run_id={run.id} />
                       ) : (
-                        <DeleteTaskButton task_id={task.id} />
+                        <DeleteRunButton run_id={run.id} />
                       )}
                     </ButtonGroup>
                   </Td>
@@ -211,14 +211,14 @@ function Actions() {
 
   return (
     <Flex gap={4} mb={4} justify={"end"}>
-      <CancelTasksButton/>
-      <DeleteTasksButton/>
+      <CancelRunsButton/>
+      <DeleteRunsButton/>
     </Flex>
   )
 }
 
 
-function Tasks() {
+function Runs() {
   return (
     <Container maxW="full">
       <Heading
@@ -229,9 +229,9 @@ function Tasks() {
       >
         Runs
       </Heading>
-      {/* <TaskStats /> */}
+      {/* <RunStats /> */}
       <Actions />
-      <TasksTable />
+      <RunsTable />
     </Container>
   )
 }

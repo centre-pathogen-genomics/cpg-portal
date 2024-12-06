@@ -37,10 +37,10 @@ function Tool() {
       <Text pb={4}>{tool?.description}</Text>
       <RunToolForm
         toolId={tool.id}
-        onSuccess={(task) => {
+        onSuccess={(run) => {
           navigate({
-            to: `/runs/${task.id}`,
-            params: { taskid: task.id },
+            to: `/runs/${run.id}`,
+            params: { runid: run.id },
             replace: false,
             resetScroll: true,
           })

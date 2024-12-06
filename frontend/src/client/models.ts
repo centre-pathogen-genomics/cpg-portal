@@ -87,8 +87,47 @@ export type ResultPublicWithFileAndTarget = {
   file: FilePublic
   target: TargetPublic
   owner_id: string
-  task_id: string
+  run_id: string
   created_at: string
+}
+
+export type RunPublic = {
+  taskiq_id: string
+  status: RunStatus
+  created_at: string
+  started_at: string | null
+  finished_at: string | null
+  id: string
+  owner_id: string
+  tool: ToolPublic
+  stderr?: string | null
+  stdout?: string | null
+  command?: string | null
+  params: Record<string, unknown>
+  results: Array<ResultPublicWithFileAndTarget>
+}
+
+export type RunPublicMinimal = {
+  taskiq_id: string
+  status: RunStatus
+  created_at: string
+  started_at: string | null
+  finished_at: string | null
+  id: string
+  owner_id: string
+  tool: ToolPublic
+}
+
+export type RunStatus =
+  | "pending"
+  | "running"
+  | "completed"
+  | "failed"
+  | "cancelled"
+
+export type RunsPublicMinimal = {
+  data: Array<RunPublicMinimal>
+  count: number
 }
 
 export type Target = {
@@ -131,45 +170,6 @@ export type TargetUpdate = {
   target_type?: TargetType | null
   display?: boolean | null
   required?: boolean
-}
-
-export type TaskPublic = {
-  taskiq_id: string
-  status: TaskStatus
-  created_at: string
-  started_at: string | null
-  finished_at: string | null
-  id: string
-  owner_id: string
-  tool: ToolPublic
-  stderr?: string | null
-  stdout?: string | null
-  command?: string | null
-  params: Record<string, unknown>
-  results: Array<ResultPublicWithFileAndTarget>
-}
-
-export type TaskPublicMinimal = {
-  taskiq_id: string
-  status: TaskStatus
-  created_at: string
-  started_at: string | null
-  finished_at: string | null
-  id: string
-  owner_id: string
-  tool: ToolPublic
-}
-
-export type TaskStatus =
-  | "pending"
-  | "running"
-  | "completed"
-  | "failed"
-  | "cancelled"
-
-export type TasksPublicMinimal = {
-  data: Array<TaskPublicMinimal>
-  count: number
 }
 
 export type Token = {

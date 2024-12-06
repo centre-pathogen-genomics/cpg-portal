@@ -22,7 +22,7 @@ import { Route as LayoutAdminImport } from './routes/_layout/admin'
 import { Route as LayoutRunsIndexImport } from './routes/_layout/runs/index'
 import { Route as LayoutFilesIndexImport } from './routes/_layout/files/index'
 import { Route as LayoutToolsNameImport } from './routes/_layout/tools/$name'
-import { Route as LayoutRunsTaskidImport } from './routes/_layout/runs/$taskid'
+import { Route as LayoutRunsRunidImport } from './routes/_layout/runs/$runid'
 
 // Create/Update Routes
 
@@ -81,8 +81,8 @@ const LayoutToolsNameRoute = LayoutToolsNameImport.update({
   getParentRoute: () => LayoutRoute,
 } as any)
 
-const LayoutRunsTaskidRoute = LayoutRunsTaskidImport.update({
-  path: '/runs/$taskid',
+const LayoutRunsRunidRoute = LayoutRunsRunidImport.update({
+  path: '/runs/$runid',
   getParentRoute: () => LayoutRoute,
 } as any)
 
@@ -122,8 +122,8 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutIndexImport
       parentRoute: typeof LayoutImport
     }
-    '/_layout/runs/$taskid': {
-      preLoaderRoute: typeof LayoutRunsTaskidImport
+    '/_layout/runs/$runid': {
+      preLoaderRoute: typeof LayoutRunsRunidImport
       parentRoute: typeof LayoutImport
     }
     '/_layout/tools/$name': {
@@ -148,7 +148,7 @@ export const routeTree = rootRoute.addChildren([
     LayoutAdminRoute,
     LayoutSettingsRoute,
     LayoutIndexRoute,
-    LayoutRunsTaskidRoute,
+    LayoutRunsRunidRoute,
     LayoutToolsNameRoute,
     LayoutFilesIndexRoute,
     LayoutRunsIndexRoute,

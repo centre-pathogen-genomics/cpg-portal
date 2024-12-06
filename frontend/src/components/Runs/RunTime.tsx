@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react"
 
-interface TaskRuntimeProps {
+interface RunRuntimeProps {
   finished_at: string | null
   started_at: string | null
   status: string
 }
 
-// Component that displays the runtime of a task, handling UTC time
-const TaskRuntime = ({ started_at, finished_at, status }: TaskRuntimeProps) => {
+// Component that displays the runtime of a run, handling UTC time
+const RunRuntime = ({ started_at, finished_at, status }: RunRuntimeProps) => {
   const [runtime, setRuntime] = useState("...")
 
   useEffect(() => {
@@ -49,7 +49,7 @@ const TaskRuntime = ({ started_at, finished_at, status }: TaskRuntimeProps) => {
       setRuntime(`${hours}h ${minutes}m ${seconds}s`)
     }
 
-    // Update runtime immediately and set an interval if the task is running
+    // Update runtime immediately and set an interval if the run is running
     updateRuntime()
     if (status === "running") {
       intervalId = setInterval(updateRuntime, 1000)
@@ -65,4 +65,4 @@ const TaskRuntime = ({ started_at, finished_at, status }: TaskRuntimeProps) => {
   return <span>{runtime}</span>
 }
 
-export default TaskRuntime
+export default RunRuntime

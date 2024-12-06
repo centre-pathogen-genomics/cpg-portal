@@ -14,7 +14,7 @@ const DeleteFileButton = ({ file }: DeleteButtonProps) => {
     <>
       <IconButton
         onClick={onOpen}
-        aria-label="Delete Task"
+        aria-label="Delete Run"
         icon={<FiTrash2 fontSize="16px" />}
         color="ui.danger"
         variant="outline"

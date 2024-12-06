@@ -16,16 +16,16 @@ import { type SubmitHandler, useForm } from "react-hook-form"
 import {
   FilesService,
   type Param,
-  type TaskPublic,
+  type RunPublic,
   ToolsService,
-  TasksService,
+  RunsService,
 } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
 import React from "react"
 
 interface RunToolFormProps {
   toolId: string
-  onSuccess?: (task: TaskPublic) => void
+  onSuccess?: (run: RunPublic) => void
 }
 
 const RunToolForm = ({ toolId, onSuccess }: RunToolFormProps) => {
@@ -73,17 +73,17 @@ const RunToolForm = ({ toolId, onSuccess }: RunToolFormProps) => {
   
   const mutation = useMutation({
     mutationFn: (data: Record<string, unknown>) =>
-      TasksService.createTask({
+      RunsService.createRun({
         requestBody: data,
         toolId,
       }),
-    onSuccess: (task) => {
+    onSuccess: (run) => {
       showToast(
         "Success!",
-        `Tool run successfully.\nTask ID: ${task.id}`,
+        `Tool run successfully.\nRun ID: ${run.id}`,
         "success",
       )
-      if (onSuccess) onSuccess(task)
+      if (onSuccess) onSuccess(run)
     },
     onError: (error) => {
       showToast("Error", error.message, "error")

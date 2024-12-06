@@ -484,7 +484,7 @@ export const $ResultPublicWithFileAndTarget = {
       isRequired: true,
       format: "uuid",
     },
-    task_id: {
+    run_id: {
       type: "string",
       isRequired: true,
       format: "uuid",
@@ -493,6 +493,190 @@ export const $ResultPublicWithFileAndTarget = {
       type: "string",
       isRequired: true,
       format: "date-time",
+    },
+  },
+} as const
+
+export const $RunPublic = {
+  properties: {
+    taskiq_id: {
+      type: "string",
+      isRequired: true,
+    },
+    status: {
+      type: "RunStatus",
+      isRequired: true,
+    },
+    created_at: {
+      type: "string",
+      isRequired: true,
+      format: "date-time",
+    },
+    started_at: {
+      type: "any-of",
+      contains: [
+        {
+          type: "string",
+          format: "date-time",
+        },
+        {
+          type: "null",
+        },
+      ],
+      isRequired: true,
+    },
+    finished_at: {
+      type: "any-of",
+      contains: [
+        {
+          type: "string",
+          format: "date-time",
+        },
+        {
+          type: "null",
+        },
+      ],
+      isRequired: true,
+    },
+    id: {
+      type: "string",
+      isRequired: true,
+      format: "uuid",
+    },
+    owner_id: {
+      type: "string",
+      isRequired: true,
+      format: "uuid",
+    },
+    tool: {
+      type: "ToolPublic",
+      isRequired: true,
+    },
+    stderr: {
+      type: "any-of",
+      contains: [
+        {
+          type: "string",
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    stdout: {
+      type: "any-of",
+      contains: [
+        {
+          type: "string",
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    command: {
+      type: "any-of",
+      contains: [
+        {
+          type: "string",
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    params: {
+      type: "dictionary",
+      contains: {
+        properties: {},
+      },
+      isRequired: true,
+    },
+    results: {
+      type: "array",
+      contains: {
+        type: "ResultPublicWithFileAndTarget",
+      },
+      isRequired: true,
+    },
+  },
+} as const
+
+export const $RunPublicMinimal = {
+  properties: {
+    taskiq_id: {
+      type: "string",
+      isRequired: true,
+    },
+    status: {
+      type: "RunStatus",
+      isRequired: true,
+    },
+    created_at: {
+      type: "string",
+      isRequired: true,
+      format: "date-time",
+    },
+    started_at: {
+      type: "any-of",
+      contains: [
+        {
+          type: "string",
+          format: "date-time",
+        },
+        {
+          type: "null",
+        },
+      ],
+      isRequired: true,
+    },
+    finished_at: {
+      type: "any-of",
+      contains: [
+        {
+          type: "string",
+          format: "date-time",
+        },
+        {
+          type: "null",
+        },
+      ],
+      isRequired: true,
+    },
+    id: {
+      type: "string",
+      isRequired: true,
+      format: "uuid",
+    },
+    owner_id: {
+      type: "string",
+      isRequired: true,
+      format: "uuid",
+    },
+    tool: {
+      type: "ToolPublic",
+      isRequired: true,
+    },
+  },
+} as const
+
+export const $RunStatus = {
+  type: "Enum",
+  enum: ["pending", "running", "completed", "failed", "cancelled"],
+} as const
+
+export const $RunsPublicMinimal = {
+  properties: {
+    data: {
+      type: "array",
+      contains: {
+        type: "RunPublicMinimal",
+      },
+      isRequired: true,
+    },
+    count: {
+      type: "number",
+      isRequired: true,
     },
   },
 } as const
@@ -703,190 +887,6 @@ export const $TargetUpdate = {
     required: {
       type: "boolean",
       default: true,
-    },
-  },
-} as const
-
-export const $TaskPublic = {
-  properties: {
-    taskiq_id: {
-      type: "string",
-      isRequired: true,
-    },
-    status: {
-      type: "TaskStatus",
-      isRequired: true,
-    },
-    created_at: {
-      type: "string",
-      isRequired: true,
-      format: "date-time",
-    },
-    started_at: {
-      type: "any-of",
-      contains: [
-        {
-          type: "string",
-          format: "date-time",
-        },
-        {
-          type: "null",
-        },
-      ],
-      isRequired: true,
-    },
-    finished_at: {
-      type: "any-of",
-      contains: [
-        {
-          type: "string",
-          format: "date-time",
-        },
-        {
-          type: "null",
-        },
-      ],
-      isRequired: true,
-    },
-    id: {
-      type: "string",
-      isRequired: true,
-      format: "uuid",
-    },
-    owner_id: {
-      type: "string",
-      isRequired: true,
-      format: "uuid",
-    },
-    tool: {
-      type: "ToolPublic",
-      isRequired: true,
-    },
-    stderr: {
-      type: "any-of",
-      contains: [
-        {
-          type: "string",
-        },
-        {
-          type: "null",
-        },
-      ],
-    },
-    stdout: {
-      type: "any-of",
-      contains: [
-        {
-          type: "string",
-        },
-        {
-          type: "null",
-        },
-      ],
-    },
-    command: {
-      type: "any-of",
-      contains: [
-        {
-          type: "string",
-        },
-        {
-          type: "null",
-        },
-      ],
-    },
-    params: {
-      type: "dictionary",
-      contains: {
-        properties: {},
-      },
-      isRequired: true,
-    },
-    results: {
-      type: "array",
-      contains: {
-        type: "ResultPublicWithFileAndTarget",
-      },
-      isRequired: true,
-    },
-  },
-} as const
-
-export const $TaskPublicMinimal = {
-  properties: {
-    taskiq_id: {
-      type: "string",
-      isRequired: true,
-    },
-    status: {
-      type: "TaskStatus",
-      isRequired: true,
-    },
-    created_at: {
-      type: "string",
-      isRequired: true,
-      format: "date-time",
-    },
-    started_at: {
-      type: "any-of",
-      contains: [
-        {
-          type: "string",
-          format: "date-time",
-        },
-        {
-          type: "null",
-        },
-      ],
-      isRequired: true,
-    },
-    finished_at: {
-      type: "any-of",
-      contains: [
-        {
-          type: "string",
-          format: "date-time",
-        },
-        {
-          type: "null",
-        },
-      ],
-      isRequired: true,
-    },
-    id: {
-      type: "string",
-      isRequired: true,
-      format: "uuid",
-    },
-    owner_id: {
-      type: "string",
-      isRequired: true,
-      format: "uuid",
-    },
-    tool: {
-      type: "ToolPublic",
-      isRequired: true,
-    },
-  },
-} as const
-
-export const $TaskStatus = {
-  type: "Enum",
-  enum: ["pending", "running", "completed", "failed", "cancelled"],
-} as const
-
-export const $TasksPublicMinimal = {
-  properties: {
-    data: {
-      type: "array",
-      contains: {
-        type: "TaskPublicMinimal",
-      },
-      isRequired: true,
-    },
-    count: {
-      type: "number",
-      isRequired: true,
     },
   },
 } as const

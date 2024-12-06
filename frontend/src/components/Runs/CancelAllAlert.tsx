@@ -11,16 +11,15 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import React from "react"
 import { useForm } from "react-hook-form"
 
-import { TasksService } from "../../client" // Ensure you have the TasksService correctly set up
+import { RunsService } from "../../client" // Ensure you have the RunsService correctly set up
 import useCustomToast from "../../hooks/useCustomToast"
 
-interface CancelProps {
-  id: string
+interface CancelAllProps {
   isOpen: boolean
   onClose: () => void
 }
 
-const Cancel = ({ id, isOpen, onClose }: CancelProps) => {
+const CancelAll = ({ isOpen, onClose }: CancelAllProps) => {
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
   const cancelRef = React.useRef<HTMLButtonElement | null>(null)
@@ -29,32 +28,32 @@ const Cancel = ({ id, isOpen, onClose }: CancelProps) => {
     formState: { isSubmitting },
   } = useForm()
 
-  const cancelTask = async (id: string) => {
-    await TasksService.cancelTask({ id: id }) // Use the cancelTask method
+  const cancelRuns = async () => {
+    await RunsService.cancelRuns() // Use the cancelRun method
   }
 
   const mutation = useMutation({
-    mutationFn: cancelTask,
+    mutationFn: cancelRuns,
     onSuccess: () => {
-      showToast("Success", "The task was cancelled successfully.", "success")
+      showToast("Success", "All running runs where cancelled successfully.", "success")
       onClose()
     },
     onError: () => {
       showToast(
         "An error occurred.",
-        "An error occurred while cancelling the task.",
+        "An error occurred while cancelling the runs.",
         "error",
       )
     },
     onSettled: () => {
       queryClient.invalidateQueries({
-        queryKey: ["tasks"], // Invalidate queries related to tasks
+        queryKey: ["runs"], // Invalidate queries related to runs
       })
     },
   })
 
   const onSubmit = async () => {
-    mutation.mutate(id)
+    mutation.mutate()
   }
 
   return (
@@ -68,14 +67,14 @@ const Cancel = ({ id, isOpen, onClose }: CancelProps) => {
       >
         <AlertDialogOverlay>
           <AlertDialogContent as="form" onSubmit={handleSubmit(onSubmit)}>
-            <AlertDialogHeader>Cancel Task</AlertDialogHeader>
+            <AlertDialogHeader>Cancel All Running Runs</AlertDialogHeader>
             <AlertDialogBody>
-              Are you sure you want to cancel this task? This action cannot be
+              Are you sure you want to cancel all runs? This action cannot be
               undone.
             </AlertDialogBody>
             <AlertDialogFooter gap={3}>
               <Button variant="danger" type="submit" isLoading={isSubmitting}>
-                Cancel Task
+                Cancel All Runs
               </Button>
               <Button
                 ref={cancelRef}
@@ -92,4 +91,4 @@ const Cancel = ({ id, isOpen, onClose }: CancelProps) => {
   )
 }
 
-export default Cancel
+export default CancelAll
