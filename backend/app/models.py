@@ -256,7 +256,7 @@ class RunStatus(str, enum.Enum):
 
 
 class RunBase(SQLModel):
-    runiq_id: str
+    taskiq_id: str
     status: RunStatus
     created_at: datetime
     started_at: datetime | None
@@ -265,7 +265,7 @@ class RunBase(SQLModel):
 
 class Run(RunBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    runiq_id: str | None = None
+    taskiq_id: str | None = None
     status: RunStatus = Field(sa_column=Column(Enum(RunStatus)))
     params: dict = Field(default_factory=dict, sa_column=Column(JSON))
     results: list["Result"] = Relationship(
