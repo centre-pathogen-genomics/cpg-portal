@@ -39,7 +39,7 @@ def init_db(session: Session) -> None:
         print("Creating example Sleep tool")
         sleep_tool = Tool(
             name="Sleep",
-            description="This is an example tool to simulate a long running task. The job will sleep for the number of seconds requested.",
+            description="This is an example tool to simulate a long run. The tool will sleep for the number of seconds requested.",
             image="https://images.unsplash.com/photo-1415604934674-561df9abf539?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTh8fGNsb2NrfGVufDB8fDB8fHwy",
             command=["sleep", "{SECONDS}"],
             enabled=True,

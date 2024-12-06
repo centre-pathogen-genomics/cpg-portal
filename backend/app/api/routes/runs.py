@@ -10,17 +10,17 @@ from app.api.deps import CurrentUser, SessionDep
 from app.models import (
     File,
     Message,
-    Task,
-    TaskPublic,
-    TasksPublicMinimal,
+    Run,
+    RunPublic,
+    RunsPublicMinimal,
     Tool,
 )
-from app.tasks import run_tool as run_tool_task
+from app.tasks import run_tool
 
 router = APIRouter()
 
-@router.get("/", response_model=TasksPublicMinimal)
-def read_tasks(
+@router.get("/", response_model=RunsPublicMinimal)
+def read_runs(
     session: SessionDep,
     current_user: CurrentUser,
     skip: int = 0,
@@ -28,40 +28,40 @@ def read_tasks(
     order_by: str = Query("-created_at", regex=r"^-?[a-zA-Z_]+$")
 ) -> Any:
     """
-    Retrieve tasks with optional ordering.
+    Retrieve runs with optional ordering.
     """
 
     # Parse the order_by string to determine the column and direction
     descending = order_by.startswith('-')
     column_name = order_by[1:] if descending else order_by
 
-    # Validate and obtain the actual column object from the Task model
-    if hasattr(Task, column_name):
-        column = getattr(Task, column_name)
+    # Validate and obtain the actual column object from the Run model
+    if hasattr(Run, column_name):
+        column = getattr(Run, column_name)
         order_expression = desc(column) if descending else column
     else:
         raise HTTPException(status_code=400, detail=f"Invalid column name: {column_name}")
 
     # Build the query based on user role
-    query_base = select(Task).where(Task.owner_id == current_user.id)
+    query_base = select(Run).where(Run.owner_id == current_user.id)
 
     # Apply ordering, pagination and execute
-    tasks_query = query_base.order_by(order_expression).offset(skip).limit(limit)
-    tasks = session.exec(tasks_query).all()
+    runs_query = query_base.order_by(order_expression).offset(skip).limit(limit)
+    runs = session.exec(runs_query).all()
 
     # Counting for pagination
-    count_query = select(func.count()).select_from(Task).where(Task.owner_id == current_user.id)
+    count_query = select(func.count()).select_from(Run).where(Run.owner_id == current_user.id)
     count = session.exec(count_query).one()
 
-    return TasksPublicMinimal(data=tasks, count=count)
+    return RunsPublicMinimal(data=runs, count=count)
 
 
-@router.post("/", response_model=TaskPublic)
-async def create_task(
+@router.post("/", response_model=RunPublic)
+async def create_run(
     *, session: SessionDep, current_user: CurrentUser, tool_id: uuid.UUID, params: dict
 ) -> Any:
     """
-    Create and run a task of a specific tool, validating against predefined tool parameters.
+    Create and run a run of a specific tool, validating against predefined tool parameters.
     Accepts both files and regular parameters dynamically.
     """
     # Fetch tool and parameters
@@ -139,147 +139,147 @@ async def create_task(
                 print(f"Replacing {key} with {value}")
                 cmd[cmd.index(part)] = part.format(**{key: value})
 
-    # create a task
-    task = Task(
+    # create a run
+    run = Run(
         tool_id=tool_id,
         owner_id=current_user.id,
         status="pending",
         params=params,
     )
-    session.add(task)
+    session.add(run)
     session.commit()
-    session.refresh(task)
+    session.refresh(run)
 
     # run the command
-    taskiq_task = await run_tool_task.kiq(task.id, cmd, file_ids=[file.id for file in files])
+    taskiq_task = await run_tool.kiq(run.id, cmd, file_ids=[file.id for file in files])
 
-    task.taskiq_id = taskiq_task.task_id
-    session.add(task)
+    run.taskiq_id = taskiq_task.task_id
+    session.add(run)
     session.commit()
-    session.refresh(task)
+    session.refresh(run)
 
-    return task
+    return run
 
 
 @router.patch("/cancel", response_model=Message)
-def cancel_tasks(session: SessionDep, current_user: CurrentUser) -> Any:
+def cancel_runs(session: SessionDep, current_user: CurrentUser) -> Any:
     """
-    Cancel all active tasks with status pending or running.
+    Cancel all active runs with status pending or running.
     """
-    # Select tasks based on user permissions and status
-    statement = select(Task).where(Task.owner_id == current_user.id).where(Task.status.in_(["pending", "running"]))
+    # Select runs based on user permissions and status
+    statement = select(Run).where(Run.owner_id == current_user.id).where(Run.status.in_(["pending", "running"]))
 
-    tasks: list[Task] = session.exec(statement).all()
+    runs: list[Run] = session.exec(statement).all()
 
-    # Update task status
-    for task in tasks:
-        print(f"Cancelling task {task.id}")
-        task.status = "cancelled"
-        session.add(task)
+    # Update run status
+    for run in runs:
+        print(f"Cancelling run {run.id}")
+        run.status = "cancelled"
+        session.add(run)
     session.commit()
-    return Message(message=f"Cancelled {len(tasks)} tasks")
+    return Message(message=f"Cancelled {len(runs)} runs")
 
 @router.delete("/", response_model=Message)
-def delete_tasks(session: SessionDep, current_user: CurrentUser) -> Any:
+def delete_runs(session: SessionDep, current_user: CurrentUser) -> Any:
     """
-    Delete all inactive tasks.
+    Delete all inactive runs.
     """
-    # Select tasks based on user permissions and status
-    statement = select(Task).where(Task.owner_id == current_user.id).where(Task.status != "pending").where(Task.status != "running")
+    # Select runs based on user permissions and status
+    statement = select(Run).where(Run.owner_id == current_user.id).where(Run.status != "pending").where(Run.status != "running")
 
-    tasks: list[Task] = session.exec(statement).all()
+    runs: list[Run] = session.exec(statement).all()
 
     # Cascading delete handles the removal of related Results and Files
     files_to_delete: list[File] = []
-    for task in tasks:
-        if task.results:
-            files = [result.file for result in task.results if result.file]
+    for run in runs:
+        if run.results:
+            files = [result.file for result in run.results if result.file]
             files_to_delete.extend(files)
-        session.delete(task)
+        session.delete(run)
     session.commit()
     for file in files_to_delete:
         file_path = Path(file.location)
         if file_path.exists():
             file_path.unlink()
-    return Message(message=f"Deleted {len(tasks)} tasks and {len(files_to_delete)} files")
+    return Message(message=f"Deleted {len(runs)} runs and {len(files_to_delete)} files")
 
 
 
-@router.get("/active", response_model=TasksPublicMinimal)
-def read_active_tasks(
+@router.get("/active", response_model=RunsPublicMinimal)
+def read_active_runs(
     session: SessionDep, current_user: CurrentUser, skip: int = 0, limit: int = 100
 ) -> Any:
     """
-    Retrieve active tasks with status pending or running.
+    Retrieve active runs with status pending or running.
     """
     count_statement = (
         select(func.count())
-        .select_from(Task)
-        .where(Task.owner_id == current_user.id)
-        .where(Task.status.in_(["pending", "running"]))
+        .select_from(Run)
+        .where(Run.owner_id == current_user.id)
+        .where(Run.status.in_(["pending", "running"]))
     )
     count = session.exec(count_statement).one()
     statement = (
-        select(Task)
-        .where(Task.owner_id == current_user.id)
-        .where(Task.status.in_(["pending", "running"]))
+        select(Run)
+        .where(Run.owner_id == current_user.id)
+        .where(Run.status.in_(["pending", "running"]))
         .offset(skip)
         .limit(limit)
     )
-    tasks = session.exec(statement).all()
+    runs = session.exec(statement).all()
 
-    return TasksPublicMinimal(data=tasks, count=count)
+    return RunsPublicMinimal(data=runs, count=count)
 
-@router.get("/{id}", response_model=TaskPublic)
-def read_task(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
+@router.get("/{id}", response_model=RunPublic)
+def read_run(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
     """
-    Retrieve task metadata.
+    Retrieve run metadata.
     """
-    task: Task = session.get(Task, id)
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
-    if task.owner_id != current_user.id:
+    run: Run = session.get(Run, id)
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+    if run.owner_id != current_user.id:
         raise HTTPException(status_code=400, detail="Not enough permissions")
-    return task
+    return run
 
-@router.patch("/{id}/cancel", response_model=TaskPublic)
-def cancel_task(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
+@router.patch("/{id}/cancel", response_model=RunPublic)
+def cancel_run(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
     """
-    Cancel task.
+    Cancel run.
     """
-    task = session.get(Task, id)
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
-    if task.owner_id != current_user.id:
+    run = session.get(Run, id)
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+    if run.owner_id != current_user.id:
         raise HTTPException(status_code=400, detail="Not enough permissions")
-    if task.status == "completed":
-        raise HTTPException(status_code=400, detail="Task already finished")
-    task.status = "cancelled"
-    session.add(task)
+    if run.status == "completed":
+        raise HTTPException(status_code=400, detail="Run already finished")
+    run.status = "cancelled"
+    session.add(run)
     session.commit()
-    return task
+    return run
 
 @router.delete("/{id}", response_model=Message)
-def delete_task(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
+def delete_run(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
     """
-    Delete task.
+    Delete run.
     """
-    task = session.get(Task, id)
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
-    if task.owner_id != current_user.id:
+    run = session.get(Run, id)
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+    if run.owner_id != current_user.id:
         raise HTTPException(status_code=400, detail="Not enough permissions")
-    if task.status == "running" or task.status == "pending":
-        raise HTTPException(status_code=400, detail="Task is active")
+    if run.status == "running" or run.status == "pending":
+        raise HTTPException(status_code=400, detail="Run is active")
     files = []
     files_to_delete = []
-    if task.results:
-        files = [result.file for result in task.results if result.file]
+    if run.results:
+        files = [result.file for result in run.results if result.file]
         files_to_delete.extend(files)
-    session.delete(task)
+    session.delete(run)
     session.commit()
     for file in files_to_delete:
         file_path = Path(file.location)
         if file_path.exists():
             file_path.unlink()
-    return Message(message=f"Deleted task {id} and {len(files_to_delete)} files")
+    return Message(message=f"Deleted run {id} and {len(files_to_delete)} files")

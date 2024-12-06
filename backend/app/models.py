@@ -56,7 +56,7 @@ class User(UserBase, table=True):
     hashed_password: str
     tools: list["Tool"] = Relationship(back_populates="owner")
     files: list["File"] = Relationship(back_populates="owner")
-    tasks: list["Task"] = Relationship(back_populates="owner")
+    runs: list["Run"] = Relationship(back_populates="owner")
     results: list["Result"] = Relationship(back_populates="owner")
 
 
@@ -125,10 +125,10 @@ class Tool(ToolBase, table=True):
             "Target", cascade="all, delete, delete-orphan"
         )
     )
-    tasks: list["Task"] = Relationship(
+    runs: list["Run"] = Relationship(
         back_populates="tool",
         sa_relationship=RelationshipProperty(
-            "Task", cascade="all, delete, delete-orphan"
+            "Run", cascade="all, delete, delete-orphan"
         )
     )
     owner_id: uuid.UUID = Field(foreign_key="user.id", nullable=False)
@@ -247,7 +247,7 @@ class ToolsPublicWithParamsAndTargets(SQLModel):
     count: int
 
 
-class TaskStatus(str, enum.Enum):
+class RunStatus(str, enum.Enum):
     pending = "pending"
     running = "running"
     completed = "completed"
@@ -255,21 +255,21 @@ class TaskStatus(str, enum.Enum):
     cancelled = "cancelled"
 
 
-class TaskBase(SQLModel):
-    taskiq_id: str
-    status: TaskStatus
+class RunBase(SQLModel):
+    runiq_id: str
+    status: RunStatus
     created_at: datetime
     started_at: datetime | None
     finished_at: datetime | None
 
 
-class Task(TaskBase, table=True):
+class Run(RunBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    taskiq_id: str | None = None
-    status: TaskStatus = Field(sa_column=Column(Enum(TaskStatus)))
+    runiq_id: str | None = None
+    status: RunStatus = Field(sa_column=Column(Enum(RunStatus)))
     params: dict = Field(default_factory=dict, sa_column=Column(JSON))
     results: list["Result"] = Relationship(
-        back_populates="task",
+        back_populates="run",
         sa_relationship=RelationshipProperty(
             "Result", cascade="all, delete, delete-orphan"
         ),
@@ -278,15 +278,15 @@ class Task(TaskBase, table=True):
     stderr: str | None = None
     stdout: str | None = None
     tool_id: uuid.UUID = Field(foreign_key="tool.id", nullable=False)
-    tool: Tool = Relationship(back_populates="tasks")
+    tool: Tool = Relationship(back_populates="runs")
     owner_id: uuid.UUID = Field(foreign_key="user.id", nullable=False)
-    owner: User = Relationship(back_populates="tasks")
+    owner: User = Relationship(back_populates="runs")
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     started_at: datetime | None = Field(default=None, nullable=True)
     finished_at: datetime | None = Field(default=None, nullable=True)
 
 
-class TaskPublicMinimal(TaskBase):
+class RunPublicMinimal(RunBase):
     id: uuid.UUID
     owner_id: uuid.UUID
     tool: ToolPublic
@@ -309,8 +309,8 @@ class Result(SQLModel, table=True):
     target: "Target" = Relationship(back_populates="results")
     owner_id: uuid.UUID = Field(foreign_key="user.id", nullable=False)
     owner: "User" = Relationship(back_populates="results")
-    task_id: uuid.UUID = Field(foreign_key="task.id", nullable=False)
-    task: "Task" = Relationship(back_populates="results")
+    run_id: uuid.UUID = Field(foreign_key="run.id", nullable=False)
+    run: "Run" = Relationship(back_populates="results")
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 
 
@@ -353,10 +353,10 @@ class ResultPublicWithFileAndTarget(SQLModel):
     file: FilePublic
     target: TargetPublic
     owner_id: uuid.UUID
-    task_id: uuid.UUID
+    run_id: uuid.UUID
     created_at: datetime
 
-class TaskPublic(TaskPublicMinimal):
+class RunPublic(RunPublicMinimal):
     stderr: str | None = None
     stdout: str | None = None
     command: str | None = None
@@ -364,10 +364,10 @@ class TaskPublic(TaskPublicMinimal):
     results: list[ResultPublicWithFileAndTarget]
 
 
-class TasksPublicMinimal(SQLModel):
-    data: list[TaskPublicMinimal]
+class RunsPublicMinimal(SQLModel):
+    data: list[RunPublicMinimal]
     count: int
 
-class TasksPublic(SQLModel):
-    data: list[TaskPublic]
+class RunsPublic(SQLModel):
+    data: list[RunPublic]
     count: int

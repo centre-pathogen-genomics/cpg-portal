@@ -142,7 +142,7 @@ def delete_tool(
     tool = session.get(Tool, tool_id)
     if not tool:
         raise HTTPException(status_code=404, detail="Tool not found")
-    # TODO: Delete all params, targets and tasks associated with this tool
+    # TODO: Delete all params, targets and runs associated with this tool
     # add cascade delete to the relationships
     print(f"Deleting tool {tool_id}")
     session.delete(tool)

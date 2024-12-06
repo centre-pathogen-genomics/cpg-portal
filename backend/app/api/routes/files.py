@@ -36,7 +36,7 @@ def read_files(
     descending = order_by.startswith('-')
     column_name = order_by[1:] if descending else order_by
 
-    # Validate and obtain the actual column object from the Task model
+    # Validate and obtain the actual column object from the Run model
     if hasattr(File, column_name):
         column = getattr(File, column_name)
         order_expression = desc(column) if descending else column
