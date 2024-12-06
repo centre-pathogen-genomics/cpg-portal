@@ -10,29 +10,29 @@ import { useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { Suspense } from "react"
 import { ErrorBoundary } from "react-error-boundary"
-import { WorkflowsService } from "../../client"
-import WorkflowCard from "../../components/Workflows/WorkflowCard"
+import { ToolsService } from "../../client"
+import ToolCard from "../../components/Tools/ToolCard"
 
 export const Route = createFileRoute("/_layout/")({
-  component: Workflows,
+  component: Tools,
 })
 
-function WorkflowCards() {
-  const { data: workflows } = useSuspenseQuery({
-    queryKey: ["workflows"],
-    queryFn: () => WorkflowsService.readWorkflows({}),
+function ToolCards() {
+  const { data: tools } = useSuspenseQuery({
+    queryKey: ["tools"],
+    queryFn: () => ToolsService.readTools({}),
   })
 
   return (
     <>
-      {workflows.data.map((workflow) => (
-        <WorkflowCard key={workflow.id} workflow={workflow} />
+      {tools.data.map((tool) => (
+        <ToolCard key={tool.id} tool={tool} />
       ))}
     </>
   )
 }
 
-function WorkflowsGrid() {
+function ToolsGrid() {
   return (
     <Suspense fallback={<Skeleton height="20px" />}>
       <ErrorBoundary
@@ -43,14 +43,14 @@ function WorkflowsGrid() {
         )}
       >
         <SimpleGrid spacing="20px" mb={4}>
-          <WorkflowCards />
+          <ToolCards />
         </SimpleGrid>
       </ErrorBoundary>
     </Suspense>
   )
 }
 
-function Workflows() {
+function Tools() {
   return (
     <Container maxW="full">
       <Heading
@@ -59,9 +59,9 @@ function Workflows() {
         pt={12}
         pb={8}
       >
-        CPG Workflows
+        CPG Tools
       </Heading>
-      <WorkflowsGrid />
+      <ToolsGrid />
     </Container>
   )
 }

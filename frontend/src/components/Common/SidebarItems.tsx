@@ -6,9 +6,9 @@ import { FiCodesandbox, FiFile, FiHome, FiSettings, FiUsers } from "react-icons/
 import type { UserPublic } from "../../client"
 
 const items = [
-  { icon: FiHome, title: "Workflows", path: "/" },
-  { icon: FiCodesandbox, title: "Tasks", path: "/tasks" },
-  { icon: FiFile, title: "Files", path: "/files" },
+  { icon: FiHome, title: "Tools", path: "/" },
+  { icon: FiCodesandbox, title: "My Runs", path: "/runs" },
+  { icon: FiFile, title: "My Files", path: "/files" },
   { icon: FiSettings, title: "User Settings", path: "/settings" },
 ]
 

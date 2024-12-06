@@ -59,7 +59,7 @@ async def run_task_in_subprocess(session: Session, task_id: uuid.UUID, run_comma
     return res
 
 @broker.task
-async def run_workflow(
+async def run_tool(
         task_id: uuid.UUID,
         run_command: list[str],
         file_ids: list[uuid.UUID] | None = None,
@@ -73,7 +73,7 @@ async def run_workflow(
     # only run the task if it is pending
     if task.status != "pending":
         return False
-    print(f"Starting Task(id={task_id}) for Workflow(id={task.workflow_id})")
+    print(f"Starting Task(id={task_id}) for Tool(id={task.tool_id})")
     task.status = "running"
     task.started_at = datetime.utcnow()
     if task.stdout is None:
@@ -85,7 +85,7 @@ async def run_workflow(
     task.command = " ".join(run_command)
     session.add(task)
     session.commit()
-    # create tmp directory to run the workflow
+    # create tmp directory to run the tool
     tmp_dir = Path(settings.TMP_PATH) / str(task_id)
     try:
         tmp_dir.mkdir(parents=True, exist_ok=False)
@@ -109,20 +109,20 @@ async def run_workflow(
         session.add(task)
         session.commit()
         return False
-    # Set up the workflow
-    if task.workflow.setup_command:
-        setup_command = task.workflow.setup_command
+    # Set up the tool
+    if task.tool.setup_command:
+        setup_command = task.tool.setup_command
         setup_res = await run_task_in_subprocess(
                 session, task_id, setup_command, tmp_dir, shell=True
             )
         if setup_res.returncode != 0:
             print(setup_res.stdout.read())
             print(setup_res.stderr.read())
-            task.stderr += "Workflow setup failed. Please contact an administrator."
+            task.stderr += "Tool setup failed. Please contact an administrator."
             session.add(task)
             session.commit()
             return False
-    # Run the workflow
+    # Run the tool
     res = await run_task_in_subprocess(session, task_id, run_command, tmp_dir)
     task.finished_at = datetime.utcnow()
     task.stderr += res.stderr.read()
@@ -135,8 +135,8 @@ async def run_workflow(
         session.add(task)
         session.commit()
         return False
-    for target in task.workflow.targets:
-        # format the target path with workflow params
+    for target in task.tool.targets:
+        # format the target path with tool params
         print(f"Formatting target path: {target.path}")
         target_file = tmp_dir / target.path
         for key, value in task.params.items():

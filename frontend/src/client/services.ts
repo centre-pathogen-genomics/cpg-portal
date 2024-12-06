@@ -20,11 +20,11 @@ import type {
   Target,
   TargetCreate,
   TargetUpdate,
-  WorkflowCreateWithParamsAndTargets,
-  WorkflowPublic,
-  WorkflowPublicWithParamsAndTargets,
-  WorkflowsPublicWithParamsAndTargets,
-  WorkflowUpdate,
+  ToolCreateWithParamsAndTargets,
+  ToolPublic,
+  ToolPublicWithParamsAndTargets,
+  ToolsPublicWithParamsAndTargets,
+  ToolUpdate,
   Body_files_upload_file,
   FilePublic,
   FilesPublic,
@@ -412,73 +412,73 @@ export class UtilsService {
   }
 }
 
-export type TDataReadWorkflows = {
+export type TDataReadTools = {
   limit?: number
   skip?: number
 }
-export type TDataCreateWorkflow = {
-  requestBody: WorkflowCreateWithParamsAndTargets
+export type TDataCreateTool = {
+  requestBody: ToolCreateWithParamsAndTargets
 }
-export type TDataReadWorkflow = {
-  workflowId: string
+export type TDataReadTool = {
+  toolId: string
 }
-export type TDataUpdateWorkflow = {
-  requestBody: WorkflowUpdate
-  workflowId: string
+export type TDataUpdateTool = {
+  requestBody: ToolUpdate
+  toolId: string
 }
-export type TDataDeleteWorkflow = {
-  workflowId: string
+export type TDataDeleteTool = {
+  toolId: string
 }
-export type TDataReadWorkflowByName = {
-  workflowName: string
+export type TDataReadToolByName = {
+  toolName: string
 }
-export type TDataReadWorkflowParams = {
-  workflowId: string
+export type TDataReadToolParams = {
+  toolId: string
 }
-export type TDataAddParamToWorkflow = {
+export type TDataAddParamToTool = {
   requestBody: ParamCreate
-  workflowId: string
+  toolId: string
 }
-export type TDataUpdateParamInWorkflow = {
+export type TDataUpdateParamInTool = {
   paramId: string
   requestBody: ParamUpdate
-  workflowId: string
+  toolId: string
 }
-export type TDataDeleteParamFromWorkflow = {
+export type TDataDeleteParamFromTool = {
   paramId: string
-  workflowId: string
+  toolId: string
 }
-export type TDataReadWorkflowTargets = {
-  workflowId: string
+export type TDataReadToolTargets = {
+  toolId: string
 }
-export type TDataAddTargetToWorkflow = {
+export type TDataAddTargetToTool = {
   requestBody: TargetCreate
-  workflowId: string
+  toolId: string
 }
-export type TDataUpdateTargetInWorkflow = {
+export type TDataUpdateTargetInTool = {
   requestBody: TargetUpdate
   targetId: string
-  workflowId: string
+  toolId: string
 }
-export type TDataDeleteTargetFromWorkflow = {
+export type TDataDeleteTargetFromTool = {
   targetId: string
-  workflowId: string
+  toolId: string
 }
 
-export class WorkflowsService {
+export class ToolsService {
   /**
-   * Read Workflows
-   * Retrieve workflows.
-   * @returns WorkflowsPublicWithParamsAndTargets Successful Response
+   * Read Tools
+   * Retrieve tools.
+   * @returns ToolsPublicWithParamsAndTargets Successful Response
    * @throws ApiError
    */
-  public static readWorkflows(
-    data: TDataReadWorkflows = {},
-  ): CancelablePromise<WorkflowsPublicWithParamsAndTargets> {
+  public static readTools(
+    data: TDataReadTools = {},
+  ): CancelablePromise<ToolsPublicWithParamsAndTargets> {
     const { limit = 100, skip = 0 } = data
     return __request(OpenAPI, {
       method: "GET",
-      url: "/api/v1/workflows/",
+      url: "/api/v1/tools/",
       query: {
         skip,
         limit,
@@ -490,18 +490,18 @@ export class WorkflowsService {
   }
 
   /**
-   * Create Workflow
-   * Create new workflow along with its params.
-   * @returns WorkflowPublicWithParamsAndTargets Successful Response
+   * Create Tool
+   * Create new tool along with its params.
+   * @returns ToolPublicWithParamsAndTargets Successful Response
    * @throws ApiError
    */
-  public static createWorkflow(
-    data: TDataCreateWorkflow,
-  ): CancelablePromise<WorkflowPublicWithParamsAndTargets> {
+  public static createTool(
+    data: TDataCreateTool,
+  ): CancelablePromise<ToolPublicWithParamsAndTargets> {
     const { requestBody } = data
     return __request(OpenAPI, {
       method: "POST",
-      url: "/api/v1/workflows/",
+      url: "/api/v1/tools/",
       body: requestBody,
       mediaType: "application/json",
       errors: {
@@ -511,20 +511,20 @@ export class WorkflowsService {
   }
 
   /**
-   * Read Workflow
-   * Retrieve workflow by ID.
-   * @returns WorkflowPublicWithParamsAndTargets Successful Response
+   * Read Tool
+   * Retrieve tool by ID.
+   * @returns ToolPublicWithParamsAndTargets Successful Response
    * @throws ApiError
    */
-  public static readWorkflow(
-    data: TDataReadWorkflow,
-  ): CancelablePromise<WorkflowPublicWithParamsAndTargets> {
-    const { workflowId } = data
+  public static readTool(
+    data: TDataReadTool,
+  ): CancelablePromise<ToolPublicWithParamsAndTargets> {
+    const { toolId } = data
     return __request(OpenAPI, {
       method: "GET",
-      url: "/api/v1/workflows/{workflow_id}",
+      url: "/api/v1/tools/{tool_id}",
       path: {
-        workflow_id: workflowId,
+        tool_id: toolId,
       },
       errors: {
         422: `Validation Error`,
@@ -533,20 +533,20 @@ export class WorkflowsService {
   }
 
   /**
-   * Update Workflow
-   * Update workflow by ID.
-   * @returns WorkflowPublic Successful Response
+   * Update Tool
+   * Update tool by ID.
+   * @returns ToolPublic Successful Response
    * @throws ApiError
    */
-  public static updateWorkflow(
-    data: TDataUpdateWorkflow,
-  ): CancelablePromise<WorkflowPublic> {
-    const { requestBody, workflowId } = data
+  public static updateTool(
+    data: TDataUpdateTool,
+  ): CancelablePromise<ToolPublic> {
+    const { requestBody, toolId } = data
     return __request(OpenAPI, {
       method: "PATCH",
-      url: "/api/v1/workflows/{workflow_id}",
+      url: "/api/v1/tools/{tool_id}",
       path: {
-        workflow_id: workflowId,
+        tool_id: toolId,
       },
       body: requestBody,
       mediaType: "application/json",
@@ -557,20 +557,18 @@ export class WorkflowsService {
   }
 
   /**
-   * Delete Workflow
-   * Delete workflow by ID.
+   * Delete Tool
+   * Delete tool by ID.
    * @returns Message Successful Response
    * @throws ApiError
    */
-  public static deleteWorkflow(
-    data: TDataDeleteWorkflow,
-  ): CancelablePromise<Message> {
-    const { workflowId } = data
+  public static deleteTool(data: TDataDeleteTool): CancelablePromise<Message> {
+    const { toolId } = data
     return __request(OpenAPI, {
       method: "DELETE",
-      url: "/api/v1/workflows/{workflow_id}",
+      url: "/api/v1/tools/{tool_id}",
       path: {
-        workflow_id: workflowId,
+        tool_id: toolId,
       },
       errors: {
         422: `Validation Error`,
@@ -579,20 +577,20 @@ export class WorkflowsService {
   }
 
   /**
-   * Read Workflow By Name
-   * Retrieve workflow by name.
-   * @returns WorkflowPublicWithParamsAndTargets Successful Response
+   * Read Tool By Name
+   * Retrieve tool by name.
+   * @returns ToolPublicWithParamsAndTargets Successful Response
    * @throws ApiError
    */
-  public static readWorkflowByName(
-    data: TDataReadWorkflowByName,
-  ): CancelablePromise<WorkflowPublicWithParamsAndTargets> {
-    const { workflowName } = data
+  public static readToolByName(
+    data: TDataReadToolByName,
+  ): CancelablePromise<ToolPublicWithParamsAndTargets> {
+    const { toolName } = data
     return __request(OpenAPI, {
       method: "GET",
-      url: "/api/v1/workflows/name/{workflow_name}",
+      url: "/api/v1/tools/name/{tool_name}",
       path: {
-        workflow_name: workflowName,
+        tool_name: toolName,
       },
       errors: {
         422: `Validation Error`,
@@ -601,20 +599,20 @@ export class WorkflowsService {
   }
 
   /**
-   * Read Workflow Params
-   * Retrieve workflow params by workflow ID.
+   * Read Tool Params
+   * Retrieve tool params by tool ID.
    * @returns Param Successful Response
    * @throws ApiError
    */
-  public static readWorkflowParams(
-    data: TDataReadWorkflowParams,
+  public static readToolParams(
+    data: TDataReadToolParams,
   ): CancelablePromise<Array<Param>> {
-    const { workflowId } = data
+    const { toolId } = data
     return __request(OpenAPI, {
       method: "GET",
-      url: "/api/v1/workflows/{workflow_id}/params",
+      url: "/api/v1/tools/{tool_id}/params",
       path: {
-        workflow_id: workflowId,
+        tool_id: toolId,
       },
       errors: {
         422: `Validation Error`,
@@ -623,20 +621,20 @@ export class WorkflowsService {
   }
 
   /**
-   * Add Param To Workflow
-   * Add param to workflow by workflow ID.
+   * Add Param To Tool
+   * Add param to tool by tool ID.
    * @returns Param Successful Response
    * @throws ApiError
    */
-  public static addParamToWorkflow(
-    data: TDataAddParamToWorkflow,
+  public static addParamToTool(
+    data: TDataAddParamToTool,
   ): CancelablePromise<Param> {
-    const { requestBody, workflowId } = data
+    const { requestBody, toolId } = data
     return __request(OpenAPI, {
       method: "POST",
-      url: "/api/v1/workflows/{workflow_id}/params",
+      url: "/api/v1/tools/{tool_id}/params",
       path: {
-        workflow_id: workflowId,
+        tool_id: toolId,
       },
       body: requestBody,
       mediaType: "application/json",
@@ -647,20 +645,20 @@ export class WorkflowsService {
   }
 
   /**
-   * Update Param In Workflow
-   * Update param in workflow by workflow ID and param ID.
+   * Update Param In Tool
+   * Update param in tool by tool ID and param ID.
    * @returns Param Successful Response
    * @throws ApiError
    */
-  public static updateParamInWorkflow(
-    data: TDataUpdateParamInWorkflow,
+  public static updateParamInTool(
+    data: TDataUpdateParamInTool,
   ): CancelablePromise<Param> {
-    const { paramId, requestBody, workflowId } = data
+    const { paramId, requestBody, toolId } = data
     return __request(OpenAPI, {
       method: "PATCH",
-      url: "/api/v1/workflows/{workflow_id}/params/{param_id}",
+      url: "/api/v1/tools/{tool_id}/params/{param_id}",
       path: {
-        workflow_id: workflowId,
+        tool_id: toolId,
         param_id: paramId,
       },
       body: requestBody,
@@ -672,20 +670,20 @@ export class WorkflowsService {
   }
 
   /**
-   * Delete Param From Workflow
-   * Delete param from workflow by workflow ID and param ID.
+   * Delete Param From Tool
+   * Delete param from tool by tool ID and param ID.
    * @returns Message Successful Response
    * @throws ApiError
    */
-  public static deleteParamFromWorkflow(
-    data: TDataDeleteParamFromWorkflow,
+  public static deleteParamFromTool(
+    data: TDataDeleteParamFromTool,
   ): CancelablePromise<Message> {
-    const { paramId, workflowId } = data
+    const { paramId, toolId } = data
     return __request(OpenAPI, {
       method: "DELETE",
-      url: "/api/v1/workflows/{workflow_id}/params/{param_id}",
+      url: "/api/v1/tools/{tool_id}/params/{param_id}",
       path: {
-        workflow_id: workflowId,
+        tool_id: toolId,
         param_id: paramId,
       },
       errors: {
@@ -695,20 +693,20 @@ export class WorkflowsService {
   }
 
   /**
-   * Read Workflow Targets
-   * Retrieve workflow targets by workflow ID.
+   * Read Tool Targets
+   * Retrieve tool targets by tool ID.
    * @returns Target Successful Response
    * @throws ApiError
    */
-  public static readWorkflowTargets(
-    data: TDataReadWorkflowTargets,
+  public static readToolTargets(
+    data: TDataReadToolTargets,
   ): CancelablePromise<Array<Target>> {
-    const { workflowId } = data
+    const { toolId } = data
     return __request(OpenAPI, {
       method: "GET",
-      url: "/api/v1/workflows/{workflow_id}/targets",
+      url: "/api/v1/tools/{tool_id}/targets",
       path: {
-        workflow_id: workflowId,
+        tool_id: toolId,
       },
       errors: {
         422: `Validation Error`,
@@ -717,20 +715,20 @@ export class WorkflowsService {
   }
 
   /**
-   * Add Target To Workflow
-   * Add target to workflow by workflow ID.
+   * Add Target To Tool
+   * Add target to tool by tool ID.
    * @returns Target Successful Response
    * @throws ApiError
    */
-  public static addTargetToWorkflow(
-    data: TDataAddTargetToWorkflow,
+  public static addTargetToTool(
+    data: TDataAddTargetToTool,
   ): CancelablePromise<Target> {
-    const { requestBody, workflowId } = data
+    const { requestBody, toolId } = data
     return __request(OpenAPI, {
       method: "POST",
-      url: "/api/v1/workflows/{workflow_id}/targets",
+      url: "/api/v1/tools/{tool_id}/targets",
       path: {
-        workflow_id: workflowId,
+        tool_id: toolId,
       },
       body: requestBody,
       mediaType: "application/json",
@@ -741,20 +739,20 @@ export class WorkflowsService {
   }
 
   /**
-   * Update Target In Workflow
-   * Update target in workflow by workflow ID and target ID.
+   * Update Target In Tool
+   * Update target in tool by tool ID and target ID.
    * @returns Target Successful Response
    * @throws ApiError
    */
-  public static updateTargetInWorkflow(
-    data: TDataUpdateTargetInWorkflow,
+  public static updateTargetInTool(
+    data: TDataUpdateTargetInTool,
   ): CancelablePromise<Target> {
-    const { requestBody, targetId, workflowId } = data
+    const { requestBody, targetId, toolId } = data
     return __request(OpenAPI, {
       method: "PATCH",
-      url: "/api/v1/workflows/{workflow_id}/targets/{target_id}",
+      url: "/api/v1/tools/{tool_id}/targets/{target_id}",
       path: {
-        workflow_id: workflowId,
+        tool_id: toolId,
         target_id: targetId,
       },
       body: requestBody,
@@ -766,20 +764,20 @@ export class WorkflowsService {
   }
 
   /**
-   * Delete Target From Workflow
-   * Delete target from workflow by workflow ID and target ID.
+   * Delete Target From Tool
+   * Delete target from tool by tool ID and target ID.
    * @returns Message Successful Response
    * @throws ApiError
    */
-  public static deleteTargetFromWorkflow(
-    data: TDataDeleteTargetFromWorkflow,
+  public static deleteTargetFromTool(
+    data: TDataDeleteTargetFromTool,
   ): CancelablePromise<Message> {
-    const { targetId, workflowId } = data
+    const { targetId, toolId } = data
     return __request(OpenAPI, {
       method: "DELETE",
-      url: "/api/v1/workflows/{workflow_id}/targets/{target_id}",
+      url: "/api/v1/tools/{tool_id}/targets/{target_id}",
       path: {
-        workflow_id: workflowId,
+        tool_id: toolId,
         target_id: targetId,
       },
       errors: {
@@ -990,7 +988,7 @@ export type TDataReadTasks = {
 }
 export type TDataCreateTask = {
   requestBody: Record<string, unknown>
-  workflowId: string
+  toolId: string
 }
 export type TDataReadActiveTasks = {
   limit?: number
@@ -1033,7 +1031,7 @@ export class TasksService {
 
   /**
    * Create Task
-   * Create and run a task of a specific workflow, validating against predefined workflow parameters.
+   * Create and run a task of a specific tool, validating against predefined tool parameters.
    * Accepts both files and regular parameters dynamically.
    * @returns TaskPublic Successful Response
    * @throws ApiError
@@ -1041,12 +1039,12 @@ export class TasksService {
   public static createTask(
     data: TDataCreateTask,
   ): CancelablePromise<TaskPublic> {
-    const { requestBody, workflowId } = data
+    const { requestBody, toolId } = data
     return __request(OpenAPI, {
       method: "POST",
       url: "/api/v1/tasks/",
       query: {
-        workflow_id: workflowId,
+        tool_id: toolId,
       },
       body: requestBody,
       mediaType: "application/json",

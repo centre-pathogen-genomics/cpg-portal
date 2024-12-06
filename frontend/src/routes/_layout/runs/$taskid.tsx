@@ -33,7 +33,7 @@ import JsonFile from "../../../components/Render/JsonFile"
 import CodeBlock from "../../../components/Common/CodeBlock"
 import DownloadFileButton from "../../../components/Files/DownloadFileButton"
 
-export const Route = createFileRoute("/_layout/tasks/$taskid")({
+export const Route = createFileRoute("/_layout/runs/$taskid")({
   component: Task,
 })
 
@@ -70,8 +70,8 @@ function TaskDetail() {
   })
 
   const command = []
-  if (task?.workflow?.setup_command) {
-    command.push(task.workflow.setup_command)
+  if (task?.tool?.setup_command) {
+    command.push(task.tool.setup_command)
   } 
   if (task?.command) {
     command.push(task.command)
@@ -90,7 +90,7 @@ function TaskDetail() {
           separator={<ChevronRightIcon color="gray.500" />}
         >
           <BreadcrumbItem>
-            <BreadcrumbLink href="/tasks">Tasks</BreadcrumbLink>
+            <BreadcrumbLink href="/runs">Runs</BreadcrumbLink>
           </BreadcrumbItem>
 
           <BreadcrumbItem isCurrentPage>
@@ -100,7 +100,7 @@ function TaskDetail() {
       </Heading>
       <Box mb={4}>
         <Text>
-          Workflow: <Code>{task.workflow.name}</Code>
+          Tool: <Code>{task.tool.name}</Code>
         </Text>
         <Text>
           Status:{" "}

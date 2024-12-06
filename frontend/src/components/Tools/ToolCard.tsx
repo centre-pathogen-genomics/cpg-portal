@@ -15,15 +15,15 @@ import { FaPlay } from "react-icons/fa"
 
 import { ViewIcon } from "@chakra-ui/icons"
 import { useNavigate } from "@tanstack/react-router"
-import type { WorkflowPublic } from "../../client"
-import RunWorkflowModal from "./RunWorkflowModal" // Adjust the import path as needed
+import type { ToolPublic } from "../../client"
+import RunToolModal from "./RunToolModal" // Adjust the import path as needed
 
-interface WorkflowCardProps {
-  workflow: WorkflowPublic
+interface ToolCardProps {
+  tool: ToolPublic
 }
 
-const WorkflowCard = ({ workflow }: WorkflowCardProps) => {
-  const runWorkflowModal = useDisclosure()
+const ToolCard = ({ tool }: ToolCardProps) => {
+  const runToolModal = useDisclosure()
   const navigate = useNavigate()
   return (
     <>
@@ -36,8 +36,8 @@ const WorkflowCard = ({ workflow }: WorkflowCardProps) => {
           objectFit="cover"
           maxW={{ base: "100%", sm: "200px" }}
           src={
-            workflow.image != null
-              ? workflow.image
+            tool.image != null
+              ? tool.image
               : "https://images.unsplash.com/photo-1543145499-8193615267de?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxlZGl0b3JpYWwtZmVlZHw5fHx8ZW58MHx8fHw%3D&auto=format&fit=crop&w=800&q=60"
           }
           // src='https://images.unsplash.com/photo-1543145499-8193615267de?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxlZGl0b3JpYWwtZmVlZHw5fHx8ZW58MHx8fHw%3D&auto=format&fit=crop&w=800&q=60'
@@ -45,17 +45,17 @@ const WorkflowCard = ({ workflow }: WorkflowCardProps) => {
         />
         <Stack>
           <CardHeader>
-            <Heading size="lg">{workflow.name}</Heading>
+            <Heading size="lg">{tool.name}</Heading>
           </CardHeader>
           <CardBody>
-            <Text>{workflow.description}</Text>
+            <Text>{tool.description}</Text>
           </CardBody>
           <CardFooter>
             <ButtonGroup spacing={4}>
               <Button
                 variant="primary"
                 leftIcon={<FaPlay />}
-                onClick={runWorkflowModal.onOpen} // Opens the modal
+                onClick={runToolModal.onOpen} // Opens the modal
               >
                 Run
               </Button>
@@ -63,8 +63,8 @@ const WorkflowCard = ({ workflow }: WorkflowCardProps) => {
                 variant="outline"
                 onClick={() => {
                   navigate({
-                    to: `/workflows/${workflow.name}`,
-                    params: { name: workflow.name },
+                    to: `/tools/${tool.name}`,
+                    params: { name: tool.name },
                     replace: false,
                     resetScroll: true,
                   })
@@ -77,13 +77,13 @@ const WorkflowCard = ({ workflow }: WorkflowCardProps) => {
           </CardFooter>
         </Stack>
       </Card>
-      <RunWorkflowModal
-        isOpen={runWorkflowModal.isOpen}
-        onClose={runWorkflowModal.onClose}
-        workflowId={workflow.id}
+      <RunToolModal
+        isOpen={runToolModal.isOpen}
+        onClose={runToolModal.onClose}
+        toolId={tool.id}
       />
     </>
   )
 }
 
-export default WorkflowCard
+export default ToolCard

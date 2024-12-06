@@ -45,7 +45,7 @@ export type Param = {
   flag?: string | null
   required?: boolean
   id?: string
-  workflow_id: string
+  tool_id: string
 }
 
 export type ParamCreate = {
@@ -67,7 +67,7 @@ export type ParamPublic = {
   flag?: string | null
   required?: boolean
   id: string
-  workflow_id: string
+  tool_id: string
 }
 
 export type ParamType = "str" | "int" | "float" | "bool" | "enum" | "file"
@@ -99,7 +99,7 @@ export type Target = {
   display?: boolean
   required?: boolean
   id?: string
-  workflow_id: string
+  tool_id: string
 }
 
 export type TargetCreate = {
@@ -119,7 +119,7 @@ export type TargetPublic = {
   display?: boolean
   required?: boolean
   id: string
-  workflow_id: string
+  tool_id: string
 }
 
 export type TargetType = "text" | "image" | "csv" | "tsv" | "json" | "unknown"
@@ -141,7 +141,7 @@ export type TaskPublic = {
   finished_at: string | null
   id: string
   owner_id: string
-  workflow: WorkflowPublic
+  tool: ToolPublic
   stderr?: string | null
   stdout?: string | null
   command?: string | null
@@ -157,7 +157,7 @@ export type TaskPublicMinimal = {
   finished_at: string | null
   id: string
   owner_id: string
-  workflow: WorkflowPublic
+  tool: ToolPublic
 }
 
 export type TaskStatus =
@@ -175,6 +175,55 @@ export type TasksPublicMinimal = {
 export type Token = {
   access_token: string
   token_type?: string
+}
+
+export type ToolCreateWithParamsAndTargets = {
+  name: string
+  description?: string | null
+  image?: string | null
+  command: Array<string>
+  setup_command?: string | null
+  enabled?: boolean
+  params?: Array<ParamCreate>
+  targets?: Array<TargetCreate>
+}
+
+export type ToolPublic = {
+  name: string
+  description?: string | null
+  image?: string | null
+  command: Array<string>
+  setup_command?: string | null
+  enabled?: boolean
+  id: string
+  owner_id: string
+}
+
+export type ToolPublicWithParamsAndTargets = {
+  name: string
+  description?: string | null
+  image?: string | null
+  command: Array<string>
+  setup_command?: string | null
+  enabled?: boolean
+  id: string
+  owner_id: string
+  params: Array<ParamPublic>
+  targets: Array<TargetPublic>
+}
+
+export type ToolUpdate = {
+  name?: string | null
+  description?: string | null
+  image?: string | null
+  command?: Array<string> | null
+  setup_command?: string | null
+  enabled?: boolean
+}
+
+export type ToolsPublicWithParamsAndTargets = {
+  data: Array<ToolPublicWithParamsAndTargets>
+  count: number
 }
 
 export type UpdatePassword = {
@@ -226,53 +275,4 @@ export type ValidationError = {
   loc: Array<string | number>
   msg: string
   type: string
-}
-
-export type WorkflowCreateWithParamsAndTargets = {
-  name: string
-  description?: string | null
-  image?: string | null
-  command: Array<string>
-  setup_command?: string | null
-  enabled?: boolean
-  params?: Array<ParamCreate>
-  targets?: Array<TargetCreate>
-}
-
-export type WorkflowPublic = {
-  name: string
-  description?: string | null
-  image?: string | null
-  command: Array<string>
-  setup_command?: string | null
-  enabled?: boolean
-  id: string
-  owner_id: string
-}
-
-export type WorkflowPublicWithParamsAndTargets = {
-  name: string
-  description?: string | null
-  image?: string | null
-  command: Array<string>
-  setup_command?: string | null
-  enabled?: boolean
-  id: string
-  owner_id: string
-  params: Array<ParamPublic>
-  targets: Array<TargetPublic>
-}
-
-export type WorkflowUpdate = {
-  name?: string | null
-  description?: string | null
-  image?: string | null
-  command?: Array<string> | null
-  setup_command?: string | null
-  enabled?: boolean
-}
-
-export type WorkflowsPublicWithParamsAndTargets = {
-  data: Array<WorkflowPublicWithParamsAndTargets>
-  count: number
 }

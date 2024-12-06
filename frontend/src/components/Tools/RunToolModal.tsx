@@ -8,26 +8,26 @@ import {
   ModalHeader,
   ModalOverlay,
 } from "@chakra-ui/react"
-import RunWorkflowForm from "./RunWorkflowForm"
+import RunToolForm from "./RunToolForm"
 
-interface RunWorkflowModalProps {
+interface RunToolModalProps {
   isOpen: boolean
   onClose: () => void
-  workflowId: string
+  toolId: string
 }
-const RunWorkflowModal = ({
+const RunToolModal = ({
   isOpen,
   onClose,
-  workflowId,
-}: RunWorkflowModalProps) => {
+  toolId,
+}: RunToolModalProps) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose} isCentered>
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>Configure Workflow</ModalHeader>
+        <ModalHeader>Configure Tool</ModalHeader>
         <ModalCloseButton />
         <ModalBody pb={6}>
-          <RunWorkflowForm workflowId={workflowId} onSuccess={onClose} />
+          <RunToolForm toolId={toolId} onSuccess={onClose} />
         </ModalBody>
         <ModalFooter gap={3}>
           <Button onClick={onClose} variant="outline">
@@ -39,4 +39,4 @@ const RunWorkflowModal = ({
   )
 }
 
-export default RunWorkflowModal
+export default RunToolModal

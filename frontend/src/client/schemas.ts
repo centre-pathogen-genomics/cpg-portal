@@ -205,7 +205,7 @@ export const $Param = {
       type: "string",
       format: "uuid",
     },
-    workflow_id: {
+    tool_id: {
       type: "string",
       isRequired: true,
       format: "uuid",
@@ -357,7 +357,7 @@ export const $ParamPublic = {
       isRequired: true,
       format: "uuid",
     },
-    workflow_id: {
+    tool_id: {
       type: "string",
       isRequired: true,
       format: "uuid",
@@ -541,7 +541,7 @@ export const $Target = {
       type: "string",
       format: "uuid",
     },
-    workflow_id: {
+    tool_id: {
       type: "string",
       isRequired: true,
       format: "uuid",
@@ -630,7 +630,7 @@ export const $TargetPublic = {
       isRequired: true,
       format: "uuid",
     },
-    workflow_id: {
+    tool_id: {
       type: "string",
       isRequired: true,
       format: "uuid",
@@ -758,8 +758,8 @@ export const $TaskPublic = {
       isRequired: true,
       format: "uuid",
     },
-    workflow: {
-      type: "WorkflowPublic",
+    tool: {
+      type: "ToolPublic",
       isRequired: true,
     },
     stderr: {
@@ -863,8 +863,8 @@ export const $TaskPublicMinimal = {
       isRequired: true,
       format: "uuid",
     },
-    workflow: {
-      type: "WorkflowPublic",
+    tool: {
+      type: "ToolPublic",
       isRequired: true,
     },
   },
@@ -900,6 +900,296 @@ export const $Token = {
     token_type: {
       type: "string",
       default: "bearer",
+    },
+  },
+} as const
+
+export const $ToolCreateWithParamsAndTargets = {
+  properties: {
+    name: {
+      type: "string",
+      isRequired: true,
+    },
+    description: {
+      type: "any-of",
+      contains: [
+        {
+          type: "string",
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    image: {
+      type: "any-of",
+      contains: [
+        {
+          type: "string",
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    command: {
+      type: "array",
+      contains: {
+        type: "string",
+      },
+      isRequired: true,
+    },
+    setup_command: {
+      type: "any-of",
+      contains: [
+        {
+          type: "string",
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    enabled: {
+      type: "boolean",
+      default: false,
+    },
+    params: {
+      type: "array",
+      contains: {
+        type: "ParamCreate",
+      },
+      default: [],
+    },
+    targets: {
+      type: "array",
+      contains: {
+        type: "TargetCreate",
+      },
+      default: [],
+    },
+  },
+} as const
+
+export const $ToolPublic = {
+  properties: {
+    name: {
+      type: "string",
+      isRequired: true,
+    },
+    description: {
+      type: "any-of",
+      contains: [
+        {
+          type: "string",
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    image: {
+      type: "any-of",
+      contains: [
+        {
+          type: "string",
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    command: {
+      type: "array",
+      contains: {
+        type: "string",
+      },
+      isRequired: true,
+    },
+    setup_command: {
+      type: "any-of",
+      contains: [
+        {
+          type: "string",
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    enabled: {
+      type: "boolean",
+      default: false,
+    },
+    id: {
+      type: "string",
+      isRequired: true,
+      format: "uuid",
+    },
+    owner_id: {
+      type: "string",
+      isRequired: true,
+      format: "uuid",
+    },
+  },
+} as const
+
+export const $ToolPublicWithParamsAndTargets = {
+  properties: {
+    name: {
+      type: "string",
+      isRequired: true,
+    },
+    description: {
+      type: "any-of",
+      contains: [
+        {
+          type: "string",
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    image: {
+      type: "any-of",
+      contains: [
+        {
+          type: "string",
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    command: {
+      type: "array",
+      contains: {
+        type: "string",
+      },
+      isRequired: true,
+    },
+    setup_command: {
+      type: "any-of",
+      contains: [
+        {
+          type: "string",
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    enabled: {
+      type: "boolean",
+      default: false,
+    },
+    id: {
+      type: "string",
+      isRequired: true,
+      format: "uuid",
+    },
+    owner_id: {
+      type: "string",
+      isRequired: true,
+      format: "uuid",
+    },
+    params: {
+      type: "array",
+      contains: {
+        type: "ParamPublic",
+      },
+      isRequired: true,
+    },
+    targets: {
+      type: "array",
+      contains: {
+        type: "TargetPublic",
+      },
+      isRequired: true,
+    },
+  },
+} as const
+
+export const $ToolUpdate = {
+  properties: {
+    name: {
+      type: "any-of",
+      contains: [
+        {
+          type: "string",
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    description: {
+      type: "any-of",
+      contains: [
+        {
+          type: "string",
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    image: {
+      type: "any-of",
+      contains: [
+        {
+          type: "string",
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    command: {
+      type: "any-of",
+      contains: [
+        {
+          type: "array",
+          contains: {
+            type: "string",
+          },
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    setup_command: {
+      type: "any-of",
+      contains: [
+        {
+          type: "string",
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    enabled: {
+      type: "boolean",
+      default: false,
+    },
+  },
+} as const
+
+export const $ToolsPublicWithParamsAndTargets = {
+  properties: {
+    data: {
+      type: "array",
+      contains: {
+        type: "ToolPublicWithParamsAndTargets",
+      },
+      isRequired: true,
+    },
+    count: {
+      type: "number",
+      isRequired: true,
     },
   },
 } as const
@@ -1143,296 +1433,6 @@ export const $ValidationError = {
     },
     type: {
       type: "string",
-      isRequired: true,
-    },
-  },
-} as const
-
-export const $WorkflowCreateWithParamsAndTargets = {
-  properties: {
-    name: {
-      type: "string",
-      isRequired: true,
-    },
-    description: {
-      type: "any-of",
-      contains: [
-        {
-          type: "string",
-        },
-        {
-          type: "null",
-        },
-      ],
-    },
-    image: {
-      type: "any-of",
-      contains: [
-        {
-          type: "string",
-        },
-        {
-          type: "null",
-        },
-      ],
-    },
-    command: {
-      type: "array",
-      contains: {
-        type: "string",
-      },
-      isRequired: true,
-    },
-    setup_command: {
-      type: "any-of",
-      contains: [
-        {
-          type: "string",
-        },
-        {
-          type: "null",
-        },
-      ],
-    },
-    enabled: {
-      type: "boolean",
-      default: false,
-    },
-    params: {
-      type: "array",
-      contains: {
-        type: "ParamCreate",
-      },
-      default: [],
-    },
-    targets: {
-      type: "array",
-      contains: {
-        type: "TargetCreate",
-      },
-      default: [],
-    },
-  },
-} as const
-
-export const $WorkflowPublic = {
-  properties: {
-    name: {
-      type: "string",
-      isRequired: true,
-    },
-    description: {
-      type: "any-of",
-      contains: [
-        {
-          type: "string",
-        },
-        {
-          type: "null",
-        },
-      ],
-    },
-    image: {
-      type: "any-of",
-      contains: [
-        {
-          type: "string",
-        },
-        {
-          type: "null",
-        },
-      ],
-    },
-    command: {
-      type: "array",
-      contains: {
-        type: "string",
-      },
-      isRequired: true,
-    },
-    setup_command: {
-      type: "any-of",
-      contains: [
-        {
-          type: "string",
-        },
-        {
-          type: "null",
-        },
-      ],
-    },
-    enabled: {
-      type: "boolean",
-      default: false,
-    },
-    id: {
-      type: "string",
-      isRequired: true,
-      format: "uuid",
-    },
-    owner_id: {
-      type: "string",
-      isRequired: true,
-      format: "uuid",
-    },
-  },
-} as const
-
-export const $WorkflowPublicWithParamsAndTargets = {
-  properties: {
-    name: {
-      type: "string",
-      isRequired: true,
-    },
-    description: {
-      type: "any-of",
-      contains: [
-        {
-          type: "string",
-        },
-        {
-          type: "null",
-        },
-      ],
-    },
-    image: {
-      type: "any-of",
-      contains: [
-        {
-          type: "string",
-        },
-        {
-          type: "null",
-        },
-      ],
-    },
-    command: {
-      type: "array",
-      contains: {
-        type: "string",
-      },
-      isRequired: true,
-    },
-    setup_command: {
-      type: "any-of",
-      contains: [
-        {
-          type: "string",
-        },
-        {
-          type: "null",
-        },
-      ],
-    },
-    enabled: {
-      type: "boolean",
-      default: false,
-    },
-    id: {
-      type: "string",
-      isRequired: true,
-      format: "uuid",
-    },
-    owner_id: {
-      type: "string",
-      isRequired: true,
-      format: "uuid",
-    },
-    params: {
-      type: "array",
-      contains: {
-        type: "ParamPublic",
-      },
-      isRequired: true,
-    },
-    targets: {
-      type: "array",
-      contains: {
-        type: "TargetPublic",
-      },
-      isRequired: true,
-    },
-  },
-} as const
-
-export const $WorkflowUpdate = {
-  properties: {
-    name: {
-      type: "any-of",
-      contains: [
-        {
-          type: "string",
-        },
-        {
-          type: "null",
-        },
-      ],
-    },
-    description: {
-      type: "any-of",
-      contains: [
-        {
-          type: "string",
-        },
-        {
-          type: "null",
-        },
-      ],
-    },
-    image: {
-      type: "any-of",
-      contains: [
-        {
-          type: "string",
-        },
-        {
-          type: "null",
-        },
-      ],
-    },
-    command: {
-      type: "any-of",
-      contains: [
-        {
-          type: "array",
-          contains: {
-            type: "string",
-          },
-        },
-        {
-          type: "null",
-        },
-      ],
-    },
-    setup_command: {
-      type: "any-of",
-      contains: [
-        {
-          type: "string",
-        },
-        {
-          type: "null",
-        },
-      ],
-    },
-    enabled: {
-      type: "boolean",
-      default: false,
-    },
-  },
-} as const
-
-export const $WorkflowsPublicWithParamsAndTargets = {
-  properties: {
-    data: {
-      type: "array",
-      contains: {
-        type: "WorkflowPublicWithParamsAndTargets",
-      },
-      isRequired: true,
-    },
-    count: {
-      type: "number",
       isRequired: true,
     },
   },

@@ -34,7 +34,7 @@ const tasksSearchSchema = z.object({
   page: z.number().catch(1),
 })
 
-export const Route = createFileRoute("/_layout/tasks/")({
+export const Route = createFileRoute("/_layout/runs/")({
   component: Tasks,
   validateSearch: (search) => tasksSearchSchema.parse(search),
 })
@@ -96,7 +96,7 @@ function TasksTable() {
         <Thead>
           <Tr>
             <Th width="20%">ID</Th>
-            <Th>Workflow</Th>
+            <Th>Tool</Th>
             <Th>Status</Th>
             <Th>Runtime</Th>
             <Th width="10%">Actions</Th>
@@ -117,7 +117,7 @@ function TasksTable() {
               {tasks?.data.map((task) => (
                 <Tr cursor="pointer" key={task.taskiq_id} onClick={() =>
                     navigate({
-                      to: `/tasks/${task.id.toString()}`,
+                      to: `/runs/${task.id.toString()}`,
                       params: { taskid: task.id.toString() },
                       replace: false,
                       resetScroll: true,
@@ -141,14 +141,14 @@ function TasksTable() {
                       onClick={(e) =>{
                           e.stopPropagation();
                           navigate({
-                            to: `/workflows/${task.workflow.name}`,
+                            to: `/tools/${task.tool.name}`,
                             replace: false,
                             resetScroll: true,
                           })
                         }
                       }
                     >
-                      {task.workflow.name}
+                      {task.tool.name}
                     </Link>
                   </Td>
                   <Td>
@@ -172,7 +172,7 @@ function TasksTable() {
                         leftIcon={<ViewIcon />}
                         onClick={() =>
                           navigate({
-                            to: `/tasks/${task.id.toString()}`,
+                            to: `/runs/${task.id.toString()}`,
                             params: { taskid: task.id.toString() },
                             replace: false,
                             resetScroll: true,
@@ -227,7 +227,7 @@ function Tasks() {
         pt={12}
         pb={8}
       >
-        Tasks
+        Runs
       </Heading>
       {/* <TaskStats /> */}
       <Actions />

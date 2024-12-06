@@ -17,24 +17,24 @@ import {
   FilesService,
   type Param,
   type TaskPublic,
-  WorkflowsService,
+  ToolsService,
   TasksService,
 } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
 import React from "react"
 
-interface RunWorkflowFormProps {
-  workflowId: string
+interface RunToolFormProps {
+  toolId: string
   onSuccess?: (task: TaskPublic) => void
 }
 
-const RunWorkflowForm = ({ workflowId, onSuccess }: RunWorkflowFormProps) => {
+const RunToolForm = ({ toolId, onSuccess }: RunToolFormProps) => {
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
 
   const { data: params, isLoading: paramsLoading } = useQuery({
-    queryKey: ["workflowParams", workflowId],
-    queryFn: () => WorkflowsService.readWorkflowParams({ workflowId }),
+    queryKey: ["toolParams", toolId],
+    queryFn: () => ToolsService.readToolParams({ toolId }),
   })
 
   const { data: files, isLoading: filesLoading, refetch } = useQuery({
@@ -75,12 +75,12 @@ const RunWorkflowForm = ({ workflowId, onSuccess }: RunWorkflowFormProps) => {
     mutationFn: (data: Record<string, unknown>) =>
       TasksService.createTask({
         requestBody: data,
-        workflowId,
+        toolId,
       }),
     onSuccess: (task) => {
       showToast(
         "Success!",
-        `Workflow run successfully.\nTask ID: ${task.id}`,
+        `Tool run successfully.\nTask ID: ${task.id}`,
         "success",
       )
       if (onSuccess) onSuccess(task)
@@ -89,7 +89,7 @@ const RunWorkflowForm = ({ workflowId, onSuccess }: RunWorkflowFormProps) => {
       showToast("Error", error.message, "error")
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["workflowRuns"] })
+      queryClient.invalidateQueries({ queryKey: ["toolRuns"] })
     },
   })
 
@@ -221,7 +221,7 @@ const RunWorkflowForm = ({ workflowId, onSuccess }: RunWorkflowFormProps) => {
       </Box>
       <ButtonGroup>
         <Button variant="primary" type="submit" isLoading={isSubmitting}>
-          Start Workflow
+          Start Tool
         </Button>
         <Button onClick={() => reset(defaultValues)} variant="outline">
           Reset
@@ -231,4 +231,4 @@ const RunWorkflowForm = ({ workflowId, onSuccess }: RunWorkflowFormProps) => {
   )
 }
 
-export default RunWorkflowForm
+export default RunToolForm

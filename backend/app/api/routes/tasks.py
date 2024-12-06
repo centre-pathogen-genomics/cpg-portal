@@ -13,9 +13,9 @@ from app.models import (
     Task,
     TaskPublic,
     TasksPublicMinimal,
-    Workflow,
+    Tool,
 )
-from app.tasks import run_workflow as run_workflow_task
+from app.tasks import run_tool as run_tool_task
 
 router = APIRouter()
 
@@ -58,20 +58,20 @@ def read_tasks(
 
 @router.post("/", response_model=TaskPublic)
 async def create_task(
-    *, session: SessionDep, current_user: CurrentUser, workflow_id: uuid.UUID, params: dict
+    *, session: SessionDep, current_user: CurrentUser, tool_id: uuid.UUID, params: dict
 ) -> Any:
     """
-    Create and run a task of a specific workflow, validating against predefined workflow parameters.
+    Create and run a task of a specific tool, validating against predefined tool parameters.
     Accepts both files and regular parameters dynamically.
     """
-    # Fetch workflow and parameters
-    workflow: Workflow = session.get(Workflow, workflow_id)
-    if not workflow:
-        raise HTTPException(status_code=404, detail="Workflow not found")
-    if not current_user.is_superuser and not workflow.enabled:
-        raise HTTPException(status_code=403, detail="Workflow is disabled")
+    # Fetch tool and parameters
+    tool: Tool = session.get(Tool, tool_id)
+    if not tool:
+        raise HTTPException(status_code=404, detail="Tool not found")
+    if not current_user.is_superuser and not tool.enabled:
+        raise HTTPException(status_code=403, detail="Tool is disabled")
     files = []
-    for param in workflow.params:
+    for param in tool.params:
         if param.name not in params:
             if param.required or param.param_type == "file":
                 raise HTTPException(
@@ -131,7 +131,7 @@ async def create_task(
             raise HTTPException(
                 status_code=500, detail=f"Unknown parameter type: {param.param_type}"
             )
-    cmd = workflow.command.copy()
+    cmd = tool.command.copy()
     # format the command with the parameters
     for part in cmd:
         for key, value in params.items():
@@ -141,7 +141,7 @@ async def create_task(
 
     # create a task
     task = Task(
-        workflow_id=workflow_id,
+        tool_id=tool_id,
         owner_id=current_user.id,
         status="pending",
         params=params,
@@ -151,7 +151,7 @@ async def create_task(
     session.refresh(task)
 
     # run the command
-    taskiq_task = await run_workflow_task.kiq(task.id, cmd, file_ids=[file.id for file in files])
+    taskiq_task = await run_tool_task.kiq(task.id, cmd, file_ids=[file.id for file in files])
 
     task.taskiq_id = taskiq_task.task_id
     session.add(task)

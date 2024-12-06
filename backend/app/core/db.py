@@ -2,7 +2,7 @@ from sqlmodel import Session, create_engine, select
 
 from app import crud
 from app.core.config import settings
-from app.models import Param, User, UserCreate, Workflow, WorkflowCreate
+from app.models import Param, Tool, User, UserCreate
 
 engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
 
@@ -32,22 +32,22 @@ def init_db(session: Session) -> None:
         )
         user = crud.create_user(session=session, user_create=user_in)
 
-    sleep_workflow = session.exec(
-        select(Workflow).where(Workflow.name == "Sleep")
+    sleep_tool = session.exec(
+        select(Tool).where(Tool.name == "Sleep")
     ).first()
-    if not sleep_workflow:
-        print("Creating example Sleep workflow")
-        sleep_workflow = Workflow(
+    if not sleep_tool:
+        print("Creating example Sleep tool")
+        sleep_tool = Tool(
             name="Sleep",
-            description="This is an example workflow to simulate a long running task. The job will sleep for the number of seconds requested.",
+            description="This is an example tool to simulate a long running task. The job will sleep for the number of seconds requested.",
             image="https://images.unsplash.com/photo-1415604934674-561df9abf539?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTh8fGNsb2NrfGVufDB8fDB8fHwy",
             command=["sleep", "{SECONDS}"],
             enabled=True,
             owner_id=user.id,
         )
-        session.add(sleep_workflow)
+        session.add(sleep_tool)
         session.commit()
-        session.refresh(sleep_workflow)
+        session.refresh(sleep_tool)
 
         param = Param(
             name="SECONDS",
@@ -57,7 +57,7 @@ def init_db(session: Session) -> None:
             options=None,
             flag=None,
             required=True,
-            workflow_id=sleep_workflow.id,
+            tool_id=sleep_tool.id,
         )
         session.add(param)
         session.commit()

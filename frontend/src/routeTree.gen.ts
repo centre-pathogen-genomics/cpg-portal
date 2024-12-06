@@ -19,10 +19,10 @@ import { Route as LayoutImport } from './routes/_layout'
 import { Route as LayoutIndexImport } from './routes/_layout/index'
 import { Route as LayoutSettingsImport } from './routes/_layout/settings'
 import { Route as LayoutAdminImport } from './routes/_layout/admin'
-import { Route as LayoutTasksIndexImport } from './routes/_layout/tasks/index'
+import { Route as LayoutRunsIndexImport } from './routes/_layout/runs/index'
 import { Route as LayoutFilesIndexImport } from './routes/_layout/files/index'
-import { Route as LayoutWorkflowsNameImport } from './routes/_layout/workflows/$name'
-import { Route as LayoutTasksTaskidImport } from './routes/_layout/tasks/$taskid'
+import { Route as LayoutToolsNameImport } from './routes/_layout/tools/$name'
+import { Route as LayoutRunsTaskidImport } from './routes/_layout/runs/$taskid'
 
 // Create/Update Routes
 
@@ -66,8 +66,8 @@ const LayoutAdminRoute = LayoutAdminImport.update({
   getParentRoute: () => LayoutRoute,
 } as any)
 
-const LayoutTasksIndexRoute = LayoutTasksIndexImport.update({
-  path: '/tasks/',
+const LayoutRunsIndexRoute = LayoutRunsIndexImport.update({
+  path: '/runs/',
   getParentRoute: () => LayoutRoute,
 } as any)
 
@@ -76,13 +76,13 @@ const LayoutFilesIndexRoute = LayoutFilesIndexImport.update({
   getParentRoute: () => LayoutRoute,
 } as any)
 
-const LayoutWorkflowsNameRoute = LayoutWorkflowsNameImport.update({
-  path: '/workflows/$name',
+const LayoutToolsNameRoute = LayoutToolsNameImport.update({
+  path: '/tools/$name',
   getParentRoute: () => LayoutRoute,
 } as any)
 
-const LayoutTasksTaskidRoute = LayoutTasksTaskidImport.update({
-  path: '/tasks/$taskid',
+const LayoutRunsTaskidRoute = LayoutRunsTaskidImport.update({
+  path: '/runs/$taskid',
   getParentRoute: () => LayoutRoute,
 } as any)
 
@@ -122,20 +122,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutIndexImport
       parentRoute: typeof LayoutImport
     }
-    '/_layout/tasks/$taskid': {
-      preLoaderRoute: typeof LayoutTasksTaskidImport
+    '/_layout/runs/$taskid': {
+      preLoaderRoute: typeof LayoutRunsTaskidImport
       parentRoute: typeof LayoutImport
     }
-    '/_layout/workflows/$name': {
-      preLoaderRoute: typeof LayoutWorkflowsNameImport
+    '/_layout/tools/$name': {
+      preLoaderRoute: typeof LayoutToolsNameImport
       parentRoute: typeof LayoutImport
     }
     '/_layout/files/': {
       preLoaderRoute: typeof LayoutFilesIndexImport
       parentRoute: typeof LayoutImport
     }
-    '/_layout/tasks/': {
-      preLoaderRoute: typeof LayoutTasksIndexImport
+    '/_layout/runs/': {
+      preLoaderRoute: typeof LayoutRunsIndexImport
       parentRoute: typeof LayoutImport
     }
   }
@@ -148,10 +148,10 @@ export const routeTree = rootRoute.addChildren([
     LayoutAdminRoute,
     LayoutSettingsRoute,
     LayoutIndexRoute,
-    LayoutTasksTaskidRoute,
-    LayoutWorkflowsNameRoute,
+    LayoutRunsTaskidRoute,
+    LayoutToolsNameRoute,
     LayoutFilesIndexRoute,
-    LayoutTasksIndexRoute,
+    LayoutRunsIndexRoute,
   ]),
   LoginRoute,
   RecoverPasswordRoute,

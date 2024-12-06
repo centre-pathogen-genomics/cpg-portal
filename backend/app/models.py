@@ -54,7 +54,7 @@ class UpdatePassword(SQLModel):
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
-    workflows: list["Workflow"] = Relationship(back_populates="owner")
+    tools: list["Tool"] = Relationship(back_populates="owner")
     files: list["File"] = Relationship(back_populates="owner")
     tasks: list["Task"] = Relationship(back_populates="owner")
     results: list["Result"] = Relationship(back_populates="owner")
@@ -91,7 +91,7 @@ class NewPassword(SQLModel):
 
 
 # Shared properties
-class WorkflowBase(SQLModel):
+class ToolBase(SQLModel):
     name: str
     description: str | None = None
     image: str | None = None
@@ -99,54 +99,54 @@ class WorkflowBase(SQLModel):
     setup_command: str | None = None  # command -v hello-world >/dev/null 2>&1 || snk install wytamma/hello-world
     enabled: bool = False
 
-# Properties to receive on Workflow creation
-class WorkflowCreate(WorkflowBase):
+# Properties to receive on Tool creation
+class ToolCreate(ToolBase):
     name: str
 
-# Properties to receive on Workflow update
-class WorkflowUpdate(WorkflowBase):
+# Properties to receive on Tool update
+class ToolUpdate(ToolBase):
     name: str | None = None  # type: ignore
     command: list[str] | None = None
 
 # Database model, database table inferred from class name
-class Workflow(WorkflowBase, table=True):
+class Tool(ToolBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str = Field(index=True, unique=True)
     command: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     params: list["Param"] = Relationship(
-        back_populates="workflow",
+        back_populates="tool",
         sa_relationship=RelationshipProperty(
             "Param", cascade="all, delete, delete-orphan"
         )
     )
     targets: list["Target"] = Relationship(
-        back_populates="workflow",
+        back_populates="tool",
         sa_relationship=RelationshipProperty(
             "Target", cascade="all, delete, delete-orphan"
         )
     )
     tasks: list["Task"] = Relationship(
-        back_populates="workflow",
+        back_populates="tool",
         sa_relationship=RelationshipProperty(
             "Task", cascade="all, delete, delete-orphan"
         )
     )
     owner_id: uuid.UUID = Field(foreign_key="user.id", nullable=False)
-    owner: User = Relationship(back_populates="workflows")
+    owner: User = Relationship(back_populates="tools")
 
 
 # Properties to return via API, id is always required
-class WorkflowPublic(WorkflowBase):
+class ToolPublic(ToolBase):
     id: uuid.UUID
     owner_id: uuid.UUID
 
 
-class WorkflowMinimalPublic(SQLModel):
+class ToolMinimalPublic(SQLModel):
     id: uuid.UUID
     name: str
 
-class WorkflowsPublic(SQLModel):
-    data: list[WorkflowPublic]
+class ToolsPublic(SQLModel):
+    data: list[ToolPublic]
     count: int
 
 class TargetType(str, enum.Enum):
@@ -181,13 +181,13 @@ class Target(TargetBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     target_type: TargetType = Field(sa_column=Column(Enum(TargetType)))
     results: list["Result"] = Relationship(back_populates="target")
-    workflow_id: uuid.UUID = Field(foreign_key="workflow.id", nullable=False)
-    workflow: Workflow = Relationship(back_populates="targets")
+    tool_id: uuid.UUID = Field(foreign_key="tool.id", nullable=False)
+    tool: Tool = Relationship(back_populates="targets")
 
 
 class TargetPublic(TargetBase):
     id: uuid.UUID
-    workflow_id: uuid.UUID
+    tool_id: uuid.UUID
 
 class ParamType(str, enum.Enum):
     str = "str"
@@ -223,27 +223,27 @@ class Param(ParamBase, table=True):
     param_type: ParamType = Field(sa_column=Column(Enum(ParamType)))
     options: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     default: int | float | str | bool | None = Field(default=None, sa_column=Column(JSON))
-    workflow_id: uuid.UUID = Field(foreign_key="workflow.id", nullable=False)
-    workflow: Workflow = Relationship(back_populates="params")
+    tool_id: uuid.UUID = Field(foreign_key="tool.id", nullable=False)
+    tool: Tool = Relationship(back_populates="params")
 
 
 class ParamPublic(ParamBase):
     id: uuid.UUID
-    workflow_id: uuid.UUID
+    tool_id: uuid.UUID
 
 
-class WorkflowCreateWithParamsAndTargets(WorkflowCreate):
+class ToolCreateWithParamsAndTargets(ToolCreate):
     params: list[ParamCreate] = []
     targets: list[TargetCreate] = []
 
 
-class WorkflowPublicWithParamsAndTargets(WorkflowPublic):
+class ToolPublicWithParamsAndTargets(ToolPublic):
     params: list[ParamPublic]
     targets: list[TargetPublic]
 
 
-class WorkflowsPublicWithParamsAndTargets(SQLModel):
-    data: list[WorkflowPublicWithParamsAndTargets]
+class ToolsPublicWithParamsAndTargets(SQLModel):
+    data: list[ToolPublicWithParamsAndTargets]
     count: int
 
 
@@ -277,8 +277,8 @@ class Task(TaskBase, table=True):
     command: str | None = None
     stderr: str | None = None
     stdout: str | None = None
-    workflow_id: uuid.UUID = Field(foreign_key="workflow.id", nullable=False)
-    workflow: Workflow = Relationship(back_populates="tasks")
+    tool_id: uuid.UUID = Field(foreign_key="tool.id", nullable=False)
+    tool: Tool = Relationship(back_populates="tasks")
     owner_id: uuid.UUID = Field(foreign_key="user.id", nullable=False)
     owner: User = Relationship(back_populates="tasks")
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
@@ -289,7 +289,7 @@ class Task(TaskBase, table=True):
 class TaskPublicMinimal(TaskBase):
     id: uuid.UUID
     owner_id: uuid.UUID
-    workflow: WorkflowPublic
+    tool: ToolPublic
 
 
 class Result(SQLModel, table=True):
