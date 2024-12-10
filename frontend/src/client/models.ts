@@ -100,10 +100,10 @@ export type RunPublic = {
   id: string
   owner_id: string
   tool: ToolPublic
+  params: Record<string, unknown>
   stderr?: string | null
   stdout?: string | null
   command?: string | null
-  params: Record<string, unknown>
   results: Array<ResultPublicWithFileAndTarget>
 }
 
@@ -116,6 +116,7 @@ export type RunPublicMinimal = {
   id: string
   owner_id: string
   tool: ToolPublic
+  params: Record<string, unknown>
 }
 
 export type RunStatus =

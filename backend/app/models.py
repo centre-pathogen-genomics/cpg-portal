@@ -290,6 +290,7 @@ class RunPublicMinimal(RunBase):
     id: uuid.UUID
     owner_id: uuid.UUID
     tool: ToolPublic
+    params: dict
 
 
 class Result(SQLModel, table=True):

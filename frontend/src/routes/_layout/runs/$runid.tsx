@@ -14,6 +14,7 @@ import {
   Container,
   Flex,
   Heading,
+  Link,
   Skeleton,
   Tab,
   TabList,
@@ -23,7 +24,7 @@ import {
   Text,
 } from "@chakra-ui/react"
 import { useSuspenseQuery } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { Suspense } from "react"
 import { ErrorBoundary } from "react-error-boundary"
 import { ResultPublicWithFileAndTarget, RunsService } from "../../../client"
@@ -32,6 +33,7 @@ import CsvFileToTable from "../../../components/Render/CsvFileToTable"
 import JsonFile from "../../../components/Render/JsonFile"
 import CodeBlock from "../../../components/Common/CodeBlock"
 import DownloadFileButton from "../../../components/Files/DownloadFileButton"
+import ParamTag from "../../../components/Runs/ParamTag"
 
 export const Route = createFileRoute("/_layout/runs/$runid")({
   component: Run,
@@ -54,6 +56,7 @@ function renderResult(result: ResultPublicWithFileAndTarget) {
 
 function RunDetail() {
   const { runid } = Route.useParams()
+  const navigate = useNavigate({ from: Route.fullPath })
 
   // Using useSuspenseQuery for data fetching
 
@@ -100,8 +103,26 @@ function RunDetail() {
       </Heading>
       <Box mb={4}>
         <Text>
-          Tool: <Code>{run.tool.name}</Code>
+          Tool: <Link
+                      onClick={(e) =>{
+                          e.stopPropagation();
+                          navigate({
+                            to: `/tools/${run.tool.name}`,
+                            replace: false,
+                            resetScroll: true,
+                          })
+                        }
+                      }
+                    >
+                      {run.tool.name}
+                </Link>
         </Text>
+        <Flex wrap={'wrap'}>
+        <Text>Parameters:</Text>
+        {Object.keys(run.params).map((key) => (
+                          <Flex mx={1} ><ParamTag key={key} param={key} value={(run.params[key] as string).toString()} /></Flex>
+                      ))}
+        </Flex>
         <Text>
           Status:{" "}
           <Badge borderRadius="full" px="2" colorScheme={run.status == "failed" ? "red" :"teal"}>

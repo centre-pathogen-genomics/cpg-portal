@@ -552,6 +552,13 @@ export const $RunPublic = {
       type: "ToolPublic",
       isRequired: true,
     },
+    params: {
+      type: "dictionary",
+      contains: {
+        properties: {},
+      },
+      isRequired: true,
+    },
     stderr: {
       type: "any-of",
       contains: [
@@ -584,13 +591,6 @@ export const $RunPublic = {
           type: "null",
         },
       ],
-    },
-    params: {
-      type: "dictionary",
-      contains: {
-        properties: {},
-      },
-      isRequired: true,
     },
     results: {
       type: "array",
@@ -655,6 +655,13 @@ export const $RunPublicMinimal = {
     },
     tool: {
       type: "ToolPublic",
+      isRequired: true,
+    },
+    params: {
+      type: "dictionary",
+      contains: {
+        properties: {},
+      },
       isRequired: true,
     },
   },

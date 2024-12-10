@@ -1,6 +1,7 @@
 import { ViewIcon } from "@chakra-ui/icons"
 import {
   Badge,
+  Box,
   Button,
   ButtonGroup,
   Container,
@@ -27,6 +28,7 @@ import DeleteRunButton from "../../../components/Runs/DeleteRunButton"
 import DeleteRunsButton from "../../../components/Runs/DeleteRunsButton"
 import RunRuntime from "../../../components/Runs/RunTime"
 import StatusIcon from "../../../components/Runs/StatusIcon"
+import ParamTag from "../../../components/Runs/ParamTag"
 import { PaginationFooter } from "../../../components/Common/PaginationFooter"
 import { z } from "zod"
 
@@ -95,9 +97,11 @@ function RunsTable() {
       <Table size={{ base: "sm", md: "md" }}>
         <Thead>
           <Tr>
-            <Th width="20%">ID</Th>
+            <Th width="10%">ID</Th>
             <Th>Tool</Th>
+            <Th>Params</Th>
             <Th>Status</Th>
+            <Th>Started</Th>
             <Th>Runtime</Th>
             <Th width="10%">Actions</Th>
           </Tr>
@@ -128,8 +132,6 @@ function RunsTable() {
                       placement="top"
                       hasArrow
                       label={run.id}
-                      bg="gray.300"
-                      color="black"
                     >
                       <Badge variant="outline" colorScheme="green">
                         {run.id.split("-")[0]}
@@ -152,7 +154,22 @@ function RunsTable() {
                     </Link>
                   </Td>
                   <Td>
+                    {/* {run.params.items().map((key, value) => (
+                      <Badge variant="outline" colorScheme="blue">
+                        {key}
+                      </Badge>
+                    ))} */}
+                      {Object.keys(run.params).map((key) => (
+                        <Box key={key} mr={2} mb={1} >
+                          <ParamTag key={key} truncate param={key} value={(run.params[key] as string).toString()} />
+                        </Box>
+                      ))}
+                  </Td>
+                  <Td>
                     <StatusIcon status={run.status} />
+                  </Td>
+                  <Td>
+                    {run.started_at}
                   </Td>
                   <Td>
                     <RunRuntime

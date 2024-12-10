@@ -80,7 +80,7 @@ const RunToolForm = ({ toolId, onSuccess }: RunToolFormProps) => {
     onSuccess: (run) => {
       showToast(
         "Success!",
-        `Tool run successfully.\nRun ID: ${run.id}`,
+        `Run Queued (${run.id})`,
         "success",
       )
       if (onSuccess) onSuccess(run)
@@ -221,7 +221,7 @@ const RunToolForm = ({ toolId, onSuccess }: RunToolFormProps) => {
       </Box>
       <ButtonGroup>
         <Button variant="primary" type="submit" isLoading={isSubmitting}>
-          Start Tool
+          Run Tool
         </Button>
         <Button onClick={() => reset(defaultValues)} variant="outline">
           Reset

@@ -47,7 +47,7 @@ const StatusIcon = ({ status }: { status: RunStatus }) => {
   const { icon, label } = getIconDetails(status)
 
   return (
-    <Tooltip placement="top" hasArrow label={label} bg="gray.300" color="black">
+    <Tooltip placement="top" hasArrow label={label} >
       {icon}
     </Tooltip>
   )
