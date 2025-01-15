@@ -25,16 +25,35 @@ interface ToolCardProps {
 const ToolCard = ({ tool }: ToolCardProps) => {
   const runToolModal = useDisclosure()
   const navigate = useNavigate()
+
+  const navigateToTool = () => {
+    navigate({
+      to: `/tools/${tool.name}`,
+      params: { name: tool.name },
+      replace: false,
+      resetScroll: true,
+    })
+  }
   return (
     <>
       <Card
-        variant="outline"
-        direction={{ base: "column", sm: "row" }}
+        variant="elevated"
         overflow="hidden"
+        maxW={{ base: "100%", md: "400px" }}
+        size={"sm"}
+        // on unhover return to normal state
+        _hover={{
+          boxShadow: "xl",
+          transform: "translateY(-2px)",
+          transition: "all 0.2s",
+        }}
+        cursor={"pointer"}
+        onClick={navigateToTool}
+        
       >
         <Image
           objectFit="cover"
-          maxW={{ base: "100%", sm: "200px" }}
+          maxH={{ base: "200px" }}
           src={
             tool.image != null
               ? tool.image
@@ -43,15 +62,14 @@ const ToolCard = ({ tool }: ToolCardProps) => {
           // src='https://images.unsplash.com/photo-1543145499-8193615267de?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxlZGl0b3JpYWwtZmVlZHw5fHx8ZW58MHx8fHw%3D&auto=format&fit=crop&w=800&q=60'
           alt="Caffe Latte"
         />
-        <Stack>
           <CardHeader>
             <Heading size="lg">{tool.name}</Heading>
           </CardHeader>
           <CardBody>
             <Text>{tool.description}</Text>
           </CardBody>
-          <CardFooter>
-            <ButtonGroup spacing={4}>
+          <CardFooter >
+            <ButtonGroup spacing={4} onClick={(e) => e.stopPropagation()}>
               <Button
                 variant="primary"
                 leftIcon={<FaPlay />}
@@ -59,7 +77,7 @@ const ToolCard = ({ tool }: ToolCardProps) => {
               >
                 Run
               </Button>
-              <Button
+              {/* <Button
                 variant="outline"
                 onClick={() => {
                   navigate({
@@ -72,10 +90,9 @@ const ToolCard = ({ tool }: ToolCardProps) => {
                 leftIcon={<ViewIcon />}
               >
                 View
-              </Button>
+              </Button> */}
             </ButtonGroup>
           </CardFooter>
-        </Stack>
       </Card>
       <RunToolModal
         isOpen={runToolModal.isOpen}
