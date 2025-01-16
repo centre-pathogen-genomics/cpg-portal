@@ -24,6 +24,7 @@ from app.models import (
     ToolPublicWithParamsAndTargets,
     ToolsPublicWithParamsAndTargets,
     ToolUpdate,
+    UserFavouriteToolsLink,
 )
 
 router = APIRouter()
@@ -34,14 +35,50 @@ def read_tools(
     session: SessionDep, current_user: CurrentUser, skip: int = 0, limit: int = 100
 ) -> Any:
     """
-    Retrieve tools.
+    Retrieve tools with a favourited status for the current user.
     """
-    query = select(Tool).offset(skip).limit(limit)
+    # Build the query
+    query = (
+        select(
+            Tool,
+            UserFavouriteToolsLink.tool_id.label("favourited_tool_id")
+        )
+        .join(
+            UserFavouriteToolsLink,
+            (UserFavouriteToolsLink.tool_id == Tool.id)
+            & (UserFavouriteToolsLink.user_id == current_user.id),
+            isouter=True,  # LEFT JOIN to include all tools
+        )
+        .order_by(Tool.run_count.desc())
+        .offset(skip)
+        .limit(limit)
+    )
+
+    # Apply enabled filter for non-superusers
     if not current_user.is_superuser:
         query = query.where(Tool.enabled)
-    tools = session.exec(query).all()
-    count = session.exec(select(func.count()).select_from(Tool)).one()
-    return ToolsPublicWithParamsAndTargets(data=tools, count=count)
+
+    # Execute the query
+    result = session.exec(query).all()
+
+    # Process results
+    tools_with_favourite_status = [
+        ToolPublicWithParamsAndTargets(
+            **tool.dict(),  # Include all fields from the Tool model
+            params=tool.params,  # Related params
+            targets=tool.targets,  # Related targets
+            favourited=favourited_tool_id is not None  # Check if the tool is favorited
+        )
+        for tool, favourited_tool_id in result
+    ]
+
+    # Count total tools
+    count_query = select(func.count()).select_from(Tool)
+    if not current_user.is_superuser:
+        count_query = count_query.where(Tool.enabled)
+    count = session.exec(count_query).one()
+
+    return ToolsPublicWithParamsAndTargets(data=tools_with_favourite_status, count=count)
 
 
 @router.get("/{tool_id}", response_model=ToolPublicWithParamsAndTargets)
@@ -57,6 +94,54 @@ def read_tool(
     if not current_user.is_superuser and not tool.enabled:
         raise HTTPException(status_code=403, detail="Tool is disabled")
     return tool
+
+
+@router.post("/{tool_id}/favourite", response_model=Message)
+def favourite_tool(tool_id: uuid.UUID, session: SessionDep, current_user: CurrentUser) -> Any:
+    """
+    Add a tool to the current user's favourites.
+    """
+    tool = session.get(Tool, tool_id)
+    if not tool:
+        raise HTTPException(status_code=404, detail="Tool not found")
+
+    # Check if already favorited
+    exists = session.exec(
+        select(UserFavouriteToolsLink.tool_id)
+        .where(UserFavouriteToolsLink.user_id == current_user.id)
+        .where(UserFavouriteToolsLink.tool_id == tool_id)
+    ).first()
+    if exists:
+        raise HTTPException(status_code=400, detail="Tool already favorited")
+    # Add to favourites
+    tool.favourited_by.append(current_user)
+    session.add(tool)
+    session.commit()
+    return Message(message="Tool favourited successfully")
+
+
+@router.delete("/{tool_id}/favourite", response_model=Message)
+def unfavourite_tool(tool_id: uuid.UUID, session: SessionDep, current_user: CurrentUser) -> Any:
+    """
+    Remove a tool from the current user's favourites.
+    """
+    tool = session.get(Tool, tool_id)
+    if not tool:
+        raise HTTPException(status_code=404, detail="Tool not found")
+
+    # Check if already favorited
+    exists = session.exec(
+        select(UserFavouriteToolsLink.tool_id)
+        .where(UserFavouriteToolsLink.user_id == current_user.id)
+        .where(UserFavouriteToolsLink.tool_id == tool_id)
+    ).first()
+    if not exists:
+        raise HTTPException(status_code=400, detail="Tool not favorited")
+    # Remove from favourites
+    tool.favourited_by.remove(current_user)
+    session.add(tool)
+    session.commit()
+    return Message(message="Tool removed from favourites successfully")
 
 
 @router.get("/name/{tool_name}", response_model=ToolPublicWithParamsAndTargets)
