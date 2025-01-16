@@ -15,6 +15,11 @@ from sqlmodel import (
 )
 
 
+# Link tables for many-to-many relationships
+class UserFavouriteToolsLink(SQLModel, table=True):
+    user_id: uuid.UUID  | None = Field(default=None, foreign_key="user.id", primary_key=True)
+    tool_id: uuid.UUID  | None = Field(default=None, foreign_key="tool.id", primary_key=True)
+
 # Shared properties
 class UserBase(SQLModel):
     email: EmailStr = Field(unique=True, index=True, max_length=255)
@@ -50,20 +55,14 @@ class UpdatePassword(SQLModel):
     new_password: str = Field(min_length=8, max_length=40)
 
 
-class UserFavouriteToolsLink(SQLModel, table=True):
-    user_id: uuid.UUID  | None = Field(default=None, foreign_key="user.id", primary_key=True)
-    tool_id: uuid.UUID  | None = Field(default=None, foreign_key="tool.id", primary_key=True)
-
 
 # Database model, database table inferred from class name
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
-    tools: list["Tool"] = Relationship(back_populates="owner")
     favourite_tools: list["Tool"] = Relationship(
         back_populates="favourited_by",
-        link_model=UserFavouriteToolsLink,
-        sa_relationship=RelationshipProperty(cascade="all, delete, delete-orphan")
+        link_model=UserFavouriteToolsLink
     )
     files: list["File"] = Relationship(back_populates="owner")
     runs: list["Run"] = Relationship(back_populates="owner")
@@ -105,7 +104,7 @@ class ToolBase(SQLModel):
     name: str
     description: str | None = None
     image: str | None = None
-    tags: list[str]
+    tags: list[str] | None = None
     favourited_count: int = 0
     run_count: int = 0
     command: list[str]  # ["hello-world", "run", "{verbose_flag}", "--text", "{text}"]
@@ -145,8 +144,6 @@ class Tool(ToolBase, table=True):
             "Run", cascade="all, delete, delete-orphan"
         )
     )
-    owner_id: uuid.UUID = Field(foreign_key="user.id", nullable=False)
-    owner: User = Relationship(back_populates="tools")
     favourited_by: list[User] = Relationship(
         back_populates="favourite_tools", link_model=UserFavouriteToolsLink
     )
@@ -155,7 +152,6 @@ class Tool(ToolBase, table=True):
 # Properties to return via API, id is always required
 class ToolPublic(ToolBase):
     id: uuid.UUID
-    owner_id: uuid.UUID
     favourited: bool = False
 
 

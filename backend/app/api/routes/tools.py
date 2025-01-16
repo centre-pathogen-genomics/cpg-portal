@@ -171,7 +171,7 @@ def create_tool(
     Create new tool along with its params.
     """
     tool = Tool(
-        **tool_in.dict(exclude={"params", "targets"}), owner_id=current_user.id
+        **tool_in.dict(exclude={"params", "targets"})
     )
     session.add(tool)
     session.commit()
