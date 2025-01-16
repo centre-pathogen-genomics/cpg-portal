@@ -158,6 +158,10 @@ async def create_run(
     session.commit()
     session.refresh(run)
 
+    tool.run_count += 1
+    session.add(tool)
+    session.commit()
+
     return run
 
 
