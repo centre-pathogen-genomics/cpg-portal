@@ -65,12 +65,34 @@ export const $FilePublic = {
       type: "string",
       isRequired: true,
     },
+    file_type: {
+      type: "any-of",
+      contains: [
+        {
+          type: "FileType",
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    size: {
+      type: "any-of",
+      contains: [
+        {
+          type: "number",
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
     id: {
       type: "string",
       isRequired: true,
       format: "uuid",
     },
-    result_id: {
+    run_id: {
       type: "any-of",
       contains: [
         {
@@ -88,6 +110,11 @@ export const $FilePublic = {
       format: "date-time",
     },
   },
+} as const
+
+export const $FileType = {
+  type: "Enum",
+  enum: ["text", "image", "csv", "tsv", "json", "unknown"],
 } as const
 
 export const $FilesPublic = {
@@ -464,39 +491,6 @@ export const $ParamUpdate = {
   },
 } as const
 
-export const $ResultPublicWithFileAndTarget = {
-  properties: {
-    id: {
-      type: "string",
-      isRequired: true,
-      format: "uuid",
-    },
-    file: {
-      type: "FilePublic",
-      isRequired: true,
-    },
-    target: {
-      type: "TargetPublic",
-      isRequired: true,
-    },
-    owner_id: {
-      type: "string",
-      isRequired: true,
-      format: "uuid",
-    },
-    run_id: {
-      type: "string",
-      isRequired: true,
-      format: "uuid",
-    },
-    created_at: {
-      type: "string",
-      isRequired: true,
-      format: "date-time",
-    },
-  },
-} as const
-
 export const $RunPublic = {
   properties: {
     taskiq_id: {
@@ -592,10 +586,10 @@ export const $RunPublic = {
         },
       ],
     },
-    results: {
+    files: {
       type: "array",
       contains: {
-        type: "ResultPublicWithFileAndTarget",
+        type: "FilePublic",
       },
       isRequired: true,
     },
@@ -694,35 +688,9 @@ export const $Target = {
       type: "string",
       isRequired: true,
     },
-    name: {
-      type: "any-of",
-      contains: [
-        {
-          type: "string",
-        },
-        {
-          type: "null",
-        },
-      ],
-    },
-    description: {
-      type: "any-of",
-      contains: [
-        {
-          type: "string",
-        },
-        {
-          type: "null",
-        },
-      ],
-    },
     target_type: {
-      type: "TargetType",
+      type: "FileType",
       isRequired: true,
-    },
-    display: {
-      type: "boolean",
-      default: false,
     },
     required: {
       type: "boolean",
@@ -746,32 +714,17 @@ export const $TargetCreate = {
       type: "string",
       isRequired: true,
     },
-    name: {
-      type: "string",
-      isRequired: true,
-    },
-    description: {
-      type: "any-of",
-      contains: [
-        {
-          type: "string",
-        },
-        {
-          type: "null",
-        },
-      ],
-    },
     target_type: {
-      type: "TargetType",
+      type: "FileType",
       isRequired: true,
-    },
-    display: {
-      type: "boolean",
-      default: false,
     },
     required: {
       type: "boolean",
       default: true,
+    },
+    name: {
+      type: "string",
+      isRequired: true,
     },
   },
 } as const
@@ -782,35 +735,9 @@ export const $TargetPublic = {
       type: "string",
       isRequired: true,
     },
-    name: {
-      type: "any-of",
-      contains: [
-        {
-          type: "string",
-        },
-        {
-          type: "null",
-        },
-      ],
-    },
-    description: {
-      type: "any-of",
-      contains: [
-        {
-          type: "string",
-        },
-        {
-          type: "null",
-        },
-      ],
-    },
     target_type: {
-      type: "TargetType",
+      type: "FileType",
       isRequired: true,
-    },
-    display: {
-      type: "boolean",
-      default: false,
     },
     required: {
       type: "boolean",
@@ -829,36 +756,9 @@ export const $TargetPublic = {
   },
 } as const
 
-export const $TargetType = {
-  type: "Enum",
-  enum: ["text", "image", "csv", "tsv", "json", "unknown"],
-} as const
-
 export const $TargetUpdate = {
   properties: {
     path: {
-      type: "any-of",
-      contains: [
-        {
-          type: "string",
-        },
-        {
-          type: "null",
-        },
-      ],
-    },
-    name: {
-      type: "any-of",
-      contains: [
-        {
-          type: "string",
-        },
-        {
-          type: "null",
-        },
-      ],
-    },
-    description: {
       type: "any-of",
       contains: [
         {
@@ -873,18 +773,7 @@ export const $TargetUpdate = {
       type: "any-of",
       contains: [
         {
-          type: "TargetType",
-        },
-        {
-          type: "null",
-        },
-      ],
-    },
-    display: {
-      type: "any-of",
-      contains: [
-        {
-          type: "boolean",
+          type: "FileType",
         },
         {
           type: "null",
@@ -938,6 +827,28 @@ export const $ToolCreateWithParamsAndTargets = {
           type: "null",
         },
       ],
+    },
+    tags: {
+      type: "any-of",
+      contains: [
+        {
+          type: "array",
+          contains: {
+            type: "string",
+          },
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    favourited_count: {
+      type: "number",
+      default: 0,
+    },
+    run_count: {
+      type: "number",
+      default: 0,
     },
     command: {
       type: "array",
@@ -1006,6 +917,28 @@ export const $ToolPublic = {
         },
       ],
     },
+    tags: {
+      type: "any-of",
+      contains: [
+        {
+          type: "array",
+          contains: {
+            type: "string",
+          },
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    favourited_count: {
+      type: "number",
+      default: 0,
+    },
+    run_count: {
+      type: "number",
+      default: 0,
+    },
     command: {
       type: "array",
       contains: {
@@ -1033,10 +966,9 @@ export const $ToolPublic = {
       isRequired: true,
       format: "uuid",
     },
-    owner_id: {
-      type: "string",
-      isRequired: true,
-      format: "uuid",
+    favourited: {
+      type: "boolean",
+      default: false,
     },
   },
 } as const
@@ -1069,6 +1001,28 @@ export const $ToolPublicWithParamsAndTargets = {
         },
       ],
     },
+    tags: {
+      type: "any-of",
+      contains: [
+        {
+          type: "array",
+          contains: {
+            type: "string",
+          },
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    favourited_count: {
+      type: "number",
+      default: 0,
+    },
+    run_count: {
+      type: "number",
+      default: 0,
+    },
     command: {
       type: "array",
       contains: {
@@ -1096,10 +1050,9 @@ export const $ToolPublicWithParamsAndTargets = {
       isRequired: true,
       format: "uuid",
     },
-    owner_id: {
-      type: "string",
-      isRequired: true,
-      format: "uuid",
+    favourited: {
+      type: "boolean",
+      default: false,
     },
     params: {
       type: "array",
@@ -1152,6 +1105,28 @@ export const $ToolUpdate = {
           type: "null",
         },
       ],
+    },
+    tags: {
+      type: "any-of",
+      contains: [
+        {
+          type: "array",
+          contains: {
+            type: "string",
+          },
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    favourited_count: {
+      type: "number",
+      default: 0,
+    },
+    run_count: {
+      type: "number",
+      default: 0,
     },
     command: {
       type: "any-of",

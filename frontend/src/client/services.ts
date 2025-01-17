@@ -429,6 +429,12 @@ export type TDataUpdateTool = {
 export type TDataDeleteTool = {
   toolId: string
 }
+export type TDataFavouriteTool = {
+  toolId: string
+}
+export type TDataUnfavouriteTool = {
+  toolId: string
+}
 export type TDataReadToolByName = {
   toolName: string
 }
@@ -468,7 +474,7 @@ export type TDataDeleteTargetFromTool = {
 export class ToolsService {
   /**
    * Read Tools
-   * Retrieve tools.
+   * Retrieve tools with a favourited status for the current user.
    * @returns ToolsPublicWithParamsAndTargets Successful Response
    * @throws ApiError
    */
@@ -567,6 +573,50 @@ export class ToolsService {
     return __request(OpenAPI, {
       method: "DELETE",
       url: "/api/v1/tools/{tool_id}",
+      path: {
+        tool_id: toolId,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    })
+  }
+
+  /**
+   * Favourite Tool
+   * Add a tool to the current user's favourites.
+   * @returns Message Successful Response
+   * @throws ApiError
+   */
+  public static favouriteTool(
+    data: TDataFavouriteTool,
+  ): CancelablePromise<Message> {
+    const { toolId } = data
+    return __request(OpenAPI, {
+      method: "POST",
+      url: "/api/v1/tools/{tool_id}/favourite",
+      path: {
+        tool_id: toolId,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    })
+  }
+
+  /**
+   * Unfavourite Tool
+   * Remove a tool from the current user's favourites.
+   * @returns Message Successful Response
+   * @throws ApiError
+   */
+  public static unfavouriteTool(
+    data: TDataUnfavouriteTool,
+  ): CancelablePromise<Message> {
+    const { toolId } = data
+    return __request(OpenAPI, {
+      method: "DELETE",
+      url: "/api/v1/tools/{tool_id}/favourite",
       path: {
         tool_id: toolId,
       },

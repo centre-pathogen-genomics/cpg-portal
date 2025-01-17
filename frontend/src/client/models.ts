@@ -13,10 +13,14 @@ export type Body_login_login_access_token = {
 
 export type FilePublic = {
   name: string
+  file_type?: FileType | null
+  size?: number | null
   id: string
-  result_id?: string | null
+  run_id?: string | null
   created_at: string
 }
+
+export type FileType = "text" | "image" | "csv" | "tsv" | "json" | "unknown"
 
 export type FilesPublic = {
   data: Array<FilePublic>
@@ -82,15 +86,6 @@ export type ParamUpdate = {
   required?: boolean | null
 }
 
-export type ResultPublicWithFileAndTarget = {
-  id: string
-  file: FilePublic
-  target: TargetPublic
-  owner_id: string
-  run_id: string
-  created_at: string
-}
-
 export type RunPublic = {
   taskiq_id: string
   status: RunStatus
@@ -104,7 +99,7 @@ export type RunPublic = {
   stderr?: string | null
   stdout?: string | null
   command?: string | null
-  results: Array<ResultPublicWithFileAndTarget>
+  files: Array<FilePublic>
 }
 
 export type RunPublicMinimal = {
@@ -133,10 +128,7 @@ export type RunsPublicMinimal = {
 
 export type Target = {
   path: string
-  name?: string | null
-  description?: string | null
-  target_type: TargetType
-  display?: boolean
+  target_type: FileType
   required?: boolean
   id?: string
   tool_id: string
@@ -144,32 +136,22 @@ export type Target = {
 
 export type TargetCreate = {
   path: string
-  name: string
-  description?: string | null
-  target_type: TargetType
-  display?: boolean
+  target_type: FileType
   required?: boolean
+  name: string
 }
 
 export type TargetPublic = {
   path: string
-  name?: string | null
-  description?: string | null
-  target_type: TargetType
-  display?: boolean
+  target_type: FileType
   required?: boolean
   id: string
   tool_id: string
 }
 
-export type TargetType = "text" | "image" | "csv" | "tsv" | "json" | "unknown"
-
 export type TargetUpdate = {
   path?: string | null
-  name?: string | null
-  description?: string | null
-  target_type?: TargetType | null
-  display?: boolean | null
+  target_type?: FileType | null
   required?: boolean
 }
 
@@ -182,6 +164,9 @@ export type ToolCreateWithParamsAndTargets = {
   name: string
   description?: string | null
   image?: string | null
+  tags?: Array<string> | null
+  favourited_count?: number
+  run_count?: number
   command: Array<string>
   setup_command?: string | null
   enabled?: boolean
@@ -193,22 +178,28 @@ export type ToolPublic = {
   name: string
   description?: string | null
   image?: string | null
+  tags?: Array<string> | null
+  favourited_count?: number
+  run_count?: number
   command: Array<string>
   setup_command?: string | null
   enabled?: boolean
   id: string
-  owner_id: string
+  favourited?: boolean
 }
 
 export type ToolPublicWithParamsAndTargets = {
   name: string
   description?: string | null
   image?: string | null
+  tags?: Array<string> | null
+  favourited_count?: number
+  run_count?: number
   command: Array<string>
   setup_command?: string | null
   enabled?: boolean
   id: string
-  owner_id: string
+  favourited?: boolean
   params: Array<ParamPublic>
   targets: Array<TargetPublic>
 }
@@ -217,6 +208,9 @@ export type ToolUpdate = {
   name?: string | null
   description?: string | null
   image?: string | null
+  tags?: Array<string> | null
+  favourited_count?: number
+  run_count?: number
   command?: Array<string> | null
   setup_command?: string | null
   enabled?: boolean
