@@ -817,6 +817,17 @@ export const $ToolCreateWithParamsAndTargets = {
         },
       ],
     },
+    url: {
+      type: "any-of",
+      contains: [
+        {
+          type: "string",
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
     image: {
       type: "any-of",
       contains: [
@@ -906,6 +917,17 @@ export const $ToolPublic = {
         },
       ],
     },
+    url: {
+      type: "any-of",
+      contains: [
+        {
+          type: "string",
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
     image: {
       type: "any-of",
       contains: [
@@ -980,6 +1002,17 @@ export const $ToolPublicWithParamsAndTargets = {
       isRequired: true,
     },
     description: {
+      type: "any-of",
+      contains: [
+        {
+          type: "string",
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
+    url: {
       type: "any-of",
       contains: [
         {
@@ -1095,6 +1128,17 @@ export const $ToolUpdate = {
         },
       ],
     },
+    url: {
+      type: "any-of",
+      contains: [
+        {
+          type: "string",
+        },
+        {
+          type: "null",
+        },
+      ],
+    },
     image: {
       type: "any-of",
       contains: [
@@ -1158,6 +1202,11 @@ export const $ToolUpdate = {
       default: false,
     },
   },
+} as const
+
+export const $ToolsOrderBy = {
+  type: "Enum",
+  enum: ["created_at", "run_count"],
 } as const
 
 export const $ToolsPublicWithParamsAndTargets = {

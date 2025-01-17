@@ -10,7 +10,6 @@ import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
-  Code,
   Container,
   Flex,
   Heading,
@@ -27,7 +26,7 @@ import { useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { Suspense } from "react"
 import { ErrorBoundary } from "react-error-boundary"
-import { ResultPublicWithFileAndTarget, RunsService } from "../../../client"
+import { FilePublic, RunsService } from "../../../client"
 import RunRuntime from "../../../components/Runs/RunTime"
 import CsvFileToTable from "../../../components/Render/CsvFileToTable"
 import JsonFile from "../../../components/Render/JsonFile"
@@ -39,19 +38,19 @@ export const Route = createFileRoute("/_layout/runs/$runid")({
   component: Run,
 })
 
-function renderResult(result: ResultPublicWithFileAndTarget) {
-  if (result.target.display) {
-    switch (result.target.target_type) {
+function renderResult(file: FilePublic) {
+  if (file.size && file.size < 5000000) {
+    switch (file.file_type) {
       case "csv":
       case "tsv":
-        return <CsvFileToTable fileId={result.file.id} />
+        return <CsvFileToTable fileId={file.id} />
       case "json":
-        return <JsonFile fileId={result.file.id} />
+        return <JsonFile fileId={file.id} />
       default:
-        return <DownloadFileButton fileId={result.file.id} />
+        return <DownloadFileButton fileId={file.id} />
     }
   }
-  return null
+  return <DownloadFileButton fileId={file.id} />
 }
 
 function RunDetail() {
@@ -135,26 +134,18 @@ function RunDetail() {
         <Text>Started: {run.started_at}</Text>
         <Text>Completed: {run.finished_at}</Text>
       </Box>
-      {run.results.length > 0 && (
+      {run.files.length > 0 && (
         <Tabs  variant="enclosed" >
           <TabList mb='1em'>
-          {run.results?.map((result) => (
-            <>
-              {result.target.display && (
-                <Tab key={result.id}>{result.file.name}</Tab>
-              )}
-            </>
+          {run.files?.map((file) => (
+            <Tab key={file.id}>{file.name}</Tab>
           ))} 
           </TabList>
           <TabPanels>
-          {run.results?.map((result) => (
-            <>
-              {result.target.display && (
-                <TabPanel>
-                  {renderResult(result)} 
-                </TabPanel>
-              )}
-            </>
+          {run.files?.map((file) => (
+            <TabPanel>
+              {renderResult(file)} 
+            </TabPanel>
           ))}
           </TabPanels>
         </Tabs>

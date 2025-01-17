@@ -23,6 +23,7 @@ import type {
   ToolCreateWithParamsAndTargets,
   ToolPublic,
   ToolPublicWithParamsAndTargets,
+  ToolsOrderBy,
   ToolsPublicWithParamsAndTargets,
   ToolUpdate,
   Body_files_upload_file,
@@ -414,6 +415,7 @@ export class UtilsService {
 
 export type TDataReadTools = {
   limit?: number
+  orderBy?: ToolsOrderBy
   skip?: number
 }
 export type TDataCreateTool = {
@@ -481,13 +483,14 @@ export class ToolsService {
   public static readTools(
     data: TDataReadTools = {},
   ): CancelablePromise<ToolsPublicWithParamsAndTargets> {
-    const { limit = 100, skip = 0 } = data
+    const { limit = 100, orderBy = "run_count", skip = 0 } = data
     return __request(OpenAPI, {
       method: "GET",
       url: "/api/v1/tools/",
       query: {
         skip,
         limit,
+        order_by: orderBy,
       },
       errors: {
         422: `Validation Error`,

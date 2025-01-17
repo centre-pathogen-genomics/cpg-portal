@@ -10,9 +10,9 @@ import {
 } from "@chakra-ui/react"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { Suspense } from "react"
+import { Suspense, useState } from "react"
 import { ErrorBoundary } from "react-error-boundary"
-import { ToolsService } from "../../client"
+import { ToolsService, type ToolsOrderBy } from "../../client"
 import ToolCard from "../../components/Tools/ToolCard"
 import Logo from "/assets/images/cpg-logo.png"
 
@@ -20,10 +20,10 @@ export const Route = createFileRoute("/_layout/")({
   component: Tools,
 })
 
-function ToolCards() {
+function ToolCards({ orderBy }: { orderBy: ToolsOrderBy }) {
   const { data: tools } = useSuspenseQuery({
-    queryKey: ["tools"],
-    queryFn: () => ToolsService.readTools({}),
+    queryKey: ["tools", orderBy], // Include orderBy in query key for caching
+    queryFn: () => ToolsService.readTools({ orderBy }),
   })
 
   return (
@@ -35,7 +35,7 @@ function ToolCards() {
   )
 }
 
-function ToolsGrid() {
+function ToolsGrid({ orderBy }: { orderBy: ToolsOrderBy }) {
   return (
     <Suspense fallback={<Skeleton height="20px" />}>
       <ErrorBoundary
@@ -46,7 +46,7 @@ function ToolsGrid() {
         )}
       >
         <SimpleGrid minChildWidth='250px' spacing="20px">
-          <ToolCards />
+          <ToolCards orderBy={orderBy} />
         </SimpleGrid>
       </ErrorBoundary>
     </Suspense>
@@ -54,6 +54,12 @@ function ToolsGrid() {
 }
 
 function Tools() {
+  const [orderBy, setOrderBy] = useState<ToolsOrderBy>("run_count") // Default orderBy state
+
+  const handleOrderByChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setOrderBy(event.target.value as ToolsOrderBy) // Update state when selection changes
+  }
+
   return (
     <Container maxW="full">
       <Flex direction="column" align="center" my={8}>
@@ -68,18 +74,12 @@ function Tools() {
           <Text align='center' maxW={{ base: "100%", md: "3xl" }} fontSize={{base: 'lg', md: '2xl'}}>Explore and run tools from the most talented and accomplished scientists ready to take on your next project</Text>
       </Flex>
       <Flex justify="space-between" align="center" mb={4}>
-        <Select  w='200px'>
-          <option value='option2'>Popular</option>
-          <option value='option1'>New</option>
+        <Select w='200px' value={orderBy} onChange={handleOrderByChange}>
+          <option value='run_count'>Popular</option>
+          <option value='created_at'>New & Noteworthy</option>
         </Select>
-        {/* <Select  w='200px'>
-          <option value='option2'>All</option>
-          <option value='option1'>AMR</option>
-          <option value='option3'>Torstiverse</option>
-        </Select> */}
-
       </Flex>
-      <ToolsGrid />
+      <ToolsGrid orderBy={orderBy} />
     </Container>
   )
 }

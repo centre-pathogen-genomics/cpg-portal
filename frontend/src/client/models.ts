@@ -163,6 +163,7 @@ export type Token = {
 export type ToolCreateWithParamsAndTargets = {
   name: string
   description?: string | null
+  url?: string | null
   image?: string | null
   tags?: Array<string> | null
   favourited_count?: number
@@ -177,6 +178,7 @@ export type ToolCreateWithParamsAndTargets = {
 export type ToolPublic = {
   name: string
   description?: string | null
+  url?: string | null
   image?: string | null
   tags?: Array<string> | null
   favourited_count?: number
@@ -191,6 +193,7 @@ export type ToolPublic = {
 export type ToolPublicWithParamsAndTargets = {
   name: string
   description?: string | null
+  url?: string | null
   image?: string | null
   tags?: Array<string> | null
   favourited_count?: number
@@ -207,6 +210,7 @@ export type ToolPublicWithParamsAndTargets = {
 export type ToolUpdate = {
   name?: string | null
   description?: string | null
+  url?: string | null
   image?: string | null
   tags?: Array<string> | null
   favourited_count?: number
@@ -215,6 +219,8 @@ export type ToolUpdate = {
   setup_command?: string | null
   enabled?: boolean
 }
+
+export type ToolsOrderBy = "created_at" | "run_count"
 
 export type ToolsPublicWithParamsAndTargets = {
   data: Array<ToolPublicWithParamsAndTargets>

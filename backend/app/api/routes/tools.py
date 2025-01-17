@@ -1,4 +1,5 @@
 import uuid
+from enum import Enum
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -30,9 +31,13 @@ from app.models import (
 router = APIRouter()
 
 
+class ToolsOrderBy(str, Enum):
+    created_at = "created_at"
+    run_count = "run_count"
+
 @router.get("/", response_model=ToolsPublicWithParamsAndTargets)
 def read_tools(
-    session: SessionDep, current_user: CurrentUser, skip: int = 0, limit: int = 100
+    session: SessionDep, current_user: CurrentUser, skip: int = 0, limit: int = 100, order_by: ToolsOrderBy = ToolsOrderBy.run_count
 ) -> Any:
     """
     Retrieve tools with a favourited status for the current user.
@@ -49,7 +54,7 @@ def read_tools(
             & (UserFavouriteToolsLink.user_id == current_user.id),
             isouter=True,  # LEFT JOIN to include all tools
         )
-        .order_by(Tool.run_count.desc())
+        .order_by(getattr(Tool, order_by).desc())
         .offset(skip)
         .limit(limit)
     )
