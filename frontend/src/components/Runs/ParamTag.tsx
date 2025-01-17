@@ -1,5 +1,4 @@
-import { Badge, Tag, TagLabel, Text, Tooltip } from "@chakra-ui/react";
-import React from "react";
+import { Tag, TagLabel, Tooltip } from "@chakra-ui/react";
  
 interface ParamTagProps {
   param: string;
