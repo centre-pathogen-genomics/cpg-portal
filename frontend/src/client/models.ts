@@ -27,6 +27,11 @@ export type FilesPublic = {
   count: number
 }
 
+export type FilesStatistics = {
+  count: number
+  total_size: number
+}
+
 export type HTTPValidationError = {
   detail?: Array<ValidationError>
 }

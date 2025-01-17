@@ -133,6 +133,19 @@ export const $FilesPublic = {
   },
 } as const
 
+export const $FilesStatistics = {
+  properties: {
+    count: {
+      type: "number",
+      isRequired: true,
+    },
+    total_size: {
+      type: "number",
+      isRequired: true,
+    },
+  },
+} as const
+
 export const $HTTPValidationError = {
   properties: {
     detail: {

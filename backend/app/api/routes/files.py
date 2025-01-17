@@ -13,7 +13,7 @@ from sqlmodel import func, select
 from app.api.deps import CurrentUser, FileDep, SessionDep
 from app.core.security import create_access_token
 from app.crud import save_file
-from app.models import File, FilePublic, FilesPublic, FileType, Message
+from app.models import File, FilePublic, FilesPublic, FilesStatistics, FileType, Message
 
 router = APIRouter()
 
@@ -51,6 +51,23 @@ def read_files(
     files = session.exec(files_query).all()
 
     return FilesPublic(data=files, count=count)
+
+
+@router.get("/stats", response_model=FilesStatistics)
+def get_files_stats(session: SessionDep, current_user: CurrentUser) -> Any:
+    """
+    Get files statistics.
+    """
+    # Counting for pagination
+    count_query = select(func.count()).select_from(File).where(File.owner_id == current_user.id)
+    count = session.exec(count_query).one()
+
+    # total size
+    size_query = select(func.sum(File.size)).select_from(File).where(File.owner_id == current_user.id)
+
+    total_size = session.exec(size_query).one() or 0
+
+    return FilesStatistics(count=count, total_size=total_size)
 
 
 def guess_file_type(file: UploadFile) -> str:

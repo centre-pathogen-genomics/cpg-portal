@@ -29,6 +29,7 @@ import type {
   Body_files_upload_file,
   FilePublic,
   FilesPublic,
+  FilesStatistics,
   RunPublic,
   RunsPublicMinimal,
 } from "./models"
@@ -921,6 +922,19 @@ export class FilesService {
     return __request(OpenAPI, {
       method: "DELETE",
       url: "/api/v1/files/",
+    })
+  }
+
+  /**
+   * Get Files Stats
+   * Get files statistics.
+   * @returns FilesStatistics Successful Response
+   * @throws ApiError
+   */
+  public static getFilesStats(): CancelablePromise<FilesStatistics> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/files/stats",
     })
   }
 

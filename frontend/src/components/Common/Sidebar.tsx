@@ -19,6 +19,8 @@ import Logo from "/assets/images/cpg-logo.png"
 import type { UserPublic } from "../../client"
 import useAuth from "../../hooks/useAuth"
 import SidebarItems from "./SidebarItems"
+import StorageStats from "../Files/StorageStats"
+
 
 const Sidebar = () => {
   const queryClient = useQueryClient()
@@ -73,6 +75,7 @@ const Sidebar = () => {
                   Logged in as: {currentUser.email}
                 </Text>
               )}
+              <StorageStats />
             </Flex>
           </DrawerBody>
         </DrawerContent>
@@ -90,18 +93,9 @@ const Sidebar = () => {
           <Box>
             <Image src={Logo} alt="Logo" w="180px" maxW="2xs" p={2} />
             <SidebarItems />
+
           </Box>
-          {currentUser?.email && (
-            <Text
-              color={textColor}
-              noOfLines={2}
-              fontSize="sm"
-              p={2}
-              maxW="180px"
-            >
-              Logged in as: {currentUser.email}
-            </Text>
-          )}
+          <StorageStats />
         </Flex>
       </Box>
     </>

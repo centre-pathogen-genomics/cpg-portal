@@ -328,6 +328,9 @@ class FilesPublic(SQLModel):
     data: list[FilePublic]
     count: int
 
+class FilesStatistics(SQLModel):
+    count: int
+    total_size: int
 
 class RunPublic(RunPublicMinimal):
     stderr: str | None = None
