@@ -30,7 +30,7 @@ const Cancel = ({ id, isOpen, onClose }: CancelProps) => {
   } = useForm()
 
   const cancelRun = async (id: string) => {
-    await RunsService.cancelRun({ id: id }) // Use the cancelRun method
+    await RunsService.cancelRun({ path: {id} }) // Use the cancelRun method
   }
 
   const mutation = useMutation({

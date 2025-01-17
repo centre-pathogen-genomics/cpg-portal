@@ -5,13 +5,16 @@ import ReactDOM from "react-dom/client"
 import { routeTree } from "./routeTree.gen"
 
 import { StrictMode } from "react"
-import { OpenAPI } from "./client"
 import theme from "./theme"
+import { client } from './client/sdk.gen.ts';
 
-OpenAPI.BASE = import.meta.env.VITE_API_URL
-OpenAPI.TOKEN = async () => {
-  return localStorage.getItem("access_token") || ""
-}
+client.setConfig({
+  baseURL: import.meta.env.VITE_API_URL,
+  auth: async () => {
+    return localStorage.getItem("access_token") || ""
+  },
+});
+
 
 const queryClient = new QueryClient()
 

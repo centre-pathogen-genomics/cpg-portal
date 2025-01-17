@@ -33,6 +33,7 @@ import JsonFile from "../../../components/Render/JsonFile"
 import CodeBlock from "../../../components/Common/CodeBlock"
 import DownloadFileButton from "../../../components/Files/DownloadFileButton"
 import ParamTag from "../../../components/Runs/ParamTag"
+import { readRunOptions } from "../../../client/@tanstack/react-query.gen"
 
 export const Route = createFileRoute("/_layout/runs/$runid")({
   component: Run,
@@ -60,8 +61,7 @@ function RunDetail() {
   // Using useSuspenseQuery for data fetching
 
   const { data: run } = useSuspenseQuery({
-    queryKey: ["run", { id: runid }],
-    queryFn: () => RunsService.readRun({ id: runid }),
+    ...readRunOptions({path: {id: runid}}),
     refetchInterval: (run) => {
       return (run && run.state.data?.status === "running") ||
         run.state.data?.status === "pending"
@@ -150,7 +150,7 @@ function RunDetail() {
           </TabPanels>
         </Tabs>
       )}
-      <Accordion allowToggle allowMultiple mb={4}>
+      <Accordion allowMultiple mb={4}>
         <AccordionItem>
           <h2>
             <AccordionButton>

@@ -52,11 +52,11 @@ const UserInformation = () => {
 
   const mutation = useMutation({
     mutationFn: (data: UserUpdateMe) =>
-      UsersService.updateUserMe({ requestBody: data }),
+      UsersService.updateUserMe({ body: data }),
     onSuccess: () => {
       showToast("Success!", "User updated successfully.", "success")
     },
-    onError: (err: ApiError) => {
+    onError: (err) => {
       handleError(err, showToast)
     },
     onSettled: () => {

@@ -96,7 +96,7 @@ const ToolCard = ({ tool }: ToolCardProps) => {
                 onClick={(e) => {
                   e.stopPropagation();
                   if (isFavourited) {
-                    ToolsService.unfavouriteTool({ toolId: tool.id })
+                    ToolsService.unfavouriteTool({path: { tool_id: tool.id }})
                       .then(() => {
                         setIsFavourited(false);
                         tool.favourited = false;
@@ -112,7 +112,7 @@ const ToolCard = ({ tool }: ToolCardProps) => {
                         )
                       );
                   } else {
-                    ToolsService.favouriteTool({ toolId: tool.id })
+                    ToolsService.favouriteTool({path: { tool_id: tool.id }})
                       .then(() => {
                         setIsFavourited(true);
                         tool.favourited = true;

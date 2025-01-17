@@ -14,14 +14,16 @@ import FileDropZone from "../Files/FileUploadButton"
 import { Select, SelectInstance } from "chakra-react-select"
 import { type SubmitHandler, useForm } from "react-hook-form"
 import {
+  CreateRunData,
   FilesService,
   type Param,
   type RunPublic,
-  ToolsService,
-  RunsService,
 } from "../../client"
+import { createRunMutation, readToolParamsOptions } from "../../client/@tanstack/react-query.gen"
 import useCustomToast from "../../hooks/useCustomToast"
 import React from "react"
+import { handleError } from "../../utils"
+import { Options } from "@hey-api/client-axios"
 
 interface RunToolFormProps {
   toolId: string
@@ -33,15 +35,14 @@ const RunToolForm = ({ toolId, onSuccess }: RunToolFormProps) => {
   const showToast = useCustomToast()
 
   const { data: params, isLoading: paramsLoading } = useQuery({
-    queryKey: ["toolParams", toolId],
-    queryFn: () => ToolsService.readToolParams({ toolId }),
+    ...readToolParamsOptions({path: {tool_id: toolId}}),  
   })
 
   const { data: files, isLoading: filesLoading, refetch } = useQuery({
     queryKey: ["files"],
     queryFn: () =>
-      FilesService.readFiles().then((files) =>
-        files.data
+      FilesService.readFiles().then(({data: files}) =>
+        files?.data
           .map((file) => ({
             label: `${file.name}`,
             value: file.id,
@@ -49,6 +50,7 @@ const RunToolForm = ({ toolId, onSuccess }: RunToolFormProps) => {
           .reverse(),
       ),
   })
+
   const selectRef = React.createRef<SelectInstance<{label:string, value:string}>>()
   const defaultValues = params?.reduce((acc, param) => {
     acc[param.name] = param.default
@@ -72,12 +74,8 @@ const RunToolForm = ({ toolId, onSuccess }: RunToolFormProps) => {
 
   
   const mutation = useMutation({
-    mutationFn: (data: Record<string, unknown>) =>
-      RunsService.createRun({
-        requestBody: data,
-        toolId,
-      }),
-    onSuccess: (run) => {
+    ...createRunMutation({query: {tool_id: toolId}}),
+    onSuccess: (run: RunPublic) => {
       showToast(
         "Success!",
         `Run Queued (${run.id})`,
@@ -86,15 +84,15 @@ const RunToolForm = ({ toolId, onSuccess }: RunToolFormProps) => {
       if (onSuccess) onSuccess(run)
     },
     onError: (error) => {
-      showToast("Error", error.message, "error")
+      handleError(error, showToast)
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["toolRuns"] })
     },
   })
 
-  const onSubmit: SubmitHandler<any> = (formData) => {
-    mutation.mutate({ ...formData })
+  const onSubmit: SubmitHandler<any> = (formData: {[key: string]: unknown}) => {
+    mutation.mutate({body: formData} as Options<CreateRunData>)
   }
 
   if (paramsLoading || filesLoading) return <div>Loading...</div>

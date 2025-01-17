@@ -44,6 +44,7 @@ export const confirmPasswordRules = (
 }
 
 export const handleError = (err: ApiError, showToast: any) => {
+  console.error(err)
   const errDetail = (err.body as any)?.detail
   let errorMessage = errDetail || "Something went wrong."
   if (Array.isArray(errDetail) && errDetail.length > 0) {

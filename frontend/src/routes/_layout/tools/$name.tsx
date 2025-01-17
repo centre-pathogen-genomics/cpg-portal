@@ -1,7 +1,7 @@
 import { Box, Container, Heading, Text } from "@chakra-ui/react"
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { ToolsService } from "../../../client"
+import { readToolByNameOptions } from "../../../client/@tanstack/react-query.gen"
 import RunToolForm from "../../../components/Tools/RunToolForm"
 
 export const Route = createFileRoute("/_layout/tools/$name")({
@@ -14,8 +14,7 @@ function Tool() {
   const { name } = Route.useParams()
 
   const { isError, data: tool } = useQuery({
-    queryKey: ["tool", name],
-    queryFn: () => ToolsService.readToolByName({ toolName: name }),
+    ...readToolByNameOptions({path: {tool_name: name}}),
     retry: false,
   })
 

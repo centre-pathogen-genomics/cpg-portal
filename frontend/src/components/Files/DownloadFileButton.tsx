@@ -8,7 +8,7 @@ interface DownloadFileButtonProps {
 }
 
 const handleDownload = async (fileId: string) => {
-  const token = await FilesService.getDownloadToken({ id: fileId })
+  const token = (await FilesService.getDownloadToken({path: { id: fileId }})).data
   const downloadUrl = `${import.meta.env.VITE_API_URL}/api/v1/files/download/${token}`
   window.open(downloadUrl, "_blank")
 }

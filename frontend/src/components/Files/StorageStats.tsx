@@ -1,13 +1,11 @@
-import { Box, Card, CardBody, CardHeader, Flex, Heading, HStack, Progress, Stack, Text } from '@chakra-ui/react'
+import { Box, Heading, HStack, Progress, Stack, Text } from '@chakra-ui/react'
 import { useQuery } from "@tanstack/react-query"
-import type { FilesStatistics } from "../../client"
-import { FilesService } from "../../client"
 import { HiOutlineCloud } from "react-icons/hi";
+import { getFilesStatsOptions } from '../../client/@tanstack/react-query.gen';
 
 const StorageStats = () => {
-  const {data} = useQuery<FilesStatistics>({
-    queryKey: ["filesStatistics"],
-    queryFn: () => FilesService.getFilesStats(),
+  const {data} = useQuery({
+    ...getFilesStatsOptions(),
     staleTime: 30000,
   })
 

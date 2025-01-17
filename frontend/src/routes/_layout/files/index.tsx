@@ -37,8 +37,8 @@ const PER_PAGE = 8
 
 function getFilesQueryOptions({ page }: { page: number }) {
   return {
-    queryFn: () =>
-      FilesService.readFiles({ skip: (page - 1) * PER_PAGE, limit: PER_PAGE }),
+    queryFn: async () =>
+      (await FilesService.readFiles({query: { skip: (page - 1) * PER_PAGE, limit: PER_PAGE }})).data,
     queryKey: ["files", { page }],
   }
 }
@@ -46,11 +46,11 @@ function getFilesQueryOptions({ page }: { page: number }) {
 // Custom hook to fetch and poll files
 function usePollFiles({ page }: { page: number }) {
   const fetchFiles = async () => {
-    const response = await FilesService.readFiles({
+    const response = await FilesService.readFiles({query: {
       skip: (page - 1) * PER_PAGE,
       limit: PER_PAGE,
-    })
-    return response
+    }})
+    return response.data
   }
 
   const { data, isPending, isPlaceholderData, refetch } = useQuery({

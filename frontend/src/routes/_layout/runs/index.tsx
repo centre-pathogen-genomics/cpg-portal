@@ -45,8 +45,8 @@ const PER_PAGE = 8
 
 function getRunsQueryOptions({ page }: { page: number }) {
   return {
-    queryFn: () =>
-      RunsService.readRuns({ skip: (page - 1) * PER_PAGE, limit: PER_PAGE }),
+    queryFn: async () =>
+      (await RunsService.readRuns({query: { skip: (page - 1) * PER_PAGE, limit: PER_PAGE }})).data,
     queryKey: ["runs", { page }],
   }
 }
@@ -54,11 +54,11 @@ function getRunsQueryOptions({ page }: { page: number }) {
 // Custom hook to poll runs
 function usePollRuns({ page }: { page: number }) {
   const fetchRuns = async () => {
-    const response = await RunsService.readRuns({
+    const response = await RunsService.readRuns({query:{
       skip: (page - 1) * PER_PAGE,
       limit: PER_PAGE,
-    })
-    return response // Ensure we're returning paginated data
+    }})
+    return response.data // Ensure we're returning paginated data
   }
 
   const { data, isPending, isPlaceholderData } = useQuery({

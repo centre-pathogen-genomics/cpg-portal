@@ -42,7 +42,7 @@ const DeleteConfirmation = ({ isOpen, onClose }: DeleteProps) => {
       logout()
       onClose()
     },
-    onError: (err: ApiError) => {
+    onError: (err) => {
       handleError(err, showToast)
     },
     onSettled: () => {

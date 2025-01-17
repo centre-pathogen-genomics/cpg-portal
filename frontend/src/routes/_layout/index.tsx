@@ -12,7 +12,8 @@ import { useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { Suspense, useState } from "react"
 import { ErrorBoundary } from "react-error-boundary"
-import { ToolsService, type ToolsOrderBy } from "../../client"
+import { type ToolsOrderBy } from "../../client"
+import { readToolsOptions } from "../../client/@tanstack/react-query.gen"
 import ToolCard from "../../components/Tools/ToolCard"
 import Logo from "/assets/images/cpg-logo.png"
 
@@ -22,8 +23,7 @@ export const Route = createFileRoute("/_layout/")({
 
 function ToolCards({ orderBy }: { orderBy: ToolsOrderBy }) {
   const { data: tools } = useSuspenseQuery({
-    queryKey: ["tools", orderBy], // Include orderBy in query key for caching
-    queryFn: () => ToolsService.readTools({ orderBy }),
+    ...readToolsOptions({ query: { order_by: orderBy } }),
   })
 
   return (

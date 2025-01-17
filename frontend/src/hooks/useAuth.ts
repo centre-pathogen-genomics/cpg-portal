@@ -4,13 +4,12 @@ import { useState } from "react"
 
 import { AxiosError } from "axios"
 import {
-  type Body_login_login_access_token as AccessToken,
-  type ApiError,
+  type BodyLoginLoginAccessToken as AccessToken, 
   LoginService,
-  type UserPublic,
   type UserRegister,
   UsersService,
 } from "../client"
+import { readUserMeOptions } from "../client/@tanstack/react-query.gen"
 import useCustomToast from "./useCustomToast"
 
 const isLoggedIn = () => {
@@ -22,15 +21,14 @@ const useAuth = () => {
   const navigate = useNavigate()
   const showToast = useCustomToast()
   const queryClient = useQueryClient()
-  const { data: user, isLoading } = useQuery<UserPublic | null, Error>({
-    queryKey: ["currentUser"],
-    queryFn: UsersService.readUserMe,
+  const { data: user, isLoading } = useQuery({
+    ...readUserMeOptions(), 
     enabled: isLoggedIn(),
   })
 
   const signUpMutation = useMutation({
     mutationFn: (data: UserRegister) =>
-      UsersService.registerUser({ requestBody: data }),
+      UsersService.registerUser({ body: data }),
 
     onSuccess: () => {
       navigate({ to: "/login" })
@@ -40,14 +38,8 @@ const useAuth = () => {
         "success",
       )
     },
-    onError: (err: ApiError) => {
-      let errDetail = (err.body as any)?.detail
-
-      if (err instanceof AxiosError) {
-        errDetail = err.message
-      }
-
-      showToast("Something went wrong.", errDetail, "error")
+    onError: (err) => {
+      showToast("Something went wrong.", err.message, "error")
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] })
@@ -56,9 +48,11 @@ const useAuth = () => {
 
   const login = async (data: AccessToken) => {
     const response = await LoginService.loginAccessToken({
-      formData: data,
+      body: data,
     })
-    localStorage.setItem("access_token", response.access_token)
+    if (response.data?.access_token) {
+      localStorage.setItem("access_token", response.data?.access_token)
+    }
   }
 
   const loginMutation = useMutation({
@@ -66,8 +60,8 @@ const useAuth = () => {
     onSuccess: () => {
       navigate({ to: "/" })
     },
-    onError: (err: ApiError) => {
-      let errDetail = (err.body as any)?.detail
+    onError: (err) => {
+      let errDetail = err.message
 
       if (err instanceof AxiosError) {
         errDetail = err.message

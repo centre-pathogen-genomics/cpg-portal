@@ -1,7 +1,7 @@
 import { ReactNode, useRef } from "react";
 import { Button, Flex, Icon } from "@chakra-ui/react";
 import { FiFile } from "react-icons/fi";
-import { Body_files_upload_file, FilePublic, FilesService, TDataUploadFile } from "../../client";
+import { FilePublic, FilesService, UploadFileData, BodyFilesUploadFile } from "../../client";
 import useCustomToast from "../../hooks/useCustomToast"
 
 type FileUploadProps = {
@@ -46,15 +46,15 @@ const App = (props: AppProps) => {
     if (!files || files.length === 0) return;
 
     
-    const formData: Body_files_upload_file = {
+    const formData: BodyFilesUploadFile = {
       file: files[0]  // Use only the first file if multiple are selected, or iterate if needed
     };
 
-    const data: TDataUploadFile = { formData };  // No need for casting; just pass it directly
-
-
     try {
-        const response = await FilesService.uploadFile(data);
+        const {data: response} = await FilesService.uploadFile({body: formData});
+        if (!response) {
+            throw new Error("File upload failed: No response from server");
+        }
         showToast(
             "Success!",
             `File (${response.name}) uploaded successfully!`,
