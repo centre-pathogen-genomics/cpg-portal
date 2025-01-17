@@ -166,7 +166,7 @@ def read_tool_by_name(
 def create_tool(
     *,
     session: SessionDep,
-    current_user: SuperUser,
+    current_user: SuperUser,  # noqa: ARG001
     tool_in: ToolCreateWithParamsAndTargets,
 ) -> Any:
     """

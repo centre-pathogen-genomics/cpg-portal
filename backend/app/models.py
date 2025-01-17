@@ -102,6 +102,7 @@ class NewPassword(SQLModel):
 class ToolBase(SQLModel):
     name: str
     description: str | None = None
+    url: str | None = None
     image: str | None = None
     tags: list[str] | None = None
     favourited_count: int = 0
@@ -146,6 +147,7 @@ class Tool(ToolBase, table=True):
     favourited_by: list[User] = Relationship(
         back_populates="favourite_tools", link_model=UserFavouriteToolsLink
     )
+    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 
 
 # Properties to return via API, id is always required
