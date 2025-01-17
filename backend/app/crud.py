@@ -7,7 +7,7 @@ from sqlmodel import Session, select
 
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
-from app.models import File, User, UserCreate, UserUpdate
+from app.models import File, FileType, User, UserCreate, UserUpdate
 
 
 def create_user(*, session: Session, user_create: UserCreate) -> User:
@@ -49,7 +49,7 @@ def authenticate(*, session: Session, email: str, password: str) -> User | None:
     return db_user
 
 
-def _save_single_file(session: Session, file_path: Path, owner_id: uuid.UUID) -> File:
+def _save_single_file(session: Session, file_path: Path, file_type: FileType, owner_id: uuid.UUID) -> File:
     """Helper function to save a single file."""
     file_id = str(uuid.uuid4())
     file_name = file_path.name.replace(" ", "_")
@@ -60,13 +60,15 @@ def _save_single_file(session: Session, file_path: Path, owner_id: uuid.UUID) ->
         name=file_name,
         owner_id=owner_id,
         location=str(file_storage_location),
+        size=file_storage_location.stat().st_size,
+        file_type=file_type,
     )
     session.add(file_metadata)
     return file_metadata
 
-def save_file(*, session: Session, file_path: Path, owner_id: uuid.UUID) -> File:
+def save_file(*, session: Session, file_path: Path, file_type: FileType, owner_id: uuid.UUID) -> File:
     """Save a single file and commit the session."""
-    file_metadata = _save_single_file(session, file_path, owner_id)
+    file_metadata = _save_single_file(session, file_path, file_type, owner_id)
     session.commit()
     session.refresh(file_metadata)
     return file_metadata

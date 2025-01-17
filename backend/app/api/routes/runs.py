@@ -193,12 +193,11 @@ def delete_runs(session: SessionDep, current_user: CurrentUser) -> Any:
 
     runs: list[Run] = session.exec(statement).all()
 
-    # Cascading delete handles the removal of related Results and Files
+    # Cascading delete handles the removal of related Files
     files_to_delete: list[File] = []
     for run in runs:
-        if run.results:
-            files = [result.file for result in run.results if result.file]
-            files_to_delete.extend(files)
+        if run.files:
+            files_to_delete.extend(run.files)
         session.delete(run)
     session.commit()
     for file in files_to_delete:
@@ -275,11 +274,9 @@ def delete_run(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) ->
         raise HTTPException(status_code=400, detail="Not enough permissions")
     if run.status == "running" or run.status == "pending":
         raise HTTPException(status_code=400, detail="Run is active")
-    files = []
     files_to_delete = []
-    if run.results:
-        files = [result.file for result in run.results if result.file]
-        files_to_delete.extend(files)
+    if run.files:
+        files_to_delete.extend(run.files)
     session.delete(run)
     session.commit()
     for file in files_to_delete:

@@ -1,7 +1,6 @@
 import enum
 import uuid
 from datetime import datetime
-from typing import Optional
 
 from pydantic import EmailStr
 from sqlalchemy.dialects.postgresql import JSONB as JSON
@@ -66,7 +65,7 @@ class User(UserBase, table=True):
     )
     files: list["File"] = Relationship(back_populates="owner")
     runs: list["Run"] = Relationship(back_populates="owner")
-    results: list["Result"] = Relationship(back_populates="owner")
+
 
 
 # Properties to return via API, id is always required
@@ -163,7 +162,7 @@ class ToolsPublic(SQLModel):
     data: list[ToolPublic]
     count: int
 
-class TargetType(str, enum.Enum):
+class FileType(str, enum.Enum):
     text = "text"
     image = "image"
     csv = "csv"
@@ -174,10 +173,7 @@ class TargetType(str, enum.Enum):
 
 class TargetBase(SQLModel):
     path: str
-    name: str | None = None
-    description: str | None = None
-    target_type: TargetType
-    display: bool = False
+    target_type: FileType
     required: bool = True
 
 
@@ -186,15 +182,11 @@ class TargetCreate(TargetBase):
 
 class TargetUpdate(TargetBase):
     path: str | None = None
-    name: str | None = None
-    description: str | None = None
-    target_type: TargetType | None = None
-    display: bool | None = None
+    target_type: FileType | None = None
 
 class Target(TargetBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    target_type: TargetType = Field(sa_column=Column(Enum(TargetType)))
-    results: list["Result"] = Relationship(back_populates="target")
+    target_type: FileType = Field(sa_column=Column(Enum(FileType)))
     tool_id: uuid.UUID = Field(foreign_key="tool.id", nullable=False)
     tool: Tool = Relationship(back_populates="targets")
 
@@ -282,10 +274,10 @@ class Run(RunBase, table=True):
     taskiq_id: str | None = None
     status: RunStatus = Field(sa_column=Column(Enum(RunStatus)))
     params: dict = Field(default_factory=dict, sa_column=Column(JSON))
-    results: list["Result"] = Relationship(
+    files: list["File"] = Relationship(
         back_populates="run",
         sa_relationship=RelationshipProperty(
-            "Result", cascade="all, delete, delete-orphan"
+            "File", cascade="all, delete, delete-orphan"
         ),
     )
     command: str | None = None
@@ -307,54 +299,26 @@ class RunPublicMinimal(RunBase):
     params: dict
 
 
-class Result(SQLModel, table=True):
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    file_id: uuid.UUID | None = Field(foreign_key="file.id", nullable=True)  # Allow NULL for files without a result
-    file: Optional["File"] = Relationship(
-        back_populates="result",
-        sa_relationship=RelationshipProperty(
-            "File",
-            cascade="all, delete, delete-orphan",
-            uselist=False,  # Enforce one-to-one relationship
-            single_parent=True,  # Enforce single parent
-            foreign_keys="[Result.file_id]",  # Specify foreign key
-        ),
-    )
-    target_id: uuid.UUID = Field(foreign_key="target.id", nullable=False)
-    target: "Target" = Relationship(back_populates="results")
-    owner_id: uuid.UUID = Field(foreign_key="user.id", nullable=False)
-    owner: "User" = Relationship(back_populates="results")
-    run_id: uuid.UUID = Field(foreign_key="run.id", nullable=False)
-    run: "Run" = Relationship(back_populates="results")
-    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
-
-
 class FileBase(SQLModel):
     name: str
+    file_type: FileType | None = None
+    size: int | None = None
 
 
 class File(FileBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    name: str
+    file_type: FileType | None = Field(sa_column=Column(Enum(FileType)))
     location: str
     owner_id: uuid.UUID = Field(foreign_key="user.id", nullable=False)
     owner: "User" = Relationship(back_populates="files")
-    result: Optional["Result"] = Relationship(
-        back_populates="file",
-        sa_relationship=RelationshipProperty(
-            "Result",
-            cascade="all, delete, delete-orphan",
-            uselist=False,  # Enforce one-to-one relationship
-            single_parent=True,  # Enforce single parent
-            foreign_keys="[Result.file_id]",  # Specify foreign key
-        ),
-    )
+    run_id: uuid.UUID = Field(foreign_key="run.id", nullable=True)
+    run: "Run" = Relationship(back_populates="files")
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 
 
 class FilePublic(FileBase):
     id: uuid.UUID
-    result_id: uuid.UUID | None = None
+    run_id: uuid.UUID | None = None
     created_at: datetime
 
 
@@ -363,20 +327,12 @@ class FilesPublic(SQLModel):
     count: int
 
 
-class ResultPublicWithFileAndTarget(SQLModel):
-    id: uuid.UUID
-    file: FilePublic
-    target: TargetPublic
-    owner_id: uuid.UUID
-    run_id: uuid.UUID
-    created_at: datetime
-
 class RunPublic(RunPublicMinimal):
     stderr: str | None = None
     stdout: str | None = None
     command: str | None = None
     params: dict
-    results: list[ResultPublicWithFileAndTarget]
+    files: list[FilePublic]
 
 
 class RunsPublicMinimal(SQLModel):

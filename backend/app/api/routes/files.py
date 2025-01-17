@@ -13,7 +13,7 @@ from sqlmodel import func, select
 from app.api.deps import CurrentUser, FileDep, SessionDep
 from app.core.security import create_access_token
 from app.crud import save_file
-from app.models import File, FilePublic, FilesPublic, Message
+from app.models import File, FilePublic, FilesPublic, FileType, Message
 
 router = APIRouter()
 
@@ -52,6 +52,26 @@ def read_files(
 
     return FilesPublic(data=files, count=count)
 
+
+def guess_file_type(file: UploadFile) -> str:
+    """
+    Guess file type based on the file extension.
+    """
+    if not file.content_type:
+        return FileType.unknown
+    if file.content_type.startswith("image"):
+        return FileType.image
+    if 'csv' in file.content_type or file.filename.endswith(".csv"):
+        return FileType.csv
+    if 'json' in file.content_type or file.filename.endswith(".json"):
+        return FileType.json
+    if 'tsv' in file.content_type or file.filename.endswith(".tsv"):
+        return FileType.tsv
+    if file.content_type.contains("text"):
+        # catch all text/... types
+        return FileType.text
+    return FileType.unknown
+
 @router.post("/", response_model=FilePublic)
 async def upload_file(
     *, session: SessionDep, current_user: CurrentUser, file: UploadFile) -> Any:
@@ -67,10 +87,13 @@ async def upload_file(
         with open(tmp_path, "wb") as tmp_file:
             shutil.copyfileobj(file.file, tmp_file, length=1024*1024)  # Copy in 1 MB chunks
 
+        file_type = guess_file_type(file)
+
         # Call the function to save the file metadata
         file_metadata = save_file(
             session=session,
             file_path=tmp_path,
+            file_type=file_type,
             owner_id=current_user.id
         )
 

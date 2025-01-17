@@ -115,6 +115,7 @@ def favourite_tool(tool_id: uuid.UUID, session: SessionDep, current_user: Curren
         raise HTTPException(status_code=400, detail="Tool already favorited")
     # Add to favourites
     tool.favourited_by.append(current_user)
+    tool.favourited_count += 1
     session.add(tool)
     session.commit()
     return Message(message="Tool favourited successfully")
@@ -139,6 +140,7 @@ def unfavourite_tool(tool_id: uuid.UUID, session: SessionDep, current_user: Curr
         raise HTTPException(status_code=400, detail="Tool not favorited")
     # Remove from favourites
     tool.favourited_by.remove(current_user)
+    tool.favourited_count -= 1
     session.add(tool)
     session.commit()
     return Message(message="Tool removed from favourites successfully")

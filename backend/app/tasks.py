@@ -9,15 +9,22 @@ from pathlib import Path
 from typing import Annotated
 
 from sqlmodel import Session, select
-from taskiq import TaskiqDepends
+from taskiq import TaskiqDepends, TaskiqEvents, TaskiqState
 
 from app.api.deps import get_db
 from app.core.config import settings
 from app.crud import save_file
-from app.models import File, Result, Run
+from app.models import File, FileType, Run
 from app.tkq import broker
 
 SessionDep = Annotated[Session, TaskiqDepends(get_db)]
+
+@broker.on_event(TaskiqEvents.WORKER_SHUTDOWN)
+async def shutdown(state: TaskiqState) -> None:
+    # TODO: Cancel all running tasks in this worker
+    print("Shutting down worker")
+    print(state)
+    pass
 
 async def run_command_in_subprocess(session: Session, run_id: uuid.UUID, command: list[str] | str, tmp_dir: Path, shell: bool = False) -> subprocess.Popen:
     if isinstance(command, list) and shell:
@@ -144,6 +151,7 @@ async def run_tool(
                 continue
             print(f"Replacing {{{key}}} with {value}")
             target_file = Path(str(target_file).replace(f"{{{key}}}", str(value)))
+
         # check if the target file exists
         if target.required and not target_file.exists():
             print(f"Target file {target_file} does not exist")
@@ -152,15 +160,19 @@ async def run_tool(
             session.add(run)
             session.commit()
             return False
+        if not target.required and not target_file.exists():
+            print(f"Target file {target_file} does not exist, but is not required")
+            continue
+
+        print(f"Saving target file: {target_file}")
         file = save_file(
             session=session,
             file_path=target_file,
-            owner_id=run.owner_id
+            owner_id=run.owner_id,
+            file_type=target.target_type,
         )
-        result = Result(file_id=file.id, target_id=target.id, run_id=run.id, owner_id=run.owner_id)
-        session.add(result)
-        session.commit()
-        session.refresh(result)
+        run.files.append(file)
+
     run.status = "completed"
     session.add(run)
     session.commit()
