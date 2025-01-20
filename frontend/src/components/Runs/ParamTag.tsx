@@ -19,7 +19,7 @@ const ParamTag = ( {param, value, truncate}: ParamTagProps) => {
         hasArrow
         label={value}
     >
-        <Tag  cursor={'pointer'} size={'sm'} variant='subtle' >
+        <Tag  cursor={'pointer'} size={'sm'} variant='outline' >
         <TagLabel as={'b'}>{param}</TagLabel>={subString}
         </Tag>
     </Tooltip>

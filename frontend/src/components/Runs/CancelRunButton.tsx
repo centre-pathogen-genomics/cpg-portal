@@ -15,7 +15,7 @@ const CancelRunButton = ({ run_id }: CancelButtonProps) => {
         onClick={onOpen}
         aria-label="Cancel Run"
         icon={<FiX fontSize="16px" />}
-        color="ui.dim"
+        // color="ui.dim"
         variant="outline"
         size="sm"
       />

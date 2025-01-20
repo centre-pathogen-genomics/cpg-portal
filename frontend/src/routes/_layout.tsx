@@ -3,7 +3,9 @@ import { Outlet, createFileRoute, redirect } from "@tanstack/react-router"
 
 import Sidebar from "../components/Common/Sidebar"
 import UserMenu from "../components/Common/UserMenu"
+import UploadProgress from "../components/Files/UploadProgress"
 import useAuth, { isLoggedIn } from "../hooks/useAuth"
+import { UploadProvider } from "../context/UploadContext"
 
 export const Route = createFileRoute("/_layout")({
   component: Layout,
@@ -27,7 +29,10 @@ function Layout() {
           <Spinner size="xl" color="ui.main" />
         </Flex>
       ) : (
-        <Outlet />
+        <UploadProvider>
+          <Outlet />
+          <UploadProgress />
+        </UploadProvider>
       )}
       <UserMenu />
     </Flex>

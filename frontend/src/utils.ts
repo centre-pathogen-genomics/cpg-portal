@@ -1,4 +1,24 @@
-import type { ApiError } from "./client"
+import { AxiosProgressEvent, type AxiosError } from "axios"
+import type { ValidationError } from "./client"
+import { FilesService } from "./client";
+
+export const uploadFileWithProgress = async (
+  file: File,
+  onUploadProgress: (progressEvent: AxiosProgressEvent) => void
+) => {
+  try {
+    const response = await FilesService.uploadFile(
+      {
+        body: {file},
+        onUploadProgress: onUploadProgress,
+      },
+    );
+    return response;
+  } catch (error) {
+    console.error("Error uploading file:", error);
+    throw error;
+  }
+};
 
 export const emailPattern = {
   value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
@@ -8,6 +28,25 @@ export const emailPattern = {
 export const namePattern = {
   value: /^[A-Za-z\s\u00C0-\u017F]{1,30}$/,
   message: "Invalid name",
+}
+
+export const humanReadableFileSize = (bytes: number) => {
+  if (bytes === 0) {
+    return "0 B"
+  }
+  const i = Math.floor(Math.log(bytes) / Math.log(1024))
+  return (
+    (bytes / Math.pow(1024, i)).toFixed(0) + " " + ["B", "kB", "MB", "GB", "TB"][i]
+  )
+}
+
+export const humanReadableDate = (date: string) => {
+  // 7 Sept 2021
+  return new Date(date).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  })
 }
 
 export const passwordRules = (isRequired = true) => {
@@ -43,9 +82,9 @@ export const confirmPasswordRules = (
   return rules
 }
 
-export const handleError = (err: ApiError, showToast: any) => {
+export const handleError = (err: AxiosError | Error, showToast: any) => {
   console.error(err)
-  const errDetail = (err.body as any)?.detail
+  const errDetail = (err as any)?.response.data.detail as ValidationError | ValidationError[] | string
   let errorMessage = errDetail || "Something went wrong."
   if (Array.isArray(errDetail) && errDetail.length > 0) {
     errorMessage = errDetail[0].msg

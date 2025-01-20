@@ -26,7 +26,7 @@ import { useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { Suspense } from "react"
 import { ErrorBoundary } from "react-error-boundary"
-import { FilePublic, RunsService } from "../../../client"
+import { FilePublic } from "../../../client"
 import RunRuntime from "../../../components/Runs/RunTime"
 import CsvFileToTable from "../../../components/Render/CsvFileToTable"
 import JsonFile from "../../../components/Render/JsonFile"
@@ -84,7 +84,7 @@ function RunDetail() {
       <Heading
         size="lg"
         textAlign={{ base: "center", md: "left" }}
-        pt={12}
+        pt={6}
         pb={8}
       >
         <Breadcrumb
@@ -92,7 +92,13 @@ function RunDetail() {
           separator={<ChevronRightIcon color="gray.500" />}
         >
           <BreadcrumbItem>
-            <BreadcrumbLink href="/runs">Runs</BreadcrumbLink>
+            <BreadcrumbLink onClick={
+              () => navigate({
+                to: "/runs",
+                replace: false,
+                resetScroll: true,
+              })
+            }>Runs</BreadcrumbLink>
           </BreadcrumbItem>
 
           <BreadcrumbItem isCurrentPage>

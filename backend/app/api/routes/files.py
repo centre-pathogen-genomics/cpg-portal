@@ -84,17 +84,18 @@ def guess_file_type(file: UploadFile) -> str:
         return FileType.json
     if 'tsv' in file.content_type or file.filename.endswith(".tsv"):
         return FileType.tsv
-    if file.content_type.contains("text"):
+    if 'text' in file.content_type or file.filename.endswith(".txt"):
         # catch all text/... types
         return FileType.text
     return FileType.unknown
 
 @router.post("/", response_model=FilePublic)
-async def upload_file(
+def upload_file(
     *, session: SessionDep, current_user: CurrentUser, file: UploadFile) -> Any:
     """
     Upload a new file.
     """
+    # TODO: potentially convert to async func and use aiofiles (https://stackoverflow.com/questions/63580229/how-to-save-uploadfile-in-fastapi)
     # Create a temporary directory
     with TemporaryDirectory() as temp_dir:
         # Construct the temporary file path with the same name as the uploaded file
@@ -106,7 +107,7 @@ async def upload_file(
 
         file_type = guess_file_type(file)
 
-        # Call the function to save the file metadata
+
         file_metadata = save_file(
             session=session,
             file_path=tmp_path,

@@ -4,9 +4,9 @@ import {
   Skeleton, 
 } from '@chakra-ui/react';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { FilesService } from '../../client';
 import DownloadFileButton from '../Files/DownloadFileButton';
 import CodeBlock from '../Common/CodeBlock';
+import { downloadFileOptions } from '../../client/@tanstack/react-query.gen';
 
 
 interface JsonFileProps {
@@ -16,8 +16,7 @@ interface JsonFileProps {
 const JsonFile = ({ fileId }: JsonFileProps) => {
   // Use useSuspenseQuery to fetch the file
   const { data: jsonText } = useSuspenseQuery({
-    queryKey: ["file", { id: fileId }],
-    queryFn: () => FilesService.downloadFile({ id: fileId }),
+    ...downloadFileOptions({path: { id: fileId }}),
   });
   // strinfy the json data
   const json = JSON.stringify(jsonText, null, 2);

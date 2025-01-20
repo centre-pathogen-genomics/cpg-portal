@@ -8,6 +8,7 @@ import {
   Flex,
   Heading,
   SkeletonText,
+  Stack,
   Table,
   TableContainer,
   Tbody,
@@ -15,13 +16,15 @@ import {
   Th,
   Thead,
   Tr,
+  Text,
 } from '@chakra-ui/react'
-import FileDropZone from "../../../components/Files/FileUploadButton"
+import  FileUpload from "../../../components/Files/UploadFileWithProgress"
 import DeleteFileButton from "../../../components/Files/DeleteFileButton"
 import DeleteFilesButton from "../../../components/Files/DeleteFilesButton"
 import DownloadFileButton from "../../../components/Files/DownloadFileButton"
 import { PaginationFooter } from "../../../components/Common/PaginationFooter"
 import { z } from "zod"
+import { humanReadableDate, humanReadableFileSize } from "../../../utils"
 
 // Define pagination schema
 const filesSearchSchema = z.object({
@@ -86,10 +89,12 @@ function FilesTable() {
   return (
     <>
       <TableContainer>
-        <Table size={{ base: "sm", md: "md" }}>
+        <Table size={'sm'}>
           <Thead>
             <Tr>
               <Th>Name</Th>
+              <Th>Type</Th>
+              <Th>Size</Th>
               <Th>Created</Th>
               <Th width="10%">Actions</Th>
             </Tr>
@@ -111,7 +116,9 @@ function FilesTable() {
               {files?.data.map((file) => (
                 <Tr key={file.id}>
                   <Td>{file.name}</Td>
-                  <Td>{file.created_at}</Td>
+                  <Td>{file.file_type}</Td>
+                  <Td>{file.size ? humanReadableFileSize(file.size) : ""}</Td>
+                  <Td>{humanReadableDate(file.created_at)}</Td>
                   <Td>
                     <ButtonGroup size="sm">
                       <DownloadFileButton size="sm" fileId={file.id} />
@@ -141,25 +148,38 @@ function Actions() {
   const { refetch } = usePollFiles({ page })
 
   return (
-    <Flex gap={4} mb={4} justify={"space-between"}>
-      <FileDropZone onUpload={() => refetch()} />
-      <DeleteFilesButton />
-    </Flex>
+    <Stack >
+      <Flex gap={4} mb={4} justify={"end"}>        
+        <FileUpload />
+      </Flex>
+    </Stack>
   )
 }
 
 function Files() {
+  const { page } = Route.useSearch()
+  const { refetch } = usePollFiles({ page })
   return (
     <Container maxW="full">
-      <Heading
-        size="lg"
-        textAlign={{ base: "center", md: "left" }}
-        pt={12}
-        pb={8}
-      >
-        Files
-      </Heading>
-      <Actions />
+      <Stack spacing={1} my={2}>
+        <Heading
+          size="lg"
+          pt={6}
+        >
+          My Files
+        </Heading>
+        <Text>From here you can upload, download, and delete files associated with your account.</Text>
+      </Stack>
+      <FileUpload/>
+      <Flex justify="space-between" align={"center"}>
+      <Stack spacing={1} my={4}>
+        <Heading size="md">
+          Saved files
+        </Heading>
+        <Text>Files that are associated with your account.</Text>
+      </Stack>
+      <DeleteFilesButton />
+      </Flex>
       <FilesTable />
     </Container>
   )

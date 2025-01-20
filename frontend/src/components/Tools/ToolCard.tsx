@@ -19,8 +19,9 @@ import useCustomToast from "../../hooks/useCustomToast";
 
 import type { ToolPublic } from "../../client";
 import RunToolModal from "./RunToolModal"; // Adjust the import path as needed
-import { ToolsService } from "../../client";
+import { unfavouriteToolMutation, favouriteToolMutation } from "../../client/@tanstack/react-query.gen";
 import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 
 interface ToolCardProps {
   tool: ToolPublic;
@@ -32,6 +33,34 @@ const ToolCard = ({ tool }: ToolCardProps) => {
   const showToast = useCustomToast();
 
   const [isFavourited, setIsFavourited] = useState(tool.favourited);
+  
+  const favouriteTool = useMutation({
+    ...favouriteToolMutation(),
+    onError: () => {
+      showToast("Error", "Failed to add tool to favorites", "error");
+    },
+    onSuccess: () => {
+      setIsFavourited(true);
+      tool.favourited = true;
+      if (tool.favourited_count !== undefined) {
+        tool.favourited_count = tool.favourited_count + 1;
+      }
+    },
+  });
+
+  const unfavouriteTool = useMutation({
+    ...unfavouriteToolMutation(),
+    onError: () => {
+      showToast("Error", "Failed to remove tool from favorites", "error");
+    },
+    onSuccess: () => {
+      setIsFavourited(false);
+      tool.favourited = false;
+      if (tool.favourited_count !== undefined) {
+        tool.favourited_count = tool.favourited_count - 1;
+      }
+    },
+  });
 
   const navigateToTool = () => {
     navigate({
@@ -96,37 +125,9 @@ const ToolCard = ({ tool }: ToolCardProps) => {
                 onClick={(e) => {
                   e.stopPropagation();
                   if (isFavourited) {
-                    ToolsService.unfavouriteTool({path: { tool_id: tool.id }})
-                      .then(() => {
-                        setIsFavourited(false);
-                        tool.favourited = false;
-                        if (tool.favourited_count !== undefined) {
-                          tool.favourited_count = tool.favourited_count - 1;
-                        }
-                      })
-                      .catch(() =>
-                        showToast(
-                          "Error",
-                          "Failed to remove tool from favorites",
-                          "error"
-                        )
-                      );
+                      unfavouriteTool.mutate({path: { tool_id: tool.id }});   
                   } else {
-                    ToolsService.favouriteTool({path: { tool_id: tool.id }})
-                      .then(() => {
-                        setIsFavourited(true);
-                        tool.favourited = true;
-                        if (tool.favourited_count !== undefined) {
-                          tool.favourited_count = tool.favourited_count + 1;
-                        }
-                      })
-                      .catch(() =>
-                        showToast(
-                          "Error",
-                          "Failed to add tool to favorites",
-                          "error"
-                        )
-                      );
+                      favouriteTool.mutate({path: { tool_id: tool.id }});
                   }
                 }} // Opens the modal
               ></IconButton>

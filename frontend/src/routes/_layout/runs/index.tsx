@@ -9,6 +9,7 @@ import {
   Heading,
   Link,
   SkeletonText,
+  Stack,
   Table,
   TableContainer,
   Tbody,
@@ -17,6 +18,8 @@ import {
   Thead,
   Tooltip,
   Tr,
+  useColorModeValue,
+  Text,
 } from "@chakra-ui/react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
@@ -31,6 +34,7 @@ import StatusIcon from "../../../components/Runs/StatusIcon"
 import ParamTag from "../../../components/Runs/ParamTag"
 import { PaginationFooter } from "../../../components/Common/PaginationFooter"
 import { z } from "zod"
+import { humanReadableDate } from "../../../utils"
 
 const runsSearchSchema = z.object({
   page: z.number().catch(1),
@@ -41,7 +45,7 @@ export const Route = createFileRoute("/_layout/runs/")({
   validateSearch: (search) => runsSearchSchema.parse(search),
 })
 
-const PER_PAGE = 8
+const PER_PAGE = 10
 
 function getRunsQueryOptions({ page }: { page: number }) {
   return {
@@ -94,14 +98,14 @@ function RunsTable() {
   return (
     <>
     <TableContainer>
-      <Table size={{ base: "sm", md: "md" }}>
+      <Table size={{ base: "sm" }}>
         <Thead>
           <Tr>
             <Th width="10%">ID</Th>
             <Th>Tool</Th>
             <Th>Params</Th>
             <Th>Status</Th>
-            <Th>Started</Th>
+            <Th>Date</Th>
             <Th>Runtime</Th>
             <Th width="10%">Actions</Th>
           </Tr>
@@ -119,7 +123,8 @@ function RunsTable() {
         ) : (
             <Tbody>
               {runs?.data.map((run) => (
-                <Tr cursor="pointer" key={run.id} onClick={() =>
+                <Tr _hover={{bg: useColorModeValue("gray.100", "gray.700")}}
+                cursor="pointer" key={run.id} onClick={() =>
                     navigate({
                       to: `/runs/${run.id.toString()}`,
                       params: { runid: run.id.toString() },
@@ -169,7 +174,7 @@ function RunsTable() {
                     <StatusIcon status={run.status} />
                   </Td>
                   <Td>
-                    {run.started_at}
+                    {run.started_at ? humanReadableDate(run.started_at) : ""}
                   </Td>
                   <Td>
                     <RunRuntime
@@ -178,12 +183,12 @@ function RunsTable() {
                       status={run.status}
                     />
                   </Td>
-                  <Td >
+                  <Td justifyContent={"center"} align="center" textAlign={"center"}>
                     <ButtonGroup onClick={(e) =>{
                           e.stopPropagation();
                         }
                       } size="sm" >
-                      <Button
+                      {/* <Button
                         color="ui.main"
                         variant="solid"
                         leftIcon={<ViewIcon />}
@@ -197,7 +202,7 @@ function RunsTable() {
                         }
                       >
                         View
-                      </Button>
+                      </Button> */}
                       {["running", "pending"].includes(run.status) ? (
                         <CancelRunButton run_id={run.id} />
                       ) : (
@@ -238,14 +243,15 @@ function Actions() {
 function Runs() {
   return (
     <Container maxW="full">
-      <Heading
-        size="lg"
-        textAlign={{ base: "center", md: "left" }}
-        pt={12}
-        pb={8}
-      >
-        Runs
-      </Heading>
+      <Stack spacing={1} my={2}>
+        <Heading
+          size="lg"
+          pt={6}
+        >
+          My Runs
+        </Heading>
+        <Text>Click on a run to view more details and results.</Text>
+      </Stack>
       {/* <RunStats /> */}
       <Actions />
       <RunsTable />

@@ -31,10 +31,10 @@ const DeleteAll = ({ type, isOpen, onClose }: DeleteAllProps) => {
 
   const deleteEntities = async (type: string) => {
     if (type === "Runs") {
-      await RunsService.deleteRuns()
+      (await RunsService.deleteRuns()).data
     } else if (type === "Files") {
       // Implement the deleteFiles method
-      await FilesService.deleteFiles()
+      (await FilesService.deleteFiles()).data
     } else {
       throw new Error(`Unexpected type: ${type}`)
     }
@@ -54,8 +54,9 @@ const DeleteAll = ({ type, isOpen, onClose }: DeleteAllProps) => {
       )
     },
     onSettled: () => {
+      console.log("onSettled")
       queryClient.invalidateQueries({
-        queryKey: ["runs", "files"], // Invalidate queries related to runs
+        queryKey: [`${type.toLowerCase()}`], // Invalidate queries related to runs
       })
     },
   })
@@ -77,7 +78,7 @@ const DeleteAll = ({ type, isOpen, onClose }: DeleteAllProps) => {
           <AlertDialogContent as="form" onSubmit={handleSubmit(onSubmit)}>
             <AlertDialogHeader>{`Delete All ${type}`}</AlertDialogHeader>
             <AlertDialogBody>
-              {`Are you sure you want to delete all ${type == "Runs" ? "(non-running) runs" : "files"}? This action cannot be undone.`}
+              {`Are you sure you want to delete all ${type == "Runs" ? "(non-running) runs and associated files" : "files"}? This action cannot be undone.`}
             </AlertDialogBody>
             <AlertDialogFooter gap={3}>
               <Button variant="danger" type="submit" isLoading={isSubmitting}>

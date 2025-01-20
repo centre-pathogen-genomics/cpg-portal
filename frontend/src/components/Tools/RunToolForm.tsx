@@ -10,8 +10,7 @@ import {
   Input,
 } from "@chakra-ui/react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import FileDropZone from "../Files/FileUploadButton"
-import { Select, SelectInstance } from "chakra-react-select"
+import { Select, SelectInstance, useChakraSelectProps } from "chakra-react-select"
 import { type SubmitHandler, useForm } from "react-hook-form"
 import {
   CreateRunData,
@@ -21,9 +20,10 @@ import {
 } from "../../client"
 import { createRunMutation, readToolParamsOptions } from "../../client/@tanstack/react-query.gen"
 import useCustomToast from "../../hooks/useCustomToast"
-import React from "react"
+import React, { useState } from "react"
 import { handleError } from "../../utils"
 import { Options } from "@hey-api/client-axios"
+import FileUpload from "../Files/UploadFileWithProgress"
 
 interface RunToolFormProps {
   toolId: string
@@ -33,6 +33,7 @@ interface RunToolFormProps {
 const RunToolForm = ({ toolId, onSuccess }: RunToolFormProps) => {
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
+  const [isLoading, setIsLoading] = useState(false)
 
   const { data: params, isLoading: paramsLoading } = useQuery({
     ...readToolParamsOptions({path: {tool_id: toolId}}),  
@@ -47,11 +48,9 @@ const RunToolForm = ({ toolId, onSuccess }: RunToolFormProps) => {
             label: `${file.name}`,
             value: file.id,
           }))
-          .reverse(),
       ),
   })
 
-  const selectRef = React.createRef<SelectInstance<{label:string, value:string}>>()
   const defaultValues = params?.reduce((acc, param) => {
     acc[param.name] = param.default
     return acc
@@ -65,7 +64,7 @@ const RunToolForm = ({ toolId, onSuccess }: RunToolFormProps) => {
     handleSubmit,
     reset,
     setValue,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<FormData>({
     mode: "onBlur",
     criteriaMode: "all",
@@ -84,7 +83,8 @@ const RunToolForm = ({ toolId, onSuccess }: RunToolFormProps) => {
       if (onSuccess) onSuccess(run)
     },
     onError: (error) => {
-      handleError(error, showToast)
+      handleError(error, showToast);
+      setIsLoading(false)
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["toolRuns"] })
@@ -92,11 +92,13 @@ const RunToolForm = ({ toolId, onSuccess }: RunToolFormProps) => {
   })
 
   const onSubmit: SubmitHandler<any> = (formData: {[key: string]: unknown}) => {
+    setIsLoading(true);
     mutation.mutate({body: formData} as Options<CreateRunData>)
   }
+  const [selectedOptions, setSelectedOptions] = useState<{label: string, value: string}[]>([])
 
   if (paramsLoading || filesLoading) return <div>Loading...</div>
-
+  
   return (
     <Box as="form" onSubmit={handleSubmit(onSubmit)} w="100%">
       <Box>
@@ -179,34 +181,28 @@ const RunToolForm = ({ toolId, onSuccess }: RunToolFormProps) => {
             )}
             {param.param_type === "file" && (
              <Flex
-              gap={4}
               direction={"column"}
             >
+                <FileUpload onComplete={(file) => {
+                    setValue(param.name, file.id);
+                    setSelectedOptions([{label: file.name, value: file.id}]) 
+                  }
+                } />
                 <Select
                   id={param.name}
-                  ref={selectRef}
                   options={files}
                   placeholder={param.description || "Select a file"}
                   isMulti={false}
+                  value={selectedOptions}
                   onChange={(selectedOption) => {
                     setValue(
                       param.name,
                       selectedOption ? selectedOption.value : "",
-                    )
+                    );
+                    setSelectedOptions(selectedOption ? [selectedOption] : [])
                   }}
                   selectedOptionStyle="check"
                 />
-                <Flex  justifyContent={"end"}>
-                  <FileDropZone onUpload={(file) => {
-                    refetch().then(() => {
-                      selectRef.current?.setValue({value: file.id, label:file.name}, 'select-option')
-                      setValue(
-                        param.name,
-                        file.id
-                      )
-                    })
-                  }}/>
-                </Flex>
               </Flex>
             )}
             {errors[param.name] && (
@@ -218,10 +214,10 @@ const RunToolForm = ({ toolId, onSuccess }: RunToolFormProps) => {
         ))}
       </Box>
       <ButtonGroup>
-        <Button variant="primary" type="submit" isLoading={isSubmitting}>
+        <Button variant="primary" type="submit" isLoading={isLoading}>
           Run Tool
         </Button>
-        <Button onClick={() => reset(defaultValues)} variant="outline">
+        <Button onClick={() => {reset(defaultValues); setSelectedOptions([])}} variant="outline">
           Reset
         </Button>
       </ButtonGroup>
