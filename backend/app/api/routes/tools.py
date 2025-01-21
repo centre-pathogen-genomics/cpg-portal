@@ -13,8 +13,6 @@ from app.api.deps import (
 )
 from app.models import (
     Message,
-    Param,
-    Target,
     Tool,
     ToolCreate,
     ToolPublic,
