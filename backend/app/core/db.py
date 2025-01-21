@@ -44,20 +44,15 @@ def init_db(session: Session) -> None:
             command=["sleep", "{SECONDS}"],
             enabled=True,
             owner_id=user.id,
+            params=[{
+                "name": "SECONDS",
+                "description": "Number of seconds to sleep for.",
+                "param_type": "int",
+                "default": 5,
+                "options": None,
+                "flag": None,
+                "required": True,
+            }]
         )
         session.add(sleep_tool)
-        session.commit()
-        session.refresh(sleep_tool)
-
-        param = Param(
-            name="SECONDS",
-            description="Number of seconds to sleep for.",
-            param_type="int",
-            default=5,
-            options=None,
-            flag=None,
-            required=True,
-            tool_id=sleep_tool.id,
-        )
-        session.add(param)
         session.commit()

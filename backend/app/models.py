@@ -98,6 +98,44 @@ class NewPassword(SQLModel):
     new_password: str
 
 
+class SetupFile(SQLModel):
+    name: str
+    content: str
+
+
+class FileType(str, enum.Enum):
+    text = "text"
+    image = "image"
+    csv = "csv"
+    tsv = "tsv"
+    json = "json"
+    unknown = "unknown"
+
+
+class Target(SQLModel):
+    path: str
+    target_type: FileType
+    required: bool = True
+
+
+class ParamType(str, enum.Enum):
+    str = "str"
+    int = "int"
+    float = "float"
+    bool = "bool"
+    enum = "enum"
+    file = "file"
+
+class Param(SQLModel):
+    name: str
+    description: str | None = None
+    param_type: ParamType
+    default: int | float | str | bool | None
+    options: list[str] | None = None
+    flag: str | None = None
+    required: bool = False
+
+
 # Shared properties
 class ToolBase(SQLModel):
     name: str
@@ -106,10 +144,13 @@ class ToolBase(SQLModel):
     image: str | None = None
     tags: list[str] | None = None
     favourited_count: int = 0
-    run_count: int = 0
-    command: list[str]  # ["hello-world", "run", "{verbose_flag}", "--text", "{text}"]
-    setup_command: str | None = None  # command -v hello-world >/dev/null 2>&1 || snk install wytamma/hello-world
     enabled: bool = False
+    run_count: int = 0
+    command: str
+    setup_command: str | None = None  # command -v hello-world >/dev/null 2>&1 || snk install wytamma/hello-world
+    setup_files: list[SetupFile] | None = None
+    params: list[Param] | None = None
+    targets: list[Target] | None = None
 
 # Properties to receive on Tool creation
 class ToolCreate(ToolBase):
@@ -118,26 +159,16 @@ class ToolCreate(ToolBase):
 # Properties to receive on Tool update
 class ToolUpdate(ToolBase):
     name: str | None = None  # type: ignore
-    command: list[str] | None = None
+    command: str | None = None
 
 # Database model, database table inferred from class name
 class Tool(ToolBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str = Field(index=True, unique=True)
-    tags: list[str] = Field(default_factory=list, sa_column=Column(JSON))
-    command: list[str] = Field(default_factory=list, sa_column=Column(JSON))
-    params: list["Param"] = Relationship(
-        back_populates="tool",
-        sa_relationship=RelationshipProperty(
-            "Param", cascade="all, delete, delete-orphan"
-        )
-    )
-    targets: list["Target"] = Relationship(
-        back_populates="tool",
-        sa_relationship=RelationshipProperty(
-            "Target", cascade="all, delete, delete-orphan"
-        )
-    )
+    tags: list[str] | None = Field(default_factory=list, sa_column=Column(JSON))
+    setup_files: list[SetupFile] | None = Field(default_factory=list, sa_column=Column(JSON))
+    params: list[Param] | None = Field(default_factory=list, sa_column=Column(JSON))
+    targets: list[Target] | None = Field(default_factory=list, sa_column=Column(JSON))
     runs: list["Run"] = Relationship(
         back_populates="tool",
         sa_relationship=RelationshipProperty(
@@ -152,108 +183,16 @@ class Tool(ToolBase, table=True):
 
 # Properties to return via API, id is always required
 class ToolPublic(ToolBase):
-    id: uuid.UUID
     favourited: bool = False
-
-
-class ToolMinimalPublic(SQLModel):
     id: uuid.UUID
-    name: str
 
 class ToolsPublic(SQLModel):
     data: list[ToolPublic]
     count: int
 
-class FileType(str, enum.Enum):
-    text = "text"
-    image = "image"
-    csv = "csv"
-    tsv = "tsv"
-    json = "json"
-    unknown = "unknown"
-
-
-class TargetBase(SQLModel):
-    path: str
-    target_type: FileType
-    required: bool = True
-
-
-class TargetCreate(TargetBase):
-    name: str
-
-class TargetUpdate(TargetBase):
-    path: str | None = None
-    target_type: FileType | None = None
-
-class Target(TargetBase, table=True):
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    target_type: FileType = Field(sa_column=Column(Enum(FileType)))
-    tool_id: uuid.UUID = Field(foreign_key="tool.id", nullable=False)
-    tool: Tool = Relationship(back_populates="targets")
-
-
-class TargetPublic(TargetBase):
+class ToolMinimalPublic(SQLModel):
     id: uuid.UUID
-    tool_id: uuid.UUID
-
-class ParamType(str, enum.Enum):
-    str = "str"
-    int = "int"
-    float = "float"
-    bool = "bool"
-    enum = "enum"
-    file = "file"
-
-class ParamBase(SQLModel):
     name: str
-    description: str | None = None
-    param_type: ParamType
-    default: int | float | str | bool
-    options: list[str] | None = None
-    flag: str | None = None
-    required: bool = False
-
-
-class ParamCreate(ParamBase):
-    name: str
-
-class ParamUpdate(ParamBase):
-    name: str | None = None
-    description: str | None = None
-    param_type: ParamType | None = None
-    default: int | float | str | bool | None = None
-    required: bool | None = None
-
-
-class Param(ParamBase, table=True):
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    param_type: ParamType = Field(sa_column=Column(Enum(ParamType)))
-    options: list[str] = Field(default_factory=list, sa_column=Column(JSON))
-    default: int | float | str | bool | None = Field(default=None, sa_column=Column(JSON))
-    tool_id: uuid.UUID = Field(foreign_key="tool.id", nullable=False)
-    tool: Tool = Relationship(back_populates="params")
-
-
-class ParamPublic(ParamBase):
-    id: uuid.UUID
-    tool_id: uuid.UUID
-
-
-class ToolCreateWithParamsAndTargets(ToolCreate):
-    params: list[ParamCreate] = []
-    targets: list[TargetCreate] = []
-
-
-class ToolPublicWithParamsAndTargets(ToolPublic):
-    params: list[ParamPublic]
-    targets: list[TargetPublic]
-
-
-class ToolsPublicWithParamsAndTargets(SQLModel):
-    data: list[ToolPublicWithParamsAndTargets]
-    count: int
-
 
 class RunStatus(str, enum.Enum):
     pending = "pending"

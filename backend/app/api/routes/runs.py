@@ -1,20 +1,15 @@
 import uuid
 from pathlib import Path
+from shlex import quote
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
+from jinja2 import Environment as JinjaEnvironment
 from sqlalchemy import desc
 from sqlmodel import func, select
 
 from app.api.deps import CurrentUser, SessionDep
-from app.models import (
-    File,
-    Message,
-    Run,
-    RunPublic,
-    RunsPublicMinimal,
-    Tool,
-)
+from app.models import File, Message, Param, Run, RunPublic, RunsPublicMinimal, Tool
 from app.tasks import run_tool
 
 router = APIRouter()
@@ -71,7 +66,10 @@ async def create_run(
     if not current_user.is_superuser and not tool.enabled:
         raise HTTPException(status_code=403, detail="Tool is disabled")
     files = []
+    if tool.params is None:
+        tool.params = []
     for param in tool.params:
+        param = Param(**param)
         if param.name not in params:
             if param.required or param.param_type == "file":
                 raise HTTPException(
@@ -131,13 +129,13 @@ async def create_run(
             raise HTTPException(
                 status_code=500, detail=f"Unknown parameter type: {param.param_type}"
             )
-    cmd = tool.command.copy()
-    # format the command with the parameters
-    for part in cmd:
-        for key, value in params.items():
-            if f"{{{key}}}" in part:
-                print(f"Replacing {key} with {value}")
-                cmd[cmd.index(part)] = part.format(**{key: value})
+
+    # escape parameters
+    params = {k: quote(str(v)) for k, v in params.items()}
+    # create command
+    env = JinjaEnvironment()
+    command_template = env.from_string(tool.command)
+    cmd = command_template.render(**params)
 
     # create a run
     run = Run(
@@ -145,6 +143,7 @@ async def create_run(
         owner_id=current_user.id,
         status="pending",
         params=params,
+        command=cmd,
     )
     session.add(run)
     session.commit()
