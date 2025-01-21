@@ -30,6 +30,7 @@ import { FilePublic } from "../../../client"
 import RunRuntime from "../../../components/Runs/RunTime"
 import CsvFileToTable from "../../../components/Render/CsvFileToTable"
 import JsonFile from "../../../components/Render/JsonFile"
+import TextFile from "../../../components/Render/TextFile"
 import CodeBlock from "../../../components/Common/CodeBlock"
 import DownloadFileButton from "../../../components/Files/DownloadFileButton"
 import ParamTag from "../../../components/Runs/ParamTag"
@@ -40,6 +41,7 @@ export const Route = createFileRoute("/_layout/runs/$runid")({
 })
 
 function renderResult(file: FilePublic) {
+  console.log(file)
   if (file.size && file.size < 5000000) {
     switch (file.file_type) {
       case "csv":
@@ -47,6 +49,8 @@ function renderResult(file: FilePublic) {
         return <CsvFileToTable fileId={file.id} />
       case "json":
         return <JsonFile fileId={file.id} />
+      case "text":
+        return <TextFile fileId={file.id} />
       default:
         return <DownloadFileButton fileId={file.id} />
     }
