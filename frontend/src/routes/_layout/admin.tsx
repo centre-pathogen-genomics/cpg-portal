@@ -23,7 +23,7 @@ import AddUser from "../../components/Admin/AddUser"
 import ActionsMenu from "../../components/Common/ActionsMenu"
 import Navbar from "../../components/Common/Navbar"
 import { PaginationFooter } from "../../components/Common/PaginationFooter.tsx"
-import { readUsersOptions } from "../../client/@tanstack/react-query.gen.ts"
+import { readUsersOptions, readUserMeQueryKey } from "../../client/@tanstack/react-query.gen.ts"
 
 const usersSearchSchema = z.object({
   page: z.number().catch(1),
@@ -39,7 +39,7 @@ const PER_PAGE = 5
 
 function UsersTable() {
   const queryClient = useQueryClient()
-  const currentUser = queryClient.getQueryData<UserPublic>(["currentUser"])
+  const currentUser = queryClient.getQueryData<UserPublic>(readUserMeQueryKey())
   const { page } = Route.useSearch()
   const navigate = useNavigate({ from: Route.fullPath })
   const setPage = (page: number) =>

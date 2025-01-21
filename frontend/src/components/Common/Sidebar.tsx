@@ -93,7 +93,6 @@ const Sidebar = () => {
           <Box>
             <Image src={Logo} alt="Logo" w="180px" maxW="2xs" p={2} />
             <SidebarItems />
-
           </Box>
           <StorageStats />
         </Flex>
