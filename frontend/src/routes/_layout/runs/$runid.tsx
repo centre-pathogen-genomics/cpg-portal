@@ -41,8 +41,7 @@ export const Route = createFileRoute("/_layout/runs/$runid")({
 })
 
 function renderResult(file: FilePublic) {
-  console.log(file)
-  if (file.size && file.size < 5000000) {
+  if (file.size && file.size < 5000) {
     switch (file.file_type) {
       case "csv":
       case "tsv":
@@ -240,10 +239,18 @@ function RunDetail() {
   )
 }
 
+function RunSkeleton() {
+  return (
+    <Container maxW="full">
+      <Skeleton height="20px"/>
+    </Container>
+  )
+}
+
 function Run() {
   return (
     <Container maxW="full">
-      <Suspense fallback={<Skeleton height="20px" />}>
+      <Suspense fallback={<RunSkeleton />}>
         <ErrorBoundary
           fallbackRender={({ error }) => (
             <Box>
