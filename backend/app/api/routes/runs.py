@@ -95,6 +95,30 @@ async def create_run(
                 )
             files.append(file)
             params[param.name] = file.name
+        elif param.param_type == "files":
+            file_ids = params[param.name]
+            if not isinstance(file_ids, list):
+                raise HTTPException(
+                    status_code=400, detail=f"For parameter {param.name}, expected list of file ids, got {file_ids}"
+                )
+            for file_id in file_ids:
+                try:
+                    file_id = uuid.UUID(file_id)
+                except ValueError:
+                    raise HTTPException(
+                        status_code=400, detail=f"For parameter {param.name}, expected list of file ids, got {file_ids}"
+                    )
+                file = session.get(File, file_id)
+                if not file:
+                    raise HTTPException(
+                        status_code=404, detail=f"File not found: {file_id}"
+                    )
+                if file.owner_id != current_user.id and not current_user.is_superuser:
+                    raise HTTPException(
+                        status_code=403, detail="Not enough permissions to use this file"
+                    )
+                files.append(file)
+            params[param.name] = [file.name for file in files]
         elif param.param_type == "bool":
             if not isinstance(params[param.name], bool):
                 raise HTTPException(
@@ -131,11 +155,17 @@ async def create_run(
             )
 
     # escape parameters
-    params = {k: quote(str(v)) for k, v in params.items()}
+    escaped_params = {}
+    for k, v in params.items():
+        if isinstance(v, list):
+            escaped_params[k] = [quote(str(i)) for i in v]
+        else:
+            escaped_params[k] = quote(str(v))
+
     # create command
     env = JinjaEnvironment()
     command_template = env.from_string(tool.command)
-    cmd = command_template.render(**params)
+    cmd = command_template.render(**escaped_params)
 
     # create a run
     run = Run(

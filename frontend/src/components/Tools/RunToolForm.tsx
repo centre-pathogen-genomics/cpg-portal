@@ -62,17 +62,18 @@ const EnumParam = ({ param, setValue }: EnumParamProps) => {
 interface FileParamProps {
   param: Param
   files: { label: string, value: string }[]
-  setValue: (value: string) => void
+  setValue: (value: string | string[]) => void
   selectedOptions: { label: string, value: string }[]
   setSelectedOptions: (options: { label: string, value: string }[]) => void
+  multiple: boolean 
 }
 
-const FileParam = ({ param, files, setValue, selectedOptions, setSelectedOptions }: FileParamProps) => {
+const FileParam = ({ param, files, setValue, selectedOptions, setSelectedOptions, multiple = false }: FileParamProps) => {
   return (
     <Flex direction={"column"}>
       <FileUpload
         onComplete={(file) => {
-          setValue(file.id);
+          setValue(multiple ? [file.id] : file.id);
           setSelectedOptions([{ label: file.name, value: file.id }]);
         }}
       />
@@ -80,11 +81,11 @@ const FileParam = ({ param, files, setValue, selectedOptions, setSelectedOptions
         id={param.name}
         options={files}
         placeholder={param.description || "Select a file"}
-        isMulti={false}
+        isMulti={multiple}
         value={selectedOptions}
         onChange={(selectedOption) => {
-          setValue(selectedOption ? selectedOption.value : "");
-          setSelectedOptions(selectedOption ? [selectedOption] : []);
+          setValue(Array.isArray(selectedOption) ? selectedOption.map((option) => option.value) : (selectedOption as { label: string; value: string })?.value);
+          setSelectedOptions(Array.isArray(selectedOption) ? selectedOption : [selectedOption]);
         }}
         selectedOptionStyle="check"
       />
@@ -242,13 +243,14 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
                 {param.description || param.name}
               </Checkbox>
             )}
-            {param.param_type === "file" && (
+            {param.param_type === "file" || param.param_type === "files" && (
               <FileParam
                 param={param}
                 files={files}
                 setValue={(value) => setValue(param.name, value)}
                 selectedOptions={fileStates[param.name] || []}
                 setSelectedOptions={(selectedOptions) => handleFileSelection(param.name, selectedOptions)}
+                multiple={param.param_type === "files"}
               />
             )}
             {errors[param.name] && (

@@ -57,7 +57,14 @@ export type Param = {
   required?: boolean
 }
 
-export type ParamType = "str" | "int" | "float" | "bool" | "enum" | "file"
+export type ParamType =
+  | "str"
+  | "int"
+  | "float"
+  | "bool"
+  | "enum"
+  | "file"
+  | "files"
 
 export type RunPublic = {
   taskiq_id: string

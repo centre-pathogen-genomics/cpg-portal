@@ -125,6 +125,7 @@ class ParamType(str, enum.Enum):
     bool = "bool"
     enum = "enum"
     file = "file"
+    files = "files"
 
 class Param(SQLModel):
     name: str

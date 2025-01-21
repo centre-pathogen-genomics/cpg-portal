@@ -15,7 +15,7 @@ from taskiq import TaskiqDepends, TaskiqEvents, TaskiqState
 from app.api.deps import get_db
 from app.core.config import settings
 from app.crud import save_file
-from app.models import File, Run
+from app.models import File, Run, Target
 from app.tkq import broker
 
 SessionDep = Annotated[Session, TaskiqDepends(get_db)]
@@ -143,7 +143,15 @@ async def run_tool(
                 f.write(content)
 
     # Run the tool
-    res = await run_command_in_subprocess(session, run_id, run_command, tmp_dir)
+    try:
+        res = await run_command_in_subprocess(session, run_id, run_command, tmp_dir)
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        run.stderr += f"An error occurred: {e}"
+        run.status = "failed"
+        session.add(run)
+        session.commit()
+        return False
     run.finished_at = datetime.utcnow()
     run.stderr += res.stderr.read()
     run.stdout += res.stdout.read()
@@ -157,6 +165,7 @@ async def run_tool(
         return False
     if run.tool.targets:
         for target in run.tool.targets:
+            target = Target(**target)
             # format the target path with tool params
             print(f"Formatting target path: {target.path}")
             target_file = tmp_dir / target.path

@@ -171,27 +171,11 @@ def create_tool(
     Create new tool along with its params.
     """
     tool = Tool(
-        **tool_in.dict(exclude={"params", "targets"})
+        **tool_in.dict()
     )
     session.add(tool)
     session.commit()
     session.refresh(tool)
-
-    # Create params if they are provided
-    params = [
-        Param(**param.dict(), tool_id=tool.id) for param in tool_in.params
-    ]
-    if params:
-        session.add_all(params)
-        session.commit()
-
-    # Create targets if they are provided
-    targets = [
-        Target(**target.dict(), tool_id=tool.id) for target in tool_in.targets
-    ]
-    if targets:
-        session.add_all(targets)
-        session.commit()
 
     return tool
 
