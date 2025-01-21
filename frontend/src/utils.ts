@@ -83,7 +83,10 @@ export const confirmPasswordRules = (
 }
 
 export const handleError = (err: AxiosError | Error, showToast: any) => {
-  console.error(err)
+  if (err.message === "Network Error") {
+    showToast("Error", "Network error. Please try again later.", "error")
+    return
+  }
   const errDetail = (err as any)?.response.data.detail as ValidationError | ValidationError[] | string
   let errorMessage = errDetail || "Something went wrong."
   if (Array.isArray(errDetail) && errDetail.length > 0) {

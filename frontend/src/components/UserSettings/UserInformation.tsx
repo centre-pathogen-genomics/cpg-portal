@@ -16,7 +16,6 @@ import { useState } from "react"
 import { type SubmitHandler, useForm } from "react-hook-form"
 
 import {
-  type ApiError,
   type UserPublic,
   type UserUpdateMe,
   UsersService,

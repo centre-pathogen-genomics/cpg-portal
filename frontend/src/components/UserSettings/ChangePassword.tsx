@@ -12,7 +12,7 @@ import {
 import { useMutation } from "@tanstack/react-query"
 import { type SubmitHandler, useForm } from "react-hook-form"
 
-import { type UpdatePassword, UsersService } from "../../client"
+import { type UpdatePassword } from "../../client"
 import { updatePasswordMeMutation } from "../../client/@tanstack/react-query.gen"
 import useCustomToast from "../../hooks/useCustomToast"
 import { confirmPasswordRules, handleError, passwordRules } from "../../utils"

@@ -12,9 +12,9 @@ import {
 } from '@chakra-ui/react';
 import Papa from 'papaparse'; // CSV parsing library
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { FilesService } from '../../client';
 import { PaginationFooter } from '../../components/Common/PaginationFooter';
 import DownloadFileButton from '../Files/DownloadFileButton';
+import { downloadFileOptions } from '../../client/@tanstack/react-query.gen';
 
 interface CsvFileToTableProps {
   fileId: string;
@@ -23,8 +23,7 @@ interface CsvFileToTableProps {
 const CsvFileToTable = ({ fileId }: CsvFileToTableProps) => {
   // Use useSuspenseQuery to fetch the file
   const { data: csvText } = useSuspenseQuery({
-    queryKey: ["file", { id: fileId }],
-    queryFn: () => FilesService.downloadFile({ id: fileId }),
+    ...downloadFileOptions({path: { id: fileId }})
   });
 
   // Parse CSV data

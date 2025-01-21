@@ -102,7 +102,7 @@ function RunDetail() {
           </BreadcrumbItem>
 
           <BreadcrumbItem isCurrentPage>
-            <BreadcrumbLink href="#">{run.id}</BreadcrumbLink>
+            <BreadcrumbLink >{run.id}</BreadcrumbLink>
           </BreadcrumbItem>
         </Breadcrumb>
       </Heading>
@@ -125,7 +125,9 @@ function RunDetail() {
         <Flex wrap={'wrap'}>
         <Text>Parameters:</Text>
         {Object.keys(run.params).map((key) => (
-                          <Flex mx={1} ><ParamTag key={key} param={key} value={(run.params[key] as string).toString()} /></Flex>
+                          <Flex mx={1}  key={key} >
+                            <ParamTag param={key} value={(run.params[key] as string).toString()} />
+                          </Flex>
                       ))}
         </Flex>
         <Text>
@@ -149,7 +151,7 @@ function RunDetail() {
           </TabList>
           <TabPanels>
           {run.files?.map((file) => (
-            <TabPanel>
+            <TabPanel key={file.id}>
               {renderResult(file)} 
             </TabPanel>
           ))}

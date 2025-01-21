@@ -20,7 +20,7 @@ const ParamTag = ( {param, value, truncate}: ParamTagProps) => {
         label={value}
     >
         <Tag  cursor={'pointer'} size={'sm'} variant='outline' >
-        <TagLabel as={'b'}>{param}</TagLabel>={subString}
+        <TagLabel mr={1} as={'b'}>{param}</TagLabel> {subString}
         </Tag>
     </Tooltip>
   )

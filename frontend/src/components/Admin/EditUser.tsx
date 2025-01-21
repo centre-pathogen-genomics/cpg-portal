@@ -20,7 +20,6 @@ import { type SubmitHandler, useForm } from "react-hook-form"
 import {
   type UserPublic,
   type UserUpdate,
-  type UpdateUserError,
   UsersService,
 } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"

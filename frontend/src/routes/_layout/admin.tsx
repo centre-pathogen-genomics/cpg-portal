@@ -18,11 +18,12 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useEffect } from "react"
 import { z } from "zod"
 
-import { type UserPublic, UsersService } from "../../client"
+import { type UserPublic} from "../../client"
 import AddUser from "../../components/Admin/AddUser"
 import ActionsMenu from "../../components/Common/ActionsMenu"
 import Navbar from "../../components/Common/Navbar"
 import { PaginationFooter } from "../../components/Common/PaginationFooter.tsx"
+import { readUsersOptions } from "../../client/@tanstack/react-query.gen.ts"
 
 const usersSearchSchema = z.object({
   page: z.number().catch(1),
@@ -35,13 +36,6 @@ export const Route = createFileRoute("/_layout/admin")({
 
 const PER_PAGE = 5
 
-function getUsersQueryOptions({ page }: { page: number }) {
-  return {
-    queryFn: () =>
-      UsersService.readUsers({ skip: (page - 1) * PER_PAGE, limit: PER_PAGE }),
-    queryKey: ["users", { page }],
-  }
-}
 
 function UsersTable() {
   const queryClient = useQueryClient()
@@ -56,16 +50,15 @@ function UsersTable() {
     isPending,
     isPlaceholderData,
   } = useQuery({
-    ...getUsersQueryOptions({ page }),
-    placeholderData: (prevData) => prevData,
+    ...readUsersOptions({query: { skip: (page - 1) * PER_PAGE, limit: PER_PAGE }}),
   })
 
-  const hasNextPage = !isPlaceholderData && users?.data.length === PER_PAGE
+  const hasNextPage = !isPlaceholderData && users && users.data?.length === PER_PAGE
   const hasPreviousPage = page > 1
 
   useEffect(() => {
     if (hasNextPage) {
-      queryClient.prefetchQuery(getUsersQueryOptions({ page: page + 1 }))
+      queryClient.prefetchQuery(readUsersOptions({query: { skip: (page) * PER_PAGE, limit: PER_PAGE }}))
     }
   }, [page, queryClient, hasNextPage])
 
@@ -94,7 +87,7 @@ function UsersTable() {
             </Tbody>
           ) : (
             <Tbody>
-              {users?.data.map((user) => (
+              {users?.data?.map((user) => (
                 <Tr key={user.id}>
                   <Td
                     color={!user.full_name ? "ui.dim" : "inherit"}

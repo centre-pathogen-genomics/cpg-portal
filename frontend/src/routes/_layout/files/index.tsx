@@ -1,8 +1,6 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { useEffect } from "react"
-import { FilesService } from "../../../client"
+import { useEffect} from "react"
 import {
+  Select,
   ButtonGroup,
   Container,
   Flex,
@@ -18,17 +16,21 @@ import {
   Tr,
   Text,
 } from '@chakra-ui/react'
-import  FileUpload from "../../../components/Files/UploadFileWithProgress"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { z } from "zod"
+import FileUpload from "../../../components/Files/UploadFileWithProgress"
 import DeleteFileButton from "../../../components/Files/DeleteFileButton"
 import DeleteFilesButton from "../../../components/Files/DeleteFilesButton"
 import DownloadFileButton from "../../../components/Files/DownloadFileButton"
 import { PaginationFooter } from "../../../components/Common/PaginationFooter"
-import { z } from "zod"
+import { FilesService } from "../../../client"
 import { humanReadableDate, humanReadableFileSize } from "../../../utils"
 
 // Define pagination schema
 const filesSearchSchema = z.object({
   page: z.number().catch(1),
+  pageSize: z.number().catch(8),
 })
 
 export const Route = createFileRoute("/_layout/files/")({
@@ -36,28 +38,26 @@ export const Route = createFileRoute("/_layout/files/")({
   validateSearch: (search) => filesSearchSchema.parse(search),
 })
 
-const PER_PAGE = 8
-
-function getFilesQueryOptions({ page }: { page: number }) {
+// Function to get query options
+function getFilesQueryOptions({ page, pageSize }: { page: number, pageSize: number }) {
   return {
     queryFn: async () =>
-      (await FilesService.readFiles({query: { skip: (page - 1) * PER_PAGE, limit: PER_PAGE }})).data,
-    queryKey: ["files", { page }],
+      (await FilesService.readFiles({ query: { skip: (page - 1) * pageSize, limit: pageSize } })).data,
+    queryKey: ["files", { page, pageSize }],
   }
 }
 
 // Custom hook to fetch and poll files
-function usePollFiles({ page }: { page: number }) {
+function usePollFiles({ page, pageSize }: { page: number, pageSize: number }) {
   const fetchFiles = async () => {
-    const response = await FilesService.readFiles({query: {
-      skip: (page - 1) * PER_PAGE,
-      limit: PER_PAGE,
-    }})
+    const response = await FilesService.readFiles({
+      query: { skip: (page - 1) * pageSize, limit: pageSize },
+    })
     return response.data
   }
 
   const { data, isPending, isPlaceholderData, refetch } = useQuery({
-    queryKey: ["files", { page }],
+    queryKey: ["files", { page, pageSize }],
     queryFn: fetchFiles,
     refetchInterval: 5000,
     refetchIntervalInBackground: true,
@@ -68,23 +68,26 @@ function usePollFiles({ page }: { page: number }) {
 }
 
 function FilesTable() {
-  const { page } = Route.useSearch()
-  const navigate = useNavigate({ from: Route.fullPath }) 
+  const { page, pageSize } = Route.useSearch()
+  const navigate = useNavigate({ from: Route.fullPath })
   const queryClient = useQueryClient()
 
   const setPage = (page: number) =>
     navigate({ search: (prev: { page: number }) => ({ ...prev, page }) })
 
-  const { data: files, isPending, isPlaceholderData } = usePollFiles({ page })
+  const setPageSize = (newPageSize: number) =>
+    navigate({ search: (prev: { page: number }) => ({ ...prev, page: 1, pageSize: newPageSize }) })
 
-  const hasNextPage = !isPlaceholderData && files?.data.length === PER_PAGE
+  const { data: files, isPending, isPlaceholderData } = usePollFiles({ page, pageSize })
+
+  const hasNextPage = !isPlaceholderData && files?.data.length === pageSize
   const hasPreviousPage = page > 1
 
   useEffect(() => {
     if (hasNextPage) {
-      queryClient.prefetchQuery(getFilesQueryOptions({ page: page + 1 }))
+      queryClient.prefetchQuery(getFilesQueryOptions({ page: page + 1, pageSize }))
     }
-  }, [page, queryClient, hasNextPage])
+  }, [page, pageSize, queryClient, hasNextPage])
 
   return (
     <>
@@ -131,7 +134,17 @@ function FilesTable() {
           )}
         </Table>
       </TableContainer>
-      <Flex justify="end" my={4}>
+      <Flex justify="space-between" my={4}>
+        <Select
+            width="auto"
+            value={pageSize}
+            onChange={(e) => setPageSize(parseInt(e.target.value))}
+          >
+            <option value={5}>5</option>
+            <option value={8}>8</option>
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+        </Select>
         <PaginationFooter
           onChangePage={setPage}
           page={page}
@@ -143,42 +156,22 @@ function FilesTable() {
   )
 }
 
-function Actions() {
-  const { page } = Route.useSearch()
-  const { refetch } = usePollFiles({ page })
-
-  return (
-    <Stack >
-      <Flex gap={4} mb={4} justify={"end"}>        
-        <FileUpload />
-      </Flex>
-    </Stack>
-  )
-}
-
 function Files() {
-  const { page } = Route.useSearch()
-  const { refetch } = usePollFiles({ page })
   return (
     <Container maxW="full">
       <Stack spacing={1} my={2}>
-        <Heading
-          size="lg"
-          pt={6}
-        >
+        <Heading size="lg" pt={6}>
           My Files
         </Heading>
         <Text>From here you can upload, download, and delete files associated with your account.</Text>
       </Stack>
-      <FileUpload/>
+      <FileUpload />
       <Flex justify="space-between" align={"center"}>
-      <Stack spacing={1} my={4}>
-        <Heading size="md">
-          Saved files
-        </Heading>
-        <Text>Files that are associated with your account.</Text>
-      </Stack>
-      <DeleteFilesButton />
+        <Stack spacing={1} my={4}>
+          <Heading size="md">Saved files</Heading>
+          <Text>Files that are associated with your account.</Text>
+        </Stack>
+        <DeleteFilesButton />
       </Flex>
       <FilesTable />
     </Container>

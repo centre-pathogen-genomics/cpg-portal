@@ -53,7 +53,7 @@ function ResetPassword() {
     const token = new URLSearchParams(window.location.search).get("token")
     if (!token) return
     await LoginService.resetPassword({
-      requestBody: { new_password: data.new_password, token: token },
+      body: { new_password: data.new_password, token: token },
     })
   }
 

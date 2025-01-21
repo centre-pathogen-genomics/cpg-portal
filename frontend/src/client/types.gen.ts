@@ -51,47 +51,13 @@ export type Param = {
   name: string
   description?: string | null
   param_type: ParamType
-  default?: number | number | string | boolean | null
-  options?: Array<string>
-  flag?: string | null
-  required?: boolean
-  id?: string
-  tool_id: string
-}
-
-export type ParamCreate = {
-  name: string
-  description?: string | null
-  param_type: ParamType
-  default: number | number | string | boolean
+  default: number | number | string | boolean | null
   options?: Array<string> | null
   flag?: string | null
   required?: boolean
-}
-
-export type ParamPublic = {
-  name: string
-  description?: string | null
-  param_type: ParamType
-  default: number | number | string | boolean
-  options?: Array<string> | null
-  flag?: string | null
-  required?: boolean
-  id: string
-  tool_id: string
 }
 
 export type ParamType = "str" | "int" | "float" | "bool" | "enum" | "file"
-
-export type ParamUpdate = {
-  name?: string | null
-  description?: string | null
-  param_type?: ParamType | null
-  default?: number | number | string | boolean | null
-  options?: Array<string> | null
-  flag?: string | null
-  required?: boolean | null
-}
 
 export type RunPublic = {
   taskiq_id: string
@@ -137,32 +103,14 @@ export type RunsPublicMinimal = {
   count: number
 }
 
+export type SetupFile = {
+  name: string
+  content: string
+}
+
 export type Target = {
   path: string
   target_type: FileType
-  required?: boolean
-  id?: string
-  tool_id: string
-}
-
-export type TargetCreate = {
-  path: string
-  target_type: FileType
-  required?: boolean
-  name: string
-}
-
-export type TargetPublic = {
-  path: string
-  target_type: FileType
-  required?: boolean
-  id: string
-  tool_id: string
-}
-
-export type TargetUpdate = {
-  path?: string | null
-  target_type?: FileType | null
   required?: boolean
 }
 
@@ -171,19 +119,20 @@ export type Token = {
   token_type?: string
 }
 
-export type ToolCreateWithParamsAndTargets = {
+export type ToolCreate = {
   name: string
   description?: string | null
   url?: string | null
   image?: string | null
   tags?: Array<string> | null
   favourited_count?: number
-  run_count?: number
-  command: Array<string>
-  setup_command?: string | null
   enabled?: boolean
-  params?: Array<ParamCreate>
-  targets?: Array<TargetCreate>
+  run_count?: number
+  command: string
+  setup_command?: string | null
+  setup_files?: Array<SetupFile> | null
+  params?: Array<Param> | null
+  targets?: Array<Target> | null
 }
 
 export type ToolPublic = {
@@ -193,29 +142,15 @@ export type ToolPublic = {
   image?: string | null
   tags?: Array<string> | null
   favourited_count?: number
-  run_count?: number
-  command: Array<string>
-  setup_command?: string | null
   enabled?: boolean
-  id: string
-  favourited?: boolean
-}
-
-export type ToolPublicWithParamsAndTargets = {
-  name: string
-  description?: string | null
-  url?: string | null
-  image?: string | null
-  tags?: Array<string> | null
-  favourited_count?: number
   run_count?: number
-  command: Array<string>
+  command: string
   setup_command?: string | null
-  enabled?: boolean
-  id: string
+  setup_files?: Array<SetupFile> | null
+  params?: Array<Param> | null
+  targets?: Array<Target> | null
   favourited?: boolean
-  params: Array<ParamPublic>
-  targets: Array<TargetPublic>
+  id: string
 }
 
 export type ToolUpdate = {
@@ -225,16 +160,19 @@ export type ToolUpdate = {
   image?: string | null
   tags?: Array<string> | null
   favourited_count?: number
-  run_count?: number
-  command?: Array<string> | null
-  setup_command?: string | null
   enabled?: boolean
+  run_count?: number
+  command?: string | null
+  setup_command?: string | null
+  setup_files?: Array<SetupFile> | null
+  params?: Array<Param> | null
+  targets?: Array<Target> | null
 }
 
 export type ToolsOrderBy = "created_at" | "run_count"
 
-export type ToolsPublicWithParamsAndTargets = {
-  data: Array<ToolPublicWithParamsAndTargets>
+export type ToolsPublic = {
+  data: Array<ToolPublic>
   count: number
 }
 
@@ -731,13 +669,13 @@ export type ReadToolsResponses = {
   /**
    * Successful Response
    */
-  200: ToolsPublicWithParamsAndTargets
+  200: ToolsPublic
 }
 
 export type ReadToolsResponse = ReadToolsResponses[keyof ReadToolsResponses]
 
 export type CreateToolData = {
-  body: ToolCreateWithParamsAndTargets
+  body: ToolCreate
   path?: never
   query?: never
   url: "/api/v1/tools/"
@@ -756,7 +694,7 @@ export type CreateToolResponses = {
   /**
    * Successful Response
    */
-  200: ToolPublicWithParamsAndTargets
+  200: ToolPublic
 }
 
 export type CreateToolResponse = CreateToolResponses[keyof CreateToolResponses]
@@ -810,7 +748,7 @@ export type ReadToolResponses = {
   /**
    * Successful Response
    */
-  200: ToolPublicWithParamsAndTargets
+  200: ToolPublic
 }
 
 export type ReadToolResponse = ReadToolResponses[keyof ReadToolResponses]
@@ -922,247 +860,11 @@ export type ReadToolByNameResponses = {
   /**
    * Successful Response
    */
-  200: ToolPublicWithParamsAndTargets
+  200: ToolPublic
 }
 
 export type ReadToolByNameResponse =
   ReadToolByNameResponses[keyof ReadToolByNameResponses]
-
-export type ReadToolParamsData = {
-  body?: never
-  path: {
-    tool_id: string
-  }
-  query?: never
-  url: "/api/v1/tools/{tool_id}/params"
-}
-
-export type ReadToolParamsErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError
-}
-
-export type ReadToolParamsError =
-  ReadToolParamsErrors[keyof ReadToolParamsErrors]
-
-export type ReadToolParamsResponses = {
-  /**
-   * Successful Response
-   */
-  200: Array<Param>
-}
-
-export type ReadToolParamsResponse =
-  ReadToolParamsResponses[keyof ReadToolParamsResponses]
-
-export type AddParamToToolData = {
-  body: ParamCreate
-  path: {
-    tool_id: string
-  }
-  query?: never
-  url: "/api/v1/tools/{tool_id}/params"
-}
-
-export type AddParamToToolErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError
-}
-
-export type AddParamToToolError =
-  AddParamToToolErrors[keyof AddParamToToolErrors]
-
-export type AddParamToToolResponses = {
-  /**
-   * Successful Response
-   */
-  200: Param
-}
-
-export type AddParamToToolResponse =
-  AddParamToToolResponses[keyof AddParamToToolResponses]
-
-export type DeleteParamFromToolData = {
-  body?: never
-  path: {
-    tool_id: string
-    param_id: string
-  }
-  query?: never
-  url: "/api/v1/tools/{tool_id}/params/{param_id}"
-}
-
-export type DeleteParamFromToolErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError
-}
-
-export type DeleteParamFromToolError =
-  DeleteParamFromToolErrors[keyof DeleteParamFromToolErrors]
-
-export type DeleteParamFromToolResponses = {
-  /**
-   * Successful Response
-   */
-  200: Message
-}
-
-export type DeleteParamFromToolResponse =
-  DeleteParamFromToolResponses[keyof DeleteParamFromToolResponses]
-
-export type UpdateParamInToolData = {
-  body: ParamUpdate
-  path: {
-    tool_id: string
-    param_id: string
-  }
-  query?: never
-  url: "/api/v1/tools/{tool_id}/params/{param_id}"
-}
-
-export type UpdateParamInToolErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError
-}
-
-export type UpdateParamInToolError =
-  UpdateParamInToolErrors[keyof UpdateParamInToolErrors]
-
-export type UpdateParamInToolResponses = {
-  /**
-   * Successful Response
-   */
-  200: Param
-}
-
-export type UpdateParamInToolResponse =
-  UpdateParamInToolResponses[keyof UpdateParamInToolResponses]
-
-export type ReadToolTargetsData = {
-  body?: never
-  path: {
-    tool_id: string
-  }
-  query?: never
-  url: "/api/v1/tools/{tool_id}/targets"
-}
-
-export type ReadToolTargetsErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError
-}
-
-export type ReadToolTargetsError =
-  ReadToolTargetsErrors[keyof ReadToolTargetsErrors]
-
-export type ReadToolTargetsResponses = {
-  /**
-   * Successful Response
-   */
-  200: Array<Target>
-}
-
-export type ReadToolTargetsResponse =
-  ReadToolTargetsResponses[keyof ReadToolTargetsResponses]
-
-export type AddTargetToToolData = {
-  body: TargetCreate
-  path: {
-    tool_id: string
-  }
-  query?: never
-  url: "/api/v1/tools/{tool_id}/targets"
-}
-
-export type AddTargetToToolErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError
-}
-
-export type AddTargetToToolError =
-  AddTargetToToolErrors[keyof AddTargetToToolErrors]
-
-export type AddTargetToToolResponses = {
-  /**
-   * Successful Response
-   */
-  200: Target
-}
-
-export type AddTargetToToolResponse =
-  AddTargetToToolResponses[keyof AddTargetToToolResponses]
-
-export type DeleteTargetFromToolData = {
-  body?: never
-  path: {
-    tool_id: string
-    target_id: string
-  }
-  query?: never
-  url: "/api/v1/tools/{tool_id}/targets/{target_id}"
-}
-
-export type DeleteTargetFromToolErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError
-}
-
-export type DeleteTargetFromToolError =
-  DeleteTargetFromToolErrors[keyof DeleteTargetFromToolErrors]
-
-export type DeleteTargetFromToolResponses = {
-  /**
-   * Successful Response
-   */
-  200: Message
-}
-
-export type DeleteTargetFromToolResponse =
-  DeleteTargetFromToolResponses[keyof DeleteTargetFromToolResponses]
-
-export type UpdateTargetInToolData = {
-  body: TargetUpdate
-  path: {
-    tool_id: string
-    target_id: string
-  }
-  query?: never
-  url: "/api/v1/tools/{tool_id}/targets/{target_id}"
-}
-
-export type UpdateTargetInToolErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError
-}
-
-export type UpdateTargetInToolError =
-  UpdateTargetInToolErrors[keyof UpdateTargetInToolErrors]
-
-export type UpdateTargetInToolResponses = {
-  /**
-   * Successful Response
-   */
-  200: Target
-}
-
-export type UpdateTargetInToolResponse =
-  UpdateTargetInToolResponses[keyof UpdateTargetInToolResponses]
 
 export type DeleteFilesData = {
   body?: never

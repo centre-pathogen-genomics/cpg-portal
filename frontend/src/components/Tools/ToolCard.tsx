@@ -187,6 +187,7 @@ const ToolCard = ({ tool }: ToolCardProps) => {
         isOpen={runToolModal.isOpen}
         onClose={runToolModal.onClose}
         toolId={tool.id}
+        params={tool.params ? tool.params : []}
       />
     </>
   );

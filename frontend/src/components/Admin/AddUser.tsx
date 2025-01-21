@@ -17,7 +17,7 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { type SubmitHandler, useForm } from "react-hook-form"
 
-import { type UserCreate, CreateUserError, UsersService } from "../../client"
+import { type UserCreate, UsersService } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
 import { emailPattern, handleError } from "../../utils"
 

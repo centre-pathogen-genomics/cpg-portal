@@ -1,5 +1,6 @@
 import {
   Box,
+  Text,
   Button,
   ButtonGroup,
   Checkbox,
@@ -8,6 +9,8 @@ import {
   FormErrorMessage,
   FormLabel,
   Input,
+  useColorModeValue,
+  Stack,
 } from "@chakra-ui/react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Select, } from "chakra-react-select"
@@ -18,7 +21,7 @@ import {
   type Param,
   type RunPublic,
 } from "../../client"
-import { createRunMutation, readToolParamsOptions } from "../../client/@tanstack/react-query.gen"
+import { createRunMutation } from "../../client/@tanstack/react-query.gen"
 import useCustomToast from "../../hooks/useCustomToast"
 import React, { useMemo, useState } from "react"
 import { handleError } from "../../utils"
@@ -92,17 +95,14 @@ const FileParam = ({ param, files, setValue, selectedOptions, setSelectedOptions
 
 interface RunToolFormProps {
   toolId: string
+  params: Param[]
   onSuccess?: (run: RunPublic) => void
 }
 
-const RunToolForm = ({ toolId, onSuccess }: RunToolFormProps) => {
+const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
   const [isLoading, setIsLoading] = useState(false)
-
-  const { data: params, isLoading: paramsLoading } = useQuery({
-    ...readToolParamsOptions({path: {tool_id: toolId}}),  
-  })
 
   const { data, isLoading: filesLoading } = useQuery({
     queryKey: ["files"],
@@ -150,8 +150,8 @@ const RunToolForm = ({ toolId, onSuccess }: RunToolFormProps) => {
       if (onSuccess) onSuccess(run)
     },
     onError: (error) => {
-      handleError(error, showToast);
       setIsLoading(false)
+      handleError(error, showToast);
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["toolRuns"] })
@@ -171,7 +171,7 @@ const RunToolForm = ({ toolId, onSuccess }: RunToolFormProps) => {
   };
 
 
-  if (paramsLoading || filesLoading) return <div>Loading...</div>
+  if (filesLoading) return <div>Loading...</div>
 
 
   
@@ -181,11 +181,18 @@ const RunToolForm = ({ toolId, onSuccess }: RunToolFormProps) => {
         {normalizedParams?.map((param: Param) => (
           <FormControl
             pb={4}
-            key={param.id}
+            key={param.name}
             isRequired={param.required}
             isInvalid={errors[param.name] !== undefined}
           >
-            <FormLabel htmlFor={param.name}>{param.name} ({param.description})</FormLabel>
+            <Stack spacing={0} mb={2}>
+              <FormLabel my={0} htmlFor={param.name}>
+                {param.name}
+              </FormLabel>
+              <Text fontSize={'sm'} color={useColorModeValue('gray.600', 'gray.400')}>
+                {param.description}
+              </Text>
+            </Stack>
             {param.param_type === "str" && (
               <Input
                 id={param.name}
