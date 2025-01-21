@@ -1,4 +1,4 @@
-import { Box, Container, Heading, Text } from "@chakra-ui/react"
+import { Box, Heading, Text } from "@chakra-ui/react"
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { readToolByNameOptions } from "../../../client/@tanstack/react-query.gen"
@@ -13,23 +13,30 @@ function Tool() {
 
   const { name } = Route.useParams()
 
-  const { isError, data: tool } = useQuery({
+  const { isError, data: tool, isPending } = useQuery({
     ...readToolByNameOptions({path: {tool_name: name}}),
     retry: false,
   })
 
-  if (isError || !tool) {
+  if (isError) {
     return (
-      <Container maxW="lg">
+      <Box maxW="2xl" width="100%" mx={4} pt={12} pb={8}>
         <Heading>Tool Not Found</Heading>
         <Text>
           The requested tool could not be found. Please check the ID and try
           again.
         </Text>
-      </Container>
+      </Box>
     )
   }
-
+  if (isPending) {
+    return (
+      <Box maxW="2xl" width="100%" mx={4} pt={12} pb={8}>
+        <Heading>Loading...</Heading>
+      </Box>
+    )
+  }
+  
   return (
     <Box maxW="2xl" width="100%" mx={4} pt={12} pb={8}>
       <Heading size="lg">{tool?.name}</Heading>
