@@ -70,12 +70,13 @@ async def create_run(
         tool.params = []
     for param in tool.params:
         param = Param(**param)
-        if param.name not in params:
+        if param.name not in params or params[param.name] is None:
             if param.required or param.param_type == "file":
                 raise HTTPException(
                     status_code=400, detail=f"Missing required parameter: {param.name}"
                 )
             params[param.name] = param.default
+            continue
         if param.param_type == "file":
             file_id = params[param.name]
             try:
@@ -124,18 +125,17 @@ async def create_run(
                 raise HTTPException(
                     status_code=400, detail=f"For parameter {param.name}, expected bool, got {params[param.name]}"
                 )
-            # default is the flag e.g. --flag
-            if params[param.name]:
-                params[param.name] = param.flag
-            else:
-                params[param.name] = ""
         elif param.param_type == "int":
-            if not isinstance(params[param.name], int):
+            try:
+                params[param.name] = int(params[param.name])
+            except ValueError:
                 raise HTTPException(
                     status_code=400, detail=f"For parameter {param.name}, expected int, got {params[param.name]}"
                 )
         elif param.param_type == "float":
-            if not isinstance(params[param.name], float):
+            try:
+                params[param.name] = float(params[param.name])
+            except ValueError:
                 raise HTTPException(
                     status_code=400, detail=f"For parameter {param.name}, expected float, got {params[param.name]}"
                 )
@@ -159,8 +159,11 @@ async def create_run(
     for k, v in params.items():
         if isinstance(v, list):
             escaped_params[k] = [quote(str(i)) for i in v]
+        elif isinstance(v, str):
+            escaped_params[k] = quote(v)
         else:
-            escaped_params[k] = quote(str(v))
+            # no need to escape other types
+            escaped_params[k] = v
 
     # create command
     env = JinjaEnvironment()

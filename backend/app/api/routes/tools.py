@@ -30,7 +30,7 @@ class ToolsOrderBy(str, Enum):
 
 @router.get("/", response_model=ToolsPublic)
 def read_tools(
-    session: SessionDep, current_user: CurrentUser, skip: int = 0, limit: int = 100, order_by: ToolsOrderBy = ToolsOrderBy.run_count
+    session: SessionDep, current_user: CurrentUser, skip: int = 0, limit: int = 100, order_by: ToolsOrderBy = ToolsOrderBy.run_count, show_favourites: bool = False
 ) -> Any:
     """
     Retrieve tools with a favourited status for the current user.
@@ -55,6 +55,9 @@ def read_tools(
     # Apply enabled filter for non-superusers
     if not current_user.is_superuser:
         query = query.where(Tool.enabled)
+
+    if show_favourites:
+        query = query.where(UserFavouriteToolsLink.user_id == current_user.id)
 
     # Execute the query
     result = session.exec(query).all()

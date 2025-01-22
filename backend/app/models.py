@@ -129,11 +129,10 @@ class ParamType(str, enum.Enum):
 
 class Param(SQLModel):
     name: str
-    description: str | None = None
     param_type: ParamType
-    default: int | float | str | bool | None
+    description: str | None = None
+    default: int | float | str | bool | None = None
     options: list[str] | None = None
-    flag: str | None = None
     required: bool = False
 
 

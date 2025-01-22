@@ -15,7 +15,7 @@ from taskiq import TaskiqDepends, TaskiqEvents, TaskiqState
 from app.api.deps import get_db
 from app.core.config import settings
 from app.crud import save_file
-from app.models import File, Run, Target
+from app.models import File, Run, SetupFile, Target
 from app.tkq import broker
 
 SessionDep = Annotated[Session, TaskiqDepends(get_db)]
@@ -127,6 +127,7 @@ async def run_tool(
     env = JinjaEnvironment()
     if run.tool.setup_files:
         for setup_file in run.tool.setup_files:
+            setup_file = SetupFile(**setup_file)
             path = tmp_dir / setup_file.name
             if path.exists():
                 print(f"File '{path}' already exists")
@@ -168,17 +169,12 @@ async def run_tool(
             target = Target(**target)
             # format the target path with tool params
             print(f"Formatting target path: {target.path}")
-            target_file = tmp_dir / target.path
-            for key, value in run.params.items():
-                if f"{{{key}}}" not in str(target_file):
-                    continue
-                print(f"Replacing {{{key}}} with {value}")
-                target_file = Path(str(target_file).replace(f"{{{key}}}", str(value)))
-
+            template = env.from_string(target.path)
+            target_file = tmp_dir / template.render(**run.params)
             # check if the target file exists
             if target.required and not target_file.exists():
                 print(f"Target file {target_file} does not exist")
-                run.stderr += f"Target file {target_file} does not exist!"
+                run.stderr += f"Target file '{target_file.name}' does not exist!"
                 run.status = "failed"
                 session.add(run)
                 session.commit()
