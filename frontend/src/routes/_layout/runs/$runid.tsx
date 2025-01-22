@@ -127,9 +127,9 @@ function RunDetail() {
         </Text>
         <Flex wrap={'wrap'}>
         <Text>Parameters:</Text>
-        {Object.keys(run.params).map((key) => (
-                          <Flex mx={1}  key={key} >
-                            <ParamTag param={key} value={(run.params[key] as string).toString()} />
+        {Object.keys(run.params).filter((key) => run.params[key] !== null).map((key) => (
+                          <Flex key={key} m={1} my={1}>
+                            <ParamTag param={key} value={run.params[key]} />
                           </Flex>
                       ))}
         </Flex>

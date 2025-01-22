@@ -164,9 +164,9 @@ function RunsTable() {
                     </Link>
                   </Td>
                   <Td>
-                    {Object.keys(run.params).map((key) => (
-                      <Box key={key} mr={2} mb={1}>
-                        <ParamTag key={key} truncate param={key} value={(run.params[key] as string).toString()} />
+                    {Object.keys(run.params).filter((key) => run.params[key] !== null).map((key) => (
+                      <Box key={key} mr={1} mb={1}>
+                        <ParamTag key={key} truncate param={key} value={run.params[key]} />
                       </Box>
                     ))}
                   </Td>

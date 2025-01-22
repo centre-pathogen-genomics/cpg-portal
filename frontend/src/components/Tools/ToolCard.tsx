@@ -22,6 +22,7 @@ import RunToolModal from "./RunToolModal"; // Adjust the import path as needed
 import { unfavouriteToolMutation, favouriteToolMutation } from "../../client/@tanstack/react-query.gen";
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
+import '../../assets/css/App.css';
 
 interface ToolCardProps {
   tool: ToolPublic;
@@ -90,12 +91,14 @@ const ToolCard = ({ tool }: ToolCardProps) => {
         <Flex
           justify="center"
           align="center"
-          maxH={{ base: "200px" }}
+          h={{ base: "120px"}}
           overflow="hidden"
           position="relative"
         >
           <Image
-            // objectFit="cover"
+            objectFit='cover'
+            h={"100%"}
+            w={"100%"}
             src={
               tool.image != null
                 ? tool.image
@@ -103,7 +106,7 @@ const ToolCard = ({ tool }: ToolCardProps) => {
             }
             // src='https://images.unsplash.com/photo-1543145499-8193615267de?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxlZGl0b3JpYWwtZmVlZHw5fHx8ZW58MHx8fHw%3D&auto=format&fit=crop&w=800&q=60'
             alt="Caffe Latte"
-            _groupHover={{ filter: "brightness(0.8)" }}
+            _groupHover={{ filter: "brightness(1.2)" }}
           />
           <Flex
             _groupHover={{ display: "block" }}
@@ -158,13 +161,13 @@ const ToolCard = ({ tool }: ToolCardProps) => {
           <Text>{tool.description}</Text>
         </CardBody>
         <CardFooter justify="space-between">
-          <div>
+          <Flex overflow={"auto"} wrap={"nowrap"} mr={2} className="no-scroll">
             {tool.tags?.map((tag) => (
-              <Tag size="sm" key={tag} mr={1}>
+              <Tag size="sm" key={tag} mr={1} whiteSpace={"nowrap"} flexShrink={0}>
                 {tag}
               </Tag>
             ))}
-          </div>
+          </Flex>
           <Flex color="gray.500">
             <Flex
               align="center"

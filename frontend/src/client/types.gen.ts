@@ -49,11 +49,10 @@ export type NewPassword = {
 
 export type Param = {
   name: string
-  description?: string | null
   param_type: ParamType
-  default: number | number | string | boolean | null
+  description?: string | null
+  default?: number | number | string | boolean | null
   options?: Array<string> | null
-  flag?: string | null
   required?: boolean
 }
 
@@ -659,6 +658,7 @@ export type ReadToolsData = {
     skip?: number
     limit?: number
     order_by?: ToolsOrderBy
+    show_favourites?: boolean
   }
   url: "/api/v1/tools/"
 }

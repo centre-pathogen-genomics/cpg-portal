@@ -7,6 +7,8 @@ import {
   Image,
   Flex,
   Select,
+  Switch,
+  FormLabel,
 } from "@chakra-ui/react"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
@@ -21,9 +23,9 @@ export const Route = createFileRoute("/_layout/")({
   component: Tools,
 })
 
-function ToolCards({ orderBy }: { orderBy: ToolsOrderBy }) {
+function ToolCards({ orderBy, showFavourites }: { orderBy: ToolsOrderBy, showFavourites: boolean }) {
   const { data: tools } = useSuspenseQuery({
-    ...readToolsOptions({ query: { order_by: orderBy } }),
+    ...readToolsOptions({ query: { order_by: orderBy, show_favourites: showFavourites } }),
   })
 
   return (
@@ -35,7 +37,7 @@ function ToolCards({ orderBy }: { orderBy: ToolsOrderBy }) {
   )
 }
 
-function ToolsGrid({ orderBy }: { orderBy: ToolsOrderBy }) {
+function ToolsGrid({ orderBy, showFavourites }: { orderBy: ToolsOrderBy, showFavourites: boolean }) {
   return (
     <Suspense fallback={<Skeleton height="20px" />}>
       <ErrorBoundary
@@ -45,8 +47,8 @@ function ToolsGrid({ orderBy }: { orderBy: ToolsOrderBy }) {
           </Box>
         )}
       >
-        <SimpleGrid minChildWidth='250px' spacing="20px">
-          <ToolCards orderBy={orderBy} />
+        <SimpleGrid minChildWidth='250px' spacing="20px" mb={8}>
+          <ToolCards orderBy={orderBy} showFavourites={showFavourites} />
         </SimpleGrid>
       </ErrorBoundary>
     </Suspense>
@@ -55,6 +57,7 @@ function ToolsGrid({ orderBy }: { orderBy: ToolsOrderBy }) {
 
 function Tools() {
   const [orderBy, setOrderBy] = useState<ToolsOrderBy>("run_count") // Default orderBy state
+  const [showFavourites, setShowFavourites] = useState(false)
 
   const handleOrderByChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setOrderBy(event.target.value as ToolsOrderBy) // Update state when selection changes
@@ -73,13 +76,21 @@ function Tools() {
           />
           <Text align='center' maxW={{ base: "100%", md: "3xl" }} fontSize={{base: 'lg', md: '2xl'}}>Explore and run tools from the most talented and accomplished scientists ready to take on your next project</Text>
       </Flex>
-      <Flex justify="space-between" align="center" mb={4}>
+      <Flex justify="space-between" align={"end"}   mb={4}>
         <Select w='200px' value={orderBy} onChange={handleOrderByChange}>
           <option value='run_count'>Popular</option>
           <option value='created_at'>New & Noteworthy</option>
         </Select>
+        {/* <Tooltip placement='top' hasArrow label='Show favourites'> */}
+        <Flex align='center'>
+        <FormLabel htmlFor='show-favourites' mb='0' mr={1}>
+          Favourites
+        </FormLabel>
+        <Switch size='md' id="show-favourites" isChecked={showFavourites} onChange={() => setShowFavourites(!showFavourites)} />
+        {/* </Tooltip> */}
+        </Flex>
       </Flex>
-      <ToolsGrid orderBy={orderBy} />
+      <ToolsGrid orderBy={orderBy} showFavourites={showFavourites} />
     </Container>
   )
 }

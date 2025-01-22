@@ -2,13 +2,15 @@ import { Tag, TagLabel, Tooltip } from "@chakra-ui/react";
  
 interface ParamTagProps {
   param: string;
-  value: string;
+  value: unknown;
   truncate?: boolean;
 }
 
 const ParamTag = ( {param, value, truncate}: ParamTagProps) => {
     // truncate value if it is too long to fit in the badge
-    let subString = value
+    value = JSON.stringify(value);
+    
+    let subString = (value as string);
     if (subString.length > 20 && truncate) {
         subString = subString.substring(0, 20) + "...";
     } 
@@ -17,7 +19,7 @@ const ParamTag = ( {param, value, truncate}: ParamTagProps) => {
     <Tooltip
         placement="top"
         hasArrow
-        label={value}
+        label={value as string}
     >
         <Tag  cursor={'pointer'} size={'sm'} variant='outline' >
         <TagLabel mr={1} as={'b'}>{param}</TagLabel> {subString}

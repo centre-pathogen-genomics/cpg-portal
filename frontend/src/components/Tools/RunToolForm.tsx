@@ -1,6 +1,5 @@
 import {
   Box,
-  Text,
   Button,
   ButtonGroup,
   Checkbox,
@@ -9,8 +8,6 @@ import {
   FormErrorMessage,
   FormLabel,
   Input,
-  useColorModeValue,
-  Stack,
 } from "@chakra-ui/react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Select, } from "chakra-react-select"
@@ -82,6 +79,7 @@ const FileParam = ({ param, files, setValue, selectedOptions, setSelectedOptions
         options={files}
         placeholder={param.description || "Select a file"}
         isMulti={multiple}
+        isClearable={true}
         value={selectedOptions}
         onChange={(selectedOption) => {
           setValue(Array.isArray(selectedOption) ? selectedOption.map((option) => option.value) : (selectedOption as { label: string; value: string })?.value);
@@ -161,7 +159,15 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
 
   const onSubmit: SubmitHandler<any> = (formData: {[key: string]: unknown}) => {
     setIsLoading(true);
+    // filter out null values and default values
+    for (const key in formData) {
+      if (formData[key] === null) {
+        delete formData[key];
+      }
+    }
+    console.log(formData);
     mutation.mutate({body: formData} as Options<CreateRunData>)
+    setIsLoading(false);
   }
   const normalizedParams = useMemo(() => params || [], [params]);
  
@@ -186,14 +192,9 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
             isRequired={param.required}
             isInvalid={errors[param.name] !== undefined}
           >
-            <Stack spacing={0} mb={2}>
-              <FormLabel my={0} htmlFor={param.name}>
+              <FormLabel htmlFor={param.name}>
                 {param.name}
               </FormLabel>
-              <Text fontSize={'sm'} color={useColorModeValue('gray.600', 'gray.400')}>
-                {param.description}
-              </Text>
-            </Stack>
             {param.param_type === "str" && (
               <Input
                 id={param.name}
@@ -243,7 +244,7 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
                 {param.description || param.name}
               </Checkbox>
             )}
-            {param.param_type === "file" || param.param_type === "files" && (
+            {(param.param_type === "file" || param.param_type === "files") && (
               <FileParam
                 param={param}
                 files={files}
