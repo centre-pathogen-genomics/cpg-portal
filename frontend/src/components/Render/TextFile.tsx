@@ -19,9 +19,6 @@ const TextFile = ({ fileId }: TextFileProps) => {
       <Text whiteSpace="pre-wrap" maxHeight="500px" overflowY="auto">
         {textContent as string}
       </Text>
-      <Flex mt={4}>
-        <DownloadFileButton fileId={fileId} />
-      </Flex>
     </Suspense>
   );
 };

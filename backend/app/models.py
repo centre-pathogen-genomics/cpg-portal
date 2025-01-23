@@ -267,6 +267,7 @@ class FileBase(SQLModel):
     name: str
     file_type: FileType | None = None
     size: int | None = None
+    saved: bool = False
 
 
 class File(FileBase, table=True):

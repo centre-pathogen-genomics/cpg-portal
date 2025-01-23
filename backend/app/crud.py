@@ -49,7 +49,7 @@ def authenticate(*, session: Session, email: str, password: str) -> User | None:
     return db_user
 
 
-def _save_single_file(session: Session, file_path: Path, file_type: FileType, owner_id: uuid.UUID) -> File:
+def _save_single_file(session: Session, file_path: Path, file_type: FileType, owner_id: uuid.UUID, saved: bool) -> File:
     """Helper function to save a single file."""
     file_id = str(uuid.uuid4())
     file_name = file_path.name.replace(" ", "_")
@@ -62,19 +62,14 @@ def _save_single_file(session: Session, file_path: Path, file_type: FileType, ow
         location=str(file_storage_location),
         size=file_storage_location.stat().st_size,
         file_type=file_type,
+        saved=saved,
     )
     session.add(file_metadata)
     return file_metadata
 
-def save_file(*, session: Session, file_path: Path, file_type: FileType, owner_id: uuid.UUID) -> File:
+def save_file(*, session: Session, file_path: Path, file_type: FileType, owner_id: uuid.UUID, saved: bool = False) -> File:
     """Save a single file and commit the session."""
-    file_metadata = _save_single_file(session, file_path, file_type, owner_id)
+    file_metadata = _save_single_file(session, file_path, file_type, owner_id, saved)
     session.commit()
     session.refresh(file_metadata)
     return file_metadata
-
-def save_file_multiple(*, session: Session, file_paths: list[Path], owner_id: uuid.UUID) -> list[File]:
-    """Save multiple files and commit the session after adding all files."""
-    files = [_save_single_file(session, file_path, owner_id) for file_path in file_paths]
-    session.commit()
-    return files

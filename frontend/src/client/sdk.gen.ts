@@ -105,6 +105,9 @@ import type {
   ReadFileData,
   ReadFileResponse,
   ReadFileError,
+  SaveFileData,
+  SaveFileResponse,
+  SaveFileError,
   DownloadFileData,
   DownloadFileError,
   GetDownloadTokenData,
@@ -829,7 +832,7 @@ export class ToolsService {
 export class FilesService {
   /**
    * Delete Files
-   * Delete all files.
+   * Delete all saved files.
    */
   public static deleteFiles<ThrowOnError extends boolean = false>(
     options?: Options<DeleteFilesData, ThrowOnError>,
@@ -848,7 +851,7 @@ export class FilesService {
 
   /**
    * Read Files
-   * Retrieve files.
+   * Retrieve saved files.
    */
   public static readFiles<ThrowOnError extends boolean = false>(
     options?: Options<ReadFilesData, ThrowOnError>,
@@ -899,7 +902,7 @@ export class FilesService {
 
   /**
    * Get Files Stats
-   * Get files statistics.
+   * Get saved files statistics.
    */
   public static getFilesStats<ThrowOnError extends boolean = false>(
     options?: Options<GetFilesStatsData, ThrowOnError>,
@@ -962,6 +965,29 @@ export class FilesService {
         },
       ],
       url: "/api/v1/files/{id}",
+      ...options,
+    })
+  }
+
+  /**
+   * Save File
+   * Save file.
+   */
+  public static saveFile<ThrowOnError extends boolean = false>(
+    options: Options<SaveFileData, ThrowOnError>,
+  ) {
+    return (options?.client ?? client).post<
+      SaveFileResponse,
+      SaveFileError,
+      ThrowOnError
+    >({
+      security: [
+        {
+          scheme: "bearer",
+          type: "http",
+        },
+      ],
+      url: "/api/v1/files{id}/save",
       ...options,
     })
   }
@@ -1153,7 +1179,7 @@ export class RunsService {
 
   /**
    * Delete Run
-   * Delete run.
+   * Delete a specific run by ID.
    */
   public static deleteRun<ThrowOnError extends boolean = false>(
     options: Options<DeleteRunData, ThrowOnError>,

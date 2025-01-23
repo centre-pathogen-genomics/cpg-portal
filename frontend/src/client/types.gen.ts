@@ -27,6 +27,7 @@ export type FilePublic = {
   name: string
   file_type?: FileType | null
   size?: number | null
+  saved?: boolean
   id: string
   run_id?: string | null
   created_at: string
@@ -1143,6 +1144,33 @@ export type ReadFileResponses = {
 }
 
 export type ReadFileResponse = ReadFileResponses[keyof ReadFileResponses]
+
+export type SaveFileData = {
+  body?: never
+  path: {
+    id: string
+  }
+  query?: never
+  url: "/api/v1/files{id}/save"
+}
+
+export type SaveFileErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError
+}
+
+export type SaveFileError = SaveFileErrors[keyof SaveFileErrors]
+
+export type SaveFileResponses = {
+  /**
+   * Successful Response
+   */
+  200: FilePublic
+}
+
+export type SaveFileResponse = SaveFileResponses[keyof SaveFileResponses]
 
 export type DownloadFileData = {
   body?: never

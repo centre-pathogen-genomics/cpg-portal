@@ -13,6 +13,7 @@ import {
   Container,
   Flex,
   Heading,
+  HStack,
   Link,
   Skeleton,
   Tab,
@@ -33,8 +34,10 @@ import JsonFile from "../../../components/Render/JsonFile"
 import TextFile from "../../../components/Render/TextFile"
 import CodeBlock from "../../../components/Common/CodeBlock"
 import DownloadFileButton from "../../../components/Files/DownloadFileButton"
+import SaveFileButton from "../../../components/Files/SaveFileButton"
 import ParamTag from "../../../components/Runs/ParamTag"
 import { readRunOptions } from "../../../client/@tanstack/react-query.gen"
+import { humanReadableFileSize } from "../../../utils"
 
 export const Route = createFileRoute("/_layout/runs/$runid")({
   component: Run,
@@ -51,10 +54,9 @@ function renderResult(file: FilePublic) {
       case "text":
         return <TextFile fileId={file.id} />
       default:
-        return <DownloadFileButton fileId={file.id} />
+        return null
     }
   }
-  return <DownloadFileButton fileId={file.id} />
 }
 
 function RunDetail() {
@@ -142,23 +144,7 @@ function RunDetail() {
         <Text>Started: {run.started_at}</Text>
         <Text>Completed: {run.finished_at}</Text>
       </Box>
-      {run.files.length > 0 && (
-        <Tabs  variant="enclosed" >
-          <TabList mb='1em'>
-          {run.files?.map((file) => (
-            <Tab key={file.id}>{file.name}</Tab>
-          ))} 
-          </TabList>
-          <TabPanels>
-          {run.files?.map((file) => (
-            <TabPanel key={file.id}>
-              {renderResult(file)} 
-            </TabPanel>
-          ))}
-          </TabPanels>
-        </Tabs>
-      )}
-      <Accordion allowMultiple mb={4}>
+      <Accordion defaultIndex={[0]} allowMultiple mb={4}>
         <AccordionItem>
           <h2>
             <AccordionButton>
@@ -232,6 +218,27 @@ function RunDetail() {
           </AccordionPanel>
         </AccordionItem>
       </Accordion>
+      {run.files.length > 0 && (
+        <Tabs  variant="enclosed" >
+          <TabList>
+          {run.files?.map((file) => (
+            <Tab key={file.id}>{file.name} ({file.size ? humanReadableFileSize(file.size): "Unknown size"})</Tab>
+          ))} 
+          </TabList>
+          <TabPanels>
+          {run.files?.map((file) => (
+            <TabPanel key={file.id}>
+              <HStack mb={4} justify={"space-between"}>
+                <DownloadFileButton fileId={file.id} />
+                <SaveFileButton fileId={file.id} saved={file.saved ? file.saved : false } />
+              </HStack>
+              {renderResult(file)}
+            </TabPanel>
+          ))}
+          </TabPanels>
+        </Tabs>
+      )}
+      
     </>
   )
 }

@@ -12,7 +12,7 @@ from sqlmodel import func, select
 
 from app.api.deps import CurrentUser, FileDep, SessionDep
 from app.core.security import create_access_token
-from app.crud import save_file
+from app.crud import save_file as save_file_to_filesystem
 from app.models import File, FilePublic, FilesPublic, FilesStatistics, FileType, Message
 
 router = APIRouter()
@@ -26,10 +26,10 @@ def read_files(
     order_by: str = Query("-created_at", regex=r"^-?[a-zA-Z_]+$")
 ) -> Any:
     """
-    Retrieve files.
+    Retrieve saved files.
     """
     # Counting for pagination
-    count_query = select(func.count()).select_from(File).where(File.owner_id == current_user.id)
+    count_query = select(func.count()).select_from(File).where((File.owner_id == current_user.id) & (File.saved))
     count = session.exec(count_query).one()
 
     # Parse the order_by string to determine the column and direction
@@ -44,7 +44,7 @@ def read_files(
         raise HTTPException(status_code=400, detail=f"Invalid column name: {column_name}")
 
     # Build the query based on user role
-    query_base = select(File).where(File.owner_id == current_user.id)
+    query_base = select(File).where((File.owner_id == current_user.id) & (File.saved))
 
     # Apply ordering, pagination and execute
     files_query = query_base.order_by(order_expression).offset(skip).limit(limit)
@@ -56,14 +56,14 @@ def read_files(
 @router.get("/stats", response_model=FilesStatistics)
 def get_files_stats(session: SessionDep, current_user: CurrentUser) -> Any:
     """
-    Get files statistics.
+    Get saved files statistics.
     """
     # Counting for pagination
-    count_query = select(func.count()).select_from(File).where(File.owner_id == current_user.id)
+    count_query = select(func.count()).select_from(File).where((File.owner_id == current_user.id) & (File.saved))
     count = session.exec(count_query).one()
 
     # total size
-    size_query = select(func.sum(File.size)).select_from(File).where(File.owner_id == current_user.id)
+    size_query = select(func.sum(File.size)).select_from(File).where((File.owner_id == current_user.id) & (File.saved))
 
     total_size = session.exec(size_query).one() or 0
 
@@ -108,11 +108,12 @@ def upload_file(
         file_type = guess_file_type(file)
 
 
-        file_metadata = save_file(
+        file_metadata = save_file_to_filesystem(
             session=session,
             file_path=tmp_path,
             file_type=file_type,
-            owner_id=current_user.id
+            owner_id=current_user.id,
+            saved=True
         )
 
     return file_metadata
@@ -128,6 +129,24 @@ def read_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> 
     if file_metadata.owner_id != current_user.id:
         raise HTTPException(status_code=400, detail="Not enough permissions")
     return file_metadata
+
+
+@router.post("{id}/save", response_model=FilePublic)
+def save_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
+    """
+    Save file.
+    """
+    file_metadata = session.get(File, id)
+    if not file_metadata:
+        raise HTTPException(status_code=404, detail="File not found")
+    if file_metadata.owner_id != current_user.id:
+        raise HTTPException(status_code=400, detail="Not enough permissions")
+    file_metadata.saved = True
+    session.add(file_metadata)
+    session.commit()
+    session.refresh(file_metadata)
+    return file_metadata
+
 
 @router.delete("/{id}")
 def delete_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
@@ -153,9 +172,9 @@ def delete_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -
 @router.delete("/")
 def delete_files(session: SessionDep, current_user: CurrentUser) -> Any:
     """
-    Delete all files.
+    Delete all saved files.
     """
-    files = session.exec(select(File).where(File.owner_id == current_user.id)).all()
+    files = session.exec(select(File).where((File.owner_id == current_user.id) & (File.saved))).all()
     try:
         for file_metadata in files:
             # remove file

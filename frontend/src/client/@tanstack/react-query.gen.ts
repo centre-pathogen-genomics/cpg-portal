@@ -87,6 +87,9 @@ import type {
   DeleteFileData,
   DeleteFileError,
   ReadFileData,
+  SaveFileData,
+  SaveFileError,
+  SaveFileResponse,
   DownloadFileData,
   GetDownloadTokenData,
   DownloadFileWithTokenData,
@@ -1112,6 +1115,43 @@ export const readFileOptions = (options: Options<ReadFileData>) => {
     },
     queryKey: readFileQueryKey(options),
   })
+}
+
+export const saveFileQueryKey = (options: Options<SaveFileData>) => [
+  createQueryKey("saveFile", options),
+]
+
+export const saveFileOptions = (options: Options<SaveFileData>) => {
+  return queryOptions({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await FilesService.saveFile({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      })
+      return data
+    },
+    queryKey: saveFileQueryKey(options),
+  })
+}
+
+export const saveFileMutation = (options?: Partial<Options<SaveFileData>>) => {
+  const mutationOptions: UseMutationOptions<
+    SaveFileResponse,
+    AxiosError<SaveFileError>,
+    Options<SaveFileData>
+  > = {
+    mutationFn: async (localOptions) => {
+      const { data } = await FilesService.saveFile({
+        ...options,
+        ...localOptions,
+        throwOnError: true,
+      })
+      return data
+    },
+  }
+  return mutationOptions
 }
 
 export const downloadFileQueryKey = (options: Options<DownloadFileData>) => [

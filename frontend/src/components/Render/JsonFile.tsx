@@ -24,9 +24,6 @@ const JsonFile = ({ fileId }: JsonFileProps) => {
   return (
     <Suspense fallback={<Skeleton height="20px" />}>
         <CodeBlock code={json as string} language="json" maxHeight='500px' />
-        <Flex mt={4}>
-            <DownloadFileButton fileId={fileId} />
-        </Flex>
     </Suspense>
   );
 };

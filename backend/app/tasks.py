@@ -280,6 +280,7 @@ async def run_tool(
                 file_path=target_file,
                 owner_id=run.owner_id,
                 file_type=target.target_type,
+                saved=False, # the file is not saved to the use my files
             )
             run.files.append(file)
         if missing_targets:

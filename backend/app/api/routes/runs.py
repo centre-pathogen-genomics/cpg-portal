@@ -215,28 +215,53 @@ def cancel_runs(session: SessionDep, current_user: CurrentUser) -> Any:
     session.commit()
     return Message(message=f"Cancelled {len(runs)} runs")
 
+
 @router.delete("/", response_model=Message)
 def delete_runs(session: SessionDep, current_user: CurrentUser) -> Any:
     """
     Delete all inactive runs.
     """
     # Select runs based on user permissions and status
-    statement = select(Run).where(Run.owner_id == current_user.id).where(Run.status != "pending").where(Run.status != "running")
-
+    statement = (
+        select(Run)
+        .where(Run.owner_id == current_user.id)
+        .where(Run.status.notin_(["pending", "running"]))
+    )
     runs: list[Run] = session.exec(statement).all()
 
-    # Cascading delete handles the removal of related Files
-    files_to_delete: list[File] = []
-    for run in runs:
-        if run.files:
-            files_to_delete.extend(run.files)
-        session.delete(run)
+    if not runs:
+        return Message(message="No inactive runs to delete.", status_code=204)
+
+    # Collect IDs of runs to delete
+    run_ids = [run.id for run in runs]
+
+    # Query associated files
+    files_to_preserve = session.query(File).filter(File.run_id.in_(run_ids), File.saved).all()
+    files_to_delete = session.query(File).filter(File.run_id.in_(run_ids), ~File.saved).all()
+
+    # Detach preserved files
+    for file in files_to_preserve:
+        file.run_id = None
+
+    # Delete unsaved files
+    for file in files_to_delete:
+        session.delete(file)
+
+    # Delete the runs
+    session.query(Run).filter(Run.id.in_(run_ids)).delete(synchronize_session="fetch")
+
     session.commit()
+
+    # Remove files from the filesystem
+    deleted_files_count = 0
     for file in files_to_delete:
         file_path = Path(file.location)
         if file_path.exists():
             file_path.unlink()
-    return Message(message=f"Deleted {len(runs)} runs and {len(files_to_delete)} files")
+            deleted_files_count += 1
+
+    return Message(message=f"Deleted {len(runs)} runs and {deleted_files_count} files.")
+
 
 
 
@@ -297,22 +322,47 @@ def cancel_run(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) ->
 @router.delete("/{id}", response_model=Message)
 def delete_run(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
     """
-    Delete run.
+    Delete a specific run by ID.
     """
+    # Fetch the run
     run = session.get(Run, id)
     if not run:
         raise HTTPException(status_code=404, detail="Run not found")
+
+    # Check permissions
     if run.owner_id != current_user.id:
-        raise HTTPException(status_code=400, detail="Not enough permissions")
-    if run.status == "running" or run.status == "pending":
-        raise HTTPException(status_code=400, detail="Run is active")
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+
+    # Check if the run is active
+    if run.status in ["running", "pending"]:
+        raise HTTPException(status_code=400, detail="Run is active and cannot be deleted")
+    # Separate files into those to preserve and those to delete
+
+    files_to_preserve = []
     files_to_delete = []
+
     if run.files:
-        files_to_delete.extend(run.files)
+        for file in run.files:
+            if file.saved:
+                files_to_preserve.append(file)
+                file.run_id = None  # Detach preserved files
+            else:
+                files_to_delete.append(file)
+
+    # Delete the run and unsaved files
     session.delete(run)
+    for file in files_to_delete:
+        session.delete(file)
+
     session.commit()
+
+    # Delete unsaved files from the filesystem
+    deleted_files_count = 0
     for file in files_to_delete:
         file_path = Path(file.location)
         if file_path.exists():
             file_path.unlink()
-    return Message(message=f"Deleted run {id} and {len(files_to_delete)} files")
+            deleted_files_count += 1
+
+    return Message(message=f"Deleted run {id} and {deleted_files_count} files")
+

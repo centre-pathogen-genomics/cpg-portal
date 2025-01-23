@@ -13,7 +13,6 @@ import {
 import Papa from 'papaparse'; // CSV parsing library
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { PaginationFooter } from '../../components/Common/PaginationFooter';
-import DownloadFileButton from '../Files/DownloadFileButton';
 import { downloadFileOptions } from '../../client/@tanstack/react-query.gen';
 
 interface CsvFileToTableProps {
@@ -80,7 +79,6 @@ const CsvFileToTable = ({ fileId }: CsvFileToTableProps) => {
         </Table>
       </TableContainer>
       <Flex justify="space-between" mt={4}>
-        <DownloadFileButton fileId={fileId} />
         <PaginationFooter
           page={currentPage} // 1-based
           hasNextPage={hasNextPage}
