@@ -221,6 +221,7 @@ services:
 volumes:
   app-db-data:
   app-storage-data:
+  app-conda-data:
 
 networks:
   traefik-public:
