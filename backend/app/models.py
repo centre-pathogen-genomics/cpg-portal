@@ -184,7 +184,7 @@ class Tool(ToolBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str = Field(index=True, unique=True)
     tags: list[str] | None = Field(default_factory=list, sa_column=Column(JSON))
-    status: ToolStatus = Field(sa_column=Column(Enum(ToolStatus)))
+    status: ToolStatus = Field(default=ToolStatus.uninstalled, sa_column=Column(Enum(ToolStatus)))
     installation_log: str | None = None
     conda_env: CondaEnv | None = Field(default=None, sa_column=Column(JSON))
     setup_files: list[SetupFile] | None = Field(default_factory=list, sa_column=Column(JSON))
