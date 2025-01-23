@@ -147,9 +147,8 @@ class CondaEnvPipDependency(SQLModel):
     pip: list[str]
 
 class CondaEnv(SQLModel):
-    name: str | None = None
-    channels: list[str] | None = None
-    dependencies: list[str | CondaEnvPipDependency] | None = None
+    channels: list[str] = Field(default_factory=list)
+    dependencies: list[str | CondaEnvPipDependency] = Field(default_factory=list)
 
 
 # Shared properties
