@@ -20,6 +20,8 @@ from app.models import (
     ToolUpdate,
     UserFavouriteToolsLink,
 )
+from app.tasks import install_tool as install_tool_task
+from app.tasks import uninstall_tool as uninstall_tool_task
 
 router = APIRouter()
 
@@ -54,7 +56,7 @@ def read_tools(
 
     # Apply enabled filter for non-superusers
     if not current_user.is_superuser:
-        query = query.where(Tool.enabled)
+        query = query.where((Tool.enabled) & (Tool.status == "installed"))
 
     if show_favourites:
         query = query.where(UserFavouriteToolsLink.user_id == current_user.id)
@@ -63,13 +65,12 @@ def read_tools(
     result = session.exec(query).all()
 
     # Process results
-    tools_with_favourite_status = [
-        ToolPublic(
-            **tool.dict(),  # Include all fields from the Tool model
-            favourited=favourited_tool_id is not None  # Check if the tool is favorited
-        )
-        for tool, favourited_tool_id in result
-    ]
+    tools_with_favourite_status = []
+    for tool, favourited_tool_id in result:
+        tool_public = ToolPublic.from_orm(tool)
+        tool_public.favourited = favourited_tool_id is not None
+        tools_with_favourite_status.append(tool_public)
+
 
     # Count total tools
     count_query = select(func.count()).select_from(Tool)
@@ -90,7 +91,7 @@ def read_tool(
     tool = session.get(Tool, tool_id)
     if not tool:
         raise HTTPException(status_code=404, detail="Tool not found")
-    if not current_user.is_superuser and not tool.enabled:
+    if not current_user.is_superuser and (not tool.enabled or not tool.installed):
         raise HTTPException(status_code=403, detail="Tool is disabled")
     return tool
 
@@ -156,7 +157,7 @@ def read_tool_by_name(
     tool = session.query(Tool).filter(func.lower(Tool.name) == tool_name.lower()).first()
     if not tool:
         raise HTTPException(status_code=404, detail="Tool not found")
-    if not current_user.is_superuser and not tool.enabled:
+    if not current_user.is_superuser and (not tool.enabled or not tool.installed):
         raise HTTPException(status_code=403, detail="Tool is disabled")
     return tool
 
@@ -179,6 +180,94 @@ def create_tool(
     session.refresh(tool)
 
     return tool
+
+@router.post("/{tool_id}/enable", response_model=Message)
+def enable_tool(
+    *,
+    session: SessionDep,
+    tool_id: uuid.UUID,
+    current_user: SuperUser,  # noqa: ARG001
+) -> Any:
+    """
+    Enable a tool by ID.
+    """
+    tool = session.get(Tool, tool_id)
+    if not tool:
+        raise HTTPException(status_code=404, detail="Tool not found")
+    tool.enabled = True
+    session.add(tool)
+    session.commit()
+    return Message(message="Tool enabled successfully")
+
+@router.post("/{tool_id}/disable", response_model=Message)
+def disable_tool(
+    *,
+    session: SessionDep,
+    tool_id: uuid.UUID,
+    current_user: SuperUser,  # noqa: ARG001
+) -> Any:
+    """
+    Disable a tool by ID.
+    """
+    tool = session.get(Tool, tool_id)
+    if not tool:
+        raise HTTPException(status_code=404, detail="Tool not found")
+    tool.enabled = False
+    session.add(tool)
+    session.commit()
+    return Message(message="Tool disabled successfully")
+
+
+@router.post("/{tool_id}/install", response_model=Message)
+async def install_tool(
+    *,
+    session: SessionDep,
+    tool_id: uuid.UUID,
+    current_user: SuperUser,  # noqa: ARG001
+) -> Any:
+    """
+    Install a tool by ID.
+    """
+    tool = session.get(Tool, tool_id)
+    if not tool:
+        raise HTTPException(status_code=404, detail="Tool not found")
+    if tool.status == "installing":
+        raise HTTPException(status_code=400, detail="Tool is already being installed")
+
+    if tool.conda_env is None:
+        tool.status = "installed"
+        session.add(tool)
+        session.commit()
+        return Message(message="Tool installed successfully")
+
+    tool.status = "installing"
+    tool.installation_log = ""
+    session.add(tool)
+    session.commit()
+
+    taskiq_task = await install_tool_task.kiq(tool_id=tool.id)
+
+    return Message(message=f"Tool installation task {taskiq_task.task_id} started")
+
+@router.delete("/{tool_id}/uninstall", response_model=Message)
+async def uninstall_tool(
+    *,
+    session: SessionDep,
+    tool_id: uuid.UUID,
+    current_user: SuperUser,  # noqa: ARG001
+) -> Any:
+    """
+    Uninstall a tool by ID.
+    """
+    tool = session.get(Tool, tool_id)
+    if not tool:
+        raise HTTPException(status_code=404, detail="Tool not found")
+    if tool.status == "installing":
+        raise HTTPException(status_code=400, detail="Tool is being installed")
+
+    taskiq_task = await uninstall_tool_task.kiq(tool_id=tool.id)
+
+    return Message(message=f"Tool uninstallation task {taskiq_task.task_id} started")
 
 
 @router.patch("/{tool_id}", dependencies=[Depends(get_current_active_superuser)], response_model=ToolPublic)
@@ -214,6 +303,12 @@ def delete_tool(
         raise HTTPException(status_code=404, detail="Tool not found")
     # TODO: Delete all params, targets and runs associated with this tool
     # add cascade delete to the relationships
+    if tool.status == "installing":
+        raise HTTPException(status_code=400, detail="Tool is being installed")
+    if tool.status == "uninstalling":
+        raise HTTPException(status_code=400, detail="Tool is being uninstalled")
+    if tool.status == "installed":
+        raise HTTPException(status_code=400, detail="Tool is installed")
     print(f"Deleting tool {tool_id}")
     session.delete(tool)
     session.commit()

@@ -66,6 +66,18 @@ import type {
   FavouriteToolError,
   FavouriteToolResponse,
   ReadToolByNameData,
+  EnableToolData,
+  EnableToolError,
+  EnableToolResponse,
+  DisableToolData,
+  DisableToolError,
+  DisableToolResponse,
+  InstallToolData,
+  InstallToolError,
+  InstallToolResponse,
+  UninstallToolData,
+  UninstallToolError,
+  UninstallToolResponse,
   DeleteFilesData,
   ReadFilesData,
   UploadFileData,
@@ -827,6 +839,143 @@ export const readToolByNameOptions = (options: Options<ReadToolByNameData>) => {
     },
     queryKey: readToolByNameQueryKey(options),
   })
+}
+
+export const enableToolQueryKey = (options: Options<EnableToolData>) => [
+  createQueryKey("enableTool", options),
+]
+
+export const enableToolOptions = (options: Options<EnableToolData>) => {
+  return queryOptions({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await ToolsService.enableTool({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      })
+      return data
+    },
+    queryKey: enableToolQueryKey(options),
+  })
+}
+
+export const enableToolMutation = (
+  options?: Partial<Options<EnableToolData>>,
+) => {
+  const mutationOptions: UseMutationOptions<
+    EnableToolResponse,
+    AxiosError<EnableToolError>,
+    Options<EnableToolData>
+  > = {
+    mutationFn: async (localOptions) => {
+      const { data } = await ToolsService.enableTool({
+        ...options,
+        ...localOptions,
+        throwOnError: true,
+      })
+      return data
+    },
+  }
+  return mutationOptions
+}
+
+export const disableToolQueryKey = (options: Options<DisableToolData>) => [
+  createQueryKey("disableTool", options),
+]
+
+export const disableToolOptions = (options: Options<DisableToolData>) => {
+  return queryOptions({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await ToolsService.disableTool({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      })
+      return data
+    },
+    queryKey: disableToolQueryKey(options),
+  })
+}
+
+export const disableToolMutation = (
+  options?: Partial<Options<DisableToolData>>,
+) => {
+  const mutationOptions: UseMutationOptions<
+    DisableToolResponse,
+    AxiosError<DisableToolError>,
+    Options<DisableToolData>
+  > = {
+    mutationFn: async (localOptions) => {
+      const { data } = await ToolsService.disableTool({
+        ...options,
+        ...localOptions,
+        throwOnError: true,
+      })
+      return data
+    },
+  }
+  return mutationOptions
+}
+
+export const installToolQueryKey = (options: Options<InstallToolData>) => [
+  createQueryKey("installTool", options),
+]
+
+export const installToolOptions = (options: Options<InstallToolData>) => {
+  return queryOptions({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await ToolsService.installTool({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      })
+      return data
+    },
+    queryKey: installToolQueryKey(options),
+  })
+}
+
+export const installToolMutation = (
+  options?: Partial<Options<InstallToolData>>,
+) => {
+  const mutationOptions: UseMutationOptions<
+    InstallToolResponse,
+    AxiosError<InstallToolError>,
+    Options<InstallToolData>
+  > = {
+    mutationFn: async (localOptions) => {
+      const { data } = await ToolsService.installTool({
+        ...options,
+        ...localOptions,
+        throwOnError: true,
+      })
+      return data
+    },
+  }
+  return mutationOptions
+}
+
+export const uninstallToolMutation = (
+  options?: Partial<Options<UninstallToolData>>,
+) => {
+  const mutationOptions: UseMutationOptions<
+    UninstallToolResponse,
+    AxiosError<UninstallToolError>,
+    Options<UninstallToolData>
+  > = {
+    mutationFn: async (localOptions) => {
+      const { data } = await ToolsService.uninstallTool({
+        ...options,
+        ...localOptions,
+        throwOnError: true,
+      })
+      return data
+    },
+  }
+  return mutationOptions
 }
 
 export const deleteFilesMutation = (

@@ -15,7 +15,8 @@ RUN curl -L -O "https://github.com/conda-forge/miniforge/releases/latest/downloa
     find ${CONDA_DIR} -follow -type f -name '*.a' -delete && \
     find ${CONDA_DIR} -follow -type f -name '*.pyc' -delete && \
     conda clean --force-pkgs-dirs --all --yes  && \
-    conda config --set auto_activate_base false
+    conda config --set auto_activate_base false && \
+    conda init bash
 
 # Install uv
 # Ref: https://docs.astral.sh/uv/guides/integration/docker/#installing-uv

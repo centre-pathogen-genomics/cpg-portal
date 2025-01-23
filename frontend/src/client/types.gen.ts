@@ -13,6 +13,16 @@ export type BodyLoginLoginAccessToken = {
   client_secret?: string | null
 }
 
+export type CondaEnv = {
+  name?: string | null
+  channels?: Array<string> | null
+  dependencies?: Array<string | CondaEnvPipDependency> | null
+}
+
+export type CondaEnvPipDependency = {
+  pip: Array<string>
+}
+
 export type FilePublic = {
   name: string
   file_type?: FileType | null
@@ -135,7 +145,8 @@ export type ToolCreate = {
   enabled?: boolean
   run_count?: number
   command: string
-  setup_command?: string | null
+  conda_env?: CondaEnv | null
+  post_install?: string | null
   setup_files?: Array<SetupFile> | null
   params?: Array<Param> | null
   targets?: Array<Target> | null
@@ -151,13 +162,23 @@ export type ToolPublic = {
   enabled?: boolean
   run_count?: number
   command: string
-  setup_command?: string | null
+  conda_env?: CondaEnv | null
+  post_install?: string | null
   setup_files?: Array<SetupFile> | null
   params?: Array<Param> | null
   targets?: Array<Target> | null
   favourited?: boolean
+  status: ToolStatus
+  installation_log?: string | null
   id: string
 }
+
+export type ToolStatus =
+  | "uninstalled"
+  | "uninstalling"
+  | "installed"
+  | "installing"
+  | "failed"
 
 export type ToolUpdate = {
   name?: string | null
@@ -169,10 +190,12 @@ export type ToolUpdate = {
   enabled?: boolean
   run_count?: number
   command?: string | null
-  setup_command?: string | null
+  conda_env?: CondaEnv | null
+  post_install?: string | null
   setup_files?: Array<SetupFile> | null
   params?: Array<Param> | null
   targets?: Array<Target> | null
+  status?: ToolStatus | null
 }
 
 export type ToolsOrderBy = "created_at" | "run_count"
@@ -872,6 +895,117 @@ export type ReadToolByNameResponses = {
 
 export type ReadToolByNameResponse =
   ReadToolByNameResponses[keyof ReadToolByNameResponses]
+
+export type EnableToolData = {
+  body?: never
+  path: {
+    tool_id: string
+  }
+  query?: never
+  url: "/api/v1/tools/{tool_id}/enable"
+}
+
+export type EnableToolErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError
+}
+
+export type EnableToolError = EnableToolErrors[keyof EnableToolErrors]
+
+export type EnableToolResponses = {
+  /**
+   * Successful Response
+   */
+  200: Message
+}
+
+export type EnableToolResponse = EnableToolResponses[keyof EnableToolResponses]
+
+export type DisableToolData = {
+  body?: never
+  path: {
+    tool_id: string
+  }
+  query?: never
+  url: "/api/v1/tools/{tool_id}/disable"
+}
+
+export type DisableToolErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError
+}
+
+export type DisableToolError = DisableToolErrors[keyof DisableToolErrors]
+
+export type DisableToolResponses = {
+  /**
+   * Successful Response
+   */
+  200: Message
+}
+
+export type DisableToolResponse =
+  DisableToolResponses[keyof DisableToolResponses]
+
+export type InstallToolData = {
+  body?: never
+  path: {
+    tool_id: string
+  }
+  query?: never
+  url: "/api/v1/tools/{tool_id}/install"
+}
+
+export type InstallToolErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError
+}
+
+export type InstallToolError = InstallToolErrors[keyof InstallToolErrors]
+
+export type InstallToolResponses = {
+  /**
+   * Successful Response
+   */
+  200: Message
+}
+
+export type InstallToolResponse =
+  InstallToolResponses[keyof InstallToolResponses]
+
+export type UninstallToolData = {
+  body?: never
+  path: {
+    tool_id: string
+  }
+  query?: never
+  url: "/api/v1/tools/{tool_id}/uninstall"
+}
+
+export type UninstallToolErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError
+}
+
+export type UninstallToolError = UninstallToolErrors[keyof UninstallToolErrors]
+
+export type UninstallToolResponses = {
+  /**
+   * Successful Response
+   */
+  200: Message
+}
+
+export type UninstallToolResponse =
+  UninstallToolResponses[keyof UninstallToolResponses]
 
 export type DeleteFilesData = {
   body?: never

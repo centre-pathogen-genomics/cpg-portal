@@ -1,21 +1,128 @@
-import { Box, Heading, Text } from "@chakra-ui/react"
-import { useQuery } from "@tanstack/react-query"
+import { Box, Button, FormLabel, Heading, HStack, Switch, Text } from "@chakra-ui/react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { readToolByNameOptions } from "../../../client/@tanstack/react-query.gen"
+import { disableToolMutation, enableToolMutation, installToolMutation, readToolByNameOptions, readToolByNameQueryKey, readUserMeQueryKey } from "../../../client/@tanstack/react-query.gen"
 import RunToolForm from "../../../components/Tools/RunToolForm"
+import { ToolPublic, UserPublic } from "../../../client"
+import CodeBlock from "../../../components/Common/CodeBlock"
+import { useState } from "react"
+import useCustomToast from "../../../hooks/useCustomToast"
 
 export const Route = createFileRoute("/_layout/tools/$name")({
   component: Tool,
 })
 
+function EnableToolButton({tool}: {tool: ToolPublic}) {
+  const queryClient = useQueryClient();
+  const showToast = useCustomToast();
+  const [isEnabled, setIsEnabled] = useState(tool.enabled);
+  
+  const enableTool = useMutation({
+    ...enableToolMutation(),
+    onError: () => {
+      showToast("Error", "Could not enable tool", "error");
+    },
+    onSuccess: () => {
+      setIsEnabled(true);
+      // queryClient.invalidateQueries({queryKey: [{_id: 'readToolByName'}]});
+      const queryKey = readToolByNameQueryKey({path: {tool_name: tool.name}});
+      queryClient.invalidateQueries({queryKey});
+    },
+  });
+
+  const unenableTool = useMutation({
+    ...disableToolMutation(),
+    onError: () => {
+      showToast("Error", "Could not disable tool", "error");
+    },
+    onSuccess: () => {
+      setIsEnabled(false);
+      const queryKey = readToolByNameQueryKey({path: {tool_name: tool.name}});
+      queryClient.invalidateQueries({queryKey});
+    }
+  });
+
+  return (
+    <HStack alignItems="center" >
+    <Switch size={'lg'} id="enable" isChecked={isEnabled} onChange={(e) => {
+        if (e.target.checked) {
+          enableTool.mutate({path: {tool_id: tool.id}});
+        } else {
+          unenableTool.mutate({path: {tool_id: tool.id}});
+        }
+      }
+    } />
+    <FormLabel htmlFor='enable' mb='0' mr={1}>
+      {isEnabled ? "Enabled" : "Disabled"} 
+    </FormLabel>
+    </HStack>
+  )
+}
+
+function useInstallTool(tool: ToolPublic) {
+  const queryClient = useQueryClient();
+  const showToast = useCustomToast();
+
+  return useMutation({
+    ...installToolMutation(),
+    onError: ({message}) => {
+      showToast("Error", message || "Could not install tool", "error");
+    },
+    onSuccess: ({message}) => {
+      showToast("Success", message || "Installation started", "success");
+
+      const queryKey = readToolByNameQueryKey({ path: { tool_name: tool.name } });
+
+      // Initial invalidation
+      queryClient.invalidateQueries({ queryKey });
+
+      // Set up an interval to revalidate periodically
+      const interval = setInterval(async () => {
+        // Fetch the latest tool status
+        const updatedTool = queryClient.getQueryData(queryKey) as ToolPublic;
+
+        // If the tool is no longer installing, clear the interval
+        if (updatedTool?.status !== "installing") {
+          clearInterval(interval);
+        } else {
+          queryClient.invalidateQueries({ queryKey });
+        }
+      }, 5000);
+    },
+  });
+}
+
+// Component Implementation
+function InstallToolButton({ tool }: { tool: ToolPublic }) {
+  const installTool = useInstallTool(tool);
+
+  const handleInstallClick = () => {
+    installTool.mutate({ path: { tool_id: tool.id } });
+  };
+
+  return (
+    <Box>
+      <Button
+        isLoading={tool.status === "installing"}
+        onClick={handleInstallClick}
+        aria-label="Install Tool"
+        disabled={tool.status === "installing"}
+      >
+        Install
+      </Button>
+    </Box>
+  );
+}
+
+
 function Tool() {
   const navigate = useNavigate()
-
+  const queryClient = useQueryClient()
+  const currentUser = queryClient.getQueryData<UserPublic>(readUserMeQueryKey())
   const { name } = Route.useParams()
 
   const { isError, data: tool, isPending } = useQuery({
     ...readToolByNameOptions({path: {tool_name: name}}),
-    retry: false,
   })
 
   if (isError) {
@@ -40,7 +147,7 @@ function Tool() {
   return (
     <Box maxW="2xl" width="100%" mx={4} pt={12} pb={8}>
       <Heading size="lg">{tool?.name}</Heading>
-      <Text pb={4}>{tool?.description}</Text>
+      <Text pb={4}>{tool.description}</Text>
       <RunToolForm
         toolId={tool.id}
         params={tool.params ? tool.params : []}
@@ -53,6 +160,17 @@ function Tool() {
           })
         }}
       />
+      {currentUser?.is_superuser && ( 
+        <Box mt={8}>
+          <Heading mb={2} size="md">Admin</Heading>
+          <HStack justify={"space-between"} mb={4}>
+            <InstallToolButton tool={tool} />
+            <EnableToolButton tool={tool} />
+          </HStack>
+          <Heading size="sm">Installation Log ({tool.status})</Heading>
+          <CodeBlock code={tool.installation_log ? tool.installation_log : "\n"} language="bash" lineNumbers />
+        </Box>
+      )}
     </Box>
   )
 }

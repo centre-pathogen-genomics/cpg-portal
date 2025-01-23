@@ -115,6 +115,7 @@ services:
     restart: always
     volumes:
       - app-storage-data:/storage
+      - app-conda-data:/conda
     networks:
       - traefik-public
       - default
@@ -222,6 +223,7 @@ services:
 volumes:
   app-db-data:
   app-storage-data:
+  app-conda-data:
 
 networks:
   traefik-public:

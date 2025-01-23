@@ -79,6 +79,18 @@ import type {
   ReadToolByNameData,
   ReadToolByNameResponse,
   ReadToolByNameError,
+  EnableToolData,
+  EnableToolResponse,
+  EnableToolError,
+  DisableToolData,
+  DisableToolResponse,
+  DisableToolError,
+  InstallToolData,
+  InstallToolResponse,
+  InstallToolError,
+  UninstallToolData,
+  UninstallToolResponse,
+  UninstallToolError,
   DeleteFilesData,
   ReadFilesData,
   ReadFilesResponse,
@@ -717,6 +729,98 @@ export class ToolsService {
         },
       ],
       url: "/api/v1/tools/name/{tool_name}",
+      ...options,
+    })
+  }
+
+  /**
+   * Enable Tool
+   * Enable a tool by ID.
+   */
+  public static enableTool<ThrowOnError extends boolean = false>(
+    options: Options<EnableToolData, ThrowOnError>,
+  ) {
+    return (options?.client ?? client).post<
+      EnableToolResponse,
+      EnableToolError,
+      ThrowOnError
+    >({
+      security: [
+        {
+          scheme: "bearer",
+          type: "http",
+        },
+      ],
+      url: "/api/v1/tools/{tool_id}/enable",
+      ...options,
+    })
+  }
+
+  /**
+   * Disable Tool
+   * Disable a tool by ID.
+   */
+  public static disableTool<ThrowOnError extends boolean = false>(
+    options: Options<DisableToolData, ThrowOnError>,
+  ) {
+    return (options?.client ?? client).post<
+      DisableToolResponse,
+      DisableToolError,
+      ThrowOnError
+    >({
+      security: [
+        {
+          scheme: "bearer",
+          type: "http",
+        },
+      ],
+      url: "/api/v1/tools/{tool_id}/disable",
+      ...options,
+    })
+  }
+
+  /**
+   * Install Tool
+   * Install a tool by ID.
+   */
+  public static installTool<ThrowOnError extends boolean = false>(
+    options: Options<InstallToolData, ThrowOnError>,
+  ) {
+    return (options?.client ?? client).post<
+      InstallToolResponse,
+      InstallToolError,
+      ThrowOnError
+    >({
+      security: [
+        {
+          scheme: "bearer",
+          type: "http",
+        },
+      ],
+      url: "/api/v1/tools/{tool_id}/install",
+      ...options,
+    })
+  }
+
+  /**
+   * Uninstall Tool
+   * Uninstall a tool by ID.
+   */
+  public static uninstallTool<ThrowOnError extends boolean = false>(
+    options: Options<UninstallToolData, ThrowOnError>,
+  ) {
+    return (options?.client ?? client).delete<
+      UninstallToolResponse,
+      UninstallToolError,
+      ThrowOnError
+    >({
+      security: [
+        {
+          scheme: "bearer",
+          type: "http",
+        },
+      ],
+      url: "/api/v1/tools/{tool_id}/uninstall",
       ...options,
     })
   }

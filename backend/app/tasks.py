@@ -13,9 +13,10 @@ from sqlmodel import Session, select
 from taskiq import TaskiqDepends, TaskiqEvents, TaskiqState
 
 from app.api.deps import get_db
+from app.conda import CondaEnvManger, CondaEnvMangerError
 from app.core.config import settings
 from app.crud import save_file
-from app.models import File, Run, SetupFile, Target
+from app.models import File, Run, SetupFile, Target, Tool
 from app.tkq import broker
 
 SessionDep = Annotated[Session, TaskiqDepends(get_db)]
@@ -30,17 +31,22 @@ async def shutdown(state: TaskiqState) -> None:
 async def run_command_in_subprocess(session: Session, run_id: uuid.UUID, command: str, tmp_dir: Path) -> subprocess.Popen:
     # Run the command in a subprocess
     print(f"Running command: {command}")
+    command = f"set -euo pipefail; {command}"
     res = subprocess.Popen(
         command,
-        shell=True,
         text=True,
+        shell=True,
         cwd=tmp_dir,
-        preexec_fn=os.setsid, # Start the process in a new session
+        executable="/bin/bash",
+        start_new_session=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
     print(f"Run(id={run_id}) started with PID: {res.pid}")
     try:
+        # here we wait for the process to finish using polling
+        # this allows us to check if the run was cancelled
+        # https://github.com/taskiq-python/taskiq/issues/305
         while res.poll() is None:
             # Check if the run is cancelled
             run = session.execute(select(Run).where(Run.id == run_id)).scalar_one()
@@ -49,7 +55,8 @@ async def run_command_in_subprocess(session: Session, run_id: uuid.UUID, command
                 print(f"Run(id={run_id}) was cancelled")
                 # Send SIGTERM to the entire process group
                 os.killpg(os.getpgid(res.pid), signal.SIGTERM)
-                return res
+                stdout, stderr = res.communicate()
+                return -15, stdout, stderr
             await asyncio.sleep(1)
     except Exception as e:
         print(f"An error occurred: {e}")
@@ -60,7 +67,75 @@ async def run_command_in_subprocess(session: Session, run_id: uuid.UUID, command
         run.status = "failed"
         session.add(run)
         session.commit()
-    return res
+    stdout, stderr = res.communicate()
+    return res.returncode, stdout, stderr
+
+@broker.task
+async def install_tool(
+        tool_id: uuid.UUID,
+        session: Session = TaskiqDepends(get_db),
+    ) -> bool:
+    tool = session.get(Tool, tool_id)
+    if tool is None:
+        print(f"Tool(id={tool_id}) not found")
+        return False
+    if tool.conda_env is None:
+        print(f"Tool(id={tool_id}) does not have an environment")
+        tool.status = "failed"
+        session.add(tool)
+        session.commit()
+        return False
+    post_install_command = tool.post_install
+    conda_env = CondaEnvManger(
+        path=Path(settings.CONDA_PATH) / str(tool_id),
+        env_dict=tool.conda_env,
+        post_install_command=post_install_command
+    )
+    try:
+        if conda_env.is_created:
+            print(f"Conda environment for Tool(id={tool_id}) already exists. Will force create.")
+        print(f"Creating conda environment for Tool(id={tool_id})")
+        stdout = await conda_env.create()
+    except CondaEnvMangerError as e:
+        print(f"An error occurred: {e}")
+        tool.status = "failed"
+        tool.installation_log = str(e)
+        session.add(tool)
+        session.commit()
+        raise e
+
+    print(f"Conda environment for Tool(id={tool_id}) created")
+    tool.status = "installed"
+    tool.installation_log = stdout
+    session.add(tool)
+    session.commit()
+    return True
+
+@broker.task
+async def uninstall_tool(
+        tool_id: uuid.UUID,
+        session: Session = TaskiqDepends(get_db),
+    ) -> bool:
+    tool = session.get(Tool, tool_id)
+    if tool is None:
+        print(f"Tool(id={tool_id}) not found")
+        return False
+    conda_env = CondaEnvManger(
+        path=Path(settings.CONDA_PATH) / str(tool_id),
+        env_dict=tool.conda_env or {},
+        post_install_command=tool.post_install
+    )
+    print(f"Removing conda environment for Tool(id={tool_id})")
+    tool.status = "uninstalled"
+    try:
+        await conda_env.remove()
+    except CondaEnvMangerError as e:
+        print(f"Removing conda environment failed: {e}")
+        tool.installation_log = str(e)
+        tool.status = "failed"
+    session.add(tool)
+    session.commit()
+    return True
 
 @broker.task
 async def run_tool(
@@ -74,18 +149,24 @@ async def run_tool(
     run: Run = session.get(Run, run_id)
     if run is None:
         return False
+    # clear the stdout and stderr
+    run.stdout = ""
+    run.stderr = ""
     # only run the run if it is pending
     if run.status != "pending":
         return False
-    print(f"Starting Run(id={run_id}) for Tool(id={run.tool_id})")
+    if run.tool.status != "installed":
+        run.stderr += "Tool must be installed first. Please contact an administrator."
+        run.status = "failed"
+        session.add(run)
+        session.commit()
+        return False
     run.status = "running"
     run.started_at = datetime.utcnow()
-    if run.stdout is None:
-        run.stdout = ""
-    if run.stderr is None:
-        run.stderr = ""
+    print(f"Starting Run(id={run_id}) for Tool(id={run.tool_id})")
     session.add(run)
     session.commit()
+
     # create tmp directory to run the tool
     tmp_dir = Path(settings.TMP_PATH) / str(run_id)
     try:
@@ -101,31 +182,22 @@ async def run_tool(
     try:
         for file_id in file_ids: # do in batches?
             file = session.get(File, file_id)
-            print(f"Symlinking {file.location} to {tmp_dir / file.name}")
-            os.symlink(Path(file.location), tmp_dir / file.name)
+            name = Path(file.location).name
+            print(f"Symlinking {file.location} to {tmp_dir / name}")
+            os.symlink(Path(file.location), tmp_dir / name)
     except Exception as e:
         print(f"Error symlinking files: {e}")
-        run.stderr += f"Error symlinking files: {e}"
+        run.stderr += "Error symlinking files!"
         run.status = "failed"
         session.add(run)
         session.commit()
+        shutil.rmtree(tmp_dir)
         return False
-    # Set up the tool
-    if run.tool.setup_command:
-        setup_command = run.tool.setup_command
-        setup_res = await run_command_in_subprocess(
-                session, run_id, setup_command, tmp_dir
-            )
-        if setup_res.returncode != 0:
-            print(setup_res.stdout.read())
-            print(setup_res.stderr.read())
-            run.stderr += "Tool setup failed. Please contact an administrator."
-            run.status = "failed"
-            session.add(run)
-            session.commit()
-            return False
+
     env = JinjaEnvironment()
     if run.tool.setup_files:
+        # write setup files to tmp directory
+        # these are dynamic files that the tool needs to run
         for setup_file in run.tool.setup_files:
             setup_file = SetupFile(**setup_file)
             path = tmp_dir / setup_file.name
@@ -135,6 +207,7 @@ async def run_tool(
                 run.status = "failed"
                 session.add(run)
                 session.commit()
+                shutil.rmtree(tmp_dir)
                 return
             with open(tmp_dir / setup_file.name, "w") as f:
                 template = env.from_string(setup_file.content)
@@ -142,29 +215,49 @@ async def run_tool(
                 print(f"Writing content to {path}")
                 print(content)
                 f.write(content)
-
-    # Run the tool
+    if run.tool.conda_env:
+        conda_env = CondaEnvManger(
+            path=Path(settings.CONDA_PATH) / str(run.tool_id),
+            env_dict=run.tool.conda_env,
+            post_install_command=run.tool.post_install
+        )
+        if not conda_env.is_created:
+            run.stderr += "Tool environment not found. Please contact an administrator."
+            run.status = "failed"
+            run.tool.status = "uninstalled"
+            session.add(run)
+            session.commit()
+            shutil.rmtree(tmp_dir)
+            return False
+        # Add the conda environment activation command to the run command
+        run_command = f"{conda_env.activate_command} && {run_command}"
     try:
-        res = await run_command_in_subprocess(session, run_id, run_command, tmp_dir)
+        # Run the tool command in a subprocess
+        returncode, stdout, stderr = await run_command_in_subprocess(session, run_id, run_command, tmp_dir)
+        print(f"Run(id={run_id}) finished with return code: {returncode}")
+        print(f"stdout: {stdout}")
+        print(f"stderr: {stderr}")
     except Exception as e:
         print(f"An error occurred: {e}")
         run.stderr += f"An error occurred: {e}"
         run.status = "failed"
         session.add(run)
         session.commit()
+        shutil.rmtree(tmp_dir)
         return False
     run.finished_at = datetime.utcnow()
-    run.stderr += res.stderr.read()
-    run.stdout += res.stdout.read()
-    if res.returncode != 0:
-        print(f"Run(id={run_id}) failed with return code: {res.returncode}")
+    run.stderr += stderr
+    run.stdout += stdout
+    if returncode != 0:
+        print(f"Run(id={run_id}) failed with return code: {returncode}")
         # canceled or failed
-        if res.returncode == -15:
+        if returncode == -15:
             run.status = "cancelled"
         session.add(run)
         session.commit()
         return False
     if run.tool.targets:
+        missing_targets = []
         for target in run.tool.targets:
             target = Target(**target)
             # format the target path with tool params
@@ -174,11 +267,9 @@ async def run_tool(
             # check if the target file exists
             if target.required and not target_file.exists():
                 print(f"Target file {target_file} does not exist")
-                run.stderr += f"Target file '{target_file.name}' does not exist!"
-                run.status = "failed"
-                session.add(run)
-                session.commit()
-                return False
+                run.stderr += f"Target file '{target_file.name}' does not exist!\n"
+                missing_targets.append(target_file)
+                continue
             if not target.required and not target_file.exists():
                 print(f"Target file {target_file} does not exist, but is not required")
                 continue
@@ -191,6 +282,12 @@ async def run_tool(
                 file_type=target.target_type,
             )
             run.files.append(file)
+        if missing_targets:
+            run.status = "failed"
+            session.add(run)
+            session.commit()
+            shutil.rmtree(tmp_dir)
+            return False
 
     run.status = "completed"
     session.add(run)

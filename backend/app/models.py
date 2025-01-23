@@ -135,6 +135,22 @@ class Param(SQLModel):
     options: list[str] | None = None
     required: bool = False
 
+class ToolStatus(str, enum.Enum):
+    uninstalled = "uninstalled"
+    uninstalling = "uninstalling"
+    installed = "installed"
+    installing = "installing"
+    failed = "failed"
+
+
+class CondaEnvPipDependency(SQLModel):
+    pip: list[str]
+
+class CondaEnv(SQLModel):
+    name: str | None = None
+    channels: list[str] | None = None
+    dependencies: list[str | CondaEnvPipDependency] | None = None
+
 
 # Shared properties
 class ToolBase(SQLModel):
@@ -147,7 +163,8 @@ class ToolBase(SQLModel):
     enabled: bool = False
     run_count: int = 0
     command: str
-    setup_command: str | None = None  # command -v hello-world >/dev/null 2>&1 || snk install wytamma/hello-world
+    conda_env: CondaEnv | None = None # dependencies: [python=3.9, bokeh=2.4.2, conda-forge::numpy=1.21.*, nodejs=16.13.*, flask, pip, {pip: [Flask-Testing]}]
+    post_install: str | None = None  # command -v hello-world >/dev/null 2>&1 || snk install wytamma/hello-world
     setup_files: list[SetupFile] | None = None
     params: list[Param] | None = None
     targets: list[Target] | None = None
@@ -160,12 +177,16 @@ class ToolCreate(ToolBase):
 class ToolUpdate(ToolBase):
     name: str | None = None  # type: ignore
     command: str | None = None
+    status: ToolStatus | None = None
 
 # Database model, database table inferred from class name
 class Tool(ToolBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str = Field(index=True, unique=True)
     tags: list[str] | None = Field(default_factory=list, sa_column=Column(JSON))
+    status: ToolStatus = Field(sa_column=Column(Enum(ToolStatus)))
+    installation_log: str | None = None
+    conda_env: CondaEnv | None = Field(default=None, sa_column=Column(JSON))
     setup_files: list[SetupFile] | None = Field(default_factory=list, sa_column=Column(JSON))
     params: list[Param] | None = Field(default_factory=list, sa_column=Column(JSON))
     targets: list[Target] | None = Field(default_factory=list, sa_column=Column(JSON))
@@ -184,6 +205,8 @@ class Tool(ToolBase, table=True):
 # Properties to return via API, id is always required
 class ToolPublic(ToolBase):
     favourited: bool = False
+    status: ToolStatus
+    installation_log: str | None = None
     id: uuid.UUID
 
 class ToolsPublic(SQLModel):

@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: Literal["local", "staging", "production"] = "local"
 
     STORAGE_PATH: str = "/storage"
+    CONDA_PATH: str = "/conda"
     TMP_PATH: str = "/tmp/cpg-portal"
 
     @computed_field  # type: ignore[prop-decorator]

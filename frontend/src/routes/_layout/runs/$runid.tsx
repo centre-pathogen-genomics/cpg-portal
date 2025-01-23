@@ -75,9 +75,6 @@ function RunDetail() {
   })
 
   const command = []
-  if (run?.tool?.setup_command) {
-    command.push(run.tool.setup_command)
-  } 
   if (run?.command) {
     command.push(run.command)
   }
@@ -86,7 +83,7 @@ function RunDetail() {
     <>
       <Heading
         size="lg"
-        textAlign={{ base: "center", md: "left" }}
+        textAlign={{ base: "left"}}
         pt={6}
         pb={8}
       >
