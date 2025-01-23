@@ -1,10 +1,8 @@
 import { Suspense } from 'react';
 import { 
-    Flex,
   Skeleton, 
 } from '@chakra-ui/react';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import DownloadFileButton from '../Files/DownloadFileButton';
 import CodeBlock from '../Common/CodeBlock';
 import { downloadFileOptions } from '../../client/@tanstack/react-query.gen';
 
