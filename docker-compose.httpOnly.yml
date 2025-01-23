@@ -63,8 +63,10 @@ services:
       - db
     environment:
       - ADMINER_DESIGN=pepa-linha-dark
+    ports:
+      - "8080:8080"
     labels:
-      - traefik.enable=true
+      - traefik.enable=false
       - traefik.docker.network=traefik-public
       - traefik.constraint-label=traefik-public
       - traefik.http.routers.${STACK_NAME?Variable not set}-adminer-http.rule=Host(`adminer.${DOMAIN?Variable not set}`)
