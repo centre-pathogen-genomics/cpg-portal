@@ -68,7 +68,7 @@ const CodeBlock = ({ code, language, lineNumbers, maxHeight }: CodeBlockProps) =
         </CopyToClipboard>
       </Flex>
       <SyntaxHighlighter
-        customStyle={{ maxHeight: maxHeight }}
+        customStyle={{ maxHeight: maxHeight, paddingRight: '24px' }}
         language={language}
         style={style}
         wrapLines={true}

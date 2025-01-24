@@ -1,20 +1,12 @@
 import { ChevronRightIcon } from "@chakra-ui/icons"
 import {
-  Accordion,
-  AccordionButton,
-  AccordionIcon,
-  AccordionItem,
-  AccordionPanel,
-  Badge,
   Box,
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
   Container,
-  Flex,
   Heading,
   HStack,
-  Link,
   Skeleton,
   Tab,
   TabList,
@@ -28,14 +20,14 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { Suspense } from "react"
 import { ErrorBoundary } from "react-error-boundary"
 import { FilePublic } from "../../../client"
-import RunRuntime from "../../../components/Runs/RunTime"
+import OutputAccordion from "../../../components/Runs/OutputAccordion"
+import RunMetadata from "../../../components/Runs/RunMetadata"
+import Command from "../../../components/Runs/Command"
 import CsvFileToTable from "../../../components/Render/CsvFileToTable"
 import JsonFile from "../../../components/Render/JsonFile"
 import TextFile from "../../../components/Render/TextFile"
-import CodeBlock from "../../../components/Common/CodeBlock"
 import DownloadFileButton from "../../../components/Files/DownloadFileButton"
 import SaveFileButton from "../../../components/Files/SaveFileButton"
-import ParamTag from "../../../components/Runs/ParamTag"
 import { readRunOptions } from "../../../client/@tanstack/react-query.gen"
 import { humanReadableFileSize } from "../../../utils"
 
@@ -44,7 +36,7 @@ export const Route = createFileRoute("/_layout/runs/$runid")({
 })
 
 function renderResult(file: FilePublic) {
-  if (file.size && file.size < 5000) {
+  if (file.size && file.size < 500000) {
     switch (file.file_type) {
       case "csv":
       case "tsv":
@@ -108,137 +100,36 @@ function RunDetail() {
           </BreadcrumbItem>
         </Breadcrumb>
       </Heading>
-      <Box mb={4}>
-        <Text>
-          Tool: <Link
-                      onClick={(e) =>{
-                          e.stopPropagation();
-                          navigate({
-                            to: `/tools/${run.tool.name}`,
-                            replace: false,
-                            resetScroll: true,
-                          })
-                        }
-                      }
-                    >
-                      {run.tool.name}
-                </Link>
-        </Text>
-        <Flex wrap={'wrap'}>
-        <Text>Parameters:</Text>
-        {Object.keys(run.params).filter((key) => run.params[key] !== null).map((key) => (
-                          <Flex key={key} m={1} my={1}>
-                            <ParamTag param={key} value={run.params[key]} />
-                          </Flex>
-                      ))}
-        </Flex>
-        <Text>
-          Status:{" "}
-          <Badge borderRadius="full" px="2" colorScheme={run.status == "failed" ? "red" :"teal"}>
-            {run.status}
-          </Badge>
-        </Text>
-        <Text>
-          Runtime: <RunRuntime started_at={run.started_at} finished_at={run.finished_at} status={run.status}  />
-        </Text>
-        <Text>Started: {run.started_at}</Text>
-        <Text>Completed: {run.finished_at}</Text>
+      <Box mb={4} >
+        <RunMetadata run={run} />
+        {run.command && (<Command command={run.command}/>)}
       </Box>
-      <Accordion defaultIndex={[0]} allowMultiple mb={4}>
-        <AccordionItem>
-          <h2>
-            <AccordionButton>
-              <Box as='span' flex='1' textAlign='left'>
-                Command
-              </Box>
-              <AccordionIcon />
-            </AccordionButton>
-          </h2>
-          <AccordionPanel pb={4}>
-          { run.command ? (
-            <>
-            <CodeBlock code={command.join("\n")} language="bash" />
-
-            </>
-          ) : (
-            <Text>...</Text>
-          )}
-          </AccordionPanel>
-        </AccordionItem>
-        <AccordionItem>
-          <h2>
-            <AccordionButton>
-              <Box as='span' flex='1' textAlign='left'>
-                <Flex alignItems="center">
-                <Text>
-                  Stdout 
-                </Text>
-                <Badge borderRadius="full" ml="2" px="2"colorScheme="teal">
-                  {(run.stdout?.length && run.stdout?.length > 0) ? run.stdout?.trim().split("\n").length : 0}
-                </Badge>
-                </Flex>
-              </Box>
-            <AccordionIcon />
-            </AccordionButton>
-          </h2>
-          <AccordionPanel pb={4}>
-          { run.stdout?.length && run.stdout?.length > 0 ? (
-            <Text style={{ whiteSpace: "pre-wrap" }}>
-              {run.stdout}
-            </Text>
-          ) : (
-            <Text>No output</Text>
-           )}
-          </AccordionPanel>
-        </AccordionItem>
-        <AccordionItem>
-          <h2>
-            <AccordionButton>
-            <Box as='span' flex='1' textAlign='left'>
-                <Flex alignItems="center">
-                <Text>
-                  Stderr 
-                </Text>
-                <Badge borderRadius="full" ml="2" px="2"colorScheme="teal">
-                {(run.stderr?.length && run.stderr?.length > 0) ? run.stderr?.trim().split("\n").length : 0}
-                </Badge>
-                </Flex>
-              </Box>
-              <AccordionIcon />
-            </AccordionButton>
-          </h2>
-          <AccordionPanel pb={4}>
-          { run.stderr?.length && run.stderr.length > 0 ? (
-            <Text style={{ whiteSpace: "pre-wrap" }}>
-              {run.stderr}
-            </Text>
-          ) : (
-            <Text>No output</Text>
-           )}
-          </AccordionPanel>
-        </AccordionItem>
-      </Accordion>
       {run.files.length > 0 && (
-        <Tabs  variant="enclosed" >
-          <TabList>
-          {run.files?.map((file) => (
-            <Tab key={file.id}>{file.name} ({file.size ? humanReadableFileSize(file.size): "Unknown size"})</Tab>
-          ))} 
-          </TabList>
-          <TabPanels>
-          {run.files?.map((file) => (
-            <TabPanel key={file.id}>
-              <HStack mb={4} justify={"space-between"}>
-                <DownloadFileButton fileId={file.id} />
-                <SaveFileButton fileId={file.id} saved={file.saved ? file.saved : false } />
-              </HStack>
-              {renderResult(file)}
-            </TabPanel>
-          ))}
-          </TabPanels>
-        </Tabs>
+        <>
+          <Heading size="md" mb={4}>
+            Output files
+          </Heading>
+          <Tabs  variant="enclosed" >
+            <TabList>
+            {run.files?.map((file) => (
+              <Tab key={file.id}>{file.name} ({file.size ? humanReadableFileSize(file.size): "Unknown size"})</Tab>
+            ))} 
+            </TabList>
+            <TabPanels>
+            {run.files?.map((file) => (
+              <TabPanel key={file.id}>
+                {renderResult(file)}
+                <HStack mt={2} justify={"flex-start"}>
+                  <DownloadFileButton size="sm" fileId={file.id} />
+                  <SaveFileButton size="sm" fileId={file.id} saved={file.saved ? file.saved : false } />
+                </HStack>
+              </TabPanel>
+            ))}
+            </TabPanels>
+          </Tabs>
+        </>
       )}
-      
+      <OutputAccordion run={run} /> 
     </>
   )
 }

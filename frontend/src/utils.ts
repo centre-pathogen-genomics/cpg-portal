@@ -49,6 +49,22 @@ export const humanReadableDate = (date: string) => {
   })
 }
 
+export const humanReadableDateTime = (date: string | undefined) => {
+  // 7 Sept 2021, 12:00:00
+  if (!date) {
+    return ""
+  }
+  return new Date(date).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }) + ", " + new Date(date).toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  })
+}
+
 export const passwordRules = (isRequired = true) => {
   const rules: any = {
     minLength: {

@@ -1,4 +1,4 @@
-import { Tag, TagLabel, Tooltip, Text } from "@chakra-ui/react";
+import { Tag, TagLabel, Tooltip, Text, Flex } from "@chakra-ui/react";
  
 interface ParamTagProps {
   param: string;
@@ -29,10 +29,6 @@ const ParamTag = ( {param, value, truncate}: ParamTagProps) => {
         value = value.map((v) => extractUUIDAndOtherText(v));
     }
     value = JSON.stringify(value);
-    let subString = (value as string);
-    if (subString.length > 20 && truncate) {
-        subString = subString.substring(0, 20) + "...";
-    } 
 
   return (
     <Tooltip
@@ -41,7 +37,10 @@ const ParamTag = ( {param, value, truncate}: ParamTagProps) => {
         label={value as string}
     >
         <Tag  cursor={'pointer'} size={'sm'} variant='outline' >
-        <TagLabel mr={1} as={'b'}>{param}</TagLabel><Text wordBreak={"break-all"}>{subString}</Text>
+          <TagLabel mr={1} as={'b'}>{param}</TagLabel>
+          <Flex whiteSpace={'nowrap'}  maxW={60} overflow={'hidden'} >
+            <Text isTruncated >{value as string}</Text>
+          </Flex>
         </Tag>
     </Tooltip>
   )

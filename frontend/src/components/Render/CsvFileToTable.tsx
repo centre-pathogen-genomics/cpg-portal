@@ -78,7 +78,7 @@ const CsvFileToTable = ({ fileId }: CsvFileToTableProps) => {
           </Tbody>
         </Table>
       </TableContainer>
-      <Flex justify="space-between" mt={4}>
+      <Flex justify="start" mt={4}>
         <PaginationFooter
           page={currentPage} // 1-based
           hasNextPage={hasNextPage}

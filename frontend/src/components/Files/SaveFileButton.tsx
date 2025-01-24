@@ -1,4 +1,4 @@
-import { Button, Tag, TagLabel, TagLeftIcon } from "@chakra-ui/react";
+import { Button, Tag, TagLabel, TagLeftIcon, Link } from "@chakra-ui/react";
 import { FaRegSave } from "react-icons/fa";
 import { HiCheckCircle } from "react-icons/hi";
 
@@ -31,9 +31,9 @@ const SaveFileButton = ({ fileId, saved, size }: SaveFileButtonProps) => {
 
   return (
     isSaved ? (
-      <Tag cursor={"pointer"} colorScheme='green' size={"lg"} onClick={() => navigate({to: '/files'})}>
+      <Tag cursor={"pointer"} colorScheme='green' size={"lg"} >
         <TagLeftIcon size={'lg'} as={HiCheckCircle} />
-        <TagLabel >Saved to My Files</TagLabel>
+        <TagLabel >Saved to <Link onClick={() => navigate({to: '/files'})}>My Files</Link></TagLabel>
       </Tag>
     ) : (
       <Button
