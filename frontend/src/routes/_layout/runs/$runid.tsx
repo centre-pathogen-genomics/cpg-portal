@@ -7,7 +7,6 @@ import {
   Container,
   Flex,
   Heading,
-  HStack,
   Skeleton,
   Tab,
   TabList,
@@ -28,10 +27,7 @@ import OutputFile from "../../../components/Runs/OutputFile"
 import CsvFileToTable from "../../../components/Render/CsvFileToTable"
 import JsonFile from "../../../components/Render/JsonFile"
 import TextFile from "../../../components/Render/TextFile"
-import DownloadFileButton from "../../../components/Files/DownloadFileButton"
-import SaveFileButton from "../../../components/Files/SaveFileButton"
 import { readRunOptions } from "../../../client/@tanstack/react-query.gen"
-import { humanReadableFileSize } from "../../../utils"
 
 export const Route = createFileRoute("/_layout/runs/$runid")({
   component: Run,

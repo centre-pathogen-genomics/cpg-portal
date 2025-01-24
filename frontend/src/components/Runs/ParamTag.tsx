@@ -21,8 +21,7 @@ const extractUUIDAndOtherText = (value: string): string => {
   return value; // If no UUID is found, treat the whole string as otherText
 };
 
-const ParamTag = ( {param, value, truncate}: ParamTagProps) => {
-    // truncate value if it is too long to fit in the badge
+const ParamTag = ( {param, value}: ParamTagProps) => {
     if (typeof value === 'string') {
         value = extractUUIDAndOtherText(value);
     } else if (Array.isArray(value) && value.length > 0) {

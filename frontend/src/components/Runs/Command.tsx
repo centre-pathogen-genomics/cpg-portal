@@ -1,4 +1,4 @@
-import { Flex, Icon, Text, VStack } from "@chakra-ui/react";
+import { Flex, Icon, Text } from "@chakra-ui/react";
 import { HiOutlineCommandLine } from "react-icons/hi2";
 import CodeBlock from "../Common/CodeBlock";
 

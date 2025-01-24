@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   Accordion,
   AccordionItem,
@@ -61,12 +60,12 @@ const OutputAccordion = ({run}: {run: RunPublic}) => {
     <Accordion allowMultiple mb={4} wordBreak="break-all">
       <OutputAccordionItem
         title="Stdout"
-        content={run.stdout || undefined}
+        content={run.stdout || null}
         status={run.status}
       />
       <OutputAccordionItem
         title="Stderr"
-        content={run.stderr || undefined}
+        content={run.stderr || null}
         status={run.status}
       />
     </Accordion>

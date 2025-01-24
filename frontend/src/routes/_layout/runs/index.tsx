@@ -1,11 +1,9 @@
 import {
   Badge,
-  Box,
   ButtonGroup,
   Container,
   Flex,
   Heading,
-  Link,
   SkeletonText,
   Stack,
   Table,
@@ -156,7 +154,7 @@ function RunsTable() {
                     <Flex wrap={"wrap"}>
                       {Object.keys(run.params).filter((key) => run.params[key] !== null).map((key) => (
                         <Flex key={key} mr={1} mb={1}>
-                          <ParamTag key={key} truncate param={key} value={run.params[key]} />
+                          <ParamTag key={key} param={key} value={run.params[key]} />
                         </Flex>
                       ))}
                     </Flex>

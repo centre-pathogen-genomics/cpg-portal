@@ -1,6 +1,5 @@
-import React from "react";
 import { FilePublic } from "../../client"
-import { Box, Flex, Heading, HStack, Icon, Text, VStack } from "@chakra-ui/react"
+import { Flex, Heading, HStack, Icon, VStack } from "@chakra-ui/react"
 import DownloadFileButton from "../Files/DownloadFileButton"
 import SaveFileButton from "../Files/SaveFileButton"
 import { HiOutlineDocument } from "react-icons/hi2";

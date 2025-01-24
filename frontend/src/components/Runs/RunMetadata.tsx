@@ -1,4 +1,4 @@
-import { Badge, Flex, Grid, GridItem, HStack, Icon, Link, Text, VStack } from "@chakra-ui/react";
+import { Badge, Flex, HStack, Icon, Link, Text} from "@chakra-ui/react";
 import { RunPublic, RunStatus } from "../../client";
 import { HiOutlineStatusOnline } from "react-icons/hi";
 import { HiOutlineLightningBolt } from "react-icons/hi";
