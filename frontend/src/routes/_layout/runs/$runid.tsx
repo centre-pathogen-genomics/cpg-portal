@@ -5,6 +5,7 @@ import {
   BreadcrumbItem,
   BreadcrumbLink,
   Container,
+  Flex,
   Heading,
   HStack,
   Skeleton,
@@ -23,6 +24,7 @@ import { FilePublic } from "../../../client"
 import OutputAccordion from "../../../components/Runs/OutputAccordion"
 import RunMetadata from "../../../components/Runs/RunMetadata"
 import Command from "../../../components/Runs/Command"
+import OutputFile from "../../../components/Runs/OutputFile"
 import CsvFileToTable from "../../../components/Render/CsvFileToTable"
 import JsonFile from "../../../components/Render/JsonFile"
 import TextFile from "../../../components/Render/TextFile"
@@ -107,26 +109,36 @@ function RunDetail() {
       {run.files.length > 0 && (
         <>
           <Heading size="md" mb={4}>
-            Output files
+            Files
           </Heading>
-          <Tabs  variant="enclosed" >
-            <TabList>
-            {run.files?.map((file) => (
-              <Tab key={file.id}>{file.name} ({file.size ? humanReadableFileSize(file.size): "Unknown size"})</Tab>
-            ))} 
-            </TabList>
-            <TabPanels>
-            {run.files?.map((file) => (
-              <TabPanel key={file.id}>
-                {renderResult(file)}
-                <HStack mt={2} justify={"flex-start"}>
-                  <DownloadFileButton size="sm" fileId={file.id} />
-                  <SaveFileButton size="sm" fileId={file.id} saved={file.saved ? file.saved : false } />
-                </HStack>
-              </TabPanel>
+          <Flex wrap="nowrap" overflowX={"auto"} mb={4}>
+            {run.files.map((file) => (
+              <Flex key={file.id} mb={2} mr={2} >
+               <OutputFile file={file}/>
+              </Flex>
             ))}
-            </TabPanels>
-          </Tabs>
+          </Flex>
+          {run.files?.filter((file) => file.size && file.size < 500000).length > 0 && (
+            <>
+              <Heading size="md" mb={4}>
+                Outputs
+              </Heading> 
+              <Tabs  variant="enclosed" >
+                <TabList>
+                {run.files?.filter((file) => file.size && file.size < 500000).map((file) => (
+                  <Tab key={file.id}>{file.name.toLocaleUpperCase()}</Tab>
+                ))} 
+                </TabList>
+                <TabPanels>
+                {run.files?.map((file) => (
+                  <TabPanel key={file.id}>
+                    {renderResult(file)}
+                  </TabPanel>
+                ))}
+                </TabPanels>
+              </Tabs>
+            </>
+          )}
         </>
       )}
       <OutputAccordion run={run} /> 

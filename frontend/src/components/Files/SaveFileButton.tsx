@@ -11,7 +11,7 @@ import { useNavigate } from "@tanstack/react-router";
 interface SaveFileButtonProps {
   fileId: string;
   saved: boolean;
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
 }
 
 const SaveFileButton = ({ fileId, saved, size }: SaveFileButtonProps) => {
@@ -31,13 +31,12 @@ const SaveFileButton = ({ fileId, saved, size }: SaveFileButtonProps) => {
 
   return (
     isSaved ? (
-      <Tag cursor={"pointer"} colorScheme='green' size={"lg"} >
-        <TagLeftIcon size={'lg'} as={HiCheckCircle} />
-        <TagLabel >Saved to <Link onClick={() => navigate({to: '/files'})}>My Files</Link></TagLabel>
+      <Tag cursor={"pointer"} colorScheme='green' size={size} p={1} >
+        <TagLeftIcon size={size} as={HiCheckCircle} />
+        <TagLabel as={'b'} fontSize={12} >Saved to <Link onClick={() => navigate({to: '/files'})}>My Files</Link></TagLabel>
       </Tag>
     ) : (
       <Button
-        color="ui.main"
         variant="solid"
         size={size}
         leftIcon={<FaRegSave />}

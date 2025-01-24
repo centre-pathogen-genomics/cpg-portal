@@ -26,11 +26,18 @@ const CsvFileToTable = ({ fileId }: CsvFileToTableProps) => {
   });
 
   // Parse CSV data
-  const parsedData = Papa.parse(csvText as string, { header: true });
+  let parsedData = { data: [] };
+  try {
+    parsedData = Papa.parse(csvText as string, { header: true });
+    
+  } catch (error) {
+    return <Skeleton height="20px" />;
+  }
   const headers = Object.keys(parsedData.data[0] || {}); // Extract headers
   const tableData = (parsedData.data as { [key: string]: any }[]).filter(row => 
     Object.values(row).some(val => val !== '')
-  );
+);
+  
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1); // Start at page 1

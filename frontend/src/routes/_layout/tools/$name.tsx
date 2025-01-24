@@ -1,4 +1,4 @@
-import { Box, Button, FormLabel, Heading, HStack, Switch, Text } from "@chakra-ui/react"
+import { Accordion, AccordionButton, AccordionIcon, AccordionItem, AccordionPanel, Box, Button, FormLabel, Heading, HStack, Switch, Text } from "@chakra-ui/react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { disableToolMutation, enableToolMutation, installToolMutation, readToolByNameOptions, readToolByNameQueryKey, readUserMeQueryKey } from "../../../client/@tanstack/react-query.gen"
@@ -106,7 +106,7 @@ function InstallToolButton({ tool }: { tool: ToolPublic }) {
         isLoading={tool.status === "installing"}
         onClick={handleInstallClick}
         aria-label="Install Tool"
-        disabled={tool.status === "installing"}
+        isDisabled={tool.status === "installed"}
       >
         Install
       </Button>
@@ -161,15 +161,26 @@ function Tool() {
         }}
       />
       {currentUser?.is_superuser && ( 
-        <Box mt={8}>
-          <Heading mb={2} size="md">Admin</Heading>
-          <HStack justify={"space-between"} mb={4}>
-            <InstallToolButton tool={tool} />
-            <EnableToolButton tool={tool} />
-          </HStack>
-          <Heading size="sm">Installation Log ({tool.status})</Heading>
-          <CodeBlock code={tool.installation_log ? tool.installation_log : "\n"} language="bash" lineNumbers />
-        </Box>
+        <Accordion allowToggle  mt={8}>
+          <AccordionItem>
+            <AccordionButton>
+              <Box as='span' flex='1' textAlign='left'>
+                Admin
+              </Box>
+              <AccordionIcon />
+            </AccordionButton>
+            <AccordionPanel pb={4}>
+              <Box>
+                <HStack justify={"space-between"} mb={4}>
+                  <InstallToolButton tool={tool} />
+                  <EnableToolButton tool={tool} />
+                </HStack>
+                <Heading size="sm">Installation Log ({tool.status})</Heading>
+                <CodeBlock code={tool.installation_log ? tool.installation_log : "\n"} language="bash" lineNumbers />
+              </Box>
+            </AccordionPanel>
+          </AccordionItem>
+        </Accordion>
       )}
     </Box>
   )

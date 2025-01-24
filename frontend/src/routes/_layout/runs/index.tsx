@@ -150,25 +150,16 @@ function RunsTable() {
                     </Tooltip>
                   </Td>
                   <Td>
-                    <Link
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        navigate({
-                          to: `/tools/${run.tool.name}`,
-                          replace: false,
-                          resetScroll: true,
-                        })
-                      }}
-                    >
-                      {run.tool.name}
-                    </Link>
+                   {run.tool.name}
                   </Td>
                   <Td>
-                    {Object.keys(run.params).filter((key) => run.params[key] !== null).map((key) => (
-                      <Box key={key} mr={1} mb={1}>
-                        <ParamTag key={key} truncate param={key} value={run.params[key]} />
-                      </Box>
-                    ))}
+                    <Flex wrap={"wrap"}>
+                      {Object.keys(run.params).filter((key) => run.params[key] !== null).map((key) => (
+                        <Flex key={key} mr={1} mb={1}>
+                          <ParamTag key={key} truncate param={key} value={run.params[key]} />
+                        </Flex>
+                      ))}
+                    </Flex>
                   </Td>
                   <Td>
                     <StatusIcon status={run.status} />

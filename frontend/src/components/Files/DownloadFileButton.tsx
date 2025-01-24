@@ -4,7 +4,8 @@ import { FilesService} from "../../client"
 
 interface DownloadFileButtonProps {
   fileId: string
-  size?: "sm" | "md" | "lg"
+  fileSize?: string
+  size?: "xs" | "sm" | "md" | "lg"
 }
 
 const handleDownload = async (fileId: string) => {
@@ -13,7 +14,7 @@ const handleDownload = async (fileId: string) => {
   window.open(downloadUrl, "_blank")
 }
 
-const DownloadFileButton = ({ fileId, size }: DownloadFileButtonProps ) => {
+const DownloadFileButton = ({ fileId, fileSize, size }: DownloadFileButtonProps ) => {
   return (
     <Button 
       color="ui.main"
@@ -21,7 +22,7 @@ const DownloadFileButton = ({ fileId, size }: DownloadFileButtonProps ) => {
       size={size}
       leftIcon={<DownloadIcon />}
       onClick={() => handleDownload(fileId)}>
-      Download
+      Download{fileSize ? ` (${fileSize})` : ""}
     </Button>
   )
 }

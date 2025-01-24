@@ -47,7 +47,7 @@ function ToolsGrid({ orderBy, showFavourites }: { orderBy: ToolsOrderBy, showFav
           </Box>
         )}
       >
-        <SimpleGrid minChildWidth='250px' spacing="20px" mb={8}>
+        <SimpleGrid minChildWidth='300px' spacing="20px" mb={8}>
           <ToolCards orderBy={orderBy} showFavourites={showFavourites} />
         </SimpleGrid>
       </ErrorBoundary>

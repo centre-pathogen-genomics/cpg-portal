@@ -76,8 +76,8 @@ const ToolCard = ({ tool }: ToolCardProps) => {
       <Card
         variant="elevated"
         overflow="hidden"
-        maxW={{ base: "100%", md: "400px" }}
-        size={"sm"}
+        maxW={{ base: "100%", lg: "400px" }}
+        size={"md"}
         // on unhover return to normal state
         _hover={{
           boxShadow: "xl",
@@ -152,8 +152,8 @@ const ToolCard = ({ tool }: ToolCardProps) => {
           </Flex>
         </Flex>
 
-        <CardHeader>
-          <Heading className="group-hover:underline" size="lg">
+        <CardHeader pb={0}>
+          <Heading  size="lg">
             {tool.name}
           </Heading>
         </CardHeader>
