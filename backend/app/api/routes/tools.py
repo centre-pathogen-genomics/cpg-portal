@@ -91,7 +91,7 @@ def read_tool(
     tool = session.get(Tool, tool_id)
     if not tool:
         raise HTTPException(status_code=404, detail="Tool not found")
-    if not current_user.is_superuser and (not tool.enabled or not tool.installed):
+    if not current_user.is_superuser and (not tool.enabled or tool.status != "installed"):
         raise HTTPException(status_code=403, detail="Tool is disabled")
     return tool
 
@@ -157,7 +157,7 @@ def read_tool_by_name(
     tool = session.query(Tool).filter(func.lower(Tool.name) == tool_name.lower()).first()
     if not tool:
         raise HTTPException(status_code=404, detail="Tool not found")
-    if not current_user.is_superuser and (not tool.enabled or not tool.installed):
+    if not current_user.is_superuser and (not tool.enabled or tool.status != "installed"):
         raise HTTPException(status_code=403, detail="Tool is disabled")
     return tool
 
