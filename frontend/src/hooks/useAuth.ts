@@ -3,17 +3,30 @@ import { useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
 
 import { AxiosError } from "axios"
-import {
-  type BodyLoginLoginAccessToken as AccessToken, 
-  LoginService,
-  type UserRegister,
-  UsersService,
-} from "../client"
-import { readUserMeOptions } from "../client/@tanstack/react-query.gen"
+import { loginAccessTokenMutation, readUserMeOptions, registerUserMutation } from "../client/@tanstack/react-query.gen"
 import useCustomToast from "./useCustomToast"
+import { LoginService } from "../client"
 
 const isLoggedIn = () => {
   return localStorage.getItem("access_token") !== null
+}
+
+const checkToken = async () => {
+  const access_token = localStorage.getItem("access_token");
+  if (!access_token) {
+    return false;
+  }
+  try {
+    const response = await LoginService.testToken();
+    if (response.status === 200) {
+      return true;
+    }
+  } catch (error) {
+    localStorage.removeItem("access_token");
+    return false;
+  }
+  localStorage.removeItem("access_token");
+  return false;
 }
 
 const useAuth = () => {
@@ -27,9 +40,7 @@ const useAuth = () => {
   })
 
   const signUpMutation = useMutation({
-    mutationFn: (data: UserRegister) =>
-      UsersService.registerUser({ body: data }),
-
+    ...registerUserMutation(),
     onSuccess: () => {
       navigate({ to: "/login" })
       showToast(
@@ -46,19 +57,20 @@ const useAuth = () => {
     },
   })
 
-  const login = async (data: AccessToken) => {
-    const response = await LoginService.loginAccessToken({
-      body: data,
-    })
-    if (response.data?.access_token) {
-      localStorage.setItem("access_token", response.data?.access_token)
-    }
-  }
-
   const loginMutation = useMutation({
-    mutationFn: login,
-    onSuccess: () => {
-      navigate({ to: "/" })
+    ...loginAccessTokenMutation(),
+    onSuccess: (token) => {
+      localStorage.setItem("access_token", token.access_token)
+      // load redirect from query params
+      const searchParams = new URLSearchParams(window.location.search)
+      const redirect = searchParams.get("redirect")
+      queryClient.clear();
+      if (redirect) {
+        console.log("redirecting to", redirect)
+        navigate({ to: redirect })
+      } else  {
+        navigate({ to: "/" })
+      }
     },
     onError: (err) => {
       let errDetail = err.message
@@ -77,6 +89,8 @@ const useAuth = () => {
 
   const logout = () => {
     localStorage.removeItem("access_token")
+    queryClient.clear();
+    setError(null)
     navigate({ to: "/login" })
   }
 
@@ -91,5 +105,5 @@ const useAuth = () => {
   }
 }
 
-export { isLoggedIn }
+export { isLoggedIn, checkToken }
 export default useAuth

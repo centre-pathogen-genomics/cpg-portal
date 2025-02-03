@@ -58,7 +58,7 @@ function Login() {
     resetError()
 
     try {
-      await loginMutation.mutateAsync(data)
+      await loginMutation.mutateAsync({body: data})
     } catch {
       // error is handled by useAuth hook
     }
