@@ -56,7 +56,7 @@ function SignUp() {
   })
 
   const onSubmit: SubmitHandler<UserRegisterForm> = (data) => {
-    signUpMutation.mutate(data)
+    signUpMutation.mutate({body:data})
   }
 
   return (
