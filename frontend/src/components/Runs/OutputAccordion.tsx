@@ -11,6 +11,7 @@ import {
   Spinner,
 } from '@chakra-ui/react';
 import { RunPublic } from '../../client';
+import CodeBlock from '../Common/CodeBlock';
 
 interface OutputAccordionItemProps {
     title: string;
@@ -42,7 +43,8 @@ const OutputAccordionItem = ({ title, content, status }: OutputAccordionItemProp
       </h2>
       <AccordionPanel pb={4}>
         {content && content.length > 0 ? (
-          <Text style={{ whiteSpace: 'pre-wrap' }}>{content}</Text>
+          <CodeBlock code={content} language={'bash'} lineNumbers={true}/>
+          // <Text style={{ whiteSpace: 'pre-wrap' }}>{content}</Text>
         ) : status === 'running' || status === 'pending' ? (
           <Text>Running...</Text>
         ) : (

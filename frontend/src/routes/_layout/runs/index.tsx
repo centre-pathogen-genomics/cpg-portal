@@ -78,7 +78,7 @@ function RunsTable() {
   const { page, pageSize } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   const queryClient = useQueryClient();
-  const colourMode = useColorModeValue("gray.100", "gray.700")
+  const colourMode = useColorModeValue("gray.50", "gray.700")
   const setPage = (page: number) =>
     navigate({ search: (prev: { page: number }) => ({ ...prev, page }) });
 
