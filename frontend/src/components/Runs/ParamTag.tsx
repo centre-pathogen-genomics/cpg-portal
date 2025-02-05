@@ -1,4 +1,4 @@
-import { Tag, TagLabel, Tooltip, Text, Flex, useColorModeValue } from "@chakra-ui/react";
+import { Tooltip, Text, Flex, useColorModeValue } from "@chakra-ui/react";
  
 interface ParamTagProps {
   param: string;
@@ -34,15 +34,20 @@ const ParamTag = ( {param, value}: ParamTagProps) => {
     }
   }
 
+
+  const bg = useColorModeValue('gray.100', 'whiteAlpha.200')
+  const color = useColorModeValue('ui.main', 'ui.light')
+
+
   return (
     <Tooltip
         placement="top"
         hasArrow
         label={value as string}
     >
-        <Flex fontSize={'sm'} cursor={'pointer'} borderWidth={2} borderColor={'ui.main'} borderRadius='md'  >
-          <Flex h={'full'} color={'ui.light'} bg={'ui.main'} px={1}><Text as='b'>{param}</Text></Flex>
-          <Flex whiteSpace={'nowrap'} bg={'transparent'} px={1} maxW={60} overflow={'hidden'} >
+        <Flex fontSize={'sm'} cursor={'pointer'} overflow={'hidden'} borderWidth={2} borderColor={bg} borderRadius='md'  >
+          <Flex h={'full'} color={color} bg={bg} px={1}><Text as={'b'}>{param}</Text></Flex>
+          <Flex whiteSpace={'nowrap'}  px={1} maxW={60} overflow={'hidden'} >
             <Text isTruncated>{value as string}</Text>
           </Flex>
         </Flex>
