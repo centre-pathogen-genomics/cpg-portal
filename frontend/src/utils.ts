@@ -4,6 +4,7 @@ import { FilesService } from "./client";
 
 export const uploadFileWithProgress = async (
   file: File,
+  controller: AbortController,
   onUploadProgress: (progressEvent: AxiosProgressEvent) => void
 ) => {
   try {
@@ -11,6 +12,8 @@ export const uploadFileWithProgress = async (
       {
         body: {file},
         onUploadProgress: onUploadProgress,
+        throwOnError: true,
+        signal: controller.signal,
       },
     );
     return response;

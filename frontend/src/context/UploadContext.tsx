@@ -7,7 +7,8 @@ interface UploadContextValue {
   uploadFile: (
     file: File, 
     onProgress: (progress: number) => void, 
-    onComplete: ((file: FilePublic) => void) | undefined
+    onComplete: ((file: FilePublic) => void) | undefined,
+    controller: AbortController,
   ) => Promise<void>;
   isUploading: boolean;
   progress: number;
@@ -19,12 +20,12 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
 
-  const uploadFile = async (file: File, onProgress: (progress: number) => void, onComplete: ((file: FilePublic) => void) | undefined) => {
+  const uploadFile = async (file: File, onProgress: (progress: number) => void, onComplete: ((file: FilePublic) => void) | undefined, controller: AbortController) => {
     setIsUploading(true);
     setProgress(0);
 
     try {
-      const response = await uploadFileWithProgress(file, (event) => {
+      const response = await uploadFileWithProgress(file, controller, (event) => {
         let total = event.total;
         if (total === undefined) {
             total = file.size;
@@ -36,7 +37,6 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (response.data?.id && onComplete) {
         onComplete(response.data);
       }
-      
     } catch (error) {
       console.error("Error uploading file:", error);
       throw error;

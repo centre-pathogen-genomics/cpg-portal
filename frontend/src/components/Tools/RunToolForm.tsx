@@ -20,7 +20,7 @@ import {
 } from "../../client"
 import { createRunMutation } from "../../client/@tanstack/react-query.gen"
 import useCustomToast from "../../hooks/useCustomToast"
-import React, { useMemo, useState } from "react"
+import React, { useEffect, useMemo, useState } from "react"
 import { handleError } from "../../utils"
 import { Options } from "@hey-api/client-axios"
 import FileUpload from "../Files/UploadFileWithProgress"
@@ -57,21 +57,39 @@ const EnumParam = ({ param, setValue }: EnumParamProps) => {
 }
 
 interface FileParamProps {
-  param: Param
-  files: { label: string, value: string }[]
-  setValue: (value: string | string[]) => void
-  selectedOptions: { label: string, value: string }[]
-  setSelectedOptions: (options: { label: string, value: string }[]) => void
-  multiple: boolean 
+  param: Param;
+  files: { label: string; value: string }[];
+  setValue: (
+    options:
+      | { label: string; value: string }[]
+      | { label: string; value: string }
+  ) => void;
+  selectedOptions: { label: string; value: string }[];
+  multiple: boolean;
+  updateLocalFiles?: (file: { label: string; value: string }) => void;
+  isLoading?: boolean;
 }
 
-const FileParam = ({ param, files, setValue, selectedOptions, setSelectedOptions, multiple = false }: FileParamProps) => {
+const FileParam = ({
+  param,
+  files,
+  setValue,
+  selectedOptions,
+  multiple = false,
+  updateLocalFiles,
+  isLoading,
+}: FileParamProps) => {
   return (
-    <Flex direction={"column"}>
+    <Flex direction={"column"} gap={2}>
       <FileUpload
         onComplete={(file) => {
-          setValue(multiple ? [file.id] : file.id);
-          setSelectedOptions([{ label: file.name, value: file.id }]);
+          const newFile = { label: file.name, value: file.id };
+          // Immediately update the local files state via the passed-in updater
+          if (updateLocalFiles) {
+            updateLocalFiles(newFile);
+          }
+          // Update the form value
+          setValue(newFile);
         }}
       />
       <Select
@@ -82,9 +100,13 @@ const FileParam = ({ param, files, setValue, selectedOptions, setSelectedOptions
         isClearable={true}
         value={selectedOptions}
         onChange={(selectedOption) => {
-          setValue(Array.isArray(selectedOption) ? selectedOption.map((option) => option.value) : (selectedOption as { label: string; value: string })?.value);
-          setSelectedOptions(Array.isArray(selectedOption) ? selectedOption : [selectedOption]);
+          setValue(
+            Array.isArray(selectedOption)
+              ? selectedOption
+              : [selectedOption]
+          );
         }}
+        isLoading={isLoading}
         selectedOptionStyle="check"
       />
     </Flex>
@@ -115,7 +137,14 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
       ),
   })
   
-  let files = data ?? []
+  // Local state to store files for immediate updates
+  const [localFiles, setLocalFiles] = useState<{ label: string; value: string }[]>([]);
+
+  useEffect(() => {
+    if (data) {
+      setLocalFiles(data);
+    }
+  }, [data]);
 
   const defaultValues = params?.reduce((acc, param) => {
     acc[param.name] = param.default
@@ -131,6 +160,7 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
     reset,
     setValue,
     formState: { errors },
+    getValues,
   } = useForm<FormData>({
     mode: "onBlur",
     criteriaMode: "all",
@@ -172,16 +202,8 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
   const normalizedParams = useMemo(() => params || [], [params]);
  
   const [fileStates, setFileStates] = useState<Record<string, { label: string; value: string }[]>>({});
-
-  const handleFileSelection = (paramName: string, selectedOptions: { label: string; value: string }[]) => {
-    setFileStates((prev) => ({ ...prev, [paramName]: selectedOptions }));
-  };
-
-
-  if (filesLoading) return <div>Loading...</div>
-
-
   
+  console.log(filesLoading)
   return (
     <Box as="form" onSubmit={handleSubmit(onSubmit)} w="100%">
       <Box>
@@ -245,15 +267,39 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
               </Checkbox>
             )}
             {(param.param_type === "file" || param.param_type === "files") && (
-              <FileParam
-                param={param}
-                files={files}
-                setValue={(value) => setValue(param.name, value)}
-                selectedOptions={fileStates[param.name] || []}
-                setSelectedOptions={(selectedOptions) => handleFileSelection(param.name, selectedOptions)}
-                multiple={param.param_type === "files"}
-              />
-            )}
+            <FileParam
+              isLoading={filesLoading}
+              param={param}
+              files={localFiles}  // Use localFiles instead of data
+              setValue={(selected) => {
+                if (Array.isArray(selected) || param.param_type === "file") {
+                  // For multi-file selection, replace the existing value.
+                  if (!Array.isArray(selected)) {
+                    selected = [selected];
+                  }
+                  let values = selected.map((v) => v.value);
+                  setValue(param.name, values);
+                  setFileStates((prev) => {
+                    return { ...prev, [param.name]: selected as { label: string; value: string }[] }
+                  });
+                } else {
+                  // For a single file upload, append the new file to the existing values.
+                  let existingValues: string[] = getValues(param.name) || [];
+                  existingValues.push(selected.value);
+                  setValue(param.name, existingValues);
+                  setFileStates((prev) => {
+                    const existingOptions = prev[param.name] || []; 
+                    return { ...prev, [param.name]: [...existingOptions, selected as { label: string; value: string }] }
+                  });
+                }
+              }}
+              selectedOptions={fileStates[param.name] || []}
+              multiple={param.param_type === "files"}
+              updateLocalFiles={(newFile) =>
+                setLocalFiles((prev) => [...prev, newFile])
+              }
+            />
+          )}
             {errors[param.name] && (
               <FormErrorMessage>
                 {errors[param.name]?.message as React.ReactNode}

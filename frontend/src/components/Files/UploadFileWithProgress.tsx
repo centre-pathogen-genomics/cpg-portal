@@ -43,12 +43,11 @@ const FileUpload = ({ onComplete }: FileUploadProps) => {
 
   const handleFileUpload = useCallback(
     (file: File) => {
-      const cancelTokenSource = axios.CancelToken.source(); // Use cancel tokens to handle cancellation
-
+      const controller = new AbortController();
       const uploadingFile: UploadingFile = {
         file,
         progress: 0,
-        cancel: () => cancelTokenSource.cancel("Upload canceled"),
+        cancel: () => controller.abort(),
       };
 
       setUploadingFiles((prev) => [...prev, uploadingFile]);
@@ -60,7 +59,8 @@ const FileUpload = ({ onComplete }: FileUploadProps) => {
             prev.map((f) => (f.file === file ? { ...f, progress } : f))
           );
         },
-        onComplete
+        onComplete,
+        controller
       )
         .then(() => {
           showToast("Success!", `File ${file.name} uploaded successfully!`, "success");
@@ -75,9 +75,17 @@ const FileUpload = ({ onComplete }: FileUploadProps) => {
         })
         .catch((error) => {
           if (axios.isCancel(error)) {
-            showToast("Info", `Upload of ${file.name} canceled`, "success");
+            showToast("Upload Canceled", `Upload of ${file.name} canceled`, "warning");
           } else {
-            showToast("Error!", `Failed to upload ${file.name}`, "error");
+            if (error.response.status === 413) {
+              showToast(
+                file.name,
+                `${error.response.data.detail}`,
+                "error"
+              );
+            } else {
+              showToast("Error!", `Failed to upload ${file.name}`, "error");
+            }
           }
           setUploadingFiles((prev) => prev.filter((f) => f.file !== file));
         });
@@ -163,7 +171,6 @@ const FileUpload = ({ onComplete }: FileUploadProps) => {
         cursor="pointer"
         width="100%"
         height="150px"
-        mb={4}
       >
         <Icon as={HiDocumentArrowUp} w={10} h={10} mb={2} />
         <Text mb={0}><Text as='b'>Upload a file</Text> or drag and drop</Text>
