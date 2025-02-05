@@ -1,4 +1,9 @@
 Generic single-database configuration.
 
+```bash
 alembic revision --autogenerate -m "Add column last_name to User model"
 alembic upgrade head
+```
+Commit the migration file and the updated model file to the repository.
+
+Rebuild the Docker image and deploy the new version of the application.
