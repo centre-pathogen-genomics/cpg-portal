@@ -150,10 +150,10 @@ function RunsTable() {
                   <Td>
                    {run.tool.name}
                   </Td>
-                  <Td>
+                  <Td justifyContent={"center"} align="center" textAlign={"center"}>
                     <Flex wrap={"wrap"}>
                       {Object.keys(run.params).filter((key) => run.params[key] !== null).map((key) => (
-                        <Flex key={key} mr={1} mb={1}>
+                        <Flex key={key} m={0.5}>
                           <ParamTag key={key} param={key} value={run.params[key]} />
                         </Flex>
                       ))}

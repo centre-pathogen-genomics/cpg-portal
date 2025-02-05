@@ -1,4 +1,4 @@
-import { Tag, TagLabel, Tooltip, Text, Flex } from "@chakra-ui/react";
+import { Tag, TagLabel, Tooltip, Text, Flex, useColorModeValue } from "@chakra-ui/react";
  
 interface ParamTagProps {
   param: string;
@@ -22,12 +22,17 @@ const extractUUIDAndOtherText = (value: string): string => {
 };
 
 const ParamTag = ( {param, value}: ParamTagProps) => {
-    if (typeof value === 'string') {
-        value = extractUUIDAndOtherText(value);
-    } else if (Array.isArray(value) && value.length > 0) {
-        value = value.map((v) => extractUUIDAndOtherText(v));
+  if (typeof value === 'string') {
+      value = extractUUIDAndOtherText(value);
+  } else if (Array.isArray(value) && value.length > 0) {
+      value = value.map((v) => extractUUIDAndOtherText(v)).join(', ');
+  } else if (typeof value === 'boolean') {
+    if (value) {
+      value = 'true';
+    } else {
+      value = 'false';
     }
-    value = JSON.stringify(value);
+  }
 
   return (
     <Tooltip
@@ -35,12 +40,12 @@ const ParamTag = ( {param, value}: ParamTagProps) => {
         hasArrow
         label={value as string}
     >
-        <Tag  cursor={'pointer'} size={'sm'} variant='outline' >
-          <TagLabel mr={1} as={'b'}>{param}</TagLabel>
-          <Flex whiteSpace={'nowrap'}  maxW={60} overflow={'hidden'} >
-            <Text isTruncated >{value as string}</Text>
+        <Flex fontSize={'sm'} cursor={'pointer'} borderWidth={2} borderColor={'ui.main'} borderRadius='md'  >
+          <Flex h={'full'} color={'ui.light'} bg={'ui.main'} px={1}><Text as='b'>{param}</Text></Flex>
+          <Flex whiteSpace={'nowrap'} bg={'transparent'} px={1} maxW={60} overflow={'hidden'} >
+            <Text isTruncated>{value as string}</Text>
           </Flex>
-        </Tag>
+        </Flex>
     </Tooltip>
   )
 }
