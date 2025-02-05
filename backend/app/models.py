@@ -150,6 +150,9 @@ class CondaEnv(SQLModel):
     channels: list[str] = Field(default_factory=list)
     dependencies: list[str | CondaEnvPipDependency] = Field(default_factory=list)
 
+class ToolBadge(SQLModel):
+    badge: str
+    url: str | None = None
 
 # Shared properties
 class ToolBase(SQLModel):
@@ -158,9 +161,7 @@ class ToolBase(SQLModel):
     url: str | None = None
     image: str | None = None
     tags: list[str] | None = None
-    favourited_count: int = 0
-    enabled: bool = False
-    run_count: int = 0
+    badges: list[ToolBadge] | None = None
     command: str
     conda_env: CondaEnv | None = None # dependencies: [python=3.9, bokeh=2.4.2, conda-forge::numpy=1.21.*, nodejs=16.13.*, flask, pip, {pip: [Flask-Testing]}]
     post_install: str | None = None  # command -v hello-world >/dev/null 2>&1 || snk install wytamma/hello-world
@@ -174,6 +175,9 @@ class ToolCreate(ToolBase):
 
 # Properties to receive on Tool update
 class ToolUpdate(ToolBase):
+    favourited_count: int = 0
+    run_count: int = 0
+    enabled: bool = False
     name: str | None = None  # type: ignore
     command: str | None = None
     status: ToolStatus | None = None
@@ -182,7 +186,11 @@ class ToolUpdate(ToolBase):
 class Tool(ToolBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str = Field(index=True, unique=True)
+    favourited_count: int = 0
+    run_count: int = 0
+    enabled: bool = False
     tags: list[str] | None = Field(default_factory=list, sa_column=Column(JSON))
+    badges: list[ToolBadge] | None = Field(default_factory=list, sa_column=Column(JSON))
     status: ToolStatus = Field(default=ToolStatus.uninstalled, sa_column=Column(Enum(ToolStatus)))
     installation_log: str | None = None
     conda_env: CondaEnv | None = Field(default=None, sa_column=Column(JSON))
@@ -206,6 +214,9 @@ class ToolPublic(ToolBase):
     favourited: bool = False
     status: ToolStatus
     installation_log: str | None = None
+    favourited_count: int = 0
+    run_count: int = 0
+    enabled: bool = False
     id: uuid.UUID
 
 class ToolsPublic(SQLModel):

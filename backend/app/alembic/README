@@ -1,3 +1,4 @@
 Generic single-database configuration.
 
 alembic revision --autogenerate -m "Add column last_name to User model"
+alembic upgrade head
