@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     STORAGE_PATH: str = "/storage"
     CONDA_PATH: str = "/conda"
     TMP_PATH: str = "/tmp/cpg-portal"
+    MAX_FILE_UPLOAD_SIZE: int = 1024 * 1024 * 1024  # 1 GB
 
     @computed_field  # type: ignore[prop-decorator]
     @property

@@ -203,6 +203,7 @@ services:
       args:
         - VITE_API_URL=https://api.${DOMAIN?Variable not set}
         - NODE_ENV=production
+        - VITE_MAX_FILE_UPLOAD_SIZE=${MAX_FILE_UPLOAD_SIZE?Variable not set}
     labels:
       - traefik.enable=true
       - traefik.docker.network=traefik-public

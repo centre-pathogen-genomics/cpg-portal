@@ -9,15 +9,21 @@ import {
   IconButton,
   useColorModeValue,
 } from "@chakra-ui/react";
-import { HiOutlineCloudUpload } from "react-icons/hi";
+import { HiDocumentArrowUp } from "react-icons/hi2";
 import { FiX } from "react-icons/fi";
-
 import { useUpload } from "../../context/UploadContext";
 import useCustomToast from "../../hooks/useCustomToast";
 import axios from "axios";
 import { useQueryClient } from "@tanstack/react-query";
 import { humanReadableFileSize } from "../../utils";
-import { type FilePublic } from "../../client";
+import { FilePublic } from "../../client";
+
+// 1. Read the max file upload size from the environment. 
+//    If the environment variable is missing, default to e.g. 100 MB (104857600 bytes).
+const MAX_FILE_UPLOAD_SIZE = 
+  Number(import.meta.env.VITE_MAX_FILE_UPLOAD_SIZE) || 104857600;
+
+console.log("MAX_FILE_UPLOAD_SIZE", import.meta.env.VITE_MAX_FILE_UPLOAD_SIZE);
 
 interface UploadingFile {
   file: File;
@@ -26,11 +32,11 @@ interface UploadingFile {
 }
 
 interface FileUploadProps {
-  onComplete?: ((file: FilePublic) => void);
+  onComplete?: (file: FilePublic) => void;
 }
 
-const FileUpload = ({onComplete}: FileUploadProps) => {
-  const queryClient = useQueryClient()
+const FileUpload = ({ onComplete }: FileUploadProps) => {
+  const queryClient = useQueryClient();
   const { uploadFile } = useUpload();
   const showToast = useCustomToast();
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
@@ -47,23 +53,25 @@ const FileUpload = ({onComplete}: FileUploadProps) => {
 
       setUploadingFiles((prev) => [...prev, uploadingFile]);
 
-      uploadFile(file, (progress) => {
-        setUploadingFiles((prev) =>
-          prev.map((f) =>
-            f.file === file ? { ...f, progress } : f
-          )
-        );
-      }, onComplete)
+      uploadFile(
+        file,
+        (progress) => {
+          setUploadingFiles((prev) =>
+            prev.map((f) => (f.file === file ? { ...f, progress } : f))
+          );
+        },
+        onComplete
+      )
         .then(() => {
           showToast("Success!", `File ${file.name} uploaded successfully!`, "success");
           setUploadingFiles((prev) => prev.filter((f) => f.file !== file));
+          // Invalidate queries to refresh data
           queryClient.invalidateQueries({
             queryKey: ['files'],
-          })
-          // reset the stats cache
+          });
           queryClient.invalidateQueries({
-            queryKey: [{"_id":"getFilesStats"}],
-          })
+            queryKey: [{ "_id": "getFilesStats" }],
+          });
         })
         .catch((error) => {
           if (axios.isCancel(error)) {
@@ -74,14 +82,25 @@ const FileUpload = ({onComplete}: FileUploadProps) => {
           setUploadingFiles((prev) => prev.filter((f) => f.file !== file));
         });
     },
-    [uploadFile, showToast]
+    [uploadFile, showToast, onComplete, queryClient]
   );
 
+  // 2. Check file size before uploading; skip and warn if it exceeds MAX_FILE_UPLOAD_SIZE.
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
     for (const file of files) {
+      if (file.size > MAX_FILE_UPLOAD_SIZE) {
+        showToast(
+          "Error!",
+          `File ${file.name} (${humanReadableFileSize(file.size)}) exceeds the maximum allowed size of ${humanReadableFileSize(
+            MAX_FILE_UPLOAD_SIZE
+          )}.`,
+          "error"
+        );
+        continue;
+      }
       handleFileUpload(file);
     }
   };
@@ -92,6 +111,16 @@ const FileUpload = ({onComplete}: FileUploadProps) => {
 
     if (event.dataTransfer.files && event.dataTransfer.files.length > 0) {
       for (const file of event.dataTransfer.files) {
+        if (file.size > MAX_FILE_UPLOAD_SIZE) {
+          showToast(
+            "Error!",
+            `File ${file.name} (${humanReadableFileSize(file.size)}) exceeds the maximum allowed size of ${humanReadableFileSize(
+              MAX_FILE_UPLOAD_SIZE
+            )}.`,
+            "error"
+          );
+          continue;
+        }
         handleFileUpload(file);
       }
     }
@@ -136,8 +165,9 @@ const FileUpload = ({onComplete}: FileUploadProps) => {
         height="150px"
         mb={4}
       >
-        <Icon as={HiOutlineCloudUpload} w={10} h={10} mb={2} color="blue.400" />
-        <Text mb={2}>Drag and drop files here, or click to select files</Text>
+        <Icon as={HiDocumentArrowUp} w={10} h={10} mb={2} />
+        <Text mb={0}><Text as='b'>Upload a file</Text> or drag and drop</Text>
+        <Text fontSize="sm" color="gray.500">Max file size {humanReadableFileSize(MAX_FILE_UPLOAD_SIZE)}</Text>
         <Input
           type="file"
           position="absolute"
@@ -148,7 +178,6 @@ const FileUpload = ({onComplete}: FileUploadProps) => {
           opacity="0"
           onChange={handleFileChange}
           cursor="pointer"
-          zIndex="1"
           multiple
           required={false}
         />

@@ -10,6 +10,7 @@ RUN npm install
 COPY ./ /app/
 
 ARG VITE_API_URL=${VITE_API_URL}
+ARG VITE_MAX_FILE_UPLOAD_SIZE=${VITE_MAX_FILE_UPLOAD_SIZE}
 
 RUN npm run build
 

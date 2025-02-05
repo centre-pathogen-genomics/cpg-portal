@@ -5,12 +5,13 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query, UploadFile
+from fastapi import APIRouter, HTTPException, Query, UploadFile, status
 from fastapi.responses import FileResponse
 from sqlalchemy import desc
 from sqlmodel import func, select
 
 from app.api.deps import CurrentUser, FileDep, SessionDep
+from app.core.config import settings
 from app.core.security import create_access_token
 from app.crud import save_file as save_file_to_filesystem
 from app.models import File, FilePublic, FilesPublic, FilesStatistics, FileType, Message
@@ -95,19 +96,25 @@ def upload_file(
     """
     Upload a new file.
     """
+    if file.size > settings.MAX_FILE_UPLOAD_SIZE:
+        raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail=f"File size is too large. Max allowed size is {settings.MAX_FILE_UPLOAD_SIZE} bytes")
     # TODO: potentially convert to async func and use aiofiles (https://stackoverflow.com/questions/63580229/how-to-save-uploadfile-in-fastapi)
     # Create a temporary directory
     with TemporaryDirectory() as temp_dir:
+        print(f"Temporary directory created: {temp_dir}")
         # Construct the temporary file path with the same name as the uploaded file
         tmp_path = Path(temp_dir) / file.filename
-
+        print(f"Temporary file path: {tmp_path}")
         # Write the uploaded file content to the temporary file
         with open(tmp_path, "wb") as tmp_file:
+            print(f"Copying file content to {tmp_path}")
+            print(f"File size: {file.size}")
             shutil.copyfileobj(file.file, tmp_file, length=1024*1024)  # Copy in 1 MB chunks
+        print(f"File saved to {tmp_path}")
 
         file_type = guess_file_type(file)
 
-
+        print(f"File type: {file_type}")
         file_metadata = save_file_to_filesystem(
             session=session,
             file_path=tmp_path,
