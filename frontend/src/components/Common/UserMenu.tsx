@@ -29,14 +29,14 @@ async function sha256(message: string) {
 }
 
 const generateGravatarUrl = async (email: string | undefined) => {
-  if (!email) return "https://www.gravatar.com/avatar/?d=mp"; // Default avatar
+  if (!email) return "/assets/images/user.png"; // Default avatar
   const hash = await sha256(email.trim().toLowerCase());
   return `https://www.gravatar.com/avatar/${hash}?d=mp`;
 };
 
 const UserMenu = () => {
   const { logout, user } = useAuth();
-  const [gravatarUrl, setGravatarUrl] = useState<string>("");
+  const [gravatarUrl, setGravatarUrl] = useState<string>("/assets/images/user.png");
   const outlineColor = useColorModeValue("ui.main", "ui.light")
 
   useEffect(() => {
@@ -65,13 +65,14 @@ const UserMenu = () => {
           <MenuButton
             as={Avatar}
             src={gravatarUrl}
-            name={user?.full_name || "User"}
+            // name={user?.full_name || "User"}
             size="md"
             p={1}
             data-testid="user-menu"
             border='2px'
             color={outlineColor}
             cursor={"pointer"}
+            bg='transparent'
           />
           <MenuList>
             <MenuItem icon={<FiUser fontSize="18px" />} as={Link} to="settings">
