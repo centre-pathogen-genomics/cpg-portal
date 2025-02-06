@@ -1,4 +1,4 @@
-import { Accordion, AccordionButton, AccordionIcon, AccordionItem, AccordionPanel, Box, Button, Flex, FormLabel, Heading, HStack, Image, Link, Switch, Text } from "@chakra-ui/react"
+import { Accordion, AccordionButton, AccordionIcon, AccordionItem, AccordionPanel, Box, Button, Flex, FormLabel, Heading, HStack, Image, Link, Switch, Text, Badge as VersionBadge } from "@chakra-ui/react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { disableToolMutation, enableToolMutation, installToolMutation, readToolByNameOptions, readToolByNameQueryKey, readUserMeQueryKey } from "../../../client/@tanstack/react-query.gen"
@@ -7,8 +7,9 @@ import { ToolPublic, UserPublic } from "../../../client"
 import CodeBlock from "../../../components/Common/CodeBlock"
 import Badge from "../../../components/Tools/badges/Badge"
 import GitHubBadge from "../../../components/Tools/badges/GitHubBadge"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import useCustomToast from "../../../hooks/useCustomToast"
+import FavouriteButton from "../../../components/Tools/FavouriteButton"
 
 export const Route = createFileRoute("/_layout/tools/$name")({
   component: Tool,
@@ -122,10 +123,19 @@ function Tool() {
   const queryClient = useQueryClient()
   const currentUser = queryClient.getQueryData<UserPublic>(readUserMeQueryKey())
   const { name } = Route.useParams()
-
   const { isError, data: tool, isPending } = useQuery({
     ...readToolByNameOptions({path: {tool_name: name}}),
   })
+
+  useEffect(() => {
+    if (tool) {
+      setIsFavourited(tool.favourited ?? false);
+    }
+  }
+  , [tool])
+
+  const [isFavourited, setIsFavourited] = useState(false); 
+  
 
   if (isError) {
     return (
@@ -145,12 +155,21 @@ function Tool() {
       </Box>
     )
   }
-
   
   return (
     <Flex justify="center">
       <Box maxW="4xl" width="100%" mx={4} pt={6} pb={8}>
-        <Heading mb={2} pb={2} size="2xl" borderBottomWidth={1}>{tool?.name}</Heading>
+        <Flex justify={'space-between'} direction={'row'} mb={2} pb={2} borderBottomWidth={1} >
+          <Flex>
+            <Heading size="2xl" >{tool?.name}</Heading>
+            {tool.version && (
+              <Flex direction={'column'}>
+                <VersionBadge ml='1' variant='solid' colorScheme='green'>v{tool.version}</VersionBadge>
+              </Flex>
+            )}
+          </Flex>
+          <FavouriteButton tool={tool} isFavourited={isFavourited} setIsFavourited={setIsFavourited} />
+        </Flex>
         {/* {tool?.image && (<Image maxH={200} src={tool?.image} alt={tool?.name} mb={4} />)} */}
         <Flex gap={1} wrap={'wrap'} mb={2}>
           {tool?.url && (

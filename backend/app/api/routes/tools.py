@@ -80,20 +80,66 @@ def read_tools(
 
     return ToolsPublic(data=tools_with_favourite_status, count=count)
 
+def read_tool_with_favourite(
+    session: SessionDep, current_user: CurrentUser, *, tool_id: uuid.UUID | None = None, name: str | None = None
+) -> select:
+
+    """
+    Build the tool query based on the current user and show_favourites flag.
+    """
+    if (tool_id and name) or (not tool_id and not name):
+        raise ValueError("Either tool_id or name must be provided")
+    query = (
+        select(
+            Tool,
+            UserFavouriteToolsLink.tool_id.label("favourited_tool_id")
+        )
+        .join(
+            UserFavouriteToolsLink,
+            (UserFavouriteToolsLink.tool_id == Tool.id)
+            & (UserFavouriteToolsLink.user_id == current_user.id),
+            isouter=True,  # LEFT JOIN to include all tools
+        )
+    )
+    if tool_id:
+        query = query.where(Tool.id == tool_id)
+    elif name:
+        query = query.where(func.lower(Tool.name) == name.lower())
+
+    # Apply enabled filter for non-superusers
+    if not current_user.is_superuser:
+        query = query.where((Tool.enabled) & (Tool.status == "installed"))
+    result = session.exec(query).first()
+    if not result:
+        raise HTTPException(status_code=404, detail="Tool not found")
+    tool, favourited_tool_id = result
+    if not current_user.is_superuser and (not tool.enabled or tool.status != "installed"):
+        raise HTTPException(status_code=403, detail="Tool is disabled")
+    tool_public = ToolPublic.from_orm(tool)
+    tool_public.favourited = favourited_tool_id is not None
+    return tool_public
+
+@router.get("/name/{tool_name}", response_model=ToolPublic)
+def read_tool_by_name(
+    *, session: SessionDep, current_user: CurrentUser, tool_name: str
+) -> Any:
+    """
+    Retrieve tool by name.
+    """
+    # Query the tool by name
+    tool_public = read_tool_with_favourite(session, current_user, name=tool_name)
+    return tool_public
 
 @router.get("/{tool_id}", response_model=ToolPublic)
 def read_tool(
     *, session: SessionDep, current_user: CurrentUser, tool_id: uuid.UUID
 ) -> Any:
     """
-    Retrieve tool by ID.
+    Retrieve tool by ID with favourited status.
     """
-    tool = session.get(Tool, tool_id)
-    if not tool:
-        raise HTTPException(status_code=404, detail="Tool not found")
-    if not current_user.is_superuser and (not tool.enabled or tool.status != "installed"):
-        raise HTTPException(status_code=403, detail="Tool is disabled")
-    return tool
+    # Query to retrieve the tool along with the favourited status
+    tool_public = read_tool_with_favourite(session, current_user, tool_id=tool_id)
+    return tool_public
 
 
 @router.post("/{tool_id}/favourite", response_model=Message)
@@ -144,22 +190,6 @@ def unfavourite_tool(tool_id: uuid.UUID, session: SessionDep, current_user: Curr
     session.add(tool)
     session.commit()
     return Message(message="Tool removed from favourites successfully")
-
-
-@router.get("/name/{tool_name}", response_model=ToolPublic)
-def read_tool_by_name(
-    *, session: SessionDep, current_user: CurrentUser, tool_name: str
-) -> Any:
-    """
-    Retrieve tool by name.
-    """
-    # Query the tool by name
-    tool = session.query(Tool).filter(func.lower(Tool.name) == tool_name.lower()).first()
-    if not tool:
-        raise HTTPException(status_code=404, detail="Tool not found")
-    if not current_user.is_superuser and (not tool.enabled or tool.status != "installed"):
-        raise HTTPException(status_code=403, detail="Tool is disabled")
-    return tool
 
 
 @router.post("/", response_model=ToolPublic)
