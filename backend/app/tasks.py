@@ -97,6 +97,7 @@ async def install_tool(
             print(f"Conda environment for Tool(id={tool_id}) already exists. Will force create.")
         print(f"Creating conda environment for Tool(id={tool_id})")
         stdout = await conda_env.create()
+        conda_env_pinned = conda_env.pin()
     except CondaEnvMangerError as e:
         print(f"An error occurred: {e}")
         tool.status = "failed"
@@ -108,6 +109,7 @@ async def install_tool(
     print(f"Conda environment for Tool(id={tool_id}) created")
     tool.status = "installed"
     tool.installation_log = stdout
+    tool.conda_env_pinned = conda_env_pinned
     session.add(tool)
     session.commit()
     return True

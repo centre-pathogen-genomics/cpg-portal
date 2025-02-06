@@ -78,13 +78,19 @@ class CondaEnvManger:
                     raise e
         return stdout
 
-    async def remove(self):
+    async def remove(self) -> None:
         if not self.path.exists():
-            print(f"Conda environment '{self.path}' does not exist")
-            return
+            raise CondaEnvMangerRemoveError(f"Conda environment '{self.path}' does not exist")
         command = f"conda env remove --yes -p {self.path}"
         returncode, stdout = await self._run_command(command)
         if returncode != 0:
             raise CondaEnvMangerRemoveError(stdout)
 
-
+    async def pin(self) -> str:
+        if not self.path.exists():
+            raise CondaEnvMangerError(f"Conda environment '{self.path}' does not exist")
+        command = f"conda env export -p {self.path} --no-builds"
+        returncode, stdout = await self._run_command(command)
+        if returncode != 0:
+            raise CondaEnvMangerError(stdout)
+        return stdout

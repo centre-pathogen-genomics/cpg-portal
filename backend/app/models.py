@@ -200,6 +200,7 @@ class Tool(ToolBase, table=True):
     status: ToolStatus = Field(default=ToolStatus.uninstalled, sa_column=Column(Enum(ToolStatus)))
     installation_log: str | None = None
     conda_env: CondaEnv | None = Field(default=None, sa_column=Column(JSON))
+    conda_env_pinned: str | None = None
     setup_files: list[SetupFile] | None = Field(default_factory=list, sa_column=Column(JSON))
     params: list[Param] | None = Field(default_factory=list, sa_column=Column(JSON))
     targets: list[Target] | None = Field(default_factory=list, sa_column=Column(JSON))
@@ -223,15 +224,23 @@ class ToolPublic(ToolBase):
     favourited_count: int = 0
     run_count: int = 0
     enabled: bool = False
+    conda_env_pinned: str | None = None
     id: uuid.UUID
-
-class ToolsPublic(SQLModel):
-    data: list[ToolPublic]
-    count: int
 
 class ToolMinimalPublic(SQLModel):
     id: uuid.UUID
     name: str
+    image: str | None = None
+    description: str | None = None
+    tags: list[str] | None = None
+    favourited: bool = False
+    favourited_count: int = 0
+    run_count: int = 0
+    enabled: bool = False
+
+class ToolsPublic(SQLModel):
+    data: list[ToolMinimalPublic]
+    count: int
 
 class RunStatus(str, enum.Enum):
     pending = "pending"
