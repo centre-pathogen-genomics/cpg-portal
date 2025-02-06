@@ -57,9 +57,7 @@ const UserMenu = () => {
       {/* Desktop */}
       <Box
         display={{ base: "none", md: "block" }}
-        position="fixed"
-        top={4}
-        right={4}
+        
       >
         <Menu >
           <MenuButton

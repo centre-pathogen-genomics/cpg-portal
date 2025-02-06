@@ -158,7 +158,7 @@ function Tool() {
   
   return (
     <Flex justify="center">
-      <Box maxW="4xl" width="100%" mx={4} pt={6} pb={8}>
+      <Box maxW="5xl" width="100%" mx={4} pt={6} pb={8}>
         <Flex justify={'space-between'} direction={'row'} mb={2} pb={2} borderBottomWidth={1} >
           <Flex>
             <Heading size="2xl" >{tool?.name}</Heading>

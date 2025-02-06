@@ -8,7 +8,7 @@ import { Flex, Box, Spinner } from "@chakra-ui/react"
 import { Outlet, createFileRoute, redirect } from "@tanstack/react-router"
 
 import Sidebar from "../components/Common/Sidebar"
-import UserMenu from "../components/Common/UserMenu"
+import MainMenuBar from "../components/Common/MainMenuBar"
 import UploadProgress from "../components/Files/UploadProgress"
 import useAuth, { checkToken} from "../hooks/useAuth"
 import { UploadProvider } from "../context/UploadContext"
@@ -43,14 +43,19 @@ function Layout() {
   const { isLoading } = useAuth()
 
   return (
-    <Flex h="100dvh" position="relative" overflow="hidden">
-      {/* Sidebar with fixed width */}
-      <Box  h="100%">
-        <Sidebar />
+    <Flex h="100dvh" position="relative" direction={'column'} overflow="hidden">
+      {/* Navbar */}
+      <Box w={'100%'} zIndex={1000}>
+        <MainMenuBar />
       </Box>
-
+     
       {/* Main content area */}
-      <Flex flex="1" flexDirection="column" h="100%" overflow="auto">
+      <Flex flex="1" flexDirection="row" h="100%" overflow="auto">
+         {/* Sidebar with fixed width */}
+        {/* <Box h="100%">
+          <Sidebar />
+        </Box> */}
+
         {isLoading ? (
           <Flex justify="center" align="center" height="100%" width="100%">
             <Spinner size="xl" color="ui.main" />
@@ -66,7 +71,7 @@ function Layout() {
       </Flex>
 
       {/* User Menu (optional, floating, or positioned appropriately) */}
-      <UserMenu />
+
     </Flex>
   )
 }

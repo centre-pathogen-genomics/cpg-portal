@@ -222,7 +222,7 @@ function Actions() {
 
 function Runs() {
   return (
-    <Container maxW="full">
+    <Container maxW={"full"}>
       <Stack spacing={1}>
         <Heading size="2xl" pt={6}>
           My Runs

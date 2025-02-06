@@ -19,6 +19,7 @@ import { Route as LayoutImport } from './routes/_layout'
 import { Route as LayoutIndexImport } from './routes/_layout/index'
 import { Route as LayoutSettingsImport } from './routes/_layout/settings'
 import { Route as LayoutAdminImport } from './routes/_layout/admin'
+import { Route as LayoutSearchQueryImport } from './routes/_layout/search/$query'
 import { Route as LayoutRunsIndexImport } from './routes/_layout/runs/index'
 import { Route as LayoutFilesIndexImport } from './routes/_layout/files/index'
 import { Route as LayoutToolsNameImport } from './routes/_layout/tools/$name'
@@ -63,6 +64,11 @@ const LayoutSettingsRoute = LayoutSettingsImport.update({
 
 const LayoutAdminRoute = LayoutAdminImport.update({
   path: '/admin',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
+const LayoutSearchQueryRoute = LayoutSearchQueryImport.update({
+  path: '/search/$query',
   getParentRoute: () => LayoutRoute,
 } as any)
 
@@ -138,6 +144,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutRunsIndexImport
       parentRoute: typeof LayoutImport
     }
+    '/_layout/search/$query': {
+      preLoaderRoute: typeof LayoutSearchQueryImport
+      parentRoute: typeof LayoutImport
+    }
   }
 }
 
@@ -152,6 +162,7 @@ export const routeTree = rootRoute.addChildren([
     LayoutToolsNameRoute,
     LayoutFilesIndexRoute,
     LayoutRunsIndexRoute,
+    LayoutSearchQueryRoute,
   ]),
   LoginRoute,
   RecoverPasswordRoute,

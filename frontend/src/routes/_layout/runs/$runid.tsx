@@ -72,7 +72,7 @@ function RunDetail() {
   }
 
   return (
-    <>
+    <Box maxW={"5xl"} justifySelf={"center"} >
       <Heading
         size="2xl"
         textAlign={{ base: "left"}}
@@ -94,7 +94,7 @@ function RunDetail() {
           </BreadcrumbItem>
 
           <BreadcrumbItem isCurrentPage>
-            <BreadcrumbLink >{run.id}</BreadcrumbLink>
+            <BreadcrumbLink >{run.id.split('-')[0]}</BreadcrumbLink>
           </BreadcrumbItem>
         </Breadcrumb>
       </Heading>
@@ -138,7 +138,7 @@ function RunDetail() {
         </>
       )}
       <OutputAccordion run={run} /> 
-    </>
+    </Box>
   )
 }
 
