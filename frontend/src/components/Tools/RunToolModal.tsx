@@ -27,7 +27,7 @@ const RunToolModal = ({
   return (
     <Modal isOpen={isOpen} onClose={onClose} isCentered>
       <ModalOverlay />
-      <ModalContent>
+      <ModalContent maxWidth={"2xl"}>
         <ModalHeader>Configure Tool</ModalHeader>
         <ModalCloseButton />
         <ModalBody pb={6}>

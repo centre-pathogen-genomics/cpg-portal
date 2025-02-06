@@ -158,7 +158,7 @@ const ToolCard = ({ tool }: ToolCardProps) => {
           </Heading>
         </CardHeader>
         <CardBody>
-          <Text>{tool.description}</Text>
+          <Text noOfLines={3}>{tool.description}</Text>
         </CardBody>
         <CardFooter justify="space-between">
           <Flex overflow={"auto"} wrap={"nowrap"} mr={2} className="no-scroll">
