@@ -270,6 +270,7 @@ class Run(RunBase, table=True):
         ),
     )
     command: str | None = None
+    conda_env_pinned: str | None = None
     stderr: str | None = None
     stdout: str | None = None
     tool_id: uuid.UUID = Field(foreign_key="tool.id", nullable=False)
@@ -281,11 +282,14 @@ class Run(RunBase, table=True):
     finished_at: datetime | None = Field(default=None, nullable=True)
 
 
-class RunPublicMinimal(RunBase):
+class RunPublicMinimal(SQLModel):
     id: uuid.UUID
-    owner_id: uuid.UUID
-    tool: ToolPublic
+    tool: ToolMinimalPublic
     params: dict
+    status: RunStatus
+    created_at: datetime
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
 
 
 class FileBase(SQLModel):
@@ -324,14 +328,11 @@ class RunPublic(RunPublicMinimal):
     stderr: str | None = None
     stdout: str | None = None
     command: str | None = None
+    conda_env_pinned: str | None = None
     params: dict
     files: list[FilePublic]
 
 
 class RunsPublicMinimal(SQLModel):
     data: list[RunPublicMinimal]
-    count: int
-
-class RunsPublic(SQLModel):
-    data: list[RunPublic]
     count: int

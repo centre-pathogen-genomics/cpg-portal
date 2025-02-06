@@ -166,6 +166,7 @@ async def run_tool(
         return False
     run.status = "running"
     run.started_at = datetime.utcnow()
+    run.conda_env_pinned = run.tool.conda_env_pinned
     print(f"Starting Run(id={run_id}) for Tool(id={run.tool_id})")
     session.add(run)
     session.commit()
