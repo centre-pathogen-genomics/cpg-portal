@@ -17,11 +17,12 @@ class CondaEnvMangerRemoveError(CondaEnvMangerError):
 class CondaEnvManger:
     """Conda environment"""
 
-    def __init__(self, path: Path, env_dict: dict, post_install_command: str = None):
+    def __init__(self, path: Path, env_dict: dict, post_install_command: str = None, version: str = None):
         self.env_dict = env_dict
         self.post_install_command = post_install_command
         self.path = path
         self.activate_command = f"source /opt/conda/bin/activate '{self.path}'"
+        self.version = version
 
     @property
     def is_created(self):
@@ -30,6 +31,8 @@ class CondaEnvManger:
     @property
     def env_yaml_str(self) -> str:
         yaml_str = yaml.dump(self.env_dict, default_flow_style=False)
+        if self.version:
+            yaml_str = yaml_str.replace("{{version}}", self.version).replace("{{ version }}", self.version)
         return yaml_str
 
     async def _run_command(self, cmd, cwd=None):

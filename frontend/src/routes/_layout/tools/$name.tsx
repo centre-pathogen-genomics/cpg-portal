@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { disableToolMutation, enableToolMutation, installToolMutation, readToolByNameOptions, readToolByNameQueryKey, readUserMeQueryKey } from "../../../client/@tanstack/react-query.gen"
 import RunToolForm from "../../../components/Tools/RunToolForm"
-import { ToolBadge, ToolPublic, UserPublic } from "../../../client"
+import { ToolPublic, UserPublic } from "../../../client"
 import CodeBlock from "../../../components/Common/CodeBlock"
 import Badge from "../../../components/Tools/badges/Badge"
 import GitHubBadge from "../../../components/Tools/badges/GitHubBadge"
@@ -150,7 +150,7 @@ function Tool() {
   return (
     <Flex justify="center">
       <Box maxW="4xl" width="100%" mx={4} pt={6} pb={8}>
-        <Heading mb={1} size="2xl">{tool?.name}</Heading>
+        <Heading mb={2} pb={2} size="2xl" borderBottomWidth={1}>{tool?.name}</Heading>
         {/* {tool?.image && (<Image maxH={200} src={tool?.image} alt={tool?.name} mb={4} />)} */}
         <Flex gap={1} wrap={'wrap'} mb={2}>
           {tool?.url && (
@@ -182,7 +182,8 @@ function Tool() {
               <Badge key={tag} label={'%23'} value={tag} />
           ))}
         </Flex>
-        <Text pb={4}>{tool.description}</Text>
+        <Text mb={4} >{tool.description}</Text>
+        <Heading size="lg" mb={4}>Configure Tool</Heading>
         <RunToolForm
           toolId={tool.id}
           params={tool.params ? tool.params : []}

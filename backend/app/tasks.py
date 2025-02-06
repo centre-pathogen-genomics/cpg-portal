@@ -89,7 +89,8 @@ async def install_tool(
     conda_env = CondaEnvManger(
         path=Path(settings.CONDA_PATH) / str(tool_id),
         env_dict=tool.conda_env,
-        post_install_command=post_install_command
+        post_install_command=post_install_command,
+        version=tool.version,
     )
     try:
         if conda_env.is_created:

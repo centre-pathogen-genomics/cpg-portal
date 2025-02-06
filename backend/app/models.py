@@ -157,6 +157,7 @@ class ToolBadge(SQLModel):
 # Shared properties
 class ToolBase(SQLModel):
     name: str
+    version: str | None = None
     image: str | None = None
     description: str | None = None
     url: str | None = None
