@@ -5,6 +5,7 @@ import { HiOutlineLightningBolt } from "react-icons/hi";
 import { HiOutlineTag } from "react-icons/hi";
 import { HiCalendarDays } from "react-icons/hi2";
 import { HiOutlineClock } from "react-icons/hi2";
+import { SiAnaconda } from "react-icons/si";
 
 
 
@@ -45,25 +46,37 @@ function Parameters({ params }: { params: Record<string, any> }) {
     )
 }
 
+function condaEnvDownloadLink({ env }: { env: string | null }) {
+    if (!env) {
+        return (
+            <Text></Text>
+        )
+    }
+    return (
+        <Link href={`data:text/plain;charset=utf-8,${encodeURIComponent(env)}`} download="environment.yaml">
+            environment.yaml
+        </Link>
+    )
+}
+
 function RunMetadata({ run }: RunMetadataProps) {
     const navigate = useNavigate()
     const items = [
         { icon: HiOutlineStatusOnline, title: "Status", value: StatusBadge({status: run.status}) },
         { icon: HiOutlineLightningBolt, title: "Tool", value: (<Link onClick={(e) =>{e.stopPropagation(); navigate({
-            to: `/tools/${run.tool.name}`,
-            replace: false,
-            resetScroll: true,
-          })
-        }
-      }
-    >
-      {run.tool.name}
-</Link>
-) },
-{ icon: HiCalendarDays, title: "Started", value: humanReadableDateTime(run.started_at ? run.started_at : "") },
-// { icon: HiCalendarDays, title: "Completed", value: humanReadableDateTime(run.finished_at ? run.finished_at : "") },
-{ icon: HiOutlineClock, title: "Runtime", value: (<RunRuntime started_at={run.started_at} finished_at={run.finished_at} status={run.status} />) },
-{ icon: HiOutlineTag, title: "Parameters", value: Parameters({params: run.params}) },
+                to: `/tools/${run.tool.name}`,
+                replace: false,
+                resetScroll: true,
+                    })
+                    }
+                }
+                >
+                {run.tool.name}
+            </Link>) },
+        { icon: HiCalendarDays, title: "Started", value: humanReadableDateTime(run.started_at ? run.started_at : "") },
+        { icon: HiOutlineClock, title: "Runtime", value: (<RunRuntime started_at={run.started_at ?? null} finished_at={run.finished_at ?? null} status={run.status} />) },
+        { icon: SiAnaconda, title: "Conda", value: condaEnvDownloadLink({ env: run.conda_env_pinned ?? null }) },
+        { icon: HiOutlineTag, title: "Parameters", value: Parameters({params: run.params}) },
     ]
   return (
     <Flex direction={'column'}>

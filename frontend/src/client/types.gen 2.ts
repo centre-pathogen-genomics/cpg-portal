@@ -76,32 +76,35 @@ export type ParamType =
   | "files"
 
 export type RunPublic = {
+  taskiq_id: string
+  status: RunStatus
+  created_at: string
+  started_at: string | null
+  finished_at: string | null
   id: string
-  tool: ToolMinimalPublic
+  owner_id: string
+  tool: ToolPublic
   params: {
     [key: string]: unknown
   }
-  status: RunStatus
-  created_at: string
-  started_at?: string | null
-  finished_at?: string | null
   stderr?: string | null
   stdout?: string | null
   command?: string | null
-  conda_env_pinned?: string | null
   files: Array<FilePublic>
 }
 
 export type RunPublicMinimal = {
+  taskiq_id: string
+  status: RunStatus
+  created_at: string
+  started_at: string | null
+  finished_at: string | null
   id: string
-  tool: ToolMinimalPublic
+  owner_id: string
+  tool: ToolPublic
   params: {
     [key: string]: unknown
   }
-  status: RunStatus
-  created_at: string
-  started_at?: string | null
-  finished_at?: string | null
 }
 
 export type RunStatus =
@@ -139,7 +142,6 @@ export type ToolBadge = {
 
 export type ToolCreate = {
   name: string
-  version?: string | null
   image?: string | null
   description?: string | null
   url?: string | null
@@ -158,21 +160,8 @@ export type ToolCreate = {
   targets?: Array<Target> | null
 }
 
-export type ToolMinimalPublic = {
-  id: string
-  name: string
-  image?: string | null
-  description?: string | null
-  tags?: Array<string> | null
-  favourited?: boolean
-  favourited_count?: number
-  run_count?: number
-  enabled?: boolean
-}
-
 export type ToolPublic = {
   name: string
-  version?: string | null
   image?: string | null
   description?: string | null
   url?: string | null
@@ -195,7 +184,6 @@ export type ToolPublic = {
   favourited_count?: number
   run_count?: number
   enabled?: boolean
-  conda_env_pinned?: string | null
   id: string
 }
 
@@ -208,7 +196,6 @@ export type ToolStatus =
 
 export type ToolUpdate = {
   name?: string | null
-  version?: string | null
   image?: string | null
   description?: string | null
   url?: string | null
@@ -234,7 +221,7 @@ export type ToolUpdate = {
 export type ToolsOrderBy = "created_at" | "run_count"
 
 export type ToolsPublic = {
-  data: Array<ToolMinimalPublic>
+  data: Array<ToolPublic>
   count: number
 }
 
