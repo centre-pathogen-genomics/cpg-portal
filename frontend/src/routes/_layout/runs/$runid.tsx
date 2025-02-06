@@ -74,10 +74,10 @@ function RunDetail() {
   return (
     <>
       <Heading
-        size="lg"
+        size="2xl"
         textAlign={{ base: "left"}}
         pt={6}
-        pb={8}
+        pb={2}
       >
         <Breadcrumb
           spacing="2px"

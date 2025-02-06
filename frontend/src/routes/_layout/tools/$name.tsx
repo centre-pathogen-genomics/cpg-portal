@@ -1,10 +1,12 @@
-import { Accordion, AccordionButton, AccordionIcon, AccordionItem, AccordionPanel, Box, Button, FormLabel, Heading, HStack, Switch, Text } from "@chakra-ui/react"
+import { Accordion, AccordionButton, AccordionIcon, AccordionItem, AccordionPanel, Box, Button, Flex, FormLabel, Heading, HStack, Image, Link, Switch, Text } from "@chakra-ui/react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { disableToolMutation, enableToolMutation, installToolMutation, readToolByNameOptions, readToolByNameQueryKey, readUserMeQueryKey } from "../../../client/@tanstack/react-query.gen"
 import RunToolForm from "../../../components/Tools/RunToolForm"
-import { ToolPublic, UserPublic } from "../../../client"
+import { ToolBadge, ToolPublic, UserPublic } from "../../../client"
 import CodeBlock from "../../../components/Common/CodeBlock"
+import Badge from "../../../components/Tools/badges/Badge"
+import GitHubBadge from "../../../components/Tools/badges/GitHubBadge"
 import { useState } from "react"
 import useCustomToast from "../../../hooks/useCustomToast"
 
@@ -138,51 +140,85 @@ function Tool() {
   }
   if (isPending) {
     return (
-      <Box maxW="2xl" width="100%" mx={4} pt={12} pb={8}>
+      <Box maxW="4xl" width="100%" mx={4} pt={12} pb={8}>
         <Heading>Loading...</Heading>
       </Box>
     )
   }
+
   
   return (
-    <Box maxW="2xl" width="100%" mx={4} pt={12} pb={8}>
-      <Heading size="lg">{tool?.name}</Heading>
-      <Text pb={4}>{tool.description}</Text>
-      <RunToolForm
-        toolId={tool.id}
-        params={tool.params ? tool.params : []}
-        onSuccess={(run) => {
-          navigate({
-            to: `/runs/${run.id}`,
-            params: { runid: run.id },
-            replace: false,
-            resetScroll: true,
-          })
-        }}
-      />
-      {currentUser?.is_superuser && ( 
-        <Accordion allowToggle  mt={8}>
-          <AccordionItem>
-            <AccordionButton>
-              <Box as='span' flex='1' textAlign='left'>
-                Admin
-              </Box>
-              <AccordionIcon />
-            </AccordionButton>
-            <AccordionPanel pb={4}>
-              <Box>
-                <HStack justify={"space-between"} mb={4}>
-                  <InstallToolButton tool={tool} />
-                  <EnableToolButton tool={tool} />
-                </HStack>
-                <Heading size="sm">Installation Log ({tool.status})</Heading>
-                <CodeBlock code={tool.installation_log ? tool.installation_log : "\n"} language="bash" lineNumbers />
-              </Box>
-            </AccordionPanel>
-          </AccordionItem>
-        </Accordion>
-      )}
-    </Box>
+    <Flex justify="center">
+      <Box maxW="4xl" width="100%" mx={4} pt={6} pb={8}>
+        <Heading mb={1} size="2xl">{tool?.name}</Heading>
+        {/* {tool?.image && (<Image maxH={200} src={tool?.image} alt={tool?.name} mb={4} />)} */}
+        <Flex gap={1} wrap={'wrap'} mb={2}>
+          {tool?.url && (
+            <Badge url={tool.url} value={tool.url} label="home" color="blue" /> 
+          )}
+          {tool?.docs_url && (
+            <Badge url={tool.docs_url} value={tool.docs_url} label="docs" color="purple" /> 
+          )}
+          {tool?.paper_doi && (
+            <Badge url={`https://doi.org/${tool.paper_doi}`} value={tool.paper_doi} label="doi" color="red" /> 
+          )
+          }
+          {tool?.license && (
+            <Badge value={tool.license} label="license" color="blue" /> 
+          )}
+          {tool?.github_repo && (
+            <GitHubBadge type="last-commit" githubRepo={tool.github_repo} />
+          )}
+          {tool?.github_repo && (
+            <GitHubBadge type="stars" githubRepo={tool.github_repo} />
+          )} 
+          {tool?.badges?.map((badge) => (
+            (badge.badge && <Link href={badge.url ? badge.url : undefined} isExternal>
+                <Image src={badge.badge} />
+              </Link>
+            )
+          ))}
+          {tool?.tags?.map((tag) => (
+              <Badge key={tag} label={'%23'} value={tag} />
+          ))}
+        </Flex>
+        <Text pb={4}>{tool.description}</Text>
+        <RunToolForm
+          toolId={tool.id}
+          params={tool.params ? tool.params : []}
+          onSuccess={(run) => {
+            navigate({
+              to: `/runs/${run.id}`,
+              params: { runid: run.id },
+              replace: false,
+              resetScroll: true,
+            })
+          }}
+        />
+        {currentUser?.is_superuser && ( 
+          <Accordion allowToggle  mt={8}>
+            <AccordionItem>
+              <AccordionButton>
+                <Box as='span' flex='1' textAlign='left'>
+                  Admin
+                </Box>
+                <AccordionIcon />
+              </AccordionButton>
+              <AccordionPanel pb={4}>
+                <Box>
+                  <HStack justify={"space-between"} mb={4}>
+                    <InstallToolButton tool={tool} />
+                    <EnableToolButton tool={tool} />
+                  </HStack>
+                  <Heading size="sm">Installation Log ({tool.status})</Heading>
+                  <CodeBlock code={tool.installation_log ? tool.installation_log : "\n"} language="bash" lineNumbers />
+                </Box>
+              </AccordionPanel>
+            </AccordionItem>
+          </Accordion>
+        )}
+      </Box>
+    </Flex>
   )
 }
 

@@ -145,7 +145,7 @@ function UsersTable() {
 function Admin() {
   return (
     <Container maxW="full">
-      <Heading size="lg" textAlign={{ base: "center", md: "left" }} pt={12}>
+      <Heading size="2xl" textAlign={{ base: "center", md: "left" }} pt={6}>
         Users Management
       </Heading>
 

@@ -223,8 +223,8 @@ function Actions() {
 function Runs() {
   return (
     <Container maxW="full">
-      <Stack spacing={1} my={2}>
-        <Heading size="lg" pt={6}>
+      <Stack spacing={1}>
+        <Heading size="2xl" pt={6}>
           My Runs
         </Heading>
         <Text>Click on a run to view more details and results.</Text>

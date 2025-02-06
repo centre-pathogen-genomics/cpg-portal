@@ -159,8 +159,8 @@ function FilesTable() {
 function Files() {
   return (
     <Container maxW="full">
-      <Stack spacing={1} my={2}>
-        <Heading size="lg" pt={6}>
+      <Stack spacing={1}>
+        <Heading size="2xl" pt={6}>
           My Files
         </Heading>
         <Text>From here you can upload, download, and delete files associated with your account.</Text>

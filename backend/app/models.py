@@ -151,17 +151,22 @@ class CondaEnv(SQLModel):
     dependencies: list[str | CondaEnvPipDependency] = Field(default_factory=list)
 
 class ToolBadge(SQLModel):
-    badge: str
+    badge: str | None = None
     url: str | None = None
 
 # Shared properties
 class ToolBase(SQLModel):
     name: str
+    image: str | None = None
     description: str | None = None
     url: str | None = None
-    image: str | None = None
-    tags: list[str] | None = None
+    github_repo: str | None = None # :name/:repo
+    docs_url: str | None = None
+    paper_doi: str | None = None
+    license: str | None = None
+    citation_markdown: str | None = None
     badges: list[ToolBadge] | None = None
+    tags: list[str] | None = None
     command: str
     conda_env: CondaEnv | None = None # dependencies: [python=3.9, bokeh=2.4.2, conda-forge::numpy=1.21.*, nodejs=16.13.*, flask, pip, {pip: [Flask-Testing]}]
     post_install: str | None = None  # command -v hello-world >/dev/null 2>&1 || snk install wytamma/hello-world
@@ -186,11 +191,11 @@ class ToolUpdate(ToolBase):
 class Tool(ToolBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str = Field(index=True, unique=True)
+    badges: list[ToolBadge] | None = Field(default_factory=list, sa_column=Column(JSON))
     favourited_count: int = 0
     run_count: int = 0
     enabled: bool = False
     tags: list[str] | None = Field(default_factory=list, sa_column=Column(JSON))
-    badges: list[ToolBadge] | None = Field(default_factory=list, sa_column=Column(JSON))
     status: ToolStatus = Field(default=ToolStatus.uninstalled, sa_column=Column(Enum(ToolStatus)))
     installation_log: str | None = None
     conda_env: CondaEnv | None = Field(default=None, sa_column=Column(JSON))

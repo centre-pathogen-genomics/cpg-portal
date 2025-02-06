@@ -14,9 +14,8 @@ export type BodyLoginLoginAccessToken = {
 }
 
 export type CondaEnv = {
-  name?: string | null
-  channels?: Array<string> | null
-  dependencies?: Array<string | CondaEnvPipDependency> | null
+  channels?: Array<string>
+  dependencies?: Array<string | CondaEnvPipDependency>
 }
 
 export type CondaEnvPipDependency = {
@@ -136,15 +135,23 @@ export type Token = {
   token_type?: string
 }
 
+export type ToolBadge = {
+  badge?: string | null
+  url?: string | null
+}
+
 export type ToolCreate = {
   name: string
+  image?: string | null
   description?: string | null
   url?: string | null
-  image?: string | null
+  github_repo?: string | null
+  docs_url?: string | null
+  paper_doi?: string | null
+  license?: string | null
+  citation_markdown?: string | null
+  badges?: Array<ToolBadge> | null
   tags?: Array<string> | null
-  favourited_count?: number
-  enabled?: boolean
-  run_count?: number
   command: string
   conda_env?: CondaEnv | null
   post_install?: string | null
@@ -155,13 +162,16 @@ export type ToolCreate = {
 
 export type ToolPublic = {
   name: string
+  image?: string | null
   description?: string | null
   url?: string | null
-  image?: string | null
+  github_repo?: string | null
+  docs_url?: string | null
+  paper_doi?: string | null
+  license?: string | null
+  citation_markdown?: string | null
+  badges?: Array<ToolBadge> | null
   tags?: Array<string> | null
-  favourited_count?: number
-  enabled?: boolean
-  run_count?: number
   command: string
   conda_env?: CondaEnv | null
   post_install?: string | null
@@ -171,6 +181,9 @@ export type ToolPublic = {
   favourited?: boolean
   status: ToolStatus
   installation_log?: string | null
+  favourited_count?: number
+  run_count?: number
+  enabled?: boolean
   id: string
 }
 
@@ -183,19 +196,25 @@ export type ToolStatus =
 
 export type ToolUpdate = {
   name?: string | null
+  image?: string | null
   description?: string | null
   url?: string | null
-  image?: string | null
+  github_repo?: string | null
+  docs_url?: string | null
+  paper_doi?: string | null
+  license?: string | null
+  citation_markdown?: string | null
+  badges?: Array<ToolBadge> | null
   tags?: Array<string> | null
-  favourited_count?: number
-  enabled?: boolean
-  run_count?: number
   command?: string | null
   conda_env?: CondaEnv | null
   post_install?: string | null
   setup_files?: Array<SetupFile> | null
   params?: Array<Param> | null
   targets?: Array<Target> | null
+  favourited_count?: number
+  run_count?: number
+  enabled?: boolean
   status?: ToolStatus | null
 }
 
