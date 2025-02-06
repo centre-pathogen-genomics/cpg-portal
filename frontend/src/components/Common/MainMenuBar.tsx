@@ -8,6 +8,7 @@ import {
   DrawerContent,
   DrawerOverlay,
   Flex,
+  FormControl,
   IconButton,
   Image,
   Input,
@@ -17,7 +18,7 @@ import {
   useColorModeValue,
   useDisclosure,
 } from "@chakra-ui/react"
-import { Link } from "@tanstack/react-router"
+import { Link, redirect, useNavigate } from "@tanstack/react-router"
 import { FiLogOut, FiMenu } from "react-icons/fi"
 import useAuth from "../../hooks/useAuth"
 import { useQueryClient } from "@tanstack/react-query";
@@ -26,6 +27,7 @@ import SidebarItems from "./SidebarItems"
 import StorageStats from "../Files/StorageStats"
 import UserMenu from "./UserMenu"
 import { HiOutlineSearch } from "react-icons/hi";
+import { SubmitHandler, useForm } from "react-hook-form"
 
 const items = [
   { title: "Tools", path: "/" },
@@ -42,6 +44,7 @@ function MainMenuBar() {
   const currentUser = queryClient.getQueryData<UserPublic>(["currentUser"])
   const { isOpen, onOpen, onClose } = useDisclosure()
   const { logout } = useAuth()
+  const navigate = useNavigate()
 
   const finalItems = currentUser?.is_superuser
     ? [...items, { title: "Admin", path: "/admin" }]
@@ -55,11 +58,38 @@ function MainMenuBar() {
         color={textColor}
         _hover={{ color: "ui.main" }}
         fontWeight={"semibold"}
+        activeProps={{
+          style: {
+            textDecoration: "underline",
+          },
+        }}
       >
         <Text>{title}</Text>
       </Flex>
     ))
-  
+
+    const defaultValues = {
+      search: "",
+    }
+
+    type FormData = {
+      search?: string
+    }
+
+    const {
+      register,
+      handleSubmit,
+    } = useForm<FormData>({
+      defaultValues})
+
+    function onSubmit({ search }: FormData) {
+      console.log(search)
+      if (search === "") {
+        navigate({to:`/`})
+        return
+      }
+      navigate({to:`/search/${search}`})
+    }
   const handleLogout = async () => {
     logout()
   }
@@ -67,17 +97,21 @@ function MainMenuBar() {
     <Flex  w={'100%'} bg={bgColor} color={textColor} justify={'space-between'} align={'center'} py={2} pl={4} pr={6}>
         {/* Logo */}
         <Flex flexGrow={1} align={'center'} gap={4} mr={4}>
-          <Flex>
+          <Flex as={Link} to="/" >
             <Image display={{ base: "none", md: "block" }} src={Logo} alt="Logo" py={2} ml={3} maxH={14} />
             <Image display={{ base: "block", md: "none" }} src={Icon} alt="Logo" py={2}  maxH={14} />
           </Flex>
-          <Box flexGrow={1} maxW={"xl"}>
-            <InputGroup >
-              <InputLeftElement pointerEvents='none'>
-                <HiOutlineSearch color='gray.300' />
-              </InputLeftElement>
-              <Input bg={secBgColor} type='search' placeholder='Search the Portal'/>
-            </InputGroup>
+          <Box flexGrow={1} maxW={"xl"} as="form" onSubmit={handleSubmit(onSubmit)}>
+            <FormControl >
+              <InputGroup>
+                <InputLeftElement pointerEvents='none'>
+                  <HiOutlineSearch color='gray.300' />
+                </InputLeftElement>
+                <Input 
+                {...register("search", {required: false})}
+                id="search" bg={secBgColor} type='search' placeholder='Search the Portal' />
+              </InputGroup>
+            </FormControl>
           </Box>
           <Flex gap={4} display={{ base: "none", md: "flex" }}>
             {listItems} 

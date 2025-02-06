@@ -19,10 +19,10 @@ import { Route as LayoutImport } from './routes/_layout'
 import { Route as LayoutIndexImport } from './routes/_layout/index'
 import { Route as LayoutSettingsImport } from './routes/_layout/settings'
 import { Route as LayoutAdminImport } from './routes/_layout/admin'
-import { Route as LayoutSearchQueryImport } from './routes/_layout/search/$query'
 import { Route as LayoutRunsIndexImport } from './routes/_layout/runs/index'
 import { Route as LayoutFilesIndexImport } from './routes/_layout/files/index'
 import { Route as LayoutToolsNameImport } from './routes/_layout/tools/$name'
+import { Route as LayoutSearchQueryImport } from './routes/_layout/search/$query'
 import { Route as LayoutRunsRunidImport } from './routes/_layout/runs/$runid'
 
 // Create/Update Routes
@@ -67,11 +67,6 @@ const LayoutAdminRoute = LayoutAdminImport.update({
   getParentRoute: () => LayoutRoute,
 } as any)
 
-const LayoutSearchQueryRoute = LayoutSearchQueryImport.update({
-  path: '/search/$query',
-  getParentRoute: () => LayoutRoute,
-} as any)
-
 const LayoutRunsIndexRoute = LayoutRunsIndexImport.update({
   path: '/runs/',
   getParentRoute: () => LayoutRoute,
@@ -84,6 +79,11 @@ const LayoutFilesIndexRoute = LayoutFilesIndexImport.update({
 
 const LayoutToolsNameRoute = LayoutToolsNameImport.update({
   path: '/tools/$name',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
+const LayoutSearchQueryRoute = LayoutSearchQueryImport.update({
+  path: '/search/$query',
   getParentRoute: () => LayoutRoute,
 } as any)
 
@@ -132,6 +132,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutRunsRunidImport
       parentRoute: typeof LayoutImport
     }
+    '/_layout/search/$query': {
+      preLoaderRoute: typeof LayoutSearchQueryImport
+      parentRoute: typeof LayoutImport
+    }
     '/_layout/tools/$name': {
       preLoaderRoute: typeof LayoutToolsNameImport
       parentRoute: typeof LayoutImport
@@ -142,10 +146,6 @@ declare module '@tanstack/react-router' {
     }
     '/_layout/runs/': {
       preLoaderRoute: typeof LayoutRunsIndexImport
-      parentRoute: typeof LayoutImport
-    }
-    '/_layout/search/$query': {
-      preLoaderRoute: typeof LayoutSearchQueryImport
       parentRoute: typeof LayoutImport
     }
   }
@@ -159,10 +159,10 @@ export const routeTree = rootRoute.addChildren([
     LayoutSettingsRoute,
     LayoutIndexRoute,
     LayoutRunsRunidRoute,
+    LayoutSearchQueryRoute,
     LayoutToolsNameRoute,
     LayoutFilesIndexRoute,
     LayoutRunsIndexRoute,
-    LayoutSearchQueryRoute,
   ]),
   LoginRoute,
   RecoverPasswordRoute,

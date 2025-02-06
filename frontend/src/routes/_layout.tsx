@@ -7,7 +7,6 @@ declare global {
 import { Flex, Box, Spinner } from "@chakra-ui/react"
 import { Outlet, createFileRoute, redirect } from "@tanstack/react-router"
 
-import Sidebar from "../components/Common/Sidebar"
 import MainMenuBar from "../components/Common/MainMenuBar"
 import UploadProgress from "../components/Files/UploadProgress"
 import useAuth, { checkToken} from "../hooks/useAuth"

@@ -3,7 +3,8 @@ from enum import Enum
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import func, select
+from sqlalchemy import or_
+from sqlmodel import exists, func, select
 
 from app.api.deps import (
     CurrentUser,
@@ -32,7 +33,13 @@ class ToolsOrderBy(str, Enum):
 
 @router.get("/", response_model=ToolsPublic)
 def read_tools(
-    session: SessionDep, current_user: CurrentUser, skip: int = 0, limit: int = 100, order_by: ToolsOrderBy = ToolsOrderBy.run_count, show_favourites: bool = False
+    session: SessionDep,
+    current_user: CurrentUser,
+    skip: int = 0,
+    limit: int = 100,
+    order_by: ToolsOrderBy = ToolsOrderBy.run_count,
+    show_favourites: bool = False,
+    search: str = None,
 ) -> Any:
     """
     Retrieve tools with a favourited status for the current user.
@@ -61,6 +68,17 @@ def read_tools(
     if show_favourites:
         query = query.where(UserFavouriteToolsLink.user_id == current_user.id)
 
+    if search:
+        search_lower = search.strip().lower()
+
+        # Build your overall query.
+        query = query.where(
+            or_(
+                func.lower(Tool.name).contains(search_lower),
+                func.lower(Tool.description).contains(search_lower),
+                Tool.tags.contains([search]), # tags must be exact match
+            )
+        )
     # Execute the query
     result = session.exec(query).all()
 

@@ -159,7 +159,7 @@ function FilesTable() {
 function Files() {
   return (
     <Container maxW="full">
-      <Stack spacing={1}>
+      <Stack spacing={1} mb={2}>
         <Heading size="2xl" pt={6}>
           My Files
         </Heading>

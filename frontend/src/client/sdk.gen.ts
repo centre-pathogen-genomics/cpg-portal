@@ -61,6 +61,9 @@ import type {
   CreateToolData,
   CreateToolResponse,
   CreateToolError,
+  ReadToolByNameData,
+  ReadToolByNameResponse,
+  ReadToolByNameError,
   DeleteToolData,
   DeleteToolResponse,
   DeleteToolError,
@@ -76,9 +79,6 @@ import type {
   FavouriteToolData,
   FavouriteToolResponse,
   FavouriteToolError,
-  ReadToolByNameData,
-  ReadToolByNameResponse,
-  ReadToolByNameError,
   EnableToolData,
   EnableToolResponse,
   EnableToolError,
@@ -595,6 +595,29 @@ export class ToolsService {
   }
 
   /**
+   * Read Tool By Name
+   * Retrieve tool by name.
+   */
+  public static readToolByName<ThrowOnError extends boolean = false>(
+    options: Options<ReadToolByNameData, ThrowOnError>,
+  ) {
+    return (options?.client ?? client).get<
+      ReadToolByNameResponse,
+      ReadToolByNameError,
+      ThrowOnError
+    >({
+      security: [
+        {
+          scheme: "bearer",
+          type: "http",
+        },
+      ],
+      url: "/api/v1/tools/name/{tool_name}",
+      ...options,
+    })
+  }
+
+  /**
    * Delete Tool
    * Delete tool by ID.
    */
@@ -619,7 +642,7 @@ export class ToolsService {
 
   /**
    * Read Tool
-   * Retrieve tool by ID.
+   * Retrieve tool by ID with favourited status.
    */
   public static readTool<ThrowOnError extends boolean = false>(
     options: Options<ReadToolData, ThrowOnError>,
@@ -709,29 +732,6 @@ export class ToolsService {
         },
       ],
       url: "/api/v1/tools/{tool_id}/favourite",
-      ...options,
-    })
-  }
-
-  /**
-   * Read Tool By Name
-   * Retrieve tool by name.
-   */
-  public static readToolByName<ThrowOnError extends boolean = false>(
-    options: Options<ReadToolByNameData, ThrowOnError>,
-  ) {
-    return (options?.client ?? client).get<
-      ReadToolByNameResponse,
-      ReadToolByNameError,
-      ThrowOnError
-    >({
-      security: [
-        {
-          scheme: "bearer",
-          type: "http",
-        },
-      ],
-      url: "/api/v1/tools/name/{tool_name}",
       ...options,
     })
   }

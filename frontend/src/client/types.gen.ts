@@ -715,6 +715,7 @@ export type ReadToolsData = {
     limit?: number
     order_by?: ToolsOrderBy
     show_favourites?: boolean
+    search?: string
   }
   url: "/api/v1/tools/"
 }
@@ -761,6 +762,35 @@ export type CreateToolResponses = {
 }
 
 export type CreateToolResponse = CreateToolResponses[keyof CreateToolResponses]
+
+export type ReadToolByNameData = {
+  body?: never
+  path: {
+    tool_name: string
+  }
+  query?: never
+  url: "/api/v1/tools/name/{tool_name}"
+}
+
+export type ReadToolByNameErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError
+}
+
+export type ReadToolByNameError =
+  ReadToolByNameErrors[keyof ReadToolByNameErrors]
+
+export type ReadToolByNameResponses = {
+  /**
+   * Successful Response
+   */
+  200: ToolPublic
+}
+
+export type ReadToolByNameResponse =
+  ReadToolByNameResponses[keyof ReadToolByNameResponses]
 
 export type DeleteToolData = {
   body?: never
@@ -899,35 +929,6 @@ export type FavouriteToolResponses = {
 
 export type FavouriteToolResponse =
   FavouriteToolResponses[keyof FavouriteToolResponses]
-
-export type ReadToolByNameData = {
-  body?: never
-  path: {
-    tool_name: string
-  }
-  query?: never
-  url: "/api/v1/tools/name/{tool_name}"
-}
-
-export type ReadToolByNameErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError
-}
-
-export type ReadToolByNameError =
-  ReadToolByNameErrors[keyof ReadToolByNameErrors]
-
-export type ReadToolByNameResponses = {
-  /**
-   * Successful Response
-   */
-  200: ToolPublic
-}
-
-export type ReadToolByNameResponse =
-  ReadToolByNameResponses[keyof ReadToolByNameResponses]
 
 export type EnableToolData = {
   body?: never

@@ -52,6 +52,7 @@ import type {
   CreateToolData,
   CreateToolError,
   CreateToolResponse,
+  ReadToolByNameData,
   DeleteToolData,
   DeleteToolError,
   DeleteToolResponse,
@@ -65,7 +66,6 @@ import type {
   FavouriteToolData,
   FavouriteToolError,
   FavouriteToolResponse,
-  ReadToolByNameData,
   EnableToolData,
   EnableToolError,
   EnableToolResponse,
@@ -707,6 +707,25 @@ export const createToolMutation = (
   return mutationOptions
 }
 
+export const readToolByNameQueryKey = (
+  options: Options<ReadToolByNameData>,
+) => [createQueryKey("readToolByName", options)]
+
+export const readToolByNameOptions = (options: Options<ReadToolByNameData>) => {
+  return queryOptions({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await ToolsService.readToolByName({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      })
+      return data
+    },
+    queryKey: readToolByNameQueryKey(options),
+  })
+}
+
 export const deleteToolMutation = (
   options?: Partial<Options<DeleteToolData>>,
 ) => {
@@ -823,25 +842,6 @@ export const favouriteToolMutation = (
     },
   }
   return mutationOptions
-}
-
-export const readToolByNameQueryKey = (
-  options: Options<ReadToolByNameData>,
-) => [createQueryKey("readToolByName", options)]
-
-export const readToolByNameOptions = (options: Options<ReadToolByNameData>) => {
-  return queryOptions({
-    queryFn: async ({ queryKey, signal }) => {
-      const { data } = await ToolsService.readToolByName({
-        ...options,
-        ...queryKey[0],
-        signal,
-        throwOnError: true,
-      })
-      return data
-    },
-    queryKey: readToolByNameQueryKey(options),
-  })
 }
 
 export const enableToolQueryKey = (options: Options<EnableToolData>) => [

@@ -72,7 +72,7 @@ function RunDetail() {
   }
 
   return (
-    <Box maxW={"5xl"} justifySelf={"center"} >
+    <Box maxW={"5xl"} justifySelf={"center"} w={"full"} >
       <Heading
         size="2xl"
         textAlign={{ base: "left"}}
