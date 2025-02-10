@@ -18,7 +18,7 @@ import {
   useColorModeValue,
   useDisclosure,
 } from "@chakra-ui/react"
-import { Link, redirect, useNavigate } from "@tanstack/react-router"
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router"
 import { FiLogOut, FiMenu } from "react-icons/fi"
 import useAuth from "../../hooks/useAuth"
 import { useQueryClient } from "@tanstack/react-query";
@@ -27,7 +27,7 @@ import SidebarItems from "./SidebarItems"
 import StorageStats from "../Files/StorageStats"
 import UserMenu from "./UserMenu"
 import { HiOutlineSearch } from "react-icons/hi";
-import { SubmitHandler, useForm } from "react-hook-form"
+import { useForm } from "react-hook-form"
 
 const items = [
   { title: "Tools", path: "/" },
@@ -46,27 +46,44 @@ function MainMenuBar() {
   const { logout } = useAuth()
   const navigate = useNavigate()
 
+   // Use useRouter to get the current pathname.
+   const router = useRouterState()
+   const pathname = router.location.pathname
+
+
   const finalItems = currentUser?.is_superuser
     ? [...items, { title: "Admin", path: "/admin" }]
     : items
 
-  const listItems = finalItems.map(({ title, path }) => (
+  // Map over the final items and determine if they are active.
+  const listItems = finalItems.map(({ title, path }) => {
+    let isActive = false
+
+    if (title === "Tools") {
+      // For the Tools item, we want it active if the pathname is exactly "/"
+      // or if it starts with "/tools". (This is a special case since every pathname starts with "/"!)
+      isActive = pathname === "/" || pathname.startsWith("/tools")
+    } else {
+      // For other items, check if the current pathname starts with the item path.
+      // This ensures subpaths (like "/runs/123") will also be underlined.
+      isActive = pathname.startsWith(path)
+    }
+
+    return (
       <Flex
         as={Link}
         to={path}
         key={title}
         color={textColor}
         _hover={{ color: "ui.main" }}
-        fontWeight={"semibold"}
-        activeProps={{
-          style: {
-            textDecoration: "underline",
-          },
-        }}
+        fontWeight="semibold"
+        // Apply underline style if active.
+        style={isActive ? { textDecoration: "underline" } : {}}
       >
         <Text>{title}</Text>
       </Flex>
-    ))
+    )
+  })
 
     const defaultValues = {
       search: "",
@@ -85,7 +102,7 @@ function MainMenuBar() {
     function onSubmit({ search }: FormData) {
       console.log(search)
       if (search === "") {
-        navigate({to:`/`})
+        navigate({to:`/`, resetScroll: true})
         return
       }
       navigate({to:`/search/${search}`})
@@ -94,7 +111,7 @@ function MainMenuBar() {
     logout()
   }
   return (
-    <Flex  w={'100%'} bg={bgColor} color={textColor} justify={'space-between'} align={'center'} py={2} pl={4} pr={6}>
+    <Flex position={'sticky'} top={0}  w={'100%'} bg={bgColor} color={textColor} justify={'space-between'} align={'center'} py={2} pl={4} pr={6} zIndex={1000}>
         {/* Logo */}
         <Flex flexGrow={1} align={'center'} gap={4} mr={4}>
           <Flex as={Link} to="/" >

@@ -43,7 +43,7 @@ const OutputAccordionItem = ({ title, content, status }: OutputAccordionItemProp
       </h2>
       <AccordionPanel pb={4}>
         {content && content.length > 0 ? (
-          <CodeBlock code={content} language={'bash'} lineNumbers={true}/>
+          <CodeBlock code={content} language={'text'} lineNumbers={true}/>
           // <Text style={{ whiteSpace: 'pre-wrap' }}>{content}</Text>
         ) : status === 'running' || status === 'pending' ? (
           <Text>Running...</Text>

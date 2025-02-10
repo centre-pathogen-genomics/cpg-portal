@@ -5,7 +5,7 @@ declare global {
 }
 
 import { Flex, Box, Spinner } from "@chakra-ui/react"
-import { Outlet, createFileRoute, redirect } from "@tanstack/react-router"
+import { Outlet, ScrollRestoration, createFileRoute, redirect } from "@tanstack/react-router"
 
 import MainMenuBar from "../components/Common/MainMenuBar"
 import UploadProgress from "../components/Files/UploadProgress"
@@ -42,14 +42,13 @@ function Layout() {
   const { isLoading } = useAuth()
 
   return (
-    <Flex h="100dvh" position="relative" direction={'column'} overflow="hidden">
+    <Flex position="relative" direction={'column'}>
+      <ScrollRestoration/>
       {/* Navbar */}
-      <Box w={'100%'} zIndex={1000}>
-        <MainMenuBar />
-      </Box>
+      <MainMenuBar />
      
       {/* Main content area */}
-      <Flex flex="1" flexDirection="row" h="100%" overflow="auto">
+      <Flex flex="1" flexDirection="row" h="100%">
          {/* Sidebar with fixed width */}
         {/* <Box h="100%">
           <Sidebar />

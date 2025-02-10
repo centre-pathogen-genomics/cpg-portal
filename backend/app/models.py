@@ -233,6 +233,7 @@ class ToolMinimalPublic(SQLModel):
     image: str | None = None
     description: str | None = None
     tags: list[str] | None = None
+    params: list[Param] | None = None
     favourited: bool = False
     favourited_count: int = 0
     run_count: int = 0
@@ -262,6 +263,7 @@ class Run(RunBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     taskiq_id: str | None = None
     status: RunStatus = Field(sa_column=Column(Enum(RunStatus)))
+    tags: list[str] | None = Field(default_factory=list, sa_column=Column(JSON))
     params: dict = Field(default_factory=dict, sa_column=Column(JSON))
     files: list["File"] = Relationship(
         back_populates="run",
@@ -287,6 +289,7 @@ class RunPublicMinimal(SQLModel):
     tool: ToolMinimalPublic
     params: dict
     status: RunStatus
+    tags: list[str] | None = None
     created_at: datetime
     started_at: datetime | None = None
     finished_at: datetime | None = None
@@ -297,12 +300,14 @@ class FileBase(SQLModel):
     file_type: FileType | None = None
     size: int | None = None
     saved: bool = False
+    tags: list[str] | None = None
 
 
 class File(FileBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     file_type: FileType | None = Field(sa_column=Column(Enum(FileType)))
     location: str
+    tags: list[str] | None = Field(default_factory=list, sa_column=Column(JSON))
     owner_id: uuid.UUID = Field(foreign_key="user.id", nullable=False)
     owner: "User" = Relationship(back_populates="files")
     run_id: uuid.UUID = Field(foreign_key="run.id", nullable=True)

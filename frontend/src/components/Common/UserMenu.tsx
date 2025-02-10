@@ -65,12 +65,13 @@ const UserMenu = () => {
             src={gravatarUrl}
             // name={user?.full_name || "User"}
             size="md"
-            p={1}
             data-testid="user-menu"
-            border='2px'
-            color={outlineColor}
+            borderWidth={2.5}
+            borderColor={'ui.main'}
             cursor={"pointer"}
-            bg='transparent'
+            // bg='transparent'
+            bg={'gray.300'}
+            fill={outlineColor}
           />
           <MenuList>
             <MenuItem icon={<FiUser fontSize="18px" />} as={Link} to="settings">

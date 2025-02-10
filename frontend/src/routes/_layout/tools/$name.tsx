@@ -1,6 +1,6 @@
-import { Accordion, AccordionButton, AccordionIcon, AccordionItem, AccordionPanel, Box, Button, Flex, FormLabel, Heading, HStack, Image, Link, Switch, Text, Badge as VersionBadge } from "@chakra-ui/react"
+import { Accordion, AccordionButton, AccordionIcon, AccordionItem, AccordionPanel, Box, Button, Flex, FormLabel, Heading, HStack, Image, Link, Skeleton, SkeletonText, Switch, Text, Badge as VersionBadge } from "@chakra-ui/react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { createFileRoute, useNavigate, Link as RouterLink } from "@tanstack/react-router"
 import { disableToolMutation, enableToolMutation, installToolMutation, readToolByNameOptions, readToolByNameQueryKey, readUserMeQueryKey } from "../../../client/@tanstack/react-query.gen"
 import RunToolForm from "../../../components/Tools/RunToolForm"
 import { ToolPublic, UserPublic } from "../../../client"
@@ -150,9 +150,16 @@ function Tool() {
   }
   if (isPending) {
     return (
-      <Box maxW="4xl" width="100%" mx={4} pt={12} pb={8}>
-        <Heading>Loading...</Heading>
-      </Box>
+      <Flex justify="center">
+        <Box maxW="5xl" width="100%" mx={4} pt={6} pb={8}>
+        <Flex mb={2} pb={2} borderBottomWidth={1} >
+          <Heading size="2xl" >{name}</Heading>
+        </Flex>
+        <SkeletonText/>
+        <Heading size="lg" mb={4}>Configure Tool</Heading>
+        <Skeleton height="200px" />
+        </Box>
+      </Flex>
     )
   }
   
@@ -198,7 +205,9 @@ function Tool() {
             )
           ))}
           {tool?.tags?.map((tag) => (
+            <RouterLink to={`/search/${tag}`}>
               <Badge key={tag} label={'%23'} value={tag} />
+            </RouterLink>
           ))}
         </Flex>
         <Text mb={4} >{tool.description}</Text>

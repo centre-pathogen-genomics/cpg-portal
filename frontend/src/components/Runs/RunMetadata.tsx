@@ -3,6 +3,7 @@ import { RunPublic, RunStatus } from "../../client";
 import { HiOutlineStatusOnline } from "react-icons/hi";
 import { HiOutlineLightningBolt } from "react-icons/hi";
 import { HiOutlineTag } from "react-icons/hi";
+import { HiHashtag } from "react-icons/hi";
 import { HiCalendarDays } from "react-icons/hi2";
 import { HiOutlineClock } from "react-icons/hi2";
 import { SiAnaconda } from "react-icons/si";
@@ -73,6 +74,11 @@ function RunMetadata({ run }: RunMetadataProps) {
                 >
                 {run.tool.name}
             </Link>) },
+        { icon: HiHashtag, title: "Tags", value: run.tags?.map((tag) => (
+            <Badge key={tag} colorScheme="cyan" mr={1} >
+                {tag}
+            </Badge>
+        )) },
         { icon: HiCalendarDays, title: "Started", value: humanReadableDateTime(run.started_at ? run.started_at : "") },
         { icon: HiOutlineClock, title: "Runtime", value: (<RunRuntime started_at={run.started_at ?? null} finished_at={run.finished_at ?? null} status={run.status} />) },
         { icon: SiAnaconda, title: "Conda", value: condaEnvDownloadLink({ env: run.conda_env_pinned ?? null }) },

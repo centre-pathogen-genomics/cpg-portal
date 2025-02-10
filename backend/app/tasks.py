@@ -285,6 +285,7 @@ async def run_tool(
                 owner_id=run.owner_id,
                 file_type=target.target_type,
                 saved=False, # the file is not saved to the use my files
+                tags=run.tags,
             )
             run.files.append(file)
         if missing_targets:

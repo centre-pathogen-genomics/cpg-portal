@@ -24,6 +24,7 @@ import React, { useEffect, useMemo, useState } from "react"
 import { handleError } from "../../utils"
 import { Options } from "@hey-api/client-axios"
 import FileUpload from "../Files/UploadFileWithProgress"
+import TagInput from "../Common/TagInput"
 
 
 interface EnumParamProps {
@@ -139,6 +140,8 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
   
   // Local state to store files for immediate updates
   const [localFiles, setLocalFiles] = useState<{ label: string; value: string }[]>([]);
+  // Tags state
+  const [tags, setTags] = useState<string[]>([]);
 
   useEffect(() => {
     if (data) {
@@ -196,7 +199,7 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
       }
     }
     console.log(formData);
-    mutation.mutate({body: formData} as Options<CreateRunData>)
+    mutation.mutate({body: {params:   formData, tags: tags}} as Options<CreateRunData>)
     setIsLoading(false);
   }
   const normalizedParams = useMemo(() => params || [], [params]);
@@ -308,14 +311,17 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
           </FormControl>
         ))}
       </Box>
-      <ButtonGroup>
-        <Button variant="primary" type="submit" isLoading={isLoading}>
-          Run Tool
-        </Button>
-        <Button onClick={() => {reset(defaultValues); setFileStates({})}} variant="outline">
-          Reset
-        </Button>
-      </ButtonGroup>
+      <Flex gap={2} justify={"space-between"} direction={{base: "column", md: "row"}}>
+        <ButtonGroup>
+          <Button variant="primary" type="submit" isLoading={isLoading}>
+            Run Tool
+          </Button>
+          <Button onClick={() => {reset(defaultValues); setFileStates({})}} variant="outline">
+            Reset
+          </Button>
+        </ButtonGroup>
+        <TagInput tags={tags} setTags={setTags} />
+      </Flex>
     </Box>
   )
 }

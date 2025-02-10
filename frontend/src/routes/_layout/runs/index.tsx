@@ -107,6 +107,7 @@ function RunsTable() {
             <Tr>
               <Th width="10%">ID</Th>
               <Th>Tool</Th>
+              <Th>Tags</Th>
               <Th>Params</Th>
               <Th>Status</Th>
               <Th>Date</Th>
@@ -150,6 +151,13 @@ function RunsTable() {
                   <Td>
                    {run.tool.name}
                   </Td>
+                  <Td>
+                    {run.tags?.map((tag) => (
+                        <Badge key={tag} colorScheme="cyan" mr={1} >
+                            {tag}
+                        </Badge>
+                    ))} 
+                  </Td>
                   <Td justifyContent={"center"} align="center" textAlign={"center"}>
                     <Flex wrap={"wrap"}>
                       {Object.keys(run.params).filter((key) => run.params[key] !== null).map((key) => (
@@ -165,8 +173,8 @@ function RunsTable() {
                   <Td>{run.started_at ? humanReadableDate(run.started_at) : ""}</Td>
                   <Td>
                     <RunRuntime
-                      started_at={run.started_at}
-                      finished_at={run.finished_at}
+                      started_at={run.started_at ?? null}
+                      finished_at={run.finished_at ?? null}
                       status={run.status}
                     />
                   </Td>

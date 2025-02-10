@@ -26,12 +26,11 @@ return (
     <>
     {tools?.data.length === 0 && (
         <Flex justify="center" align="center" h="200px">
-            <Heading size={'md'}>No matches found...</Heading>
+            <Heading size={'md'}>No matches found</Heading>
         </Flex>
     )}
-    <SimpleGrid gap={4} mb={8} gridTemplateColumns="repeat(auto-fill, minmax(290px, 1fr))">
+    <SimpleGrid gap={4} mb={8} gridTemplateColumns="repeat(auto-fill, minmax(300px, 1fr))" >
         {tools.data.map((tool) => (
-        
             <ToolCard key={tool.id} tool={tool} />
         ))}
     </SimpleGrid>

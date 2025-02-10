@@ -18,7 +18,7 @@ client.setConfig({
 
 const queryClient = new QueryClient()
 
-const router = createRouter({ routeTree })
+const router = createRouter({ routeTree})
 declare module "@tanstack/react-router" {
   interface Register {
     router: typeof router

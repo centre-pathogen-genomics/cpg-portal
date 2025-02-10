@@ -46,7 +46,7 @@ const ToolCard = ({ tool }: ToolCardProps) => {
       <Card
         variant="elevated"
         overflow="hidden"
-        maxW={{ base: "100%", lg: "400px" }}
+        maxW={{ base: "100%", xl: "400px" }}
         size={"md"}
         // on unhover return to normal state
         _hover={{
@@ -144,7 +144,7 @@ const ToolCard = ({ tool }: ToolCardProps) => {
         isOpen={runToolModal.isOpen}
         onClose={runToolModal.onClose}
         toolId={tool.id}
-        params={tool.params ? tool.params : []}
+        params={tool.params ? tool.params : []} 
       />
     </>
   );

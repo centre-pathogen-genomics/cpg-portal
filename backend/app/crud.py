@@ -49,7 +49,7 @@ def authenticate(*, session: Session, email: str, password: str) -> User | None:
     return db_user
 
 
-def _save_single_file(session: Session, file_path: Path, file_type: FileType, owner_id: uuid.UUID, saved: bool) -> File:
+def _save_single_file(session: Session, file_path: Path, file_type: FileType, owner_id: uuid.UUID, saved: bool, tags: list[str]) -> File:
     """Helper function to save a single file."""
     file_id = str(uuid.uuid4())
     file_name = file_path.name.replace(" ", "_")
@@ -63,13 +63,14 @@ def _save_single_file(session: Session, file_path: Path, file_type: FileType, ow
         size=file_storage_location.stat().st_size,
         file_type=file_type,
         saved=saved,
+        tags=tags,
     )
     session.add(file_metadata)
     return file_metadata
 
-def save_file(*, session: Session, file_path: Path, file_type: FileType, owner_id: uuid.UUID, saved: bool = False) -> File:
+def save_file(*, session: Session, file_path: Path, file_type: FileType, owner_id: uuid.UUID, saved: bool = False, tags: list[str] = None) -> File:
     """Save a single file and commit the session."""
-    file_metadata = _save_single_file(session, file_path, file_type, owner_id, saved)
+    file_metadata = _save_single_file(session, file_path, file_type, owner_id, saved, tags)
     session.commit()
     session.refresh(file_metadata)
     return file_metadata

@@ -53,13 +53,16 @@ def read_runs(
 
 @router.post("/", response_model=RunPublic)
 async def create_run(
-    *, session: SessionDep, current_user: CurrentUser, tool_id: uuid.UUID, params: dict
+    *, session: SessionDep, current_user: CurrentUser, tool_id: uuid.UUID, params: dict, tags: list[str] = None
 ) -> Any:
     """
     Create and run a run of a specific tool, validating against predefined tool parameters.
     Accepts both files and regular parameters dynamically.
     """
+    print(f"Creating run for tool {tool_id} with params {params}")
     # Fetch tool and parameters
+    if tags is None:
+        tags = []
     tool: Tool = session.get(Tool, tool_id)
     if not tool:
         raise HTTPException(status_code=404, detail="Tool not found")
@@ -177,6 +180,7 @@ async def create_run(
         status="pending",
         params=params,
         command=cmd,
+        tags=tags,
     )
     session.add(run)
     session.commit()

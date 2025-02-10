@@ -15,6 +15,7 @@ import {
   Thead,
   Tr,
   Text,
+  Badge,
 } from '@chakra-ui/react'
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
@@ -96,6 +97,7 @@ function FilesTable() {
           <Thead>
             <Tr>
               <Th>Name</Th>
+              <Th>Tags</Th>
               <Th>Type</Th>
               <Th>Size</Th>
               <Th>Created</Th>
@@ -119,6 +121,13 @@ function FilesTable() {
               {files?.data.map((file) => (
                 <Tr key={file.id}>
                   <Td>{file.name}</Td>
+                  <Td>
+                    {file.tags?.map((tag) => (
+                        <Badge key={tag} colorScheme="cyan" mr={1} >
+                            {tag}
+                        </Badge>
+                    ))} 
+                  </Td>
                   <Td>{file.file_type}</Td>
                   <Td>{file.size ? humanReadableFileSize(file.size) : ""}</Td>
                   <Td>{humanReadableDate(file.created_at)}</Td>

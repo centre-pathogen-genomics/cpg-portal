@@ -13,6 +13,13 @@ export type BodyLoginLoginAccessToken = {
   client_secret?: string | null
 }
 
+export type BodyRunsCreateRun = {
+  params: {
+    [key: string]: unknown
+  }
+  tags?: Array<string>
+}
+
 export type CondaEnv = {
   channels?: Array<string>
   dependencies?: Array<string | CondaEnvPipDependency>
@@ -27,6 +34,7 @@ export type FilePublic = {
   file_type?: FileType | null
   size?: number | null
   saved?: boolean
+  tags?: Array<string> | null
   id: string
   run_id?: string | null
   created_at: string
@@ -82,6 +90,7 @@ export type RunPublic = {
     [key: string]: unknown
   }
   status: RunStatus
+  tags?: Array<string> | null
   created_at: string
   started_at?: string | null
   finished_at?: string | null
@@ -99,6 +108,7 @@ export type RunPublicMinimal = {
     [key: string]: unknown
   }
   status: RunStatus
+  tags?: Array<string> | null
   created_at: string
   started_at?: string | null
   finished_at?: string | null
@@ -164,6 +174,7 @@ export type ToolMinimalPublic = {
   image?: string | null
   description?: string | null
   tags?: Array<string> | null
+  params?: Array<Param> | null
   favourited?: boolean
   favourited_count?: number
   run_count?: number
@@ -1333,9 +1344,7 @@ export type ReadRunsResponses = {
 export type ReadRunsResponse = ReadRunsResponses[keyof ReadRunsResponses]
 
 export type CreateRunData = {
-  body: {
-    [key: string]: unknown
-  }
+  body: BodyRunsCreateRun
   path?: never
   query: {
     tool_id: string
