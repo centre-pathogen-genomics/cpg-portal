@@ -8,7 +8,7 @@ interface ToolBadgeProps {
 }
 
 const Badge = ( {label, value, url, color='green'}: ToolBadgeProps) => {
-    let shield = `https://img.shields.io/badge/${label}-${encodeURIComponent(value.replace("-", "--"))}`; 
+    let shield = `https://img.shields.io/badge/${label}-${encodeURIComponent(value.replace(/-/g, "--"))}`; 
     if (color) {
         shield += `-${color}`;
     }
