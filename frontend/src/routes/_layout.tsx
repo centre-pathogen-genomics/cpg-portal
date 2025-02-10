@@ -42,7 +42,7 @@ function Layout() {
   const { isLoading } = useAuth()
 
   return (
-    <Flex position="relative" direction={'column'}>
+    <Flex position="relative" direction={'column'} h="100%" >
       <ScrollRestoration/>
       {/* Navbar */}
       <MainMenuBar />
@@ -60,7 +60,7 @@ function Layout() {
           </Flex>
         ) : (
           <UploadProvider>
-            <Box flex="1" overflow="auto" px={{md:4, base: 0}} >
+            <Box flex="1" px={{md:4, base: 0}} h={"100%"}>
               <Outlet />
             </Box>
             <UploadProgress />

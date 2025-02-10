@@ -15,7 +15,7 @@ export const Route = createFileRoute("/_layout/")({
 
 function Tools() {
   return (
-    <Container maxW="full">
+    <Container maxW="full" p={2}>
       <Flex direction="column" align="center" my={8}>
         <Image
           src={Logo}
