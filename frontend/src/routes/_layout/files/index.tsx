@@ -31,7 +31,7 @@ import { humanReadableDate, humanReadableFileSize } from "../../../utils"
 // Define pagination schema
 const filesSearchSchema = z.object({
   page: z.number().catch(1),
-  pageSize: z.number().catch(8),
+  pageSize: z.number().catch(5),
 })
 
 export const Route = createFileRoute("/_layout/files/")({
