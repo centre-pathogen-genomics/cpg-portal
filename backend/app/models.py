@@ -273,7 +273,6 @@ class Run(RunBase, table=True):
     )
     command: str | None = None
     conda_env_pinned: str | None = None
-    stderr: str | None = None
     stdout: str | None = None
     tool_id: uuid.UUID = Field(foreign_key="tool.id", nullable=False)
     tool: Tool = Relationship(back_populates="runs")
@@ -330,7 +329,6 @@ class FilesStatistics(SQLModel):
     total_size: int
 
 class RunPublic(RunPublicMinimal):
-    stderr: str | None = None
     stdout: str | None = None
     command: str | None = None
     conda_env_pinned: str | None = None

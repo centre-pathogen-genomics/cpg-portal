@@ -28,7 +28,7 @@ async def shutdown(state: TaskiqState) -> None:
     print(state)
     pass
 
-async def run_command_in_subprocess(session: Session, run_id: uuid.UUID, command: str, tmp_dir: Path) -> subprocess.Popen:
+async def run_command_in_subprocess(session: Session, run_id: uuid.UUID, command: str, tmp_dir: Path) -> tuple[int, str]:
     # Run the command in a subprocess
     print(f"Running command: {command}")
     command = f"set -euo pipefail; {command}"
@@ -40,7 +40,7 @@ async def run_command_in_subprocess(session: Session, run_id: uuid.UUID, command
         executable="/bin/bash",
         start_new_session=True,
         stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
     )
     print(f"Run(id={run_id}) started with PID: {res.pid}")
     try:
@@ -55,8 +55,8 @@ async def run_command_in_subprocess(session: Session, run_id: uuid.UUID, command
                 print(f"Run(id={run_id}) was cancelled")
                 # Send SIGTERM to the entire process group
                 os.killpg(os.getpgid(res.pid), signal.SIGTERM)
-                stdout, stderr = res.communicate()
-                return -15, stdout, stderr
+                stdout, _ = res.communicate()
+                return -15, stdout
             await asyncio.sleep(1)
     except Exception as e:
         print(f"An error occurred: {e}")
@@ -67,8 +67,8 @@ async def run_command_in_subprocess(session: Session, run_id: uuid.UUID, command
         run.status = "failed"
         session.add(run)
         session.commit()
-    stdout, stderr = res.communicate()
-    return res.returncode, stdout, stderr
+    stdout, _ = res.communicate()
+    return res.returncode, stdout
 
 @broker.task
 async def install_tool(
@@ -152,14 +152,13 @@ async def run_tool(
     run: Run = session.get(Run, run_id)
     if run is None:
         return False
-    # clear the stdout and stderr
+    # clear the stdout
     run.stdout = ""
-    run.stderr = ""
     # only run the run if it is pending
     if run.status != "pending":
         return False
     if run.tool.status != "installed":
-        run.stderr += "Tool must be installed first. Please contact an administrator."
+        run.stdout += "Tool must be installed first. Please contact an administrator."
         run.status = "failed"
         session.add(run)
         session.commit()
@@ -191,7 +190,7 @@ async def run_tool(
             os.symlink(Path(file.location), tmp_dir / name)
     except Exception as e:
         print(f"Error symlinking files: {e}")
-        run.stderr += "Error symlinking files!"
+        run.stdout += "\nError symlinking files!"
         run.status = "failed"
         session.add(run)
         session.commit()
@@ -207,7 +206,7 @@ async def run_tool(
             path = tmp_dir / setup_file.name
             if path.exists():
                 print(f"File '{path}' already exists")
-                run.stderr += "Tool setup failed. Please contact an administrator."
+                run.stdout += "\nTool setup failed. Please contact an administrator."
                 run.status = "failed"
                 session.add(run)
                 session.commit()
@@ -226,7 +225,7 @@ async def run_tool(
             post_install_command=run.tool.post_install
         )
         if not conda_env.is_created:
-            run.stderr += "Tool environment not found. Please contact an administrator."
+            run.stdout += "Tool environment not found. Please contact an administrator."
             run.status = "failed"
             run.tool.status = "uninstalled"
             session.add(run)
@@ -237,20 +236,18 @@ async def run_tool(
         run_command = f"{conda_env.activate_command} && {run_command}"
     try:
         # Run the tool command in a subprocess
-        returncode, stdout, stderr = await run_command_in_subprocess(session, run_id, run_command, tmp_dir)
+        returncode, stdout = await run_command_in_subprocess(session, run_id, run_command, tmp_dir)
         print(f"Run(id={run_id}) finished with return code: {returncode}")
         print(f"stdout: {stdout}")
-        print(f"stderr: {stderr}")
     except Exception as e:
         print(f"An error occurred: {e}")
-        run.stderr += f"An error occurred: {e}"
+        run.stdout += f"An error occurred: {e}"
         run.status = "failed"
         session.add(run)
         session.commit()
         shutil.rmtree(tmp_dir)
         return False
     run.finished_at = datetime.utcnow()
-    run.stderr += stderr
     run.stdout += stdout
     if returncode != 0:
         print(f"Run(id={run_id}) failed with return code: {returncode}")
@@ -271,7 +268,7 @@ async def run_tool(
             # check if the target file exists
             if target.required and not target_file.exists():
                 print(f"Target file {target_file} does not exist")
-                run.stderr += f"Target file '{target_file.name}' does not exist!\n"
+                run.stdout += f"\nTarget file '{target_file.name}' does not exist!"
                 missing_targets.append(target_file)
                 continue
             if not target.required and not target_file.exists():
