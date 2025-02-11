@@ -19,9 +19,9 @@ import { humanReadableFileSize } from "../../utils";
 import { FilePublic } from "../../client";
 
 // 1. Read the max file upload size from the environment. 
-//    If the environment variable is missing, default to e.g. 20 MB 
+//    If the environment variable is missing, default to e.g. 10 MB 
 const MAX_FILE_UPLOAD_SIZE = 
-  Number(import.meta.env.VITE_MAX_FILE_UPLOAD_SIZE) || 20971520;
+  Number(import.meta.env.VITE_MAX_FILE_UPLOAD_SIZE) || 10485760;
   
 console.log("MAX_FILE_UPLOAD_SIZE", import.meta.env.VITE_MAX_FILE_UPLOAD_SIZE);
 
