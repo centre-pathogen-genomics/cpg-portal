@@ -89,6 +89,7 @@ const useAuth = () => {
 
   const logout = () => {
     localStorage.removeItem("access_token")
+    window.__tokenCheckTimestamp = undefined
     queryClient.clear();
     setError(null)
     navigate({ to: "/login" })
