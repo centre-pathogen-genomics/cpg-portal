@@ -89,7 +89,7 @@ function RunDetail() {
                 replace: false,
                 resetScroll: true,
               })
-            }>Runs</BreadcrumbLink>
+            }>My Runs</BreadcrumbLink>
           </BreadcrumbItem>
 
           <BreadcrumbItem isCurrentPage>
