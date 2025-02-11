@@ -8,6 +8,7 @@ import {
   FormErrorMessage,
   FormLabel,
   Input,
+  Text,
 } from "@chakra-ui/react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Select, } from "chakra-react-select"
@@ -40,7 +41,7 @@ const EnumParam = ({ param, setValue }: EnumParamProps) => {
           label: option,
           value: option,
         }))}
-        placeholder={param.description || "Select an option"}
+        placeholder="Select an option"
         defaultValue={
           param.default
             ? { label: param.default, value: param.default }
@@ -81,22 +82,11 @@ const FileParam = ({
   isLoading,
 }: FileParamProps) => {
   return (
-    <Flex direction={"column"} gap={2}>
-      <FileUpload
-        onComplete={(file) => {
-          const newFile = { label: file.name, value: file.id };
-          // Immediately update the local files state via the passed-in updater
-          if (updateLocalFiles) {
-            updateLocalFiles(newFile);
-          }
-          // Update the form value
-          setValue(newFile);
-        }}
-      />
+    <Flex direction={"column"}>
       <Select
         id={param.name}
         options={files}
-        placeholder={param.description || "Select a file"}
+        placeholder="Choose from My Files"
         isMulti={multiple}
         isClearable={true}
         value={selectedOptions}
@@ -109,6 +99,23 @@ const FileParam = ({
         }}
         isLoading={isLoading}
         selectedOptionStyle="check"
+      />
+      <Flex justify={"center"} my={4} align={"center"}>
+
+        <Flex w={"100%"} mx={4} borderBottomWidth={2} ></Flex>
+        <Text color={'gray.500'}>or</Text>
+        <Flex w={"100%"}  mx={4} borderBottomWidth={2} ></Flex>
+      </Flex>
+      <FileUpload
+        onComplete={(file) => {
+          const newFile = { label: file.name, value: file.id };
+          // Immediately update the local files state via the passed-in updater
+          if (updateLocalFiles) {
+            updateLocalFiles(newFile);
+          }
+          // Update the form value
+          setValue(newFile);
+        }}
       />
     </Flex>
   );
@@ -217,16 +224,16 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
             isRequired={param.required}
             isInvalid={errors[param.name] !== undefined}
           >
-              <FormLabel htmlFor={param.name}>
-                {param.name}
+              <FormLabel fontSize={"md"} htmlFor={param.name} mb={0}>
+                {param.name.toUpperCase()}
               </FormLabel>
+              <Text fontSize="sm" color={'gray.500'} mb={1} >{param.description}</Text>
             {param.param_type === "str" && (
               <Input
                 id={param.name}
                 {...register(param.name, {
                   required: param.required ? "Required" : false,
                 })}
-                placeholder={param.description || param.name}
                 defaultValue={param.default as string}
               />
             )}
@@ -237,7 +244,7 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
                   required: param.required ? "Required" : false,
                   valueAsNumber: true,
                 })}
-                placeholder={param.description || param.name}
+                placeholder="Enter a number"
                 defaultValue={param.default as number}
                 type="number"
               />
@@ -249,7 +256,7 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
                   required: param.required ? "Required" : false,
                   valueAsNumber: true,
                 })}
-                placeholder={param.description || param.name}
+                placeholder="Enter a number"
                 defaultValue={param.default as number}
                 type="number"
                 step="0.01"
@@ -266,7 +273,7 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
                 })}
                 defaultChecked={param.default as boolean}
               >
-                {param.description || param.name}
+                yes
               </Checkbox>
             )}
             {(param.param_type === "file" || param.param_type === "files") && (
