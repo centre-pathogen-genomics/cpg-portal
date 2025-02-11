@@ -10,9 +10,10 @@ import {
   Text,
   Flex,
   Tag,
+  useColorModeValue,
 } from "@chakra-ui/react";
 import { useDisclosure } from "@chakra-ui/react";
-import { HiOutlinePlay, HiOutlineHeart, HiHeart } from "react-icons/hi2";
+import { HiOutlinePlay } from "react-icons/hi2";
 import { useNavigate } from "@tanstack/react-router";
 
 
@@ -29,7 +30,7 @@ interface ToolCardProps {
 const ToolCard = ({ tool }: ToolCardProps) => {
   const runToolModal = useDisclosure();
   const navigate = useNavigate();
-  
+  const colourMode = useColorModeValue("ui.light","ui.dark");
   const [isFavourited, setIsFavourited] = useState(tool.favourited ?? false); 
   
 
@@ -93,6 +94,7 @@ const ToolCard = ({ tool }: ToolCardProps) => {
                 variant="solid"
                 aria-label="Run"
                 title="Run tool"
+                bg={colourMode}
                 mr="2"
                 fontSize="20px"
                 _hover={{ color: "green" }}
@@ -123,16 +125,7 @@ const ToolCard = ({ tool }: ToolCardProps) => {
             ))}
           </Flex>
           <Flex color="gray.500">
-            <Flex
-              align="center"
-              mr={2}
-              _hover={{ color: "red.500" }}
-              gap="0.5"
-              color={isFavourited ? "red.500" : undefined}
-            >
-              {isFavourited ? <HiHeart /> : <HiOutlineHeart />}
-              {tool.favourited_count ? tool.favourited_count : 0}
-            </Flex>
+            <FavouriteButton tool={tool} isFavourited={isFavourited} setIsFavourited={setIsFavourited} withCount={true} /> 
             <Flex align="center" justify="center" gap="0.5">
               <HiOutlinePlay />
               {tool.run_count ? tool.run_count : 0}

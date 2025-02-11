@@ -47,7 +47,7 @@ const ParamTag = ( {param, value}: ParamTagProps) => {
     >
         <Flex fontSize={'sm'} cursor={'pointer'} overflow={'hidden'} borderWidth={2} borderColor={bg} borderRadius='md'  >
           <Flex h={'full'} color={color} bg={bg} px={1}><Text as={'b'}>{param}</Text></Flex>
-          <Flex whiteSpace={'nowrap'}  px={1} maxW={60} overflow={'hidden'} >
+          <Flex whiteSpace={'nowrap'}  px={1} maxW={40} overflow={'hidden'} >
             <Text isTruncated>{value as string}</Text>
           </Flex>
         </Flex>

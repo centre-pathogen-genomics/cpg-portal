@@ -6,7 +6,6 @@ import { HiOutlineTag } from "react-icons/hi";
 import { HiHashtag } from "react-icons/hi";
 import { HiCalendarDays } from "react-icons/hi2";
 import { HiOutlineClock } from "react-icons/hi2";
-import { SiAnaconda } from "react-icons/si";
 
 
 
@@ -47,18 +46,6 @@ function Parameters({ params }: { params: Record<string, any> }) {
     )
 }
 
-function condaEnvDownloadLink({ env }: { env: string | null }) {
-    if (!env) {
-        return (
-            <Text></Text>
-        )
-    }
-    return (
-        <Link href={`data:text/plain;charset=utf-8,${encodeURIComponent(env)}`} download="environment.yaml">
-            environment.yaml
-        </Link>
-    )
-}
 
 function RunMetadata({ run }: RunMetadataProps) {
     const navigate = useNavigate()
@@ -74,16 +61,17 @@ function RunMetadata({ run }: RunMetadataProps) {
                 >
                 {run.tool.name}
             </Link>) },
-        { icon: HiHashtag, title: "Tags", value: run.tags?.map((tag) => (
+        { icon: HiOutlineTag, title: "Parameters", value: Parameters({params: run.params}) },
+        { icon: HiCalendarDays, title: "Started", value: humanReadableDateTime(run.started_at ? run.started_at : "") },
+        { icon: HiOutlineClock, title: "Runtime", value: (<RunRuntime started_at={run.started_at ?? null} finished_at={run.finished_at ?? null} status={run.status} />) },
+    ]
+    if (run.tags && run.tags.length > 0) {
+        items.push({ icon: HiHashtag, title: "Tags", value: <>{run.tags?.map((tag) => (
             <Badge key={tag} colorScheme="cyan" mr={1} >
                 {tag}
             </Badge>
-        )) },
-        { icon: HiCalendarDays, title: "Started", value: humanReadableDateTime(run.started_at ? run.started_at : "") },
-        { icon: HiOutlineClock, title: "Runtime", value: (<RunRuntime started_at={run.started_at ?? null} finished_at={run.finished_at ?? null} status={run.status} />) },
-        { icon: SiAnaconda, title: "Conda", value: condaEnvDownloadLink({ env: run.conda_env_pinned ?? null }) },
-        { icon: HiOutlineTag, title: "Parameters", value: Parameters({params: run.params}) },
-    ]
+        ))}</> })
+    }
   return (
     <Flex direction={'column'}>
             {items.map(({ icon, title, value }) => (

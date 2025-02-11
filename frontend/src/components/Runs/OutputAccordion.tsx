@@ -9,9 +9,14 @@ import {
   Text,
   Badge,
   Spinner,
+  Icon,
 } from '@chakra-ui/react';
 import { RunPublic } from '../../client';
 import CodeBlock from '../Common/CodeBlock';
+import {SiAnaconda} from 'react-icons/si';
+import { HiOutlineCommandLine } from "react-icons/hi2";
+import { HiOutlineDocumentText } from "react-icons/hi";
+
 
 interface OutputAccordionItemProps {
     title: string;
@@ -24,23 +29,22 @@ const OutputAccordionItem = ({ title, content, status }: OutputAccordionItemProp
 
   return (
     <AccordionItem isDisabled={status === 'running' || status === 'pending' }>
-      <h2>
         <AccordionButton>
           <Box as="span" flex="1" textAlign="left">
             <Flex alignItems="center" align={'center'}>
-              <Text mr={2}>{title}</Text>
+              <Icon as={HiOutlineDocumentText}  /> 
+              <Text mx={2}>{title}</Text>
               {status === 'running' || status === 'pending' ? (
                 <Spinner size={'sm'} speed={'0.8s'} />
               ) : (
-                <Badge borderRadius="full"px="2" colorScheme="purple">
+                content && content.length > 0 && (<Badge borderRadius="full"px="2" colorScheme="purple">
                   {lineCount}
-                </Badge>
+                </Badge>)
               )}
             </Flex>
           </Box>
           <AccordionIcon />
         </AccordionButton>
-      </h2>
       <AccordionPanel pb={4}>
         {content && content.length > 0 ? (
           <CodeBlock code={content} language={'text'} lineNumbers={true}/>
@@ -61,16 +65,40 @@ const OutputAccordion = ({run}: {run: RunPublic}) => {
   return (
     <Accordion allowMultiple mb={4} wordBreak="break-all">
       <OutputAccordionItem
-        title="Stdout"
+        title="Tool Output"
         content={run.stdout || null}
         status={run.status}
       />
-      <OutputAccordionItem
-        title="Stderr"
-        content={run.stderr || null}
-        status={run.status}
-      />
+      <AccordionItem>
+          <AccordionButton>
+            <Box as="span" flex="1" textAlign="left">
+              <Flex alignItems="center" align={'center'}>
+                <Icon as={HiOutlineCommandLine}  />
+                <Text ml={2}>Command</Text>
+              </Flex>
+            </Box>
+            <AccordionIcon />
+          </AccordionButton>
+        <AccordionPanel pb={4}>
+          <CodeBlock code={run.command ?? "This shouldn't happen..."} language={'bash'} lineNumbers={false}/>
+        </AccordionPanel>
+      </AccordionItem>
+      <AccordionItem>
+          <AccordionButton>
+            <Box as="span" flex="1" textAlign="left">
+              <Flex alignItems="center" align={'center'}>
+                <Icon as={SiAnaconda}  />
+                <Text ml={2}>Environment</Text>
+              </Flex>
+            </Box>
+            <AccordionIcon />
+          </AccordionButton>
+        <AccordionPanel pb={4}>
+          {run.conda_env_pinned ? <CodeBlock code={run.conda_env_pinned} language={'yaml'} lineNumbers={false}/> : <Text>No environment</Text>}
+        </AccordionPanel>
+      </AccordionItem>
     </Accordion>
+    
   );
 };
 

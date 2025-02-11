@@ -9,8 +9,13 @@ import {
   IconButton,
   useColorModeValue,
 } from "@chakra-ui/react";
+import { Fade } from '@chakra-ui/react'
+
 import { HiDocumentArrowUp } from "react-icons/hi2";
 import { FiX } from "react-icons/fi";
+import {
+  CheckIcon,
+} from "@chakra-ui/icons"
 import { useUpload } from "../../context/UploadContext";
 import useCustomToast from "../../hooks/useCustomToast";
 import axios from "axios";
@@ -64,7 +69,10 @@ const FileUpload = ({ onComplete }: FileUploadProps) => {
       )
         .then(() => {
           showToast("Success!", `File ${file.name} uploaded successfully!`, "success");
-          setUploadingFiles((prev) => prev.filter((f) => f.file !== file));
+          // Remove file from uploadingFiles after 3 seconds
+          setTimeout(() => {
+            setUploadingFiles((prev) => prev.filter((f) => f.file !== file));
+          }, 3000);
           // Invalidate queries to refresh data
           queryClient.invalidateQueries({
             queryKey: ['files'],
@@ -192,11 +200,12 @@ const FileUpload = ({ onComplete }: FileUploadProps) => {
 
       <Box width="100%">
         {uploadingFiles.map(({ file, progress, cancel }) => (
+          <Fade in={true}>
           <Flex
             key={file.name}
             align="center"
             justify="space-between"
-            mb={2}
+            my={1}
             p={2}
             borderWidth={1}
             borderRadius="md"
@@ -206,9 +215,11 @@ const FileUpload = ({ onComplete }: FileUploadProps) => {
               <Text fontSize="sm" isTruncated>
                 {file.name} ({humanReadableFileSize(file.size)})
               </Text>
-              <Progress value={progress} size="xs" mt={1} />
+              <Progress value={progress} size="xs" mt={1} colorScheme={progress < 100 ? "blue" : "green"}/>
             </Box>
+            {progress < 100 ?
             <IconButton
+              h={8}
               ml={4}
               size="sm"
               colorScheme="red"
@@ -216,8 +227,11 @@ const FileUpload = ({ onComplete }: FileUploadProps) => {
               onClick={cancel}
               aria-label="Cancel upload"
               icon={<Icon as={FiX} />}
-            />
+            /> :
+            <CheckIcon h={8} ml={4} mr={1} color="green.500" /> 
+            }
           </Flex>
+          </Fade>
         ))}
       </Box>
     </Flex>

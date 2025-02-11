@@ -94,7 +94,6 @@ export type RunPublic = {
   created_at: string
   started_at?: string | null
   finished_at?: string | null
-  stderr?: string | null
   stdout?: string | null
   command?: string | null
   conda_env_pinned?: string | null

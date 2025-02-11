@@ -22,7 +22,6 @@ import { ErrorBoundary } from "react-error-boundary"
 import { FilePublic } from "../../../client"
 import OutputAccordion from "../../../components/Runs/OutputAccordion"
 import RunMetadata from "../../../components/Runs/RunMetadata"
-import Command from "../../../components/Runs/Command"
 import OutputFile from "../../../components/Runs/OutputFile"
 import CsvFileToTable from "../../../components/Render/CsvFileToTable"
 import JsonFile from "../../../components/Render/JsonFile"
@@ -98,9 +97,8 @@ function RunDetail() {
           </BreadcrumbItem>
         </Breadcrumb>
       </Heading>
-      <Box mb={4} >
+      <Box my={4} >
         <RunMetadata run={run} />
-        {run.command && (<Command command={run.command}/>)}
       </Box>
       {run.files.length > 0 && (
         <>
