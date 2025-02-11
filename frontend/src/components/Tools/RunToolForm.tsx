@@ -227,7 +227,7 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
               <FormLabel fontSize={"md"} htmlFor={param.name} mb={0}>
                 {param.name.toUpperCase()}
               </FormLabel>
-              <Text fontSize="sm" color={'gray.500'} mb={1} >{param.description}</Text>
+              <Text fontSize="sm" color={'gray.500'} mb={2} >{param.description}</Text>
             {param.param_type === "str" && (
               <Input
                 id={param.name}
