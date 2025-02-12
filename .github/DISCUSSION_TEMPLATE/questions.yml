@@ -1,4 +1,4 @@
-labels: [question]
+labels: [q-a]
 body:
   - type: markdown
     attributes:
