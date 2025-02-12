@@ -58,7 +58,7 @@ const useAuth = () => {
   })
 
   const loginMutation = useMutation({
-    ...loginAccessTokenMutation(),
+    ...loginAccessTokenMutation({timeout: 5000}),
     onSuccess: (token) => {
       localStorage.setItem("access_token", token.access_token)
       // load redirect from query params
@@ -73,17 +73,15 @@ const useAuth = () => {
       }
     },
     onError: (err) => {
-      let errDetail = err.message
-
+      let errDetail
       if (err instanceof AxiosError) {
-        errDetail = err.message
+        errDetail = err.response?.data.detail
       }
 
       if (Array.isArray(errDetail)) {
-        errDetail = "Something went wrong"
+        errDetail = "Something went wrong!"
       }
-
-      setError(errDetail)
+      setError(errDetail ?? "Something went wrong!")
     },
   })
 

@@ -8,6 +8,7 @@ import {
     Switch,
     FormLabel,
     Heading,
+    Image,
 } from "@chakra-ui/react"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { Suspense, useState } from "react"
@@ -16,6 +17,7 @@ import { type ToolsOrderBy } from "../../client"
 import { readToolsOptions } from "../../client/@tanstack/react-query.gen"
 import ToolCard from "../../components/Tools/ToolCard"
 import React from "react"
+import ErrorLogo from "/assets/images/500.png"
   
 function ToolCards({ orderBy, showFavourites, search }: { orderBy: ToolsOrderBy, showFavourites: boolean, search?: string }) {
 const { data: tools } = useSuspenseQuery({
@@ -50,9 +52,10 @@ const handleOrderByChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
 return (
     <Suspense fallback={<Skeleton height="20px" />}>
     <ErrorBoundary
-        fallbackRender={({ error }) => (
-        <Box>
-            <Text>Error: {error.message}</Text>
+        fallbackRender={() => (
+        <Box textAlign="center" mt={8} w={'100%'} justifyContent={'center'} alignItems={'center'}>
+            <Text>Something went wrong... Please reload the page!</Text>
+            <Image src={ErrorLogo} alt="Error" />
         </Box>
         )}
     >
