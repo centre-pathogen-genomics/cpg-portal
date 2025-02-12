@@ -182,7 +182,7 @@ services:
     <<: *backend
     ports: []
     labels: []
-    command: [ taskiq, worker, app.tkq:broker, app.tasks]
+    command: [ taskiq, worker, app.tkq:broker, app.tasks, --max-async-tasks, "${MAX_TASKS_PER_WORKER?Variable not set}"]
     depends_on:
       db:
         condition: service_healthy
@@ -201,6 +201,7 @@ services:
       context: ./frontend
       args:
         - VITE_API_URL=https://${DOMAIN?Variable not set}
+        - VITE_MAX_FILE_UPLOAD_SIZE=https://${MAX_FILE_UPLOAD_SIZE?Variable not set}
         - NODE_ENV=production
     labels:
       - traefik.enable=true

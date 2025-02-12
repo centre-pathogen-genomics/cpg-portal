@@ -265,6 +265,7 @@ class Run(RunBase, table=True):
     status: RunStatus = Field(sa_column=Column(Enum(RunStatus)))
     tags: list[str] | None = Field(default_factory=list, sa_column=Column(JSON))
     params: dict = Field(default_factory=dict, sa_column=Column(JSON))
+    input_file_ids: list[uuid.UUID] | None = Field(default_factory=list, sa_column=Column(JSON))
     files: list["File"] = Relationship(
         back_populates="run",
         sa_relationship=RelationshipProperty(

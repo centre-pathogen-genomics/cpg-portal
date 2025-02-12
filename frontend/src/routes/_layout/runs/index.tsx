@@ -59,7 +59,7 @@ function getRunsQueryOptions({ page, pageSize }: { page: number, pageSize: numbe
 function usePollRuns({ page, pageSize }: { page: number, pageSize: number }) {
   const fetchRuns = async () => {
     const response = await RunsService.readRuns({
-      query: { skip: (page - 1) * pageSize, limit: pageSize },
+      query: { skip: (page - 1) * pageSize, limit: pageSize }, timeout: 10000
     })
     return response.data
   }

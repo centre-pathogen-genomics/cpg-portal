@@ -94,7 +94,7 @@ services:
 
   worker:
     restart: "no"
-    command: [ taskiq, worker, app.tkq:broker, app.tasks, -w 4, --reload ]
+    command: [ taskiq, worker, app.tkq:broker, app.tasks, --reload, --max-async-tasks, "${MAX_TASKS_PER_WORKER?Variable not set}"]
 
   nats:
     restart: "no"

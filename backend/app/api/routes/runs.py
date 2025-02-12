@@ -179,6 +179,7 @@ async def create_run(
         owner_id=current_user.id,
         status="pending",
         params=params,
+        input_file_ids=[file.id for file in files],
         command=cmd,
         tags=tags,
     )
@@ -187,7 +188,7 @@ async def create_run(
     session.refresh(run)
 
     # run the command
-    taskiq_task = await run_tool.kiq(run.id, cmd, file_ids=[file.id for file in files])
+    taskiq_task = await run_tool.kiq(run.id, cmd)
 
     run.taskiq_id = taskiq_task.task_id
     session.add(run)
