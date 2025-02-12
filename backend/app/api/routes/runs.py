@@ -179,7 +179,7 @@ async def create_run(
         owner_id=current_user.id,
         status="pending",
         params=params,
-        input_file_ids=[file.id for file in files],
+        input_file_ids=[str(file.id) for file in files],
         command=cmd,
         tags=tags,
     )
