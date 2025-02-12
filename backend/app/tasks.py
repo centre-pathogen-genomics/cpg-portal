@@ -10,7 +10,7 @@ from typing import Annotated
 
 from jinja2 import Environment as JinjaEnvironment
 from sqlmodel import Session, select
-from taskiq import TaskiqDepends, TaskiqEvents, TaskiqState
+from taskiq import TaskiqDepends
 
 from app.api.deps import get_db
 from app.conda import CondaEnvManger, CondaEnvMangerError
@@ -20,13 +20,6 @@ from app.models import File, Run, SetupFile, Target, Tool
 from app.tkq import broker
 
 SessionDep = Annotated[Session, TaskiqDepends(get_db)]
-
-@broker.on_event(TaskiqEvents.WORKER_SHUTDOWN)
-async def shutdown(state: TaskiqState) -> None:
-    # TODO: Cancel all running tasks in this worker
-    print("Shutting down worker")
-    print(state)
-    pass
 
 async def run_command_in_subprocess(session: Session, run_id: uuid.UUID, command: str, tmp_dir: Path) -> tuple[int, str]:
     # Run the command in a subprocess
@@ -144,11 +137,8 @@ async def uninstall_tool(
 async def run_tool(
         run_id: uuid.UUID,
         run_command: str,
-        file_ids: list[uuid.UUID] | None = None,
         session: Session = TaskiqDepends(get_db),
     ) -> bool:
-    if file_ids is None:
-        file_ids = []
     run: Run = session.get(Run, run_id)
     if run is None:
         return False
@@ -181,21 +171,23 @@ async def run_tool(
         session.commit()
         return
     # symlink the files to the tmp directory
-    print(f"Symlinking files to {tmp_dir}")
-    try:
-        for file_id in file_ids: # do in batches?
-            file = session.get(File, file_id)
-            name = Path(file.location).name
-            print(f"Symlinking {file.location} to {tmp_dir / name}")
-            os.symlink(Path(file.location), tmp_dir / name)
-    except Exception as e:
-        print(f"Error symlinking files: {e}")
-        run.stdout += "\nError symlinking files!"
-        run.status = "failed"
-        session.add(run)
-        session.commit()
-        shutil.rmtree(tmp_dir)
-        return False
+    if run.input_file_ids:
+        print(f"Symlinking files to {tmp_dir}")
+        try:
+            file_ids = run.input_file_ids or []
+            for file_id in file_ids: # do in batches?
+                file = session.get(File, file_id)
+                name = Path(file.location).name
+                print(f"Symlinking {file.location} to {tmp_dir / name}")
+                os.symlink(Path(file.location), tmp_dir / name)
+        except Exception as e:
+            print(f"Error symlinking files: {e}")
+            run.stdout += "\nError symlinking files!"
+            run.status = "failed"
+            session.add(run)
+            session.commit()
+            shutil.rmtree(tmp_dir)
+            return False
 
     env = JinjaEnvironment()
     if run.tool.setup_files:
