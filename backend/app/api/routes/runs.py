@@ -74,7 +74,7 @@ async def create_run(
     for param in tool.params:
         param = Param(**param)
         if param.name not in params or params[param.name] is None:
-            if param.required or param.param_type == "file":
+            if param.required:
                 raise HTTPException(
                     status_code=400, detail=f"Missing required parameter: {param.name}"
                 )
