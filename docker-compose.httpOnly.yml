@@ -201,7 +201,7 @@ services:
       context: ./frontend
       args:
         - VITE_API_URL=https://${DOMAIN?Variable not set}
-        - VITE_MAX_FILE_UPLOAD_SIZE=https://${MAX_FILE_UPLOAD_SIZE?Variable not set}
+        - VITE_MAX_FILE_UPLOAD_SIZE=${MAX_FILE_UPLOAD_SIZE?Variable not set}
         - NODE_ENV=production
     labels:
       - traefik.enable=true
