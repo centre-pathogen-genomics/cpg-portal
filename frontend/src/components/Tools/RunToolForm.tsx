@@ -227,7 +227,9 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
               <FormLabel fontSize={"md"} htmlFor={param.name} mb={0}>
                 {param.name.toUpperCase()}
               </FormLabel>
-              <Text fontSize="sm" color={'gray.500'} mb={2} >{param.description}</Text>
+              {param.param_type !== "bool" && (
+                <Text fontSize="sm" color={'gray.500'} mb={2} >{param.description}</Text>
+              )}
             {param.param_type === "str" && (
               <Input
                 id={param.name}
@@ -273,7 +275,7 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
                 })}
                 defaultChecked={param.default as boolean}
               >
-                yes
+               {param.description || 'Check to enable'} 
               </Checkbox>
             )}
             {(param.param_type === "file" || param.param_type === "files") && (

@@ -80,26 +80,7 @@ async def create_run(
                 )
             params[param.name] = param.default
             continue
-        if param.param_type == "file":
-            file_id = params[param.name]
-            try:
-                file_id = uuid.UUID(file_id)
-            except ValueError:
-                raise HTTPException(
-                    status_code=400, detail=f"For parameter {param.name}, expected file id, got {file_id}"
-                )
-            file = session.get(File, file_id)
-            if not file:
-                raise HTTPException(
-                    status_code=404, detail=f"File not found: {file_id}"
-                )
-            if file.owner_id != current_user.id and not current_user.is_superuser:
-                raise HTTPException(
-                    status_code=403, detail="Not enough permissions to use this file"
-                )
-            files.append(file)
-            params[param.name] = Path(file.location).name
-        elif param.param_type == "files":
+        if param.param_type == "files" or param.param_type == "file":
             file_ids = params[param.name]
             if not isinstance(file_ids, list):
                 raise HTTPException(
