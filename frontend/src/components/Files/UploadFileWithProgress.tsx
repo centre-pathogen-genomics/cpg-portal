@@ -28,8 +28,6 @@ import { FilePublic } from "../../client";
 const MAX_FILE_UPLOAD_SIZE = 
   Number(import.meta.env.VITE_MAX_FILE_UPLOAD_SIZE) || 10485760;
   
-console.log("MAX_FILE_UPLOAD_SIZE", import.meta.env.VITE_MAX_FILE_UPLOAD_SIZE);
-
 interface UploadingFile {
   file: File;
   progress: number;
