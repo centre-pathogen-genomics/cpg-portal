@@ -15,11 +15,14 @@ import {
   InputGroup,
   InputLeftElement,
   Text,
+  useColorMode,
   useColorModeValue,
   useDisclosure,
 } from "@chakra-ui/react"
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router"
 import { FiLogOut, FiMenu } from "react-icons/fi"
+import { HiOutlineMoon, HiOutlineSun } from "react-icons/hi";
+
 import useAuth from "../../hooks/useAuth"
 import { useQueryClient } from "@tanstack/react-query";
 import { UserPublic } from "../../client";
@@ -34,6 +37,20 @@ const items = [
   { title: "My Runs", path: "/runs" },
   { title: "My Files", path: "/files" },
 ]
+
+
+function DarkModeToggle() {
+  const { colorMode, toggleColorMode } = useColorMode()
+  return (
+    <IconButton
+      aria-label="Toggle dark mode"
+      icon={colorMode === "dark" ? <HiOutlineSun /> : <HiOutlineMoon />}
+      onClick={toggleColorMode}
+      variant="ghost"
+      fontSize='24px'
+    />
+  )
+}
 
 
 function MainMenuBar() {
@@ -134,6 +151,10 @@ function MainMenuBar() {
             {listItems} 
           </Flex>
         </Flex>
+        <Box mx={2} display={{ base: "none", md: "block" }}>
+          <DarkModeToggle />
+        </Box>
+        
         <Flex>
           <UserMenu />
           <IconButton
@@ -143,7 +164,7 @@ function MainMenuBar() {
             fontSize="20px"
             icon={<FiMenu />}
           />
-          <Drawer isOpen={isOpen} placement="right" onClose={onClose}>
+        <Drawer isOpen={isOpen} placement="right" onClose={onClose}>
             <DrawerOverlay />
             <DrawerContent maxW="250px">
               <DrawerCloseButton />
