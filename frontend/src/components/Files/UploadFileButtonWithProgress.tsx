@@ -20,7 +20,6 @@ import axios from "axios";
 import { useQueryClient } from "@tanstack/react-query";
 import { humanReadableFileSize } from "../../utils";
 import { FilePublic } from "../../client";
-import { set } from "react-hook-form";
 
 // Read the max file upload size from the environment, defaulting to 10 MB if missing.
 const MAX_FILE_UPLOAD_SIZE =
