@@ -24,7 +24,7 @@ import useCustomToast from "../../hooks/useCustomToast"
 import React, { useEffect, useMemo, useState } from "react"
 import { handleError } from "../../utils"
 import { Options } from "@hey-api/client-axios"
-import FileUpload from "../Files/UploadFileWithProgress"
+import FileUpload from "../Files/UploadFileDragAndDropWithProgress"
 import TagInput from "../Common/TagInput"
 
 
