@@ -178,9 +178,9 @@ const FileUpload = ({ onComplete }: FileUploadProps) => {
         width="100%"
         height="150px"
       >
-        <Icon as={HiDocumentArrowUp} w={10} h={10} mb={2} />
-        <Text mb={0}><Text as='b'>Upload a file</Text> or drag and drop</Text>
-        <Text fontSize="sm" color="gray.500">Max file size {humanReadableFileSize(MAX_FILE_UPLOAD_SIZE)}</Text>
+        <Icon as={HiDocumentArrowUp} w={10} h={10} mb={2} color={useColorModeValue("gray.600", "gray.400")} />
+        <Text color={useColorModeValue("gray.600", "gray.400")} mb={0}><Text as='b'>Upload a file</Text> or drag and drop</Text>
+        <Text fontSize="sm" color={useColorModeValue("gray.500", "gray.500")} >Max file size {humanReadableFileSize(MAX_FILE_UPLOAD_SIZE)}</Text>
         <Input
           type="file"
           position="absolute"
