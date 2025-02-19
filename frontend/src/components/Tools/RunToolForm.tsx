@@ -24,7 +24,7 @@ import useCustomToast from "../../hooks/useCustomToast"
 import React, { useEffect, useMemo, useState } from "react"
 import { handleError } from "../../utils"
 import { Options } from "@hey-api/client-axios"
-import FileUpload from "../Files/UploadFileDragAndDropWithProgress"
+import FileUploadButton from "../Files/UploadFileButtonWithProgress"
 import TagInput from "../Common/TagInput"
 
 
@@ -82,7 +82,7 @@ const FileParam = ({
   isLoading,
 }: FileParamProps) => {
   return (
-    <Flex direction={"column"}>
+    <Flex direction={"column"} gap={2}>
       <Select
         id={param.name}
         options={files}
@@ -99,14 +99,9 @@ const FileParam = ({
         }}
         isLoading={isLoading}
         selectedOptionStyle="check"
+        
       />
-      <Flex justify={"center"} my={4} align={"center"}>
-
-        <Flex w={"100%"} mx={4} borderBottomWidth={2} ></Flex>
-        <Text color={'gray.500'}>or</Text>
-        <Flex w={"100%"}  mx={4} borderBottomWidth={2} ></Flex>
-      </Flex>
-      <FileUpload
+      <FileUploadButton
         onComplete={(file) => {
           const newFile = { label: file.name, value: file.id };
           // Immediately update the local files state via the passed-in updater
@@ -286,10 +281,12 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
               setValue={(selected) => {
                 if (Array.isArray(selected) || param.param_type === "file") {
                   // For multi-file selection, replace the existing value.
+                  console.log(selected);
+
                   if (!Array.isArray(selected)) {
                     selected = [selected];
                   }
-                  let values = selected.map((v) => v.value);
+                  let values = selected.filter((v) => v !== null).map((v) => v.value);
                   setValue(param.name, values);
                   setFileStates((prev) => {
                     return { ...prev, [param.name]: selected as { label: string; value: string }[] }

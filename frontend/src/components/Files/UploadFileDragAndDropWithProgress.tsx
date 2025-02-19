@@ -66,7 +66,6 @@ const FileUpload = ({ onComplete }: FileUploadProps) => {
         controller
       )
         .then(() => {
-          showToast("Success!", `File ${file.name} uploaded successfully!`, "success");
           // Remove file from uploadingFiles after 3 seconds
           setTimeout(() => {
             setUploadingFiles((prev) => prev.filter((f) => f.file !== file));
