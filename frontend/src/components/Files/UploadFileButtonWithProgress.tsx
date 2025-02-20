@@ -1,25 +1,22 @@
+// FileUpload.tsx
 import React, { useCallback, useState, useRef, useEffect } from "react";
 import {
   Box,
   Flex,
   Icon,
   Input,
-  Progress,
-  Text,
-  IconButton,
-  useColorModeValue,
   Button,
+  useColorModeValue,
 } from "@chakra-ui/react";
 import { Fade } from "@chakra-ui/react";
 import { HiDocumentArrowUp } from "react-icons/hi2";
-import { FiX } from "react-icons/fi";
-import { CheckIcon } from "@chakra-ui/icons";
 import { useUpload } from "../../context/UploadContext";
 import useCustomToast from "../../hooks/useCustomToast";
 import axios from "axios";
 import { useQueryClient } from "@tanstack/react-query";
 import { humanReadableFileSize } from "../../utils";
 import { FilePublic } from "../../client";
+import UploadProgress from "./UploadProgress"; // Import the reusable component
 
 // Read the max file upload size from the environment, defaulting to 10 MB if missing.
 const MAX_FILE_UPLOAD_SIZE =
@@ -29,6 +26,7 @@ interface UploadingFile {
   file: File;
   progress: number;
   cancel: () => void;
+  completed?: boolean;
 }
 
 interface FileUploadProps {
@@ -47,7 +45,7 @@ const FileUpload = ({ onComplete }: FileUploadProps) => {
   // Counter to handle nested drag events properly
   const dragCounter = useRef(0);
 
-  // Global drag events to update the isDragging state (used for changing the button text)
+  // Global drag events to update the isDragging state
   useEffect(() => {
     const handleDragEnter = (e: DragEvent) => {
       e.preventDefault();
@@ -88,14 +86,16 @@ const FileUpload = ({ onComplete }: FileUploadProps) => {
     };
   }, []);
 
-  // Function to process files (either from the file input or a drop event)
+  // Process files from input or drag/drop events
   const processFiles = (files: FileList | null) => {
     if (!files || files.length === 0) return;
     for (const file of files) {
       if (file.size > MAX_FILE_UPLOAD_SIZE) {
         showToast(
           "Error!",
-          `File ${file.name} (${humanReadableFileSize(file.size)}) exceeds the maximum allowed size of ${humanReadableFileSize(
+          `File ${file.name} (${humanReadableFileSize(
+            file.size
+          )}) exceeds the maximum allowed size of ${humanReadableFileSize(
             MAX_FILE_UPLOAD_SIZE
           )}.`,
           "error"
@@ -106,7 +106,7 @@ const FileUpload = ({ onComplete }: FileUploadProps) => {
     }
   };
 
-  // Function to handle file upload with progress updates.
+  // Handle file upload with progress updates
   const handleFileUpload = useCallback(
     (file: File) => {
       const controller = new AbortController();
@@ -130,6 +130,11 @@ const FileUpload = ({ onComplete }: FileUploadProps) => {
         controller
       )
         .then(() => {
+          // Mark file as completed
+          setUploadingFiles((prev) =>
+            prev.map((f) => (f.file === file ? { ...f, completed: true } : f))
+          );
+          // Remove the file from the list after 3 seconds
           setTimeout(() => {
             setUploadingFiles((prev) => prev.filter((f) => f.file !== file));
           }, 3000);
@@ -153,28 +158,28 @@ const FileUpload = ({ onComplete }: FileUploadProps) => {
     [uploadFile, showToast, onComplete, queryClient]
   );
 
-  // Handle file selection from the file input.
+  // Handle file selection via the input
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     processFiles(event.target.files);
-    // Clear the input value so that the same file can be selected again if needed.
+    // Clear the input value to allow re-selection of the same file
     event.target.value = "";
   };
 
-  // Trigger the file input click when the button is pressed.
+  // Trigger file input click when the button is pressed
   const handleButtonClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
   };
 
-  // Handle files dropped directly on the button.
+  // Handle files dropped directly on the button
   const handleButtonDrop = (event: React.DragEvent<HTMLButtonElement>) => {
     event.preventDefault();
     processFiles(event.dataTransfer.files);
     setIsDragging(false);
   };
 
-  // Prevent default behavior for dragover on the button.
+  // Prevent default behavior for dragover on the button
   const handleButtonDragOver = (event: React.DragEvent<HTMLButtonElement>) => {
     event.preventDefault();
     event.stopPropagation();
@@ -182,63 +187,26 @@ const FileUpload = ({ onComplete }: FileUploadProps) => {
 
   return (
     <Box w="100%">
-      {/* Display upload progress for each uploading file */}
-      <Flex direction="column" w="100%">
-        {uploadingFiles.map(({ file, progress, cancel }) => (
-          <Fade in={true} key={file.name}>
-            <Flex
-              align="center"
-              justify="space-between"
-              mb={1}
-              p={2}
-              borderWidth={1}
-              borderRadius="md"
-              bg={useColorModeValue("white", "gray.800")}
-            >
-              <Box flex="1">
-                <Text fontSize="sm" isTruncated>
-                  {file.name} ({humanReadableFileSize(file.size)})
-                </Text>
-                <Progress
-                  value={progress}
-                  size="xs"
-                  mt={1}
-                  colorScheme={progress < 100 ? "blue" : "green"}
-                />
-              </Box>
-              {progress < 100 ? (
-                <IconButton
-                  h={8}
-                  ml={4}
-                  size="sm"
-                  colorScheme="red"
-                  variant="outline"
-                  onClick={cancel}
-                  aria-label="Cancel upload"
-                  icon={<Icon as={FiX} />}
-                />
-              ) : (
-                <CheckIcon h={8} ml={4} mr={1} color="green.500" />
-              )}
-            </Flex>
-          </Fade>
-        ))}
-      </Flex>
-
-      {/* Button to trigger file selection.
-          It now also acts as a drop target so that files dropped on it are uploaded. */}
+      {/* Button to trigger file selection and act as a drop target */}
       <Button
-        leftIcon={<Icon as={HiDocumentArrowUp} />}
+        leftIcon={<Icon fontSize="22px" as={HiDocumentArrowUp} />}
         onClick={handleButtonClick}
         onDrop={handleButtonDrop}
         onDragOver={handleButtonDragOver}
         variant={isDragging ? "outline" : "solid"}
+        cursor={isDragging ? "copy" : "pointer"}
         w="100%"
+        h={isDragging ? "100px" : "40px"}
+        mb={1}
+        color={useColorModeValue("gray.600", "gray.400")}
+        borderStyle={isDragging ? "dashed" : "solid"}
+        borderWidth={isDragging ? "2px" : "0px"}
+        borderColor={isDragging ? "blue.400" : useColorModeValue("gray.300", "gray.600")}
         size="md"
         disabled={uploadingFiles.length > 0}
         isLoading={uploadingFiles.filter((f) => f.progress < 100).length > 0}
       >
-        {isDragging ? "Drop files here to upload" : "Upload a File"}
+        {isDragging ? "Drop here to upload!" : "Upload a File or Drag and Drop"}
       </Button>
 
       {/* Hidden file input */}
@@ -250,6 +218,20 @@ const FileUpload = ({ onComplete }: FileUploadProps) => {
         multiple
         required={false}
       />
+
+      {/* Display upload progress for each file */}
+      <Flex direction="column" w="100%">
+        {uploadingFiles.map(({ file, progress, cancel, completed }) => (
+          <Fade in={true} key={file.name}>
+            <UploadProgress
+              file={file}
+              progress={progress}
+              completed={completed}
+              onCancel={cancel}
+            />
+          </Fade>
+        ))}
+      </Flex>
     </Box>
   );
 };

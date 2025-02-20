@@ -1,37 +1,32 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Box,
   Flex,
   Icon,
   Input,
-  Progress,
   Text,
-  IconButton,
   useColorModeValue,
 } from "@chakra-ui/react";
-import { Fade } from '@chakra-ui/react'
-
+import { Fade } from "@chakra-ui/react";
 import { HiDocumentArrowUp } from "react-icons/hi2";
-import { FiX } from "react-icons/fi";
-import {
-  CheckIcon,
-} from "@chakra-ui/icons"
 import { useUpload } from "../../context/UploadContext";
 import useCustomToast from "../../hooks/useCustomToast";
 import axios from "axios";
 import { useQueryClient } from "@tanstack/react-query";
 import { humanReadableFileSize } from "../../utils";
 import { FilePublic } from "../../client";
+import UploadProgress from "./UploadProgress"; 
 
 // 1. Read the max file upload size from the environment. 
 //    If the environment variable is missing, default to e.g. 10 MB 
-const MAX_FILE_UPLOAD_SIZE = 
+const MAX_FILE_UPLOAD_SIZE =
   Number(import.meta.env.VITE_MAX_FILE_UPLOAD_SIZE) || 10485760;
   
 interface UploadingFile {
   file: File;
   progress: number;
   cancel: () => void;
+  completed?: boolean;
 }
 
 interface FileUploadProps {
@@ -43,6 +38,52 @@ const FileUpload = ({ onComplete }: FileUploadProps) => {
   const { uploadFile } = useUpload();
   const showToast = useCustomToast();
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
+
+  // Global state to track if a drag event is active
+  const [isDragging, setIsDragging] = useState(false);
+  // Counter to handle nested drag events properly
+  const dragCounter = useRef(0);
+
+  // Global drag events to update the isDragging state
+  useEffect(() => {
+    const handleDragEnter = (e: DragEvent) => {
+      e.preventDefault();
+      dragCounter.current++;
+      if (e.dataTransfer?.items && e.dataTransfer.items.length > 0) {
+        setIsDragging(true);
+      }
+    };
+
+    const handleDragLeave = (e: DragEvent) => {
+      e.preventDefault();
+      dragCounter.current--;
+      if (dragCounter.current === 0) {
+        setIsDragging(false);
+      }
+    };
+
+    const handleDragOver = (e: DragEvent) => {
+      e.preventDefault();
+    };
+
+    const handleDrop = (e: DragEvent) => {
+      e.preventDefault();
+      dragCounter.current = 0;
+      setIsDragging(false);
+    };
+
+    window.addEventListener("dragenter", handleDragEnter);
+    window.addEventListener("dragleave", handleDragLeave);
+    window.addEventListener("dragover", handleDragOver);
+    window.addEventListener("drop", handleDrop);
+
+    return () => {
+      window.removeEventListener("dragenter", handleDragEnter);
+      window.removeEventListener("dragleave", handleDragLeave);
+      window.removeEventListener("dragover", handleDragOver);
+      window.removeEventListener("drop", handleDrop);
+    };
+  }, []);
 
   const handleFileUpload = useCallback(
     (file: File) => {
@@ -66,40 +107,48 @@ const FileUpload = ({ onComplete }: FileUploadProps) => {
         controller
       )
         .then(() => {
-          // Remove file from uploadingFiles after 3 seconds
+          // Mark the file as completed
+          setUploadingFiles((prev) =>
+            prev.map((f) =>
+              f.file === file ? { ...f, completed: true } : f
+            )
+          );
+          // Remove the file after 3 seconds
           setTimeout(() => {
             setUploadingFiles((prev) => prev.filter((f) => f.file !== file));
           }, 3000);
           // Invalidate queries to refresh data
+          queryClient.invalidateQueries({ queryKey: ["files"] });
           queryClient.invalidateQueries({
-            queryKey: ['files'],
-          });
-          queryClient.invalidateQueries({
-            queryKey: [{ "_id": "getFilesStats" }],
+            queryKey: [{ _id: "getFilesStats" }],
           });
         })
         .catch((error) => {
           if (axios.isCancel(error)) {
-            showToast("Upload Canceled", `Upload of ${file.name} canceled`, "warning");
+            showToast(
+              "Upload Canceled",
+              `Upload of ${file.name} canceled`,
+              "warning"
+            );
           } else {
             if (error.response.status === 413) {
-              showToast(
-                file.name,
-                `${error.response.data.detail}`,
-                "error"
-              );
+              showToast(file.name, `${error.response.data.detail}`, "error");
             } else {
               showToast("Error!", `Failed to upload ${file.name}`, "error");
             }
           }
-          setUploadingFiles((prev) => prev.filter((f) => f.file !== file));
+          setUploadingFiles((prev) =>
+            prev.filter((f) => f.file !== file)
+          );
         });
     },
     [uploadFile, showToast, onComplete, queryClient]
   );
 
-  // 2. Check file size before uploading; skip and warn if it exceeds MAX_FILE_UPLOAD_SIZE.
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  // 2. Check file size before uploading; warn and skip if it exceeds MAX_FILE_UPLOAD_SIZE.
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
@@ -107,7 +156,9 @@ const FileUpload = ({ onComplete }: FileUploadProps) => {
       if (file.size > MAX_FILE_UPLOAD_SIZE) {
         showToast(
           "Error!",
-          `File ${file.name} (${humanReadableFileSize(file.size)}) exceeds the maximum allowed size of ${humanReadableFileSize(
+          `File ${file.name} (${humanReadableFileSize(
+            file.size
+          )}) exceeds the maximum allowed size of ${humanReadableFileSize(
             MAX_FILE_UPLOAD_SIZE
           )}.`,
           "error"
@@ -119,6 +170,7 @@ const FileUpload = ({ onComplete }: FileUploadProps) => {
   };
 
   const handleDrop = async (event: React.DragEvent<HTMLDivElement>) => {
+    setIsDragging(false);
     event.preventDefault();
     event.stopPropagation();
 
@@ -127,7 +179,9 @@ const FileUpload = ({ onComplete }: FileUploadProps) => {
         if (file.size > MAX_FILE_UPLOAD_SIZE) {
           showToast(
             "Error!",
-            `File ${file.name} (${humanReadableFileSize(file.size)}) exceeds the maximum allowed size of ${humanReadableFileSize(
+            `File ${file.name} (${humanReadableFileSize(
+              file.size
+            )}) exceeds the maximum allowed size of ${humanReadableFileSize(
               MAX_FILE_UPLOAD_SIZE
             )}.`,
             "error"
@@ -144,16 +198,6 @@ const FileUpload = ({ onComplete }: FileUploadProps) => {
     event.stopPropagation();
   };
 
-  const handleDragEnter = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-  };
-
-  const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-  };
-
   return (
     <Flex direction="column" align="center" width="100%">
       <Flex
@@ -164,22 +208,33 @@ const FileUpload = ({ onComplete }: FileUploadProps) => {
         borderWidth={2}
         borderRadius="md"
         borderStyle="dashed"
-        borderColor={useColorModeValue("gray.300", "gray.600")}
+        borderColor={isDragging ? "blue.400" : useColorModeValue("gray.300", "gray.600")}
         bg={useColorModeValue("gray.100", "gray.700")}
         _hover={{ borderColor: "blue.400" }}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
-        onDragEnter={handleDragEnter}
-        onDragLeave={handleDragLeave}
         textAlign="center"
         position="relative"
         cursor="pointer"
         width="100%"
         height="150px"
       >
-        <Icon as={HiDocumentArrowUp} w={10} h={10} mb={2} color={useColorModeValue("gray.600", "gray.400")} />
-        <Text color={useColorModeValue("gray.600", "gray.400")} mb={0}><Text as='b'>Upload a file</Text> or drag and drop</Text>
-        <Text fontSize="sm" color={useColorModeValue("gray.500", "gray.500")} >Max file size {humanReadableFileSize(MAX_FILE_UPLOAD_SIZE)}</Text>
+        <Icon
+          as={HiDocumentArrowUp}
+          w={10}
+          h={10}
+          mb={2}
+          color={useColorModeValue("gray.600", "gray.400")}
+        />
+        <Text color={useColorModeValue("gray.600", "gray.400")} mb={0}>
+          {isDragging ? <Text as="b">Drop here to upload!</Text> : <Text><Text as="b">Upload a file</Text> or drag and drop</Text>}
+        </Text>
+        <Text
+          fontSize="sm"
+          color={useColorModeValue("gray.500", "gray.500")}
+        >
+          Max file size {humanReadableFileSize(MAX_FILE_UPLOAD_SIZE)}
+        </Text>
         <Input
           type="file"
           position="absolute"
@@ -196,38 +251,14 @@ const FileUpload = ({ onComplete }: FileUploadProps) => {
       </Flex>
 
       <Box width="100%">
-        {uploadingFiles.map(({ file, progress, cancel }) => (
-          <Fade in={true}>
-          <Flex
-            key={file.name}
-            align="center"
-            justify="space-between"
-            my={1}
-            p={2}
-            borderWidth={1}
-            borderRadius="md"
-            bg={useColorModeValue("white", "gray.800")}
-          >
-            <Box flex="1">
-              <Text fontSize="sm" isTruncated>
-                {file.name} ({humanReadableFileSize(file.size)})
-              </Text>
-              <Progress value={progress} size="xs" mt={1} colorScheme={progress < 100 ? "blue" : "green"}/>
-            </Box>
-            {progress < 100 ?
-            <IconButton
-              h={8}
-              ml={4}
-              size="sm"
-              colorScheme="red"
-              variant={"outline"}
-              onClick={cancel}
-              aria-label="Cancel upload"
-              icon={<Icon as={FiX} />}
-            /> :
-            <CheckIcon h={8} ml={4} mr={1} color="green.500" /> 
-            }
-          </Flex>
+        {uploadingFiles.map(({ file, progress, cancel, completed }) => (
+          <Fade in={true} key={file.name}>
+            <UploadProgress
+              file={file}
+              progress={progress}
+              completed={completed}
+              onCancel={cancel}
+            />
           </Fade>
         ))}
       </Box>

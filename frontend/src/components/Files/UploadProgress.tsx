@@ -1,17 +1,73 @@
-// components/UploadProgress.tsx
+// UploadProgress.tsx
 import React from "react";
-import { Progress, Box } from "@chakra-ui/react";
-import { useUpload } from "../../context/UploadContext";
+import {
+  Box,
+  Flex,
+  Text,
+  Progress,
+  IconButton,
+  useColorModeValue,
+} from "@chakra-ui/react";
+import { FiX } from "react-icons/fi";
+import { CheckIcon } from "@chakra-ui/icons";
+import { humanReadableFileSize } from "../../utils";
 
-const UploadProgress: React.FC = () => {
-  const { isUploading, progress } = useUpload();
+interface UploadProgressProps {
+  file: File;
+  progress: number;
+  completed?: boolean;
+  onCancel: () => void;
+}
 
-  if (!isUploading) return null;
+const UploadProgress: React.FC<UploadProgressProps> = ({
+  file,
+  progress,
+  completed,
+  onCancel,
+}) => {
+  const bgColor = useColorModeValue("white", "gray.800");
+  const colorScheme = progress < 100 || !completed ? "blue" : "green";
 
   return (
-    <Box position="fixed" bottom="0" left="0" width="100%" zIndex="1000">
-      <Progress value={progress} colorScheme="blue" />
-    </Box>
+    <Flex
+      align="center"
+      justify="space-between"
+      my={1}
+      p={2}
+      borderWidth={1}
+      borderRadius="md"
+      bg={bgColor}
+    >
+      <Box flex="1">
+        <Text fontSize="sm" isTruncated>
+          {file.name} ({humanReadableFileSize(file.size)})
+        </Text>
+        <Progress value={progress} size="xs" mt={1} colorScheme={colorScheme} />
+      </Box>
+      {(!completed && progress === 100) ? (
+        <IconButton
+          isLoading={true}
+          aria-label="processing"
+          variant="ghost"
+          ml={4}
+          h={8}
+          size="sm"
+        />
+      ) : progress < 100 ? (
+        <IconButton
+          h={8}
+          ml={4}
+          size="sm"
+          colorScheme="red"
+          variant="outline"
+          onClick={onCancel}
+          aria-label="Cancel upload"
+          icon={<FiX />}
+        />
+      ) : (
+        <CheckIcon h={8} ml={4} mr={1} color="green.500" />
+      )}
+    </Flex>
   );
 };
 

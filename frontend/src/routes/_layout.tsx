@@ -8,7 +8,7 @@ import { Flex, Box, Spinner } from "@chakra-ui/react"
 import { Outlet, ScrollRestoration, createFileRoute, redirect } from "@tanstack/react-router"
 
 import MainMenuBar from "../components/Common/MainMenuBar"
-import UploadProgress from "../components/Files/UploadProgress"
+import UploadProgress from "../components/Common/GlobalUploadProgressBar"
 import useAuth, { checkToken} from "../hooks/useAuth"
 import { UploadProvider } from "../context/UploadContext"
 

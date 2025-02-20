@@ -12,7 +12,7 @@ import {
 } from "@chakra-ui/react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Select, } from "chakra-react-select"
-import { type SubmitHandler, useForm } from "react-hook-form"
+import { set, type SubmitHandler, useForm } from "react-hook-form"
 import {
   CreateRunData,
   FilesService,
@@ -164,7 +164,7 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
     handleSubmit,
     reset,
     setValue,
-    formState: { errors },
+    formState: { errors, isSubmitting },
     getValues,
   } = useForm<FormData>({
     mode: "onBlur",
@@ -192,7 +192,8 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
     },
   })
 
-  const onSubmit: SubmitHandler<any> = (formData: {[key: string]: unknown}) => {
+ 
+  const onValid: SubmitHandler<any> = async (formData: {[key: string]: unknown}) => {
     setIsLoading(true);
     // filter out null values and default values
     for (const key in formData) {
@@ -200,17 +201,17 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
         delete formData[key];
       }
     }
-    console.log(formData);
-    mutation.mutate({body: {params:   formData, tags: tags}} as Options<CreateRunData>)
+    await mutation.mutateAsync({body: {params:   formData, tags: tags}} as Options<CreateRunData>)
     setIsLoading(false);
   }
+
   const normalizedParams = useMemo(() => params || [], [params]);
  
   const [fileStates, setFileStates] = useState<Record<string, { label: string; value: string }[]>>({});
   
   console.log(filesLoading)
   return (
-    <Box as="form" onSubmit={handleSubmit(onSubmit)} w="100%">
+    <Box as="form" onSubmit={handleSubmit(onValid)} w="100%">
       <Box>
         {normalizedParams?.map((param: Param) => (
           <FormControl
@@ -319,7 +320,7 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
       </Box>
       <Flex gap={2} justify={"space-between"} direction={{base: "column", md: "row"}}>
         <ButtonGroup>
-          <Button variant="primary" type="submit" isLoading={isLoading}>
+          <Button variant="primary" type="submit" isLoading={isSubmitting} >
             Run Tool
           </Button>
           <Button onClick={() => {reset(defaultValues); setFileStates({})}} variant="outline">
