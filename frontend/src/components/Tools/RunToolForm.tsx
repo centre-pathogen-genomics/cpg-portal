@@ -12,7 +12,7 @@ import {
 } from "@chakra-ui/react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Select, } from "chakra-react-select"
-import { set, type SubmitHandler, useForm } from "react-hook-form"
+import { type SubmitHandler, useForm } from "react-hook-form"
 import {
   CreateRunData,
   FilesService,
@@ -320,7 +320,7 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
       </Box>
       <Flex gap={2} justify={"space-between"} direction={{base: "column", md: "row"}}>
         <ButtonGroup>
-          <Button variant="primary" type="submit" isLoading={isSubmitting} >
+          <Button variant="primary" type="submit" isLoading={isSubmitting || isLoading} >
             Run Tool
           </Button>
           <Button onClick={() => {reset(defaultValues); setFileStates({})}} variant="outline">
