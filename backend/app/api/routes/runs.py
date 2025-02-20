@@ -86,6 +86,11 @@ async def create_run(
                 raise HTTPException(
                     status_code=400, detail=f"For parameter {param.name}, expected list of file ids, got {file_ids}"
                 )
+            if param.param_type == "file":
+                if len(file_ids) != 1:
+                    raise HTTPException(
+                        status_code=400, detail=f"For parameter {param.name}, expected single file, got {len(file_ids)}"
+                    )
             for file_id in file_ids:
                 try:
                     file_id = uuid.UUID(file_id)
@@ -103,14 +108,7 @@ async def create_run(
                         status_code=403, detail="Not enough permissions to use this file"
                     )
                 files.append(file)
-            if param.param_type == "file":
-                if len(files) != 1:
-                    raise HTTPException(
-                        status_code=400, detail=f"For parameter {param.name}, expected single file, got {len(files)}"
-                    )
-                params[param.name] = Path(files[0].location).name
-            else:
-                params[param.name] = [Path(file.location).name for file in files]
+            params[param.name] = [Path(file.location).name for file in files]
         elif param.param_type == "bool":
             if not isinstance(params[param.name], bool):
                 raise HTTPException(
