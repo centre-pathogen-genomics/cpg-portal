@@ -209,7 +209,6 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
  
   const [fileStates, setFileStates] = useState<Record<string, { label: string; value: string }[]>>({});
   
-  console.log(filesLoading)
   return (
     <Box as="form" onSubmit={handleSubmit(onValid)} w="100%">
       <Box>
@@ -282,7 +281,6 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
               setValue={(selected) => {
                 if (Array.isArray(selected) || param.param_type === "file") {
                   // For multi-file selection, replace the existing value.
-                  console.log(selected);
 
                   if (!Array.isArray(selected)) {
                     selected = [selected];

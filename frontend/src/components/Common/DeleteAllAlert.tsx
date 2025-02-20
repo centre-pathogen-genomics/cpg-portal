@@ -54,7 +54,6 @@ const DeleteAll = ({ type, isOpen, onClose }: DeleteAllProps) => {
       )
     },
     onSettled: () => {
-      console.log("onSettled")
       queryClient.invalidateQueries({
         queryKey: [`${type.toLowerCase()}`], // Invalidate queries related to runs
       })

@@ -117,7 +117,6 @@ function MainMenuBar() {
       defaultValues})
 
     function onSubmit({ search }: FormData) {
-      console.log(search)
       if (search === "") {
         navigate({to:`/`, resetScroll: true})
         return

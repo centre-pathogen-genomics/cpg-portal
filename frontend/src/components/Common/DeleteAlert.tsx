@@ -31,15 +31,12 @@ const Delete = ({ type, id, isOpen, onClose }: DeleteProps) => {
   } = useForm()
 
   const deleteEntity = async (id: string) => {
-    console.log("Deleting entity with id: ", id)
 
     if (type === "User") {
       await UsersService.deleteUser({ path: { user_id: id } })
     } else if (type === "Run") {
-      console.log("Deleting run with id: ", id)
       await RunsService.deleteRun({ path: { id: id } })
     } else if (type === "File") {
-      console.log("Deleting file with id: ", id)
       await FilesService.deleteFile({ path: { id: id } })
     } else {
       throw new Error(`Unexpected type: ${type}`)

@@ -66,7 +66,6 @@ const useAuth = () => {
       const redirect = searchParams.get("redirect")
       queryClient.clear();
       if (redirect) {
-        console.log("redirecting to", redirect)
         navigate({ to: redirect })
       } else  {
         navigate({ to: "/" })

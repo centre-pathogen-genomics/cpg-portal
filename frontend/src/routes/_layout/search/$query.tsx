@@ -14,7 +14,6 @@ export const Route = createFileRoute("/_layout/search/$query")({
 
 function SearchResults() {
   const { query } = Route.useParams()
-  console.log(query)
   return (
     <Container maxW="full">
       <Flex direction="column" align="center" my={8}>
