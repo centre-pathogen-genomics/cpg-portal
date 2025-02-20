@@ -199,13 +199,13 @@ function Tool() {
             <GitHubBadge type="stars" githubRepo={tool.github_repo} />
           )} 
           {tool?.badges?.map((badge) => (
-            (badge.badge && <Link href={badge.url ? badge.url : undefined} isExternal>
+            (badge.badge && <Link key={badge.badge} href={badge.url ? badge.url : undefined} isExternal>
                 <Image src={badge.badge} />
               </Link>
             )
           ))}
           {tool?.tags?.map((tag) => (
-            <RouterLink to={`/search/${tag}`}>
+            <RouterLink to={`/search/${tag}`} key={tag}>
               <Badge key={tag} label={'%23'} value={tag} />
             </RouterLink>
           ))}
