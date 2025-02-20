@@ -108,7 +108,11 @@ async def create_run(
                         status_code=403, detail="Not enough permissions to use this file"
                     )
                 files.append(file)
-            params[param.name] = [Path(file.location).name for file in files]
+            if param.param_type == "file":
+                params[param.name] = Path(files[0].location).name
+            else:
+                params[param.name] = [Path(file.location).name for file in files]
+
         elif param.param_type == "bool":
             if not isinstance(params[param.name], bool):
                 raise HTTPException(
