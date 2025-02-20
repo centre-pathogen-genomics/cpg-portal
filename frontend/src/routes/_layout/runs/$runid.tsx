@@ -115,7 +115,7 @@ function RunDetail() {
           {run.files?.filter((file) => file.size && file.size < 500000).length > 0 && (
             <>
               <Heading size="md" mb={4}>
-                Outputs
+               Results 
               </Heading> 
               <Tabs  variant="enclosed" >
                 <TabList>
