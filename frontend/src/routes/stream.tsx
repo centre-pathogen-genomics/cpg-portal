@@ -110,6 +110,18 @@ function Stream() {
     };
   }, []);
 
+  // attempt to reconnect every 5 seconds when disconnected
+  useEffect(() => {
+    if (!isConnected) {
+      const interval = setInterval(() => {
+        console.log("Attempting to reconnect WebSocket...");
+        connectWebSocket();
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [isConnected]);
+  
+
   return (
     <ErrorBoundary
       fallbackRender={() => (
