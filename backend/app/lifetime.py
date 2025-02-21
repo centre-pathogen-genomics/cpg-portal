@@ -5,6 +5,7 @@ from app.core.db import engine
 from app.models import Run
 from app.tasks import run_tool
 from app.tkq import broker
+from app.wsmanager import manager
 
 
 async def startup_taskiq() -> None:
@@ -34,10 +35,24 @@ async def shutdown_taskiq() -> None:
     if not broker.is_worker_process:
         await broker.shutdown()
 
+async def startup_broadcast() -> None:
+    """
+    Startup task to connect the broadcaster.
+    """
+    await manager.startup()
+    print("Broadcaster connected.")
+
+async def shutdown_broadcast() -> None:
+    """
+    Shutdown task to disconnect the broadcaster.
+    """
+    await manager.shutdown()
+    print("Broadcaster disconnected.")
 
 def startup(app: FastAPI):
     async def _startup():
         await startup_taskiq()
+        await startup_broadcast()
 
     return _startup
 
@@ -45,5 +60,6 @@ def startup(app: FastAPI):
 def shutdown(app: FastAPI):
     async def _shutdown():
         await shutdown_taskiq()
+        await shutdown_broadcast()
 
     return _shutdown
