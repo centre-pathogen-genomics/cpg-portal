@@ -1,6 +1,7 @@
-import { useEffect} from "react"
+import { useEffect } from "react"
 import {
-  Select,
+  Badge,
+  Button,
   ButtonGroup,
   Container,
   Flex,
@@ -15,85 +16,63 @@ import {
   Thead,
   Tr,
   Text,
-  Badge,
-} from '@chakra-ui/react'
-import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { z } from "zod"
+} from "@chakra-ui/react"
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query"
+import { createFileRoute } from "@tanstack/react-router"
 import FileUpload from "../../../components/Files/UploadFileDragAndDropWithProgress"
 import DeleteFileButton from "../../../components/Files/DeleteFileButton"
 import DeleteFilesButton from "../../../components/Files/DeleteFilesButton"
 import DownloadFileButton from "../../../components/Files/DownloadFileButton"
-import { PaginationFooter } from "../../../components/Common/PaginationFooter"
 import { FilesService } from "../../../client"
 import { humanReadableDate, humanReadableFileSize } from "../../../utils"
 
-// Define pagination schema
-const filesSearchSchema = z.object({
-  page: z.number().catch(1),
-  pageSize: z.number().catch(5),
-})
-
 export const Route = createFileRoute("/_layout/files/")({
   component: Files,
-  validateSearch: (search) => filesSearchSchema.parse(search),
 })
 
-// Function to get query options
-function getFilesQueryOptions({ page, pageSize }: { page: number, pageSize: number }) {
-  return {
-    queryFn: async () =>
-      (await FilesService.readFiles({ query: { skip: (page - 1) * pageSize, limit: pageSize } })).data,
-    queryKey: ["files", { page, pageSize }],
-  }
-}
-
-// Custom hook to fetch and poll files
-function usePollFiles({ page, pageSize }: { page: number, pageSize: number }) {
-  const fetchFiles = async () => {
-    const response = await FilesService.readFiles({
-      query: { skip: (page - 1) * pageSize, limit: pageSize },
-    })
-    return response.data
-  }
-
-  const { data, isPending, isPlaceholderData, refetch } = useQuery({
-    queryKey: ["files", { page, pageSize }],
-    queryFn: fetchFiles,
-    refetchInterval: 5000,
-    refetchIntervalInBackground: true,
-    placeholderData: (prev) => prev,
-  })
-
-  return { data, isPending, isPlaceholderData, refetch }
-}
-
 function FilesTable() {
-  const { page, pageSize } = Route.useSearch()
-  const navigate = useNavigate({ from: Route.fullPath })
+  // Set the page size as needed (default 5 in this example)
+  const pageSize = 20
   const queryClient = useQueryClient()
 
-  const setPage = (page: number) =>
-    navigate({ search: (prev: { page: number }) => ({ ...prev, page }) })
-
-  const setPageSize = (newPageSize: number) =>
-    navigate({ search: (prev: { page: number }) => ({ ...prev, page: 1, pageSize: newPageSize }) })
-
-  const { data: files, isPending, isPlaceholderData } = usePollFiles({ page, pageSize })
-
-  const hasNextPage = !isPlaceholderData && files?.data.length === pageSize
-  const hasPreviousPage = page > 1
-
+  // Remove the files query when the component unmounts, so that on re-entry we start fresh.
   useEffect(() => {
-    if (hasNextPage) {
-      queryClient.prefetchQuery(getFilesQueryOptions({ page: page + 1, pageSize }))
+    return () => {
+      queryClient.removeQueries({ queryKey: ["files", pageSize] })
     }
-  }, [page, pageSize, queryClient, hasNextPage])
+  }, [queryClient, pageSize])
+
+  // Use useInfiniteQuery to fetch files
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ["files", pageSize],
+    queryFn: async ({ pageParam = 1 }) => {
+      const response = await FilesService.readFiles({
+        query: { skip: (pageParam - 1) * pageSize, limit: pageSize },
+      })
+      return response.data
+    },
+    // Start at the first page.
+    initialPageParam: 1,
+    // If the returned page has as many items as pageSize, assume there is another page.
+    getNextPageParam: (lastPage, pages) =>
+      lastPage?.data.length === pageSize ? pages.length + 1 : undefined,
+  })
+
+  // Flatten the pages into one list of files.
+  const files = data?.pages.filter(file => file !== undefined).flatMap((page) => page?.data) || []
 
   return (
     <>
       <TableContainer>
-        <Table size={'sm'}>
+        <Table size="sm">
           <Thead>
             <Tr>
               <Th>Name</Th>
@@ -104,32 +83,43 @@ function FilesTable() {
               <Th width="10%">Actions</Th>
             </Tr>
           </Thead>
-          {isPending ? (
-            <Tbody>
-              {new Array(5).fill(null).map((_, index) => (
-                <Tr key={index}>
-                  {new Array(3).fill(null).map((_, index) => (
-                    <Td key={index}>
+          <Tbody>
+            {isLoading ? (
+              // Show skeleton rows while loading the first page.
+              new Array(pageSize).fill(null).map((_, idx) => (
+                <Tr key={idx}>
+                  {new Array(6).fill(null).map((_, i) => (
+                    <Td key={i}>
                       <SkeletonText noOfLines={1} paddingBlock="16px" />
                     </Td>
                   ))}
                 </Tr>
-              ))}
-            </Tbody>
-          ) : (
-            <Tbody>
-              {files?.data.map((file) => (
+              ))
+            ) : isError ? (
+              // Display an error message if something went wrong.
+              <Tr>
+                <Td colSpan={6}>
+                  <Text color="red.500">
+                    Error: {(error as Error).message}
+                  </Text>
+                </Td>
+              </Tr>
+            ) : (
+              // Render the loaded files.
+              files.map((file) => (
                 <Tr key={file.id}>
                   <Td>{file.name}</Td>
                   <Td>
                     {file.tags?.map((tag) => (
-                        <Badge key={tag} colorScheme="cyan" mr={1} >
-                            {tag}
-                        </Badge>
-                    ))} 
+                      <Badge key={tag} colorScheme="cyan" mr={1}>
+                        {tag}
+                      </Badge>
+                    ))}
                   </Td>
                   <Td>{file.file_type}</Td>
-                  <Td>{file.size ? humanReadableFileSize(file.size) : ""}</Td>
+                  <Td>
+                    {file.size ? humanReadableFileSize(file.size) : ""}
+                  </Td>
                   <Td>{humanReadableDate(file.created_at)}</Td>
                   <Td>
                     <ButtonGroup size="sm">
@@ -138,29 +128,20 @@ function FilesTable() {
                     </ButtonGroup>
                   </Td>
                 </Tr>
-              ))}
-            </Tbody>
-          )}
+              ))
+            )}
+          </Tbody>
         </Table>
       </TableContainer>
-      <Flex justify="space-between" my={4}>
-        <Select
-            width="auto"
-            value={pageSize}
-            onChange={(e) => setPageSize(parseInt(e.target.value))}
-          >
-            <option value={5}>5</option>
-            <option value={8}>8</option>
-            <option value={10}>10</option>
-            <option value={20}>20</option>
-        </Select>
-        <PaginationFooter
-          onChangePage={setPage}
-          page={page}
-          hasNextPage={hasNextPage}
-          hasPreviousPage={hasPreviousPage}
-        />
-      </Flex>
+
+      {/* Load More Button */}
+      {hasNextPage && (
+        <Flex justify="center" py={4}>
+          <Button onClick={() => fetchNextPage()} isLoading={isFetchingNextPage}>
+            Load more files
+          </Button>
+        </Flex>
+      )}
     </>
   )
 }
@@ -172,11 +153,14 @@ function Files() {
         <Heading size="2xl" pt={6}>
           My Files
         </Heading>
-        <Text>From here you can upload, download, and delete files associated with your account.</Text>
+        <Text>
+          From here you can upload, download, and delete files associated with
+          your account.
+        </Text>
       </Stack>
       <FileUpload />
-      <Flex justify="space-between" align={"center"}>
-        <Stack spacing={1} my={4}>
+      <Flex justify="space-between" align="center" my={4}>
+        <Stack spacing={1}>
           <Heading size="md">Saved files</Heading>
           <Text>Files that are associated with your account.</Text>
         </Stack>
@@ -186,3 +170,5 @@ function Files() {
     </Container>
   )
 }
+
+export default Files

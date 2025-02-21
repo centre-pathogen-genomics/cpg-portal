@@ -1,5 +1,6 @@
 import {
   Badge,
+  Button,
   ButtonGroup,
   Container,
   Flex,
@@ -16,9 +17,8 @@ import {
   Tr,
   useColorModeValue,
   Text,
-  Select,
 } from "@chakra-ui/react"
-import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useEffect } from "react"
 import { RunsService } from "../../../client"
@@ -29,75 +29,54 @@ import DeleteRunsButton from "../../../components/Runs/DeleteRunsButton"
 import RunRuntime from "../../../components/Runs/RunTime"
 import StatusIcon from "../../../components/Runs/StatusIcon"
 import ParamTag from "../../../components/Runs/ParamTag"
-import { PaginationFooter } from "../../../components/Common/PaginationFooter"
-import { z } from "zod"
 import { humanReadableDate } from "../../../utils"
-
-// Define the search schema to include pageSize
-const runsSearchSchema = z.object({
-  page: z.number().catch(1),
-  pageSize: z.number().catch(10),
-})
 
 export const Route = createFileRoute("/_layout/runs/")({
   component: Runs,
-  validateSearch: (search) => runsSearchSchema.parse(search),
 })
 
-// Function to fetch runs with pagination
-function getRunsQueryOptions({ page, pageSize }: { page: number, pageSize: number }) {
-  return {
-    queryFn: async () =>
-      (await RunsService.readRuns({
-        query: { skip: (page - 1) * pageSize, limit: pageSize },
-      })).data,
-    queryKey: ["runs", { page, pageSize }],
-  }
-}
+function RunsTable() {
+  const pageSize = 20
+  const navigate = useNavigate({ from: Route.fullPath })
+  const colourMode = useColorModeValue("gray.50", "gray.700")
+  const queryClient = useQueryClient()
 
-// Custom hook to fetch and poll runs
-function usePollRuns({ page, pageSize }: { page: number, pageSize: number }) {
-  const fetchRuns = async () => {
-    const response = await RunsService.readRuns({
-      query: { skip: (page - 1) * pageSize, limit: pageSize }, timeout: 10000
-    })
-    return response.data
-  }
+  // Remove the runs query when component unmounts so that only the first page is fetched next time.
+  useEffect(() => {
+    return () => {
+      queryClient.removeQueries({ queryKey: ["runs", pageSize] })
+    }
+  }, [queryClient, pageSize])
 
-  const { data, isPending, isPlaceholderData } = useQuery({
-    queryKey: ["runs", { page, pageSize }],
-    queryFn: fetchRuns,
-    refetchInterval: 5000,
-    refetchIntervalInBackground: true,
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ["runs", pageSize],
+    queryFn: async ({ pageParam = 1 }) => {
+      const response = await RunsService.readRuns({
+        query: { skip: (pageParam - 1) * pageSize, limit: pageSize },
+        timeout: 10000,
+      })
+      return response.data
+    },
+    // Set the initial page parameter explicitly.
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, pages) => {
+      if (lastPage?.data.length === pageSize) {
+        return pages.length + 1 // next page number
+      }
+      return undefined
+    },
   })
 
-  return { data, isPending, isPlaceholderData }
-}
-
-function RunsTable() {
-  const { page, pageSize } = Route.useSearch();
-  const navigate = useNavigate({ from: Route.fullPath });
-  const queryClient = useQueryClient();
-  const colourMode = useColorModeValue("gray.50", "gray.700")
-  const setPage = (page: number) =>
-    navigate({ search: (prev: { page: number }) => ({ ...prev, page }) });
-
-  const setPageSize = (newPageSize: number) =>
-    navigate({ search: (prev: { page: number }) => ({ ...prev, page: 1, pageSize: newPageSize }) });
-
-  // Ensure this hook is called consistently
-  const { data: runs, isPending, isPlaceholderData } = usePollRuns({ page, pageSize });
-
-  const hasNextPage = !isPlaceholderData && runs?.data.length === pageSize;
-  const hasPreviousPage = page > 1;
-
-  // Prefetch the next page unconditionally
-  useEffect(() => {
-    if (hasNextPage) {
-      queryClient.prefetchQuery(getRunsQueryOptions({ page: page + 1, pageSize }));
-    }
-  }, [page, pageSize, queryClient, hasNextPage]);
-
+  // Flatten the pages into one list of runs.
+  const runs = data?.pages.filter(run => run !== undefined).flatMap((page) => page?.data) || []
 
   return (
     <>
@@ -115,8 +94,9 @@ function RunsTable() {
               <Th width="10%">Actions</Th>
             </Tr>
           </Thead>
-          {isPending ? (
-            <Tbody>
+          <Tbody>
+            {isLoading ? (
+              // Show skeletons while loading the first page.
               <Tr>
                 {new Array(5).fill(null).map((_, index) => (
                   <Td key={index}>
@@ -124,14 +104,20 @@ function RunsTable() {
                   </Td>
                 ))}
               </Tr>
-            </Tbody>
-          ) : (
-            <Tbody>
-              {runs?.data.map((run) => (
+            ) : isError ? (
+              // Display error message if something went wrong.
+              <Tr>
+                <Td colSpan={8}>
+                  <Text color="red.500">Error: {(error as Error).message}</Text>
+                </Td>
+              </Tr>
+            ) : (
+              // Render the loaded runs.
+              runs.map((run) => (
                 <Tr
+                  key={run.id}
                   _hover={{ bg: colourMode }}
                   cursor="pointer"
-                  key={run.id}
                   onClick={() =>
                     navigate({
                       to: `/runs/${run.id.toString()}`,
@@ -148,23 +134,23 @@ function RunsTable() {
                       </Badge>
                     </Tooltip>
                   </Td>
-                  <Td>
-                   {run.tool.name}
-                  </Td>
+                  <Td>{run.tool.name}</Td>
                   <Td>
                     {run.tags?.map((tag) => (
-                        <Badge key={tag} colorScheme="cyan" mr={1} >
-                            {tag}
-                        </Badge>
-                    ))} 
+                      <Badge key={tag} colorScheme="cyan" mr={1}>
+                        {tag}
+                      </Badge>
+                    ))}
                   </Td>
-                  <Td justifyContent={"center"} align="center" textAlign={"center"}>
-                    <Flex wrap={"wrap"}>
-                      {Object.keys(run.params).filter((key) => run.params[key] !== null).map((key) => (
-                        <Flex key={key} m={0.5}>
-                          <ParamTag key={key} param={key} value={run.params[key]} />
-                        </Flex>
-                      ))}
+                  <Td textAlign="center">
+                    <Flex wrap={"wrap"} justify="start">
+                      {Object.keys(run.params)
+                        .filter((key) => run.params[key] !== null)
+                        .map((key) => (
+                          <Flex key={key} m={0.5}>
+                            <ParamTag param={key} value={run.params[key]} />
+                          </Flex>
+                        ))}
                     </Flex>
                   </Td>
                   <Td>
@@ -178,12 +164,12 @@ function RunsTable() {
                       status={run.status}
                     />
                   </Td>
-                  <Td justifyContent={"center"} align="center" textAlign={"center"}>
+                  <Td textAlign="center">
                     <ButtonGroup
+                      size="sm"
                       onClick={(e) => {
                         e.stopPropagation()
                       }}
-                      size="sm"
                     >
                       {["running", "pending"].includes(run.status) ? (
                         <CancelRunButton run_id={run.id} />
@@ -193,28 +179,20 @@ function RunsTable() {
                     </ButtonGroup>
                   </Td>
                 </Tr>
-              ))}
-            </Tbody>
-          )}
+              ))
+            )}
+          </Tbody>
         </Table>
       </TableContainer>
-      <Flex justify="space-between" my={4}>
-        <Select
-            width="auto"
-            value={pageSize}
-            onChange={(e) => setPageSize(parseInt(e.target.value))}
-          >
-            <option value={5}>5</option>
-            <option value={10}>10</option>
-            <option value={20}>20</option>
-        </Select>
-        <PaginationFooter
-          onChangePage={setPage}
-          page={page}
-          hasNextPage={hasNextPage}
-          hasPreviousPage={hasPreviousPage}
-        />
-      </Flex>
+
+      {/* Load More Button */}
+      {hasNextPage && (
+        <Flex justify="center" py={4}>
+          <Button onClick={() => fetchNextPage()} isLoading={isFetchingNextPage}>
+            Load more runs
+          </Button>
+        </Flex>
+      )}
     </>
   )
 }
@@ -228,6 +206,8 @@ function Actions() {
   )
 }
 
+// The Runs component now wraps the table in a scrollable container.
+// The header (heading and descriptive text) and actions remain fixed at the top.
 function Runs() {
   return (
     <Container maxW={"full"}>
@@ -242,3 +222,5 @@ function Runs() {
     </Container>
   )
 }
+
+export default Runs
