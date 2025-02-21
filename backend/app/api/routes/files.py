@@ -92,9 +92,9 @@ def upload_file(
         raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail=f"File size is too large. Max allowed size is {settings.MAX_FILE_UPLOAD_SIZE} bytes")
     storage_stats = get_file_stats(session, current_user)
     if storage_stats.total_size + file.size > current_user.max_storage:
-        raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail=f"Storage limit exceeded. Max allowed size is {current_user.max_storage} bytes")
+        raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail=f"Not enough storage space. Max allowed storage size is {current_user.max_storage} bytes")
     if storage_stats.count + 1 > current_user.max_storage_files:
-        raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail=f"Files limit exceeded. Max allowed files count is {current_user.max_storage_files}")
+        raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail=f"Not enough storage space. Max allowed number of files is {current_user.max_storage_files}")
     # TODO: potentially convert to async func and use aiofiles (https://stackoverflow.com/questions/63580229/how-to-save-uploadfile-in-fastapi)
     # Create a temporary directory
 
