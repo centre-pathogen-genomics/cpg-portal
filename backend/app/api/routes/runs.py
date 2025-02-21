@@ -4,7 +4,7 @@ from pathlib import Path
 from shlex import quote
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, HTTPException, Query
 from jinja2 import Environment as JinjaEnvironment
 from sqlalchemy import desc
 from sqlmodel import func, select
@@ -13,40 +13,9 @@ from app.api.deps import CurrentUser, SessionDep
 from app.models import File, Message, Param, Run, RunPublic, RunsPublicMinimal, Tool
 from app.tasks import run_tool
 from app.utils import sanitise_shell_input
+from app.wsmanager import manager
 
 router = APIRouter()
-
-
-# ---------------------
-# WebSocket Connection Manager
-# ---------------------
-class ConnectionManager:
-    def __init__(self):
-        self.active_connections: list[WebSocket] = []
-
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.active_connections.append(websocket)
-
-    def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
-
-    async def broadcast(self, message: str):
-        for connection in self.active_connections:
-            await connection.send_text(message)
-
-manager = ConnectionManager()
-
-@router.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-    await manager.connect(websocket)
-    try:
-        while True:
-            # Keep connection alive. Optionally, handle incoming messages.
-            await websocket.receive_text()
-    except WebSocketDisconnect:
-        manager.disconnect(websocket)
-
 
 @router.get("/", response_model=RunsPublicMinimal)
 def read_runs(

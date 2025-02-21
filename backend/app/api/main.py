@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.routes import files, login, runs, users, utils, tools
+from app.api.routes import files, login, runs, tools, users, utils, websockets
 
 api_router = APIRouter()
 api_router.include_router(login.router, tags=["login"])
@@ -9,3 +9,4 @@ api_router.include_router(utils.router, prefix="/utils", tags=["utils"])
 api_router.include_router(tools.router, prefix="/tools", tags=["tools"])
 api_router.include_router(files.router, prefix="/files", tags=["files"])
 api_router.include_router(runs.router, prefix="/runs", tags=["runs"])
+api_router.include_router(websockets.router, prefix="/websockets", tags=["websockets"])
