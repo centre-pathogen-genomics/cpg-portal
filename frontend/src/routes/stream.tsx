@@ -8,18 +8,16 @@ import EventStreamVisualizationPixi, { EventStreamVisualizationRef } from '../co
 import ErrorLogo from '/assets/images/500.png';
 import { HiOutlineStatusOffline } from "react-icons/hi";
 
-
 export const Route = createFileRoute('/stream')({
   component: Stream,
 });
 
 function Stream() {
   const eventStreamRef = useRef<EventStreamVisualizationRef>(null);
-  // Ref to the container element that wraps our Stage.
   const containerRef = useRef<HTMLDivElement>(null);
   const [isConnected, setIsConnected] = useState(true);
   
-  // Create the PIXI.Application instance once.
+  // Create PIXI.Application only once.
   const app = useMemo(() => {
     return new PIXI.Application({
       backgroundAlpha: 0,
@@ -33,7 +31,7 @@ function Stream() {
     height: window.innerHeight,
   });
 
-  // Update dimensions on resize using the parent container's size.
+  // Resize the PIXI renderer when the container size changes.
   useEffect(() => {
     const updateSize = () => {
       if (containerRef.current) {
@@ -48,8 +46,8 @@ function Stream() {
     return () => window.removeEventListener('resize', updateSize);
   }, [app]);
 
+  // Add some default events.
   useEffect(() => {
-    // add default event
     [3, 3, 7, 10].forEach(size => {
       eventStreamRef.current?.addEvent({
         name: 'CPG Portal',
@@ -58,17 +56,24 @@ function Stream() {
     });
   }, []);
 
-  // Connect to the WebSocket endpoint and add events when messages are received.
-  useEffect(() => {
-    const baseURL = import.meta.env.VITE_API_URL
+  // Create a ref to hold the WebSocket instance.
+  const wsRef = useRef<WebSocket | null>(null);
+
+  // Function to connect (or reconnect) the WebSocket.
+  const connectWebSocket = () => {
+    // Close existing connection if any.
+    if (wsRef.current) {
+      wsRef.current.close();
+    }
+
+    const baseURL = import.meta.env.VITE_API_URL;
     const wsUrl = baseURL.replace('http', 'ws') + '/api/v1/websockets/stream';
     const ws = new WebSocket(wsUrl);
-
-    
+    wsRef.current = ws;
 
     ws.onopen = () => {
       console.log("Connected to WebSocket at", wsUrl);
-        setIsConnected(true);
+      setIsConnected(true);
     };
 
     ws.onmessage = (event) => {
@@ -88,15 +93,21 @@ function Stream() {
 
     ws.onerror = (err) => {
       console.error("WebSocket error:", err);
-        setIsConnected(false);
+      setIsConnected(false);
     };
 
     ws.onclose = () => {
       console.error("WebSocket disconnected");
-        setIsConnected(false);
+      setIsConnected(false);
     };
+  };
 
-    return () => ws.close();
+  // Connect on mount and clean up on unmount.
+  useEffect(() => {
+    connectWebSocket();
+    return () => {
+      if (wsRef.current) wsRef.current.close();
+    };
   }, []);
 
   return (
@@ -124,10 +135,22 @@ function Stream() {
             width={dimensions.width}
             height={dimensions.height}
           />
+          {/* When disconnected, show an icon that on click attempts to reconnect */}
           {!isConnected && (
-            <Icon as={HiOutlineStatusOffline} position={'absolute'} bottom={0} right={0} m={2} boxSize={8} color={'red.500'}/>
-            )}
-          </Box>
+            <Icon
+              as={HiOutlineStatusOffline}
+              position="absolute"
+              bottom={0}
+              right={0}
+              m={2}
+              boxSize={8}
+              color="red.500"
+              onClick={connectWebSocket}  // Clicking the icon triggers a reconnect
+              cursor="pointer"            // Change cursor to indicate it's clickable
+              title="Click to reconnect"
+            />
+          )}
+        </Box>
       </AppProvider>
     </ErrorBoundary>
   );
