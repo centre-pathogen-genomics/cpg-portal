@@ -9,7 +9,7 @@ import {
   useColorModeValue,
 } from "@chakra-ui/react";
 import { Link } from "@tanstack/react-router";
-import { FiLogOut, FiUser } from "react-icons/fi";
+import { FiLogOut, FiUser, FiSettings } from "react-icons/fi";
 
 import useAuth from "../../hooks/useAuth";
 
@@ -74,9 +74,14 @@ const UserMenu = () => {
             fill={outlineColor}
           />
           <MenuList>
-            <MenuItem icon={<FiUser fontSize="18px" />} as={Link} to="settings">
-              My profile
+            <MenuItem icon={<FiSettings fontSize="18px" />} as={Link} to="settings">
+              Settings
             </MenuItem>
+            {user?.is_superuser && (
+            <MenuItem icon={<FiUser fontSize="18px" />} as={Link} to="admin">
+              Admin
+            </MenuItem> 
+            )}
             <MenuItem
               icon={<FiLogOut fontSize="18px" />}
               onClick={handleLogout}
