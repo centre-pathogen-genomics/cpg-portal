@@ -61,7 +61,10 @@ function Stream() {
   // Connect to the WebSocket endpoint and add events when messages are received.
   useEffect(() => {
     const baseURL = import.meta.env.VITE_API_URL
-    const wsUrl = baseURL.replace('http', 'ws') + '/api/v1/runs/ws';
+
+    // replace https and http with ws
+    let wsUrl = baseURL.replace(/^https?:\/\//, 'ws://');
+    wsUrl = wsUrl + '/api/v1/runs/ws';
     const ws = new WebSocket(wsUrl);
 
     
