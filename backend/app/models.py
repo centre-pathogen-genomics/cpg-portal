@@ -25,6 +25,9 @@ class UserBase(SQLModel):
     is_active: bool = True
     is_superuser: bool = False
     full_name: str | None = Field(default=None, max_length=255)
+    max_runs: int = 10
+    max_storage: int = 1024 * 1024 * 1024 * 25 # 25 GB
+    max_storage_files: int = 300
 
 
 # Properties to receive via API on creation

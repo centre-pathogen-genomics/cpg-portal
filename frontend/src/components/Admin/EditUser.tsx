@@ -145,6 +145,39 @@ const EditUser = ({ user, isOpen, onClose }: EditUserProps) => {
                 </FormErrorMessage>
               )}
             </FormControl>
+            <FormControl mt={4} isRequired>
+              <FormLabel htmlFor="max_runs">Max Concurrent Runs</FormLabel>
+              <Input
+                id="max_runs"
+                {...register("max_runs", {
+                  required: "Max Runs is required",
+                })}
+                placeholder="Max Runs"
+                type="number"
+              />
+            </FormControl>
+            <FormControl mt={4} isRequired>
+              <FormLabel htmlFor="max_storage">Max Storage (in bytes)</FormLabel>
+              <Input
+                id="max_storage"
+                {...register("max_storage", {
+                  required: "Max Storage is required",
+                })}
+                placeholder="Max Storage"
+                type="number"
+              />
+            </FormControl>
+            <FormControl mt={4} isRequired>
+              <FormLabel htmlFor="max_storage_files">Max Storage Files</FormLabel>
+              <Input
+                id="max_storage_files"
+                {...register("max_storage_files", {
+                  required: "Max Storage Files is required",
+                })}
+                placeholder="Max Storage Files"
+                type="number"
+              />
+            </FormControl>
             <Flex>
               <FormControl mt={4}>
                 <Checkbox {...register("is_superuser")} colorScheme="teal">

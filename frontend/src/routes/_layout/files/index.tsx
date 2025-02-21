@@ -23,6 +23,7 @@ import FileUpload from "../../../components/Files/UploadFileDragAndDropWithProgr
 import DeleteFileButton from "../../../components/Files/DeleteFileButton"
 import DeleteFilesButton from "../../../components/Files/DeleteFilesButton"
 import DownloadFileButton from "../../../components/Files/DownloadFileButton"
+import StorageStats from "../../../components/Files/StorageStats"
 import { FilesService } from "../../../client"
 import { humanReadableDate, humanReadableFileSize } from "../../../utils"
 
@@ -158,6 +159,9 @@ function Files() {
           your account.
         </Text>
       </Stack>
+      <Stack spacing={1} my={4}>
+        <StorageStats size="md"/>
+      </Stack> 
       <FileUpload />
       <Flex justify="space-between" align="center" my={4}>
         <Stack spacing={1}>

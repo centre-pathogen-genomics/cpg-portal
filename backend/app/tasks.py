@@ -314,14 +314,16 @@ async def run_tool(
                 continue
 
             print(f"Saving target file: {target_file}")
-            file = save_file(
-                session=session,
-                file_path=target_file,
-                owner_id=run.owner_id,
-                file_type=target.target_type,
-                saved=False, # the file is not saved to the use my files
-                tags=run.tags,
-            )
+            with open(target_file, "rb") as target_file_handle:
+                file = save_file(
+                    session=session,
+                    name=target_file.name,
+                    file=target_file_handle,
+                    owner_id=run.owner_id,
+                    file_type=target.target_type,
+                    saved=False, # the file is not saved to the use my files
+                    tags=run.tags,
+                )
             run.files.append(file)
         if missing_targets:
             run.status = "failed"

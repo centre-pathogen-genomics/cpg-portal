@@ -13,6 +13,7 @@ from sqlmodel import func, select
 from app.api.deps import CurrentUser, FileDep, SessionDep
 from app.core.config import settings
 from app.core.security import create_access_token
+from app.crud import get_file_stats
 from app.crud import save_file as save_file_to_filesystem
 from app.models import File, FilePublic, FilesPublic, FilesStatistics, FileType, Message
 
@@ -59,16 +60,7 @@ def get_files_stats(session: SessionDep, current_user: CurrentUser) -> Any:
     """
     Get saved files statistics.
     """
-    # Counting for pagination
-    count_query = select(func.count()).select_from(File).where((File.owner_id == current_user.id) & (File.saved))
-    count = session.exec(count_query).one()
-
-    # total size
-    size_query = select(func.sum(File.size)).select_from(File).where((File.owner_id == current_user.id) & (File.saved))
-
-    total_size = session.exec(size_query).one() or 0
-
-    return FilesStatistics(count=count, total_size=total_size)
+    return get_file_stats(session, current_user)
 
 
 def guess_file_type(file: UploadFile) -> str:
@@ -98,30 +90,25 @@ def upload_file(
     """
     if file.size > settings.MAX_FILE_UPLOAD_SIZE:
         raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail=f"File size is too large. Max allowed size is {settings.MAX_FILE_UPLOAD_SIZE} bytes")
+    storage_stats = get_file_stats(session, current_user)
+    if storage_stats.total_size + file.size > current_user.max_storage:
+        raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail=f"Storage limit exceeded. Max allowed size is {current_user.max_storage} bytes")
+    if storage_stats.count + 1 > current_user.max_storage_files:
+        raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail=f"Files limit exceeded. Max allowed files count is {current_user.max_storage_files}")
     # TODO: potentially convert to async func and use aiofiles (https://stackoverflow.com/questions/63580229/how-to-save-uploadfile-in-fastapi)
     # Create a temporary directory
-    with TemporaryDirectory() as temp_dir:
-        print(f"Temporary directory created: {temp_dir}")
-        # Construct the temporary file path with the same name as the uploaded file
-        tmp_path = Path(temp_dir) / file.filename
-        print(f"Temporary file path: {tmp_path}")
-        # Write the uploaded file content to the temporary file
-        with open(tmp_path, "wb") as tmp_file:
-            print(f"Copying file content to {tmp_path}")
-            print(f"File size: {file.size}")
-            shutil.copyfileobj(file.file, tmp_file, length=1024*1024)  # Copy in 1 MB chunks
-        print(f"File saved to {tmp_path}")
 
-        file_type = guess_file_type(file)
+    file_type = guess_file_type(file)
 
-        print(f"File type: {file_type}")
-        file_metadata = save_file_to_filesystem(
-            session=session,
-            file_path=tmp_path,
-            file_type=file_type,
-            owner_id=current_user.id,
-            saved=True
-        )
+    print(f"File type: {file_type}")
+    file_metadata = save_file_to_filesystem(
+        session=session,
+        name=file.filename,
+        file=file.file,
+        file_type=file_type,
+        owner_id=current_user.id,
+        saved=True
+    )
 
     return file_metadata
 

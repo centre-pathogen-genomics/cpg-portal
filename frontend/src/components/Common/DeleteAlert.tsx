@@ -64,6 +64,9 @@ const Delete = ({ type, id, isOpen, onClose }: DeleteProps) => {
       queryClient.invalidateQueries({
         queryKey: [`${type.toLowerCase()}s`],
       })
+      queryClient.invalidateQueries({
+        queryKey: [{ _id: "getFilesStats" }],
+      });
     },
   })
 

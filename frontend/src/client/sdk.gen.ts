@@ -971,7 +971,7 @@ export class FilesService {
 
   /**
    * Save File
-   * Save file.
+   * Save file to My Files.
    */
   public static saveFile<ThrowOnError extends boolean = false>(
     options: Options<SaveFileData, ThrowOnError>,

@@ -57,6 +57,9 @@ const DeleteAll = ({ type, isOpen, onClose }: DeleteAllProps) => {
       queryClient.invalidateQueries({
         queryKey: [`${type.toLowerCase()}`], // Invalidate queries related to runs
       })
+      queryClient.invalidateQueries({
+        queryKey: [{ _id: "getFilesStats" }],
+      });
     },
   })
 

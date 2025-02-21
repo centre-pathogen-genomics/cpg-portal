@@ -3,6 +3,18 @@ import React, { createContext, useContext, useState } from "react";
 import { uploadFileWithProgress } from "../utils"; // Import the new function
 import { FilePublic } from "../client";
 
+// 1. Read the max file upload size from the environment. 
+//    If the environment variable is missing, default to e.g. 10 MB 
+const MAX_FILE_UPLOAD_SIZE =
+  Number(import.meta.env.VITE_MAX_FILE_UPLOAD_SIZE) || 10485760;
+
+class UploadError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "UploadError";
+  }
+}
+
 interface UploadContextValue {
   uploadFile: (
     file: File, 
@@ -23,6 +35,9 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const uploadFile = async (file: File, onProgress: (progress: number) => void, onComplete: ((file: FilePublic) => void) | undefined, controller: AbortController) => {
     setIsUploading(true);
     setProgress(0);
+    if (file.size > MAX_FILE_UPLOAD_SIZE) {
+      throw new UploadError(`File size exceeds the maximum allowed size of ${MAX_FILE_UPLOAD_SIZE} bytes`); 
+    }
 
     try {
       const response = await uploadFileWithProgress(file, controller, (event) => {

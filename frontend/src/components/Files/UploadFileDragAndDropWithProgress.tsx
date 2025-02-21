@@ -17,8 +17,6 @@ import { humanReadableFileSize } from "../../utils";
 import { FilePublic } from "../../client";
 import UploadProgress from "./UploadProgress"; 
 
-// 1. Read the max file upload size from the environment. 
-//    If the environment variable is missing, default to e.g. 10 MB 
 const MAX_FILE_UPLOAD_SIZE =
   Number(import.meta.env.VITE_MAX_FILE_UPLOAD_SIZE) || 10485760;
   
@@ -130,12 +128,12 @@ const FileUpload = ({ onComplete }: FileUploadProps) => {
               `Upload of ${file.name} canceled`,
               "warning"
             );
+          } else if (error.name === "UploadError") {
+            showToast("Error!", error.message, "error");
+          } else if (error.response.status === 413) {
+            showToast(file.name, `${error.response.data.detail}`, "error");
           } else {
-            if (error.response.status === 413) {
-              showToast(file.name, `${error.response.data.detail}`, "error");
-            } else {
-              showToast("Error!", `Failed to upload ${file.name}`, "error");
-            }
+            showToast("Error!", `Failed to upload ${file.name}`, "error");
           }
           setUploadingFiles((prev) =>
             prev.filter((f) => f.file !== file)
@@ -153,18 +151,6 @@ const FileUpload = ({ onComplete }: FileUploadProps) => {
     if (!files || files.length === 0) return;
 
     for (const file of files) {
-      if (file.size > MAX_FILE_UPLOAD_SIZE) {
-        showToast(
-          "Error!",
-          `File ${file.name} (${humanReadableFileSize(
-            file.size
-          )}) exceeds the maximum allowed size of ${humanReadableFileSize(
-            MAX_FILE_UPLOAD_SIZE
-          )}.`,
-          "error"
-        );
-        continue;
-      }
       handleFileUpload(file);
     }
   };
@@ -176,18 +162,6 @@ const FileUpload = ({ onComplete }: FileUploadProps) => {
 
     if (event.dataTransfer.files && event.dataTransfer.files.length > 0) {
       for (const file of event.dataTransfer.files) {
-        if (file.size > MAX_FILE_UPLOAD_SIZE) {
-          showToast(
-            "Error!",
-            `File ${file.name} (${humanReadableFileSize(
-              file.size
-            )}) exceeds the maximum allowed size of ${humanReadableFileSize(
-              MAX_FILE_UPLOAD_SIZE
-            )}.`,
-            "error"
-          );
-          continue;
-        }
         handleFileUpload(file);
       }
     }

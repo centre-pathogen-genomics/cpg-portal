@@ -258,6 +258,9 @@ export type UserCreate = {
   is_active?: boolean
   is_superuser?: boolean
   full_name?: string | null
+  max_runs?: number
+  max_storage?: number
+  max_storage_files?: number
   password: string
 }
 
@@ -266,6 +269,9 @@ export type UserPublic = {
   is_active?: boolean
   is_superuser?: boolean
   full_name?: string | null
+  max_runs?: number
+  max_storage?: number
+  max_storage_files?: number
   id: string
 }
 
@@ -280,6 +286,9 @@ export type UserUpdate = {
   is_active?: boolean
   is_superuser?: boolean
   full_name?: string | null
+  max_runs?: number
+  max_storage?: number
+  max_storage_files?: number
   password?: string | null
 }
 
