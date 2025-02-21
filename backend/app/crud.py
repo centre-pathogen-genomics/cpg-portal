@@ -8,6 +8,7 @@ from sqlmodel import Session, select
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
 from app.models import File, FileType, User, UserCreate, UserUpdate
+from app.utils import sanitise_shell_input
 
 
 def create_user(*, session: Session, user_create: UserCreate) -> User:
@@ -52,7 +53,7 @@ def authenticate(*, session: Session, email: str, password: str) -> User | None:
 def _save_single_file(session: Session, file_path: Path, file_type: FileType, owner_id: uuid.UUID, saved: bool, tags: list[str]) -> File:
     """Helper function to save a single file."""
     file_id = str(uuid.uuid4())
-    file_name = file_path.name.replace(" ", "_")
+    file_name = sanitise_shell_input(file_path.name)
     file_storage_location = Path(settings.STORAGE_PATH) / f"{file_id}_{file_name}"
     with open(file_storage_location, "wb") as fdst, open(file_path, "rb") as fsrc:
         shutil.copyfileobj(fsrc, fdst)

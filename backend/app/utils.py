@@ -1,4 +1,5 @@
 import logging
+import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -121,3 +122,12 @@ def verify_password_reset_token(token: str) -> str | None:
         return str(decoded_token["sub"])
     except InvalidTokenError:
         return None
+
+
+def sanitise_shell_input(input_string: str) -> str:
+    """
+    Sanitise input string to allow only allowed characters.
+    Any other character is removed.
+    """
+    return re.sub(r'[^a-zA-Z0-9\-_\.\+]', '_', input_string)  # replace invalid characters with "_"
+

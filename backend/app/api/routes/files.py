@@ -141,7 +141,7 @@ def read_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> 
 @router.post("{id}/save", response_model=FilePublic)
 def save_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
     """
-    Save file.
+    Save file to My Files.
     """
     file_metadata = session.get(File, id)
     if not file_metadata:

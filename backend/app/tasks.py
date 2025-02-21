@@ -22,46 +22,91 @@ from app.tkq import broker
 SessionDep = Annotated[Session, TaskiqDepends(get_db)]
 
 async def run_command_in_subprocess(session: Session, run_id: uuid.UUID, command: str, tmp_dir: Path) -> tuple[int, str]:
-    # Run the command in a subprocess
+    """
+    Securely run a command in a subprocess while ensuring that:
+    - The tool and its subprocesses are correctly managed.
+    - The process is properly terminated if cancelled.
+    - Outputs are safely captured and stored.
+
+    Args:
+        session (Session): Database session for job tracking.
+        run_id (uuid.UUID): The unique ID of the run.
+        command (str): The command to execute.
+        tmp_dir (Path): The working directory for the subprocess.
+
+    Returns:
+        Tuple[int, str]: (Exit code, stdout output)
+    """
+
+    print(f"Preparing to execute command safely for Run(id={run_id})")
+
+    # Tokenize command safely (prevents shell injection)
     print(f"Running command: {command}")
     command = f"set -euo pipefail; {command}"
-    res = subprocess.Popen(
-        command,
-        text=True,
-        shell=True,
-        cwd=tmp_dir,
-        executable="/bin/bash",
-        start_new_session=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-    )
-    print(f"Run(id={run_id}) started with PID: {res.pid}")
+
+    stdout_path = tmp_dir / "_portal.stdout.log"
+
+    # Open log files for stdout and stderr
+    with open(stdout_path, "wb") as stdout_file:
+
+        try:
+            process = subprocess.Popen(
+                command,
+                shell=True,
+                executable="/bin/bash",
+                cwd=tmp_dir,
+                stdout=stdout_file,
+                stderr=subprocess.STDOUT,
+                start_new_session=True,  # Creates a new session (prevents orphaned processes)
+            )
+        except Exception as e:
+            print(f"Failed to start subprocess for Run(id={run_id}): {e}")
+            return -1, str(e)
+
+        print(f"Run(id={run_id}) started with PID: {process.pid}")
+
+        try:
+            # Monitor process execution and check for cancellation
+            while process.poll() is None:
+                run = session.execute(select(Run).where(Run.id == run_id)).scalar_one()
+                session.refresh(run)
+                if run.status == "cancelled":
+                    print(f"Run(id={run_id}) was cancelled. Attempting to terminate process group.")
+
+                    # Send SIGTERM to process group
+                    os.killpg(process.pid, signal.SIGTERM)
+
+                    # Wait for termination, then force kill if necessary
+                    await asyncio.sleep(3)
+                    if process.poll() is None:
+                        print(f"Run(id={run_id}) did not terminate, sending SIGKILL.")
+                        os.killpg(process.pid, signal.SIGKILL)
+
+                    process.wait()
+                    return -15, "Process cancelled by user"
+
+                await asyncio.sleep(1)
+
+            # Get final exit code
+            return_code = process.returncode
+        except Exception as e:
+            print(f"Error monitoring process for Run(id={run_id}): {e}")
+            os.killpg(process.pid, signal.SIGTERM)  # Ensure termination
+            await asyncio.sleep(2)
+            if process.poll() is None:
+                os.killpg(process.pid, signal.SIGKILL)  # Force kill if still running
+            raise
+
+    # Read stdout output
+    stdout_content = ""
     try:
-        # here we wait for the process to finish using polling
-        # this allows us to check if the run was cancelled
-        # https://github.com/taskiq-python/taskiq/issues/305
-        while res.poll() is None:
-            # Check if the run is cancelled
-            run = session.execute(select(Run).where(Run.id == run_id)).scalar_one()
-            session.refresh(run)
-            if run.status == "cancelled":
-                print(f"Run(id={run_id}) was cancelled")
-                # Send SIGTERM to the entire process group
-                os.killpg(os.getpgid(res.pid), signal.SIGTERM)
-                stdout, _ = res.communicate()
-                return -15, stdout
-            await asyncio.sleep(1)
+        with open(stdout_path) as f:
+            stdout_content = f.read()
     except Exception as e:
-        print(f"An error occurred: {e}")
-        os.killpg(os.getpgid(res.pid), signal.SIGTERM)  # Ensure to kill the group on error
-        raise e
-    if res.returncode != 0:
-        print(f"Run(id={run_id}) failed with return code: {res.returncode}")
-        run.status = "failed"
-        session.add(run)
-        session.commit()
-    stdout, _ = res.communicate()
-    return res.returncode, stdout
+        print(f"Failed to read stdout log for Run(id={run_id}): {e}")
+
+    return return_code, stdout_content
+
 
 @broker.task
 async def install_tool(
@@ -244,6 +289,7 @@ async def run_tool(
     if returncode != 0:
         print(f"Run(id={run_id}) failed with return code: {returncode}")
         # canceled or failed
+        run.status = "failed"
         if returncode == -15:
             run.status = "cancelled"
         session.add(run)

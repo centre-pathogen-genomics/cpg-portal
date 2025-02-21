@@ -11,6 +11,7 @@ from sqlmodel import func, select
 from app.api.deps import CurrentUser, SessionDep
 from app.models import File, Message, Param, Run, RunPublic, RunsPublicMinimal, Tool
 from app.tasks import run_tool
+from app.utils import sanitise_shell_input
 
 router = APIRouter()
 
@@ -152,12 +153,19 @@ async def create_run(
     escaped_params = {}
     for k, v in params.items():
         if isinstance(v, list):
-            escaped_params[k] = [quote(str(i)) for i in v]
+            escaped_params[k] = [quote(sanitise_shell_input(str(i))) for i in v]
         elif isinstance(v, str):
-            escaped_params[k] = quote(v)
-        else:
-            # no need to escape other types
+            escaped_params[k] = quote(sanitise_shell_input(v))
+        elif isinstance(v, bool):
             escaped_params[k] = v
+        elif isinstance(v, int):
+            escaped_params[k] = v
+        elif isinstance(v, float):
+            escaped_params[k] = v
+        else:
+            raise HTTPException(
+                status_code=500, detail=f"Unknown parameter type: {type(v)}"
+            )
 
     # create command
     env = JinjaEnvironment()
