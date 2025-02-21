@@ -205,7 +205,7 @@ async def create_run(
     await manager.broadcast(json.dumps({
         "toolname": tool.name,
         "param_count": len(params)
-    }))
+    }), "stream")
 
     return run
 

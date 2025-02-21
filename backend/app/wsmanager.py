@@ -1,4 +1,5 @@
 import asyncio
+from collections import defaultdict
 
 from broadcaster import Broadcast
 from fastapi import WebSocket
@@ -7,50 +8,72 @@ from app.core.config import settings
 
 
 class ConnectionManager:
-    def __init__(
-        self,
-        broadcast_url: str = settings.REDIS_URI,
-        channel: str = "ws_broadcast"
-    ):
-        # Create a broadcaster instance (Redis is used here by default)
+    def __init__(self, broadcast_url: str = settings.REDIS_URI):
+        # Create a broadcaster instance (using Redis by default)
         self.broadcaster = Broadcast(broadcast_url)
-        self.channel = channel
-        # Optionally keep track of connected WebSocket objects
-        self.active_connections: list[WebSocket] = []
+        # Dictionary to hold active websocket connections per channel.
+        self.active_connections: dict[str, list[WebSocket]] = defaultdict(list)
 
     async def startup(self):
-        """Call this on application startup to connect the broadcaster."""
+        """Connect the broadcaster on application startup."""
         await self.broadcaster.connect()
 
     async def shutdown(self):
-        """Call this on application shutdown to disconnect the broadcaster."""
+        """Disconnect the broadcaster on application shutdown."""
         await self.broadcaster.disconnect()
 
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.active_connections.append(websocket)
-        # Start a background task to forward messages from the broadcaster to this websocket
-        asyncio.create_task(self._listen_to_broadcast(websocket))
-
-    def disconnect(self, websocket: WebSocket):
-        if websocket in self.active_connections:
-            self.active_connections.remove(websocket)
-
-    async def broadcast(self, message: str):
-        """Publish a message to all subscribers on the channel."""
-        await self.broadcaster.publish(channel=self.channel, message=message)
-
-    async def _listen_to_broadcast(self, websocket: WebSocket):
+    async def connect(self, websocket: WebSocket, channel: str):
         """
-        For a connected websocket, subscribe to the broadcast channel and
-        forward any published messages to the websocket.
+        Accepts a websocket connection and subscribes it to a specified channel.
+
+        Args:
+            websocket: The FastAPI WebSocket object.
+            channel: The channel to subscribe this connection to.
+        """
+        await websocket.accept()
+        self.active_connections[channel].append(websocket)
+        # Launch a background task to listen for messages on this channel.
+        asyncio.create_task(self._listen_to_broadcast(websocket, channel))
+
+    def disconnect(self, websocket: WebSocket, channel: str):
+        """
+        Disconnects a websocket from a specific channel.
+
+        Args:
+            websocket: The FastAPI WebSocket object.
+            channel: The channel to disconnect this websocket from.
+        """
+        if websocket in self.active_connections[channel]:
+            self.active_connections[channel].remove(websocket)
+
+    async def broadcast(self, message: str, channel: str):
+        """
+        Publishes a message to the specified channel.
+
+        Args:
+            message: The message to broadcast.
+            channel: The channel to which the message should be published.
+        """
+        await self.broadcaster.publish(channel=channel, message=message)
+
+    async def _listen_to_broadcast(self, websocket: WebSocket, channel: str):
+        """
+        Listens for messages on a specific channel and forwards them to the websocket.
+
+        Args:
+            websocket: The FastAPI WebSocket object.
+            channel: The channel to subscribe to.
         """
         try:
-            async with self.broadcaster.subscribe(channel=self.channel) as subscriber:
+            # Subscribe to the given channel using an asynchronous context manager.
+            async with self.broadcaster.subscribe(channel=channel) as subscriber:
                 async for event in subscriber:
-                    # Send the received broadcast message to the connected client
+                    # Send the received message to the connected client.
                     await websocket.send_text(event.message)
         except Exception as e:
-            print(f"Broadcast subscription error: {e}")
+            print(f"Broadcast subscription error on channel '{channel}': {e}")
 
+
+# Example usage:
+# Instantiate the manager (typically as a global or injected dependency)
 manager = ConnectionManager()

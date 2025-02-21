@@ -4,12 +4,15 @@ from app.wsmanager import manager
 
 router = APIRouter()
 
-@router.websocket("/runs")
+@router.websocket("/stream")
 async def websocket_endpoint(websocket: WebSocket):
-    await manager.connect(websocket)
+    """
+    Public stream of events
+    """
+    await manager.connect(websocket, "stream")
     try:
         while True:
             # Keep connection alive. Optionally, handle incoming messages.
             await websocket.receive_text()
     except WebSocketDisconnect:
-        manager.disconnect(websocket)
+        manager.disconnect(websocket, "stream")
