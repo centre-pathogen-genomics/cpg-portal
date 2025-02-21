@@ -11,6 +11,7 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as StreamImport } from './routes/stream'
 import { Route as SignupImport } from './routes/signup'
 import { Route as ResetPasswordImport } from './routes/reset-password'
 import { Route as RecoverPasswordImport } from './routes/recover-password'
@@ -26,6 +27,11 @@ import { Route as LayoutSearchQueryImport } from './routes/_layout/search/$query
 import { Route as LayoutRunsRunidImport } from './routes/_layout/runs/$runid'
 
 // Create/Update Routes
+
+const StreamRoute = StreamImport.update({
+  path: '/stream',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const SignupRoute = SignupImport.update({
   path: '/signup',
@@ -116,6 +122,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignupImport
       parentRoute: typeof rootRoute
     }
+    '/stream': {
+      preLoaderRoute: typeof StreamImport
+      parentRoute: typeof rootRoute
+    }
     '/_layout/admin': {
       preLoaderRoute: typeof LayoutAdminImport
       parentRoute: typeof LayoutImport
@@ -168,6 +178,7 @@ export const routeTree = rootRoute.addChildren([
   RecoverPasswordRoute,
   ResetPasswordRoute,
   SignupRoute,
+  StreamRoute,
 ])
 
 /* prettier-ignore-end */

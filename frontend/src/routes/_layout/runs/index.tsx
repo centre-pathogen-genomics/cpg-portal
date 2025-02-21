@@ -211,7 +211,7 @@ function Actions() {
 // The header (heading and descriptive text) and actions remain fixed at the top.
 function Runs() {
   return (
-    <Container maxW={"full"}>
+    <Container maxW={"full"} px={{ base: 4, md: 6, lg: 8, xl: 12 }}>
       <Stack spacing={1} mb={2}>
         <Heading size="2xl" pt={6}>
           My Runs

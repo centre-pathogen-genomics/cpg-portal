@@ -60,7 +60,7 @@ function Layout() {
           </Flex>
         ) : (
           <UploadProvider>
-            <Box flex="1" px={{md:4, base: 0}} h={"100%"} overflowX={"auto"}>
+            <Box flex="1" h={"100%"} overflowX={"auto"}>
               <Outlet />
             </Box>
             <UploadProgress />

@@ -1,9 +1,10 @@
+import json
 import uuid
 from pathlib import Path
 from shlex import quote
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, WebSocket, WebSocketDisconnect
 from jinja2 import Environment as JinjaEnvironment
 from sqlalchemy import desc
 from sqlmodel import func, select
@@ -14,6 +15,38 @@ from app.tasks import run_tool
 from app.utils import sanitise_shell_input
 
 router = APIRouter()
+
+
+# ---------------------
+# WebSocket Connection Manager
+# ---------------------
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: list[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+
+    async def broadcast(self, message: str):
+        for connection in self.active_connections:
+            await connection.send_text(message)
+
+manager = ConnectionManager()
+
+@router.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            # Keep connection alive. Optionally, handle incoming messages.
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+
 
 @router.get("/", response_model=RunsPublicMinimal)
 def read_runs(
@@ -162,6 +195,8 @@ async def create_run(
             escaped_params[k] = v
         elif isinstance(v, float):
             escaped_params[k] = v
+        elif v is None:
+            escaped_params[k] = None
         else:
             raise HTTPException(
                 status_code=500, detail=f"Unknown parameter type: {type(v)}"
@@ -197,6 +232,11 @@ async def create_run(
     tool.run_count += 1
     session.add(tool)
     session.commit()
+
+    await manager.broadcast(json.dumps({
+        "toolname": tool.name,
+        "param_count": len(params)
+    }))
 
     return run
 

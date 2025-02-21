@@ -64,6 +64,7 @@ dependencies = [
     { name = "taskiq-nats" },
     { name = "taskiq-redis" },
     { name = "tenacity" },
+    { name = "websockets" },
 ]
 
 [package.dev-dependencies]
@@ -98,6 +99,7 @@ requires-dist = [
     { name = "taskiq-nats", specifier = ">=0.5.1" },
     { name = "taskiq-redis", specifier = ">=0.5.6,<0.6.0" },
     { name = "tenacity", specifier = ">=8.2.3,<9.0.0" },
+    { name = "websockets", specifier = ">=14.2" },
 ]
 
 [package.metadata.requires-dev]
