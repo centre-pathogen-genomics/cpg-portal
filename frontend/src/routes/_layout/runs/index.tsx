@@ -73,6 +73,7 @@ function RunsTable() {
       }
       return undefined
     },
+    refetchInterval: 5000,
   })
 
   // Flatten the pages into one list of runs.
