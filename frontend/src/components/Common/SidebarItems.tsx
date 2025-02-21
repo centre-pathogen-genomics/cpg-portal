@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import { FiCodesandbox, FiFile, FiHome, FiSettings, FiUsers } from "react-icons/fi"
 import { readUserMeQueryKey } from "../../client/@tanstack/react-query.gen"
+import { IoGlasses } from "react-icons/io5";
 
 import type { UserPublic } from "../../client"
 
@@ -10,7 +11,8 @@ const items = [
   { icon: FiHome, title: "Tools", path: "/" },
   { icon: FiCodesandbox, title: "My Runs", path: "/runs" },
   { icon: FiFile, title: "My Files", path: "/files" },
-  { icon: FiSettings, title: "User Settings", path: "/settings" },
+  { icon: FiSettings, title: "Settings", path: "/settings" },
+  { icon: IoGlasses, title: "Stream", path: "/stream", external: true },
 ]
 
 interface SidebarItemsProps {
@@ -27,7 +29,7 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
     ? [...items, { icon: FiUsers, title: "Admin", path: "/admin" }]
     : items
 
-  const listItems = finalItems.map(({ icon, title, path }) => (
+  const listItems = finalItems.map(({ icon, title, path, external }) => (
     <Flex
       as={Link}
       to={path}
@@ -42,6 +44,7 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
       }}
       color={textColor}
       onClick={onClose}
+      target={external ? "_blank" : undefined}
     >
       <Icon as={icon} alignSelf="center" />
       <Text ml={2}>{title}</Text>

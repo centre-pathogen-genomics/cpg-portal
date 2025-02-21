@@ -50,7 +50,7 @@ function Stream() {
 
   useEffect(() => {
     // add default event
-    [3, 10].forEach(size => {
+    [3, 3, 7, 10].forEach(size => {
       eventStreamRef.current?.addEvent({
         name: 'CPG Portal',
         size: size,
@@ -61,7 +61,7 @@ function Stream() {
   // Connect to the WebSocket endpoint and add events when messages are received.
   useEffect(() => {
     const baseURL = import.meta.env.VITE_API_URL
-    const wsUrl = baseURL.replace('http', 'ws') + '/api/v1/websockets/runs';
+    const wsUrl = baseURL.replace('http', 'ws') + '/api/v1/websockets/stream';
     const ws = new WebSocket(wsUrl);
 
     

@@ -10,6 +10,8 @@ import {
 } from "@chakra-ui/react";
 import { Link } from "@tanstack/react-router";
 import { FiLogOut, FiUser, FiSettings } from "react-icons/fi";
+import { IoGlasses } from "react-icons/io5";
+
 
 import useAuth from "../../hooks/useAuth";
 
@@ -76,6 +78,14 @@ const UserMenu = () => {
           <MenuList>
             <MenuItem icon={<FiSettings fontSize="18px" />} as={Link} to="settings">
               Settings
+            </MenuItem>
+            <MenuItem
+              icon={<IoGlasses fontSize="18px" />}
+              as={Link}
+              to="stream"
+              target="_blank" 
+            >
+              Stream
             </MenuItem>
             {user?.is_superuser && (
             <MenuItem icon={<FiUser fontSize="18px" />} as={Link} to="admin">
