@@ -1,27 +1,30 @@
-import {
+import React, {
   useRef,
   useState,
   forwardRef,
   useImperativeHandle,
+  useEffect,
 } from 'react';
-import { Stage, Container, Graphics, Text, useTick } from '@pixi/react';
+import { Stage, Container, Graphics, Text, Sprite, useTick } from '@pixi/react';
 import * as PIXI from 'pixi.js';
 
-// Extend the Circle type to include a color property.
+// 1. Extend the Circle type to include an optional image property.
 export type Circle = {
   id: number;
-  name: string;
+  name?: string;
   size: number;
   radius: number;
   x: number;
   y: number;
   vx: number;
   vy: number;
-  color: number;
+  color?: number;
+  image?: string; // Optional image URL.
 };
 
 export interface EventStreamVisualizationRef {
-  addEvent: (eventData: { name: string; size: number }) => void;
+  // Update the addEvent signature to optionally accept an image.
+  addEvent: (eventData: { size: number; name?: string; image?: string }) => void;
 }
 
 interface EventStreamVisualizationPixiProps {
@@ -36,43 +39,72 @@ interface CircleDisplayProps {
 function CircleDisplay({ circle }: CircleDisplayProps) {
   const containerRef = useRef<PIXI.Container | null>(null);
   const graphicsRef = useRef<PIXI.Graphics | null>(null);
+  const maskRef = useRef<PIXI.Graphics | null>(null);
+  const spriteRef = useRef<PIXI.Sprite | null>(null);
   const textRef = useRef<PIXI.Text | null>(null);
+
+  // New state to track hover status.
+  const [isHovered, setIsHovered] = useState(false);
 
   useTick(() => {
     if (containerRef.current) {
       containerRef.current.x = circle.x;
       containerRef.current.y = circle.y;
     }
-    if (graphicsRef.current) {
+    if (circle.image && spriteRef.current && maskRef.current) {
+      maskRef.current.clear();
+      maskRef.current.beginFill(0xffffff);
+      maskRef.current.drawCircle(0, 0, circle.radius);
+      maskRef.current.endFill();
+
+      spriteRef.current.width = circle.radius * 2;
+      spriteRef.current.height = circle.radius * 2;
+      spriteRef.current.anchor.set(0.5);
+      spriteRef.current.mask = maskRef.current;
+    }
+    if (graphicsRef.current && circle.color) {
       const g = graphicsRef.current;
       g.clear();
-      // Draw a white border.
-      g.lineStyle(1, 0xffffff, 1);
-      // Fill with the assigned event color.
       g.beginFill(circle.color, 1);
       g.drawCircle(0, 0, circle.radius);
       g.endFill();
     }
   });
+
+  // Text style.
   const style = new PIXI.TextStyle({
-    fontFamily: 'Arial',
+    fontFamily: 'Helvetica',
     fontSize: 12,
     fontStyle: 'italic',
     fontWeight: 'bold',
-    fill: "white",
+    fill: 'white',
     stroke: 'black',
     strokeThickness: 3,
     dropShadow: true,
-});
+  });
+
   return (
-    <Container ref={containerRef}>
+    <Container
+      ref={containerRef}
+      interactive={true}
+      pointerover={() => setIsHovered(true)}
+      pointerout={() => setIsHovered(false)}
+    >
       <Graphics ref={graphicsRef} />
-      <Text
-        ref={textRef}
-        text={circle.name}
-        anchor={{ x: 0.5, y: 0.5 }}
-        style={style}
-      />
+      {circle.image && (
+        <>
+          <Sprite ref={spriteRef} image={circle.image} />
+          <Graphics ref={maskRef} />
+        </>
+      )}
+      {isHovered && (
+        <Text
+          ref={textRef}
+          text={circle.name}
+          anchor={{ x: 0.5, y: 0.5 }}
+          style={style}
+        />
+      )}
     </Container>
   );
 }
@@ -85,44 +117,57 @@ const EventStreamVisualizationPixi = forwardRef<
   const centerX = width / 2;
   const centerY = height / 2;
 
+  // Create a ref for the wrapper div.
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  // Listen for the "f" key press to enter full screen mode.
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === 'f') {
+        if (wrapperRef.current && wrapperRef.current.requestFullscreen) {
+          wrapperRef.current.requestFullscreen();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
   const circlesRef = useRef<Circle[]>([]);
   const [_, setVersion] = useState<number>(0);
 
-  // List of 16 nice colors.
   const colorList = [
-    0x1f77b4, // blue
-    0xff7f0e, // orange
-    0x2ca02c, // green
-    0xd62728, // red
-    0x9467bd, // purple
-    0x8c564b, // brown
-    0xe377c2, // pink
-    0x7f7f7f, // gray
-    0xbcbd22, // olive
-    0x17becf, // cyan
-    0x393b79, // dark blue
-    0x637939, // dark green
-    0x8c6d31, // dark orange
-    0x843c39, // dark red
-    0x7b4173, // dark purple
-    0xa55194, // dark pink
+    0x3498db, 0xe67e22, 0x2ecc71, 0xe74c3c, 0x9b59b6,
+    0x795548, 0xfd79a8, 0x95a5a6, 0xf1c40f, 0x1abc9c,
+    0x34495e, 0x27ae60, 0xd35400, 0xc0392b, 0x8e44ad,
+    0xe84393,
   ];
 
-  // Map to store color assignments for event types.
+  // Map for assigning colors based on event type.
   const eventTypeColorsRef = useRef(new Map<string, number>());
 
-  const addEvent = (eventData: { name: string; size: number }) => {
-    if (!eventTypeColorsRef.current.has(eventData.name)) {
-      const index = eventTypeColorsRef.current.size % colorList.length;
-      eventTypeColorsRef.current.set(eventData.name, colorList[index]);
+  // Updated addEvent to optionally accept an image.
+  const addEvent = (eventData: { size: number; name?: string; image?: string }) => {
+    eventData.name = eventData.name?.toUpperCase();
+    let color = undefined;
+    if (eventData.name) {
+      if (!eventTypeColorsRef.current.has(eventData.name)) {
+        const index = eventTypeColorsRef.current.size % colorList.length;
+        eventTypeColorsRef.current.set(eventData.name, colorList[index]);
+      }
+      color = eventTypeColorsRef.current.get(eventData.name)!;
     }
-    const color = eventTypeColorsRef.current.get(eventData.name)!;
 
+    // Calculate spawn location.
     const spawnMargin = 50;
     const spawnRadius = Math.max(width, height) / 2 + spawnMargin;
     const angle = Math.random() * 2 * Math.PI;
     const spawnX = spawnRadius * Math.cos(angle);
     const spawnY = spawnRadius * Math.sin(angle);
+
+    // Create new circle.
     const newCircle: Circle = {
       id: Date.now() + Math.random(),
       name: eventData.name,
@@ -133,6 +178,7 @@ const EventStreamVisualizationPixi = forwardRef<
       vx: 0,
       vy: 0,
       color,
+      image: eventData.image,
     };
     circlesRef.current.push(newCircle);
     setVersion((v) => v + 1);
@@ -142,17 +188,15 @@ const EventStreamVisualizationPixi = forwardRef<
     addEvent,
   }));
 
-  // Handle pointer down on the interactive container to apply a repulsion force.
+  // Handle pointer down events to apply a repulsion force.
   const handlePointerDown = (e: any) => {
     if (!e.data || !e.data.global) return;
-    // Global coordinates from the event.
     const globalPos = e.data.global;
-    // Convert to stage coordinates relative to our centered container.
     const repulsionCenter = {
       x: globalPos.x - centerX,
       y: globalPos.y - centerY,
     };
-    const clickForce = 4000; // Adjust the repulsion strength as needed.
+    const clickForce = 4000;
     circlesRef.current.forEach((circle) => {
       const dx = circle.x - repulsionCenter.x;
       const dy = circle.y - repulsionCenter.y;
@@ -163,13 +207,13 @@ const EventStreamVisualizationPixi = forwardRef<
     });
   };
 
+  // Animate circles: update positions, attraction/repulsion, and handle collisions.
   useTick((delta: number) => {
     const dt = delta / 60;
     const attractionStrength = 100;
     const damping = 0.98;
-    const repulsionStrength = 50; // For overlapping different event types
+    const repulsionStrength = 50;
 
-    // Apply attraction toward center.
     circlesRef.current.forEach((circle) => {
       const dx = -circle.x;
       const dy = -circle.y;
@@ -182,7 +226,7 @@ const EventStreamVisualizationPixi = forwardRef<
       circle.y += circle.vy * dt;
     });
 
-    // Collision detection: merge same types or repulse different types.
+    // Collision detection: merge circles if the same type or repel if different.
     const mergedIds = new Set<number>();
     for (let i = 0; i < circlesRef.current.length; i++) {
       const circleA = circlesRef.current[i];
@@ -195,7 +239,6 @@ const EventStreamVisualizationPixi = forwardRef<
         const minDist = circleA.radius + circleB.radius;
         if (distance < minDist) {
           if (circleA.name === circleB.name) {
-            // Merge circles of the same type.
             const newSize = circleA.size + circleB.size;
             const newRadius = Math.sqrt(newSize) * 10;
             const newX = (circleA.x * circleA.size + circleB.x * circleB.size) / newSize;
@@ -210,7 +253,6 @@ const EventStreamVisualizationPixi = forwardRef<
             circleA.vy = newVy;
             mergedIds.add(circleB.id);
           } else {
-            // Repel circles of different types.
             const overlap = minDist - distance;
             const ux = dx / (distance || 1);
             const uy = dy / (distance || 1);
@@ -231,18 +273,25 @@ const EventStreamVisualizationPixi = forwardRef<
   });
 
   return (
-    <Stage width={width} height={height} options={{ backgroundAlpha: 0 }}>
-      <Container
-        x={centerX}
-        y={centerY}
-        interactive={true}
-        pointerdown={handlePointerDown}
-      >
-        {circlesRef.current.map((circle) => (
-          <CircleDisplay key={circle.id} circle={circle} />
-        ))}
-      </Container>
-    </Stage>
+    // Wrapper div for full screen support.
+    <div
+      ref={wrapperRef}
+      style={{ width, height, outline: 'none' }}
+      tabIndex={0}
+    >
+      <Stage width={width} height={height} options={{ backgroundAlpha: 0 }}>
+        <Container
+          x={centerX}
+          y={centerY}
+          interactive={true}
+          pointerdown={handlePointerDown}
+        >
+          {circlesRef.current.map((circle) => (
+            <CircleDisplay key={circle.id} circle={circle} />
+          ))}
+        </Container>
+      </Stage>
+    </div>
   );
 });
 

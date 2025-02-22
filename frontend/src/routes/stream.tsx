@@ -2,11 +2,14 @@ import { useMemo, useRef, useState, useEffect } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { AppProvider } from '@pixi/react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { Box, Text, Image, Icon } from '@chakra-ui/react';
+import { Box, Text, Image, Icon, IconButton } from '@chakra-ui/react';
 import * as PIXI from 'pixi.js';
 import EventStreamVisualizationPixi, { EventStreamVisualizationRef } from '../components/EventStream/EventStreamVisualizationPixi';
 import ErrorLogo from '/assets/images/500.png';
 import { HiOutlineStatusOffline } from "react-icons/hi";
+import { MdFullscreen, MdFullscreenExit } from "react-icons/md";  // Import full screen icon
+import IconLogo from "/assets/images/cpg-logo-icon.png";
+import IconLogoTransparent from "/assets/images/cpg-logo-icon-transparent.png";
 
 export const Route = createFileRoute('/stream')({
   component: Stream,
@@ -50,8 +53,8 @@ function Stream() {
   useEffect(() => {
     [3, 3, 7, 10].forEach(size => {
       eventStreamRef.current?.addEvent({
-        name: 'CPG Portal',
         size: size,
+        image: IconLogo,
       });
     });
   }, []);
@@ -84,6 +87,7 @@ function Stream() {
           eventStreamRef.current?.addEvent({
             name: data.toolname,
             size: data.param_count + 1,
+            image: IconLogoTransparent,
           });
         }
       } catch (err) {
@@ -110,7 +114,7 @@ function Stream() {
     };
   }, []);
 
-  // attempt to reconnect every 5 seconds when disconnected
+  // Attempt to reconnect every 5 seconds when disconnected.
   useEffect(() => {
     if (!isConnected) {
       const interval = setInterval(() => {
@@ -120,7 +124,16 @@ function Stream() {
       return () => clearInterval(interval);
     }
   }, [isConnected]);
-  
+
+  // Handler for entering full screen mode.
+  const handleFullscreen = () => {
+    // if already in fullscreen mode, exit it
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else if (containerRef.current && containerRef.current.requestFullscreen) {
+      containerRef.current.requestFullscreen();
+    }
+  };
 
   return (
     <ErrorBoundary
@@ -140,8 +153,20 @@ function Stream() {
           overflow="hidden"
           sx={{ display: 'block' }}
           margin={0}
-          position={'relative'}
+          position="relative"
         >
+          {/* Fullscreen Icon Button positioned at the top-right */}
+          <IconButton
+            aria-label="Enter Fullscreen"
+            icon={document.fullscreenElement ? <MdFullscreenExit /> : <MdFullscreen />}
+            position="absolute"
+            top="1rem"
+            right="1rem"
+            onClick={handleFullscreen}
+            zIndex={1}
+            variant={'ghost'}
+          />
+
           <EventStreamVisualizationPixi
             ref={eventStreamRef}
             width={dimensions.width}
