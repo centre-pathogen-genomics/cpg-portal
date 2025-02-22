@@ -150,7 +150,6 @@ const EventStreamVisualizationPixi = forwardRef<
 
   // Updated addEvent to optionally accept an image.
   const addEvent = (eventData: { size: number; name?: string; image?: string }) => {
-    eventData.name = eventData.name?.toUpperCase();
     let color = undefined;
     if (eventData.name) {
       if (!eventTypeColorsRef.current.has(eventData.name)) {
