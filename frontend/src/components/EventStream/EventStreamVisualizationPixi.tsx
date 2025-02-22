@@ -3,24 +3,9 @@ import {
   useState,
   forwardRef,
   useImperativeHandle,
-  useEffect,
 } from 'react';
-import { Stage, Container, Graphics, Text, Sprite, useTick } from '@pixi/react';
-import * as PIXI from 'pixi.js';
-
-// 1. Extend the Circle type to include an optional image property.
-export type Circle = {
-  id: number;
-  name?: string;
-  size: number;
-  radius: number;
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  color?: number;
-  image?: string; // Optional image URL.
-};
+import { Stage, Container, useTick } from '@pixi/react';
+import CircleDisplay, { Circle } from './DisplayCircle';
 
 export interface EventStreamVisualizationRef {
   // Update the addEvent signature to optionally accept an image.
@@ -32,83 +17,6 @@ interface EventStreamVisualizationPixiProps {
   height: number;
 }
 
-interface CircleDisplayProps {
-  circle: Circle;
-}
-
-function CircleDisplay({ circle }: CircleDisplayProps) {
-  const containerRef = useRef<PIXI.Container | null>(null);
-  const graphicsRef = useRef<PIXI.Graphics | null>(null);
-  const maskRef = useRef<PIXI.Graphics | null>(null);
-  const spriteRef = useRef<PIXI.Sprite | null>(null);
-  const textRef = useRef<PIXI.Text | null>(null);
-
-  // New state to track hover status.
-  const [isHovered, setIsHovered] = useState(false);
-
-  useTick(() => {
-    if (containerRef.current) {
-      containerRef.current.x = circle.x;
-      containerRef.current.y = circle.y;
-    }
-    if (circle.image && spriteRef.current && maskRef.current) {
-      maskRef.current.clear();
-      maskRef.current.beginFill(0xffffff);
-      maskRef.current.drawCircle(0, 0, circle.radius);
-      maskRef.current.endFill();
-
-      spriteRef.current.width = circle.radius * 2;
-      spriteRef.current.height = circle.radius * 2;
-      spriteRef.current.anchor.set(0.5);
-      spriteRef.current.mask = maskRef.current;
-    }
-    if (graphicsRef.current && circle.color) {
-      const g = graphicsRef.current;
-      g.clear();
-      g.beginFill(circle.color, 1);
-      g.drawCircle(0, 0, circle.radius);
-      g.endFill();
-    }
-  });
-
-  // Text style.
-  const style = new PIXI.TextStyle({
-    fontFamily: 'Helvetica',
-    fontSize: 12,
-    fontStyle: 'italic',
-    fontWeight: 'bold',
-    fill: 'white',
-    stroke: 'black',
-    strokeThickness: 3,
-    dropShadow: true,
-  });
-
-  return (
-    <Container
-      ref={containerRef}
-      interactive={true}
-      pointerover={() => setIsHovered(true)}
-      pointerout={() => setIsHovered(false)}
-    >
-      <Graphics ref={graphicsRef} />
-      {circle.image && (
-        <>
-          <Sprite ref={spriteRef} image={circle.image} />
-          <Graphics ref={maskRef} />
-        </>
-      )}
-      {isHovered && (
-        <Text
-          ref={textRef}
-          text={circle.name}
-          anchor={{ x: 0.5, y: 0.5 }}
-          style={style}
-        />
-      )}
-    </Container>
-  );
-}
-
 const EventStreamVisualizationPixi = forwardRef<
   EventStreamVisualizationRef,
   EventStreamVisualizationPixiProps
@@ -116,24 +24,6 @@ const EventStreamVisualizationPixi = forwardRef<
   const { width, height } = props;
   const centerX = width / 2;
   const centerY = height / 2;
-
-  // Create a ref for the wrapper div.
-  const wrapperRef = useRef<HTMLDivElement>(null);
-
-  // Listen for the "f" key press to enter full screen mode.
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() === 'f') {
-        if (wrapperRef.current && wrapperRef.current.requestFullscreen) {
-          wrapperRef.current.requestFullscreen();
-        }
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, []);
 
   const circlesRef = useRef<Circle[]>([]);
   const [_, setVersion] = useState<number>(0);
@@ -264,6 +154,7 @@ const EventStreamVisualizationPixi = forwardRef<
       }
     }
     if (mergedIds.size > 0) {
+      // Remove merged circles.
       circlesRef.current = circlesRef.current.filter(
         (circle) => !mergedIds.has(circle.id)
       );
@@ -272,25 +163,18 @@ const EventStreamVisualizationPixi = forwardRef<
   });
 
   return (
-    // Wrapper div for full screen support.
-    <div
-      ref={wrapperRef}
-      style={{ width, height, outline: 'none' }}
-      tabIndex={0}
-    >
-      <Stage width={width} height={height} options={{ backgroundAlpha: 0 }}>
-        <Container
-          x={centerX}
-          y={centerY}
-          interactive={true}
-          pointerdown={handlePointerDown}
-        >
-          {circlesRef.current.map((circle) => (
-            <CircleDisplay key={circle.id} circle={circle} />
-          ))}
-        </Container>
-      </Stage>
-    </div>
+    <Stage width={width} height={height} options={{ backgroundAlpha: 0 }}>
+      <Container
+        x={centerX}
+        y={centerY}
+        interactive={true}
+        pointerdown={handlePointerDown}
+      >
+        {circlesRef.current.map((circle) => (
+          <CircleDisplay key={circle.id} circle={circle} />
+        ))}
+      </Container>
+    </Stage>
   );
 });
 
