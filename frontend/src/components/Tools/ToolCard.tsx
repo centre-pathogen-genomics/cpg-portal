@@ -58,6 +58,8 @@ const ToolCard = ({ tool }: ToolCardProps) => {
         cursor={"pointer"}
         onClick={navigateToTool}
         className="group"
+        borderWidth={1}
+        borderColor={useColorModeValue("gray.200","gray.600")}
       >
         <Flex
           justify="center"
