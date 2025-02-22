@@ -26,7 +26,7 @@ import {
     }
     const gradient = ctx.createLinearGradient(0, quality, 0, 0);
     gradient.addColorStop(0, bottomColor);
-    gradient.addColorStop(0.5, topColor);
+    gradient.addColorStop(0.6, topColor);
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
