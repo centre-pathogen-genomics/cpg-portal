@@ -8,7 +8,7 @@ import {
   Text,
 } from "@chakra-ui/react"
 import { useMutation } from "@tanstack/react-query"
-import { createFileRoute, redirect } from "@tanstack/react-router"
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router"
 import { type SubmitHandler, useForm } from "react-hook-form"
 
 import { LoginService } from "../client"
@@ -39,6 +39,7 @@ function RecoverPassword() {
     formState: { errors, isSubmitting },
   } = useForm<FormData>()
   const showToast = useCustomToast()
+  const navigate = useNavigate()
 
   const recoverPassword = async (data: FormData) => {
     await LoginService.recoverPassword({
@@ -55,6 +56,7 @@ function RecoverPassword() {
         "success",
       )
       reset()
+      navigate({to: "/login"})
     },
     onError: (err) => {
       handleError(err, showToast)
