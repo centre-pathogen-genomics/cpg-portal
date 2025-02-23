@@ -30,10 +30,12 @@ interface UploadingFile {
 }
 
 interface FileUploadProps {
+  onStart?: (file: File) => void;
+  onEnd?: () => void;
   onComplete?: (file: FilePublic) => void;
 }
 
-const FileUpload = ({ onComplete }: FileUploadProps) => {
+const FileUpload = ({ onComplete, onStart, onEnd }: FileUploadProps) => {
   const queryClient = useQueryClient();
   const { uploadFile } = useUpload();
   const showToast = useCustomToast();
@@ -117,6 +119,7 @@ const FileUpload = ({ onComplete }: FileUploadProps) => {
       };
 
       setUploadingFiles((prev) => [...prev, uploadingFile]);
+      onStart && onStart(file);
       setIsDragging(false);
 
       uploadFile(
@@ -153,6 +156,9 @@ const FileUpload = ({ onComplete }: FileUploadProps) => {
             }
           }
           setUploadingFiles((prev) => prev.filter((f) => f.file !== file));
+        })
+        .finally(() => {
+          onEnd && onEnd();
         });
     },
     [uploadFile, showToast, onComplete, queryClient]

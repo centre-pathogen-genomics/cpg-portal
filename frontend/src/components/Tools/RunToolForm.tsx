@@ -70,6 +70,7 @@ interface FileParamProps {
   multiple: boolean;
   updateLocalFiles?: (file: { label: string; value: string }) => void;
   isLoading?: boolean;
+  setIsLoading?: (loading: boolean) => void;
 }
 
 const FileParam = ({
@@ -80,6 +81,7 @@ const FileParam = ({
   multiple = false,
   updateLocalFiles,
   isLoading,
+  setIsLoading,
 }: FileParamProps) => {
   return (
     <Flex direction={"column"} gap={2}>
@@ -110,6 +112,17 @@ const FileParam = ({
           }
           // Update the form value
           setValue(newFile);
+        }}
+        onEnd={() => {
+          if (setIsLoading) {
+            setIsLoading(false);
+          }
+        }
+        }
+        onStart={() => {
+          if (setIsLoading) {
+            setIsLoading(true);
+          }
         }}
       />
     </Flex>
@@ -184,10 +197,11 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
       if (onSuccess) onSuccess(run)
     },
     onError: (error) => {
-      setIsLoading(false)
       handleError(error, showToast);
+      setIsLoading(false)
     },
     onSettled: () => {
+      setIsLoading(false)
       queryClient.invalidateQueries({ queryKey: ["toolRuns"] })
     },
   })
@@ -276,6 +290,7 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
             {(param.param_type === "file" || param.param_type === "files") && (
             <FileParam
               isLoading={filesLoading}
+              setIsLoading={setIsLoading}
               param={param}
               files={localFiles}  // Use localFiles instead of data
               setValue={(selected) => {
