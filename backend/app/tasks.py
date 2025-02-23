@@ -1,8 +1,8 @@
 import asyncio
+import json
 import os
 import shutil
 import signal
-import subprocess
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -18,101 +18,107 @@ from app.core.config import settings
 from app.crud import save_file
 from app.models import File, Run, SetupFile, Target, Tool
 from app.tkq import broker
+from app.wsmanager import manager
 
 SessionDep = Annotated[Session, TaskiqDepends(get_db)]
 
-async def run_command_in_subprocess(session: Session, run_id: uuid.UUID, command: str, tmp_dir: Path) -> tuple[int, str]:
+
+async def run_command_in_subprocess(
+    session: Session, run_id: uuid.UUID, command: str, tmp_dir: Path
+) -> tuple[int, str]:
     """
-    Securely run a command in a subprocess while ensuring that:
-    - The tool and its subprocesses are correctly managed.
-    - The process is properly terminated if cancelled.
-    - Outputs are safely captured and stored.
+    Run a command in an asynchronous subprocess, capture its stdout in real time,
+    and update logs to the DB as output is generated.
 
     Args:
-        session (Session): Database session for job tracking.
-        run_id (uuid.UUID): The unique ID of the run.
-        command (str): The command to execute.
-        tmp_dir (Path): The working directory for the subprocess.
+        session (Session): Database session.
+        run_id (uuid.UUID): Unique ID of the run.
+        command (str): The shell command to execute.
+        tmp_dir (Path): Working directory for the subprocess.
 
     Returns:
-        Tuple[int, str]: (Exit code, stdout output)
+        Tuple[int, str]: (Exit code, full concatenated stdout output)
     """
-
     print(f"Preparing to execute command safely for Run(id={run_id})")
 
-    # Tokenize command safely (prevents shell injection)
-    print(f"Running command: {command}")
+    # Enhance the command for safety.
     command = f"set -euo pipefail; {command}"
 
-    stdout_path = tmp_dir / "_portal.stdout.log"
+    # Start the subprocess with stdout piped.
+    process = await asyncio.create_subprocess_shell(
+        command,
+        shell=True,
+        executable="/bin/bash",
+        cwd=tmp_dir,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.STDOUT,
+        start_new_session=True,  # Prevents orphaned subprocesses
+    )
 
-    # Open log files for stdout and stderr
-    with open(stdout_path, "wb") as stdout_file:
+    print(f"Run(id={run_id}) started with PID: {process.pid}")
+    log_lines = []  # Buffer to store logs in memory
 
-        try:
-            process = subprocess.Popen(
-                command,
-                shell=True,
-                executable="/bin/bash",
-                cwd=tmp_dir,
-                stdout=stdout_file,
-                stderr=subprocess.STDOUT,
-                start_new_session=True,  # Creates a new session (prevents orphaned processes)
-            )
-        except Exception as e:
-            print(f"Failed to start subprocess for Run(id={run_id}): {e}")
-            return -1, str(e)
+    async def read_stdout():
+        run = session.execute(select(Run).where(Run.id == run_id)).scalar_one()
+        # Read output line by line as it becomes available.
+        while True:
+            line = await process.stdout.readline()
+            if not line:
+                break  # EOF reached
+            decoded_line = line.decode().rstrip()
+            print(decoded_line)  # Optional: print to console
+            log_lines.append(decoded_line)
 
-        print(f"Run(id={run_id}) started with PID: {process.pid}")
-
-        try:
-            # Monitor process execution and check for cancellation
-            while process.poll() is None:
-                run = session.execute(select(Run).where(Run.id == run_id)).scalar_one()
+            # Update the DB immediately
+            try:
+                # For immediate update
+                print(f"Updating log for Run(id={run_id})")
                 session.refresh(run)
-                if run.status == "cancelled":
-                    print(f"Run(id={run_id}) was cancelled. Attempting to terminate process group.")
+                run.stdout += decoded_line + "\n"
+                session.add(run)
+                session.commit()
+                # Broadcast the log line to the client
+                print(f"Broadcasting log for Run(id={run_id})")
+                await manager.broadcast(json.dumps({
+                    "log": decoded_line,
+                }), str(run_id))
+            except Exception as e:
+                print(f"DB update error for Run(id={run_id}): {e}")
 
-                    # Send SIGTERM to process group
-                    os.killpg(process.pid, signal.SIGTERM)
+    async def monitor_cancellation():
+        # Periodically check if the run status has been changed to 'cancelled'
+        while process.returncode is None:
+            run = session.execute(select(Run).where(Run.id == run_id)).scalar_one()
+            session.refresh(run)
+            if run.status == "cancelled":
+                print(f"Run(id={run_id}) was cancelled. Terminating process group.")
+                os.killpg(process.pid, signal.SIGTERM)
+                # Give the process a moment to clean up
+                await asyncio.sleep(3)
+                if process.returncode is None:
+                    print(f"Run(id={run_id}) did not terminate; sending SIGKILL.")
+                    os.killpg(process.pid, signal.SIGKILL)
+                break
+            await asyncio.sleep(1)
 
-                    # Wait for termination, then force kill if necessary
-                    await asyncio.sleep(3)
-                    if process.poll() is None:
-                        print(f"Run(id={run_id}) did not terminate, sending SIGKILL.")
-                        os.killpg(process.pid, signal.SIGKILL)
+    # Run both the log reading and cancellation monitor concurrently.
+    await asyncio.gather(read_stdout(), monitor_cancellation())
 
-                    process.wait()
-                    return -15, "Process cancelled by user"
+    # Wait for the process to finish
+    await process.wait()
+    return_code = process.returncode
 
-                await asyncio.sleep(1)
+    # Optionally, if you want to have the full log output as one string:
+    full_log_output = "\n".join(log_lines)
 
-            # Get final exit code
-            return_code = process.returncode
-        except Exception as e:
-            print(f"Error monitoring process for Run(id={run_id}): {e}")
-            os.killpg(process.pid, signal.SIGTERM)  # Ensure termination
-            await asyncio.sleep(2)
-            if process.poll() is None:
-                os.killpg(process.pid, signal.SIGKILL)  # Force kill if still running
-            raise
-
-    # Read stdout output
-    stdout_content = ""
-    try:
-        with open(stdout_path) as f:
-            stdout_content = f.read()
-    except Exception as e:
-        print(f"Failed to read stdout log for Run(id={run_id}): {e}")
-
-    return return_code, stdout_content
+    return return_code, full_log_output
 
 
 @broker.task
 async def install_tool(
-        tool_id: uuid.UUID,
-        session: Session = TaskiqDepends(get_db),
-    ) -> bool:
+    tool_id: uuid.UUID,
+    session: Session = TaskiqDepends(get_db),
+) -> bool:
     tool = session.get(Tool, tool_id)
     if tool is None:
         print(f"Tool(id={tool_id}) not found")
@@ -132,7 +138,9 @@ async def install_tool(
     )
     try:
         if conda_env.is_created:
-            print(f"Conda environment for Tool(id={tool_id}) already exists. Will force create.")
+            print(
+                f"Conda environment for Tool(id={tool_id}) already exists. Will force create."
+            )
         print(f"Creating conda environment for Tool(id={tool_id})")
         stdout = await conda_env.create()
         conda_env_pinned = await conda_env.pin()
@@ -152,11 +160,12 @@ async def install_tool(
     session.commit()
     return True
 
+
 @broker.task
 async def uninstall_tool(
-        tool_id: uuid.UUID,
-        session: Session = TaskiqDepends(get_db),
-    ) -> bool:
+    tool_id: uuid.UUID,
+    session: Session = TaskiqDepends(get_db),
+) -> bool:
     tool = session.get(Tool, tool_id)
     if tool is None:
         print(f"Tool(id={tool_id}) not found")
@@ -164,7 +173,7 @@ async def uninstall_tool(
     conda_env = CondaEnvManger(
         path=Path(settings.CONDA_PATH) / str(tool_id),
         env_dict=tool.conda_env or {},
-        post_install_command=tool.post_install
+        post_install_command=tool.post_install,
     )
     print(f"Removing conda environment for Tool(id={tool_id})")
     tool.status = "uninstalled"
@@ -178,12 +187,13 @@ async def uninstall_tool(
     session.commit()
     return True
 
+
 @broker.task
 async def run_tool(
-        run_id: uuid.UUID,
-        run_command: str,
-        session: Session = TaskiqDepends(get_db),
-    ) -> bool:
+    run_id: uuid.UUID,
+    run_command: str,
+    session: Session = TaskiqDepends(get_db),
+) -> bool:
     run: Run = session.get(Run, run_id)
     if run is None:
         return False
@@ -220,7 +230,7 @@ async def run_tool(
         print(f"Symlinking files to {tmp_dir}")
         try:
             file_ids = run.input_file_ids or []
-            for file_id in file_ids: # do in batches?
+            for file_id in file_ids:  # do in batches?
                 file = session.get(File, file_id)
                 name = Path(file.location).name
                 print(f"Symlinking {file.location} to {tmp_dir / name}")
@@ -259,7 +269,7 @@ async def run_tool(
         conda_env = CondaEnvManger(
             path=Path(settings.CONDA_PATH) / str(run.tool_id),
             env_dict=run.tool.conda_env,
-            post_install_command=run.tool.post_install
+            post_install_command=run.tool.post_install,
         )
         if not conda_env.is_created:
             run.stdout += "Tool environment not found. Please contact an administrator."
@@ -273,7 +283,9 @@ async def run_tool(
         run_command = f"{conda_env.activate_command} && {run_command}"
     try:
         # Run the tool command in a subprocess
-        returncode, stdout = await run_command_in_subprocess(session, run_id, run_command, tmp_dir)
+        returncode, stdout = await run_command_in_subprocess(
+            session, run_id, run_command, tmp_dir
+        )
         print(f"Run(id={run_id}) finished with return code: {returncode}")
         print(f"stdout: {stdout}")
     except Exception as e:
@@ -285,7 +297,7 @@ async def run_tool(
         shutil.rmtree(tmp_dir)
         return False
     run.finished_at = datetime.utcnow()
-    run.stdout += stdout
+    run.stdout = stdout
     if returncode != 0:
         print(f"Run(id={run_id}) failed with return code: {returncode}")
         # canceled or failed
@@ -321,7 +333,7 @@ async def run_tool(
                     file=target_file_handle,
                     owner_id=run.owner_id,
                     file_type=target.target_type,
-                    saved=False, # the file is not saved to the use my files
+                    saved=False,  # the file is not saved to the use my files
                     tags=run.tags,
                 )
             run.files.append(file)
@@ -338,5 +350,3 @@ async def run_tool(
     shutil.rmtree(tmp_dir)
     print(f"Run(id={run_id}) completed")
     return True
-
-
