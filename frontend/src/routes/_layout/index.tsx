@@ -16,7 +16,7 @@ export const Route = createFileRoute("/_layout/")({
 function Tools() {
   return (
     <Container maxW="full" px={{ base: 4, md: 6, lg: 8, xl: 12 }}>
-      <Flex direction="column" align="center" my={8} p={2} >
+      <Flex direction="column" align="center" my={8} py={2} >
         <Image
           src={Logo}
           alt="FastAPI logo"
