@@ -1,22 +1,35 @@
-import { useState } from 'react';
-import { Box, IconButton, useToast, Flex, useColorModeValue } from '@chakra-ui/react';
+import { useState, useEffect, useRef } from 'react';
+import {
+  Box,
+  IconButton,
+  useToast,
+  useColorModeValue,
+  Button,
+} from '@chakra-ui/react';
 import { IoIosCopy, IoIosCheckmarkCircleOutline } from 'react-icons/io';
 import SyntaxHighlighter from 'react-syntax-highlighter';
 import { vs2015, githubGist } from 'react-syntax-highlighter/dist/cjs/styles/hljs';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
 
 interface CodeBlockProps {
-    code: string;
-    language: string;
-    lineNumbers?: boolean;
-    maxHeight?: string;
+  code: string;
+  language: string;
+  lineNumbers?: boolean;
+  maxHeight?: string;
+  follow?: boolean; // If true, enable follow (auto-scroll) behavior.
 }
 
-const CodeBlock = ({ code, language, lineNumbers, maxHeight }: CodeBlockProps) => {
+const CodeBlock = ({
+  code,
+  language,
+  lineNumbers,
+  maxHeight,
+  follow = false,
+}: CodeBlockProps) => {
+  // Copy-to-clipboard logic
   const [copied, setCopied] = useState(false);
   const toast = useToast();
-  const style = useColorModeValue(githubGist, vs2015)
-  const copyBg = useColorModeValue('white', 'gray.700');
+  const style = useColorModeValue(githubGist, vs2015);
 
   const notify = () => {
     toast({
@@ -36,21 +49,31 @@ const CodeBlock = ({ code, language, lineNumbers, maxHeight }: CodeBlockProps) =
     }, 5000);
   };
 
+  // Follow (auto-scroll) logic
+  const [isFollowing, setIsFollowing] = useState(follow);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when new code arrives if follow mode is enabled.
+  useEffect(() => {
+    if (follow && isFollowing && scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+    }
+  }, [code, isFollowing, follow]);
+
+  // Update follow state based on scrolling.
+  const handleScroll = () => {
+    if (!scrollContainerRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
+    const atBottom = scrollHeight - scrollTop - clientHeight < 200;
+    if (follow) {
+      setIsFollowing(atBottom);
+    }
+  };
+
   return (
-    <Box position="relative" borderWidth="1px" borderRadius="md" overflow="hidden">
-      <Flex
-        position="absolute"
-        top="0"
-        right="0"
-        p={1}
-        align="center"
-        background={copyBg}
-        zIndex="1"
-        borderBottomLeftRadius="md"
-      >
-        {/* <Text fontSize="xs" mr={1} color="white">
-          {language}
-        </Text> */}
+    <Box position="relative" borderWidth="1px" borderRadius="md">
+      {/* Floating copy button in the top right */}
+      <Box position="absolute" top="6px" right="6px" zIndex="3">
         <CopyToClipboard text={code} onCopy={notify}>
           <IconButton
             icon={
@@ -66,17 +89,37 @@ const CodeBlock = ({ code, language, lineNumbers, maxHeight }: CodeBlockProps) =
             colorScheme={copied ? 'green' : 'whiteAlpha'}
           />
         </CopyToClipboard>
-      </Flex>
-      <SyntaxHighlighter
-        customStyle={{ maxHeight: maxHeight, paddingRight: '24px' }}
-        language={language}
-        style={style}
-        wrapLines={true}
-        wrapLongLines={true}
-        showLineNumbers={lineNumbers}
+      </Box>
+      {/* Scrollable container for the code */}
+      <Box
+        ref={scrollContainerRef}
+        onScroll={follow ? handleScroll : undefined}
+        maxHeight={maxHeight}
+        overflowY="auto"
       >
-        {code}
-      </SyntaxHighlighter>
+        <SyntaxHighlighter
+          language={language}
+          style={style}
+          wrapLines={true}
+          wrapLongLines={true}
+          showLineNumbers={lineNumbers}
+          customStyle={{ padding: '16px', margin: 0 }}
+        >
+          {code}
+        </SyntaxHighlighter>
+      </Box>
+      {/* "Follow" button only appears if the follow prop is enabled */}
+      {follow && !isFollowing && (
+        <Button
+          position="absolute"
+          bottom="16px"
+          right="16px"
+          onClick={() => setIsFollowing(true)}
+          colorScheme="blue"
+        >
+          Follow
+        </Button>
+      )}
     </Box>
   );
 };

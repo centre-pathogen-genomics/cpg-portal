@@ -59,7 +59,7 @@ const OutputAccordionItem = ({ title, content, status, runId }: OutputAccordionI
       </AccordionButton>
       <AccordionPanel pb={4}>
         {lineCount > 0 ? (
-          <CodeBlock code={output || ''} language="text" lineNumbers={true} />
+          <CodeBlock code={output || ''} language="text" lineNumbers={true} follow={true} maxHeight='500px' />
         ) : status === 'running' || status === 'pending' ? (
           <Text>Running...</Text>
         ) : (
