@@ -42,8 +42,6 @@ const OutputAccordionItem = ({ title, content, status, runId }: OutputAccordionI
         console.error('Error parsing WebSocket message:', err);
       }
     },
-    // No auto-reconnect needed for log output.
-    shouldReconnect: false,
   });
 
   return (
