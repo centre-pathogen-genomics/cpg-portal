@@ -79,9 +79,14 @@ async def run_command_in_subprocess(
                 session.commit()
                 # Broadcast the log line to the client
                 print(f"Broadcasting log for Run(id={run_id})")
-                await manager.broadcast(json.dumps({
-                    "log": decoded_line,
-                }), str(run_id))
+                await manager.broadcast(
+                    json.dumps(
+                        {
+                            "log": decoded_line,
+                        }
+                    ),
+                    str(run_id),
+                )
             except Exception as e:
                 print(f"DB update error for Run(id={run_id}): {e}")
 

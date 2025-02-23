@@ -158,7 +158,7 @@ import {
             <Graphics ref={maskRef} />
           </>
         )}
-        {isHovered && (
+        {isHovered && circle.name && (
           <Text
             ref={textRef}
             text={circle.name}
