@@ -292,7 +292,6 @@ async def run_tool(
             session, run_id, run_command, tmp_dir
         )
         print(f"Run(id={run_id}) finished with return code: {returncode}")
-        print(f"stdout: {stdout}")
     except Exception as e:
         print(f"An error occurred: {e}")
         run.stdout += f"An error occurred: {e}"
