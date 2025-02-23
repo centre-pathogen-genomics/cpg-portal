@@ -7,7 +7,6 @@ import {
   Box,
   Flex,
   Text,
-  Badge,
   Spinner,
   Icon,
 } from '@chakra-ui/react';
@@ -51,12 +50,8 @@ const OutputAccordionItem = ({ title, content, status, runId }: OutputAccordionI
           <Flex alignItems="center">
             <Icon as={HiOutlineDocumentText} />
             <Text mx={2}>{title}</Text>
-            {lineCount === 0 && (status === 'running' || status === 'pending') ? (
+            {(status === 'running' || status === 'pending') && (
               <Spinner size="sm" speed="0.8s" />
-            ) : (
-              <Badge borderRadius="full" px="2" colorScheme="purple">
-                {lineCount}
-              </Badge>
             )}
           </Flex>
         </Box>
