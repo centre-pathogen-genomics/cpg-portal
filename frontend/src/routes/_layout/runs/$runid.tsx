@@ -4,6 +4,7 @@ import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
+  ButtonGroup,
   Container,
   Flex,
   Heading,
@@ -27,6 +28,9 @@ import CsvFileToTable from "../../../components/Render/CsvFileToTable"
 import JsonFile from "../../../components/Render/JsonFile"
 import TextFile from "../../../components/Render/TextFile"
 import { readRunOptions } from "../../../client/@tanstack/react-query.gen"
+import CancelRunButton from "../../../components/Runs/CancelRunButton"
+import DeleteRunButton from "../../../components/Runs/DeleteRunButton"
+import { m } from "framer-motion"
 
 export const Route = createFileRoute("/_layout/runs/$runid")({
   component: Run,
@@ -71,32 +75,53 @@ function RunDetail() {
   }
 
   return (
-    <Box maxW={"5xl"} justifySelf={"center"} w={"full"} pb={2} >
-      <Heading
-        size="2xl"
-        textAlign={{ base: "left"}}
-        pt={6}
-        pb={2}
-      >
-        <Breadcrumb
-          spacing="2px"
-          separator={<ChevronRightIcon color="gray.500" />}
+    <Box maxW={"5xl"} justifySelf={"center"} w={"full"} >
+      <Flex direction="row" justify="space-between" align="center" mb={2} pb={2} pt={6} borderBottomWidth={1} >
+        <Heading
+          size="2xl"
+          textAlign={{ base: "left"}}
         >
-          <BreadcrumbItem>
-            <BreadcrumbLink onClick={
-              () => navigate({
-                to: "/runs",
-                replace: false,
-                resetScroll: true,
-              })
-            }>My Runs</BreadcrumbLink>
-          </BreadcrumbItem>
+          <Breadcrumb
+            separator={<ChevronRightIcon color="gray.500" boxSize={10}/>}
+          >
+            <BreadcrumbItem>
+              <BreadcrumbLink display={{ base: "none", sm: "block" }}
+              onClick={
+                () => navigate({
+                  to: "/runs",
+                  replace: false,
+                  resetScroll: true,
+                })
+              }>My Runs</BreadcrumbLink>
+              <BreadcrumbLink  display={{ base: "block", sm: "none" }}
+              onClick={
+                () => navigate({
+                  to: "/runs",
+                  replace: false,
+                  resetScroll: true,
+                })
+              }>Runs</BreadcrumbLink>
+            </BreadcrumbItem>
 
-          <BreadcrumbItem isCurrentPage>
-            <BreadcrumbLink >{run.id.split('-')[0]}</BreadcrumbLink>
-          </BreadcrumbItem>
-        </Breadcrumb>
-      </Heading>
+            <BreadcrumbItem isCurrentPage>
+              <BreadcrumbLink overflow={'clip'} >{run.id.split('-')[0]}</BreadcrumbLink>
+            </BreadcrumbItem>
+          </Breadcrumb>
+        </Heading>
+        <ButtonGroup
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation()
+            }}
+            ml={2}
+          >
+            {["running", "pending"].includes(run.status) ? (
+              <CancelRunButton run_id={run.id} variant="ghost" />
+            ) : (
+              <DeleteRunButton run_id={run.id} onDelete={() => navigate({to: "/runs"})} variant="ghost" />
+            )}
+          </ButtonGroup>
+      </Flex>
       <Box my={4} >
         <RunMetadata run={run} />
       </Box>

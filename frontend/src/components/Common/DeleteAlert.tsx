@@ -19,9 +19,10 @@ interface DeleteProps {
   id: string
   isOpen: boolean
   onClose: () => void
+  onDelete?: () => void
 }
 
-const Delete = ({ type, id, isOpen, onClose }: DeleteProps) => {
+const Delete = ({ type, id, isOpen, onClose, onDelete }: DeleteProps) => {
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
   const cancelRef = React.useRef<HTMLButtonElement | null>(null)
@@ -51,6 +52,7 @@ const Delete = ({ type, id, isOpen, onClose }: DeleteProps) => {
         `The ${type.toLowerCase()} was deleted successfully.`,
         "success",
       )
+      onDelete && onDelete()
       onClose()
     },
     onError: () => {
