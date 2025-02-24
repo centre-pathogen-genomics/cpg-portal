@@ -177,7 +177,7 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
     handleSubmit,
     reset,
     setValue,
-    formState: { errors, isSubmitting },
+    formState: { errors },
     getValues,
   } = useForm<FormData>({
     mode: "onBlur",
@@ -198,7 +198,7 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
     },
     onError: (error) => {
       handleError(error, showToast);
-      setIsLoading(false)
+      setIsLoading(false);
     },
     onSettled: () => {
       setIsLoading(false)
@@ -219,12 +219,18 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
     setIsLoading(false);
   }
 
+  const onSubmit = (data: any) => {
+    setIsLoading(true);
+    handleSubmit(onValid)(data)
+    setIsLoading(false);
+  }
+
   const normalizedParams = useMemo(() => params || [], [params]);
  
   const [fileStates, setFileStates] = useState<Record<string, { label: string; value: string }[]>>({});
   
   return (
-    <Box as="form" onSubmit={handleSubmit(onValid)} w="100%">
+    <Box as="form" onSubmit={onSubmit} w="100%">
       <Box>
         {normalizedParams?.map((param: Param) => (
           <FormControl
@@ -333,7 +339,7 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
       </Box>
       <Flex gap={2} justify={"space-between"} direction={{base: "column", md: "row"}}>
         <ButtonGroup>
-          <Button variant="primary" type="submit" isLoading={isSubmitting || isLoading} >
+          <Button variant="primary" type="submit" isLoading={isLoading} >
             Run Tool
           </Button>
           <Button onClick={() => {reset(defaultValues); setFileStates({})}} variant="outline">

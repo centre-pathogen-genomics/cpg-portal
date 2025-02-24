@@ -4,7 +4,7 @@ from pathlib import Path
 from shlex import quote
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, status
 from jinja2 import Environment as JinjaEnvironment
 from sqlalchemy import desc
 from sqlmodel import func, select
@@ -71,6 +71,19 @@ async def create_run(
         raise HTTPException(status_code=404, detail="Tool not found")
     if not current_user.is_superuser and not tool.enabled:
         raise HTTPException(status_code=403, detail="Tool is disabled")
+
+    # check the user que limit
+    count_statement = (
+        select(func.count())
+        .select_from(Run)
+        .where(Run.owner_id == current_user.id)
+        .where(Run.status.in_(["pending", "running"]))
+    )
+    count = session.exec(count_statement).one()
+    print(f"User {current_user.id} has {count} active runs")
+    if count >= current_user.max_runs:
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="You have reached the maximum number of active Runs. Please wait for some to finish!")
+
     files = []
     if tool.params is None:
         tool.params = []
