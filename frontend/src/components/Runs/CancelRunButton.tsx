@@ -7,7 +7,7 @@ interface CancelButtonProps {
   variant?: string
 }
 
-const CancelRunButton = ({ run_id, variant = 'ghost' }: CancelButtonProps) => {
+const CancelRunButton = ({ run_id, variant = 'outline' }: CancelButtonProps) => {
   const { isOpen, onOpen, onClose } = useDisclosure()
 
   return (

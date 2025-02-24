@@ -8,7 +8,7 @@ interface DeleteButtonProps {
   onDelete?: () => void
 }
 
-const DeleteRunButton = ({ run_id, onDelete, variant="ghost" }: DeleteButtonProps) => {
+const DeleteRunButton = ({ run_id, onDelete, variant="outline" }: DeleteButtonProps) => {
   const { isOpen, onOpen, onClose } = useDisclosure()
 
   return (
