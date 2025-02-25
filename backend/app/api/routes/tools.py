@@ -265,6 +265,42 @@ def disable_tool(
     session.commit()
     return Message(message="Tool disabled successfully")
 
+@router.post("/{tool_id}/enable_llm_summary", response_model=Message, dependencies=[Depends(get_current_active_superuser)])
+def enable_llm_summary(
+    *,
+    session: SessionDep,
+    tool_id: uuid.UUID,
+) -> Any:
+    """
+    Enable a tool by ID.
+    """
+    tool = session.get(Tool, tool_id)
+    if not tool:
+        raise HTTPException(status_code=404, detail="Tool not found")
+    tool.llm_summary_enabled = True
+    session.add(tool)
+    session.commit()
+    return Message(message="LLM summary enabled successfully")
+
+@router.post("/{tool_id}/disable_llm_summary", response_model=Message, dependencies=[Depends(get_current_active_superuser)])
+def disable_llm_summary(
+    *,
+    session: SessionDep,
+    tool_id: uuid.UUID,
+) -> Any:
+    """
+    Disable a tool by ID.
+    """
+    tool = session.get(Tool, tool_id)
+    if not tool:
+        raise HTTPException(status_code=404, detail="Tool not found")
+    tool.llm_summary_enabled = False
+    session.add(tool)
+    session.commit()
+    return Message(message="LLM summary disabled successfully")
+
+
+
 
 @router.post("/{tool_id}/install", response_model=Message)
 async def install_tool(

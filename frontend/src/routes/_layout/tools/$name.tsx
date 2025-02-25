@@ -1,7 +1,7 @@
 import { Accordion, AccordionButton, AccordionIcon, AccordionItem, AccordionPanel, Box, Button, Flex, FormLabel, Heading, HStack, Image, Link, Skeleton, SkeletonText, Switch, Text, Badge as VersionBadge } from "@chakra-ui/react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate, Link as RouterLink } from "@tanstack/react-router"
-import { disableToolMutation, enableToolMutation, installToolMutation, readToolByNameOptions, readToolByNameQueryKey, readUserMeQueryKey } from "../../../client/@tanstack/react-query.gen"
+import { disableLlmSummaryMutation, disableToolMutation, enableLlmSummaryMutation, enableToolMutation, installToolMutation, readToolByNameOptions, readToolByNameQueryKey, readUserMeQueryKey } from "../../../client/@tanstack/react-query.gen"
 import RunToolForm from "../../../components/Tools/RunToolForm"
 import { ToolPublic, UserPublic } from "../../../client"
 import CodeBlock from "../../../components/Common/CodeBlock"
@@ -56,7 +56,53 @@ function EnableToolButton({tool}: {tool: ToolPublic}) {
       }
     } />
     <FormLabel htmlFor='enable' mb='0' mr={1}>
-      {isEnabled ? "Enabled" : "Disabled"} 
+      {isEnabled ? "Tool Enabled" : "Tool Disabled"} 
+    </FormLabel>
+    </HStack>
+  )
+}
+
+function EnableAISummaryButton({tool}: {tool: ToolPublic}) {
+  const queryClient = useQueryClient();
+  const showToast = useCustomToast();
+  const [isEnabled, setIsEnabled] = useState(tool.llm_summary_enabled);
+  
+  const enableTool = useMutation({
+    ...enableLlmSummaryMutation(),
+    onError: () => {
+      showToast("Error", "Could not enable AI Summary", "error");
+    },
+    onSuccess: () => {
+      setIsEnabled(true);
+      const queryKey = readToolByNameQueryKey({path: {tool_name: tool.name}});
+      queryClient.invalidateQueries({queryKey});
+    },
+  });
+
+  const unenableTool = useMutation({
+    ...disableLlmSummaryMutation(),
+    onError: () => {
+      showToast("Error", "Could not disable AI Summary", "error");
+    },
+    onSuccess: () => {
+      setIsEnabled(false);
+      const queryKey = readToolByNameQueryKey({path: {tool_name: tool.name}});
+      queryClient.invalidateQueries({queryKey});
+    }
+  });
+
+  return (
+    <HStack alignItems="center" >
+    <Switch size={'lg'} id="enable" isChecked={isEnabled} onChange={(e) => {
+        if (e.target.checked) {
+          enableTool.mutate({path: {tool_id: tool.id}});
+        } else {
+          unenableTool.mutate({path: {tool_id: tool.id}});
+        }
+      }
+    } />
+    <FormLabel htmlFor='enable' mb='0' mr={1}>
+      {isEnabled ? "AI Summary Enabled" : "AI Summary Disabled"} 
     </FormLabel>
     </HStack>
   )
@@ -237,7 +283,10 @@ function Tool() {
                 <Box>
                   <HStack justify={"space-between"} mb={4}>
                     <InstallToolButton tool={tool} />
+                    <HStack>
+                    <EnableAISummaryButton tool={tool} />
                     <EnableToolButton tool={tool} />
+                    </HStack> 
                   </HStack>
                   <Heading size="sm">Installation Log ({tool.status})</Heading>
                   <CodeBlock code={tool.installation_log ? tool.installation_log : "\n"} language="bash" lineNumbers />

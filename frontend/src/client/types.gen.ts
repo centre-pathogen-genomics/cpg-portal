@@ -97,6 +97,7 @@ export type RunPublic = {
   stdout?: string | null
   command?: string | null
   conda_env_pinned?: string | null
+  llm_summary?: string | null
   files: Array<FilePublic>
 }
 
@@ -165,6 +166,7 @@ export type ToolCreate = {
   setup_files?: Array<SetupFile> | null
   params?: Array<Param> | null
   targets?: Array<Target> | null
+  llm_summary_enabled?: boolean
 }
 
 export type ToolMinimalPublic = {
@@ -178,6 +180,7 @@ export type ToolMinimalPublic = {
   favourited_count?: number
   run_count?: number
   enabled?: boolean
+  llm_summary_enabled?: boolean
 }
 
 export type ToolPublic = {
@@ -199,6 +202,7 @@ export type ToolPublic = {
   setup_files?: Array<SetupFile> | null
   params?: Array<Param> | null
   targets?: Array<Target> | null
+  llm_summary_enabled?: boolean
   favourited?: boolean
   status: ToolStatus
   installation_log?: string | null
@@ -235,6 +239,7 @@ export type ToolUpdate = {
   setup_files?: Array<SetupFile> | null
   params?: Array<Param> | null
   targets?: Array<Target> | null
+  llm_summary_enabled?: boolean
   favourited_count?: number
   run_count?: number
   enabled?: boolean
@@ -1004,6 +1009,64 @@ export type DisableToolResponses = {
 export type DisableToolResponse =
   DisableToolResponses[keyof DisableToolResponses]
 
+export type EnableLlmSummaryData = {
+  body?: never
+  path: {
+    tool_id: string
+  }
+  query?: never
+  url: "/api/v1/tools/{tool_id}/enable_llm_summary"
+}
+
+export type EnableLlmSummaryErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError
+}
+
+export type EnableLlmSummaryError =
+  EnableLlmSummaryErrors[keyof EnableLlmSummaryErrors]
+
+export type EnableLlmSummaryResponses = {
+  /**
+   * Successful Response
+   */
+  200: Message
+}
+
+export type EnableLlmSummaryResponse =
+  EnableLlmSummaryResponses[keyof EnableLlmSummaryResponses]
+
+export type DisableLlmSummaryData = {
+  body?: never
+  path: {
+    tool_id: string
+  }
+  query?: never
+  url: "/api/v1/tools/{tool_id}/disable_llm_summary"
+}
+
+export type DisableLlmSummaryErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError
+}
+
+export type DisableLlmSummaryError =
+  DisableLlmSummaryErrors[keyof DisableLlmSummaryErrors]
+
+export type DisableLlmSummaryResponses = {
+  /**
+   * Successful Response
+   */
+  200: Message
+}
+
+export type DisableLlmSummaryResponse =
+  DisableLlmSummaryResponses[keyof DisableLlmSummaryResponses]
+
 export type InstallToolData = {
   body?: never
   path: {
@@ -1504,3 +1567,32 @@ export type CancelRunResponses = {
 }
 
 export type CancelRunResponse = CancelRunResponses[keyof CancelRunResponses]
+
+export type GenerateRunSummaryData = {
+  body?: never
+  path: {
+    run_id: string
+  }
+  query?: never
+  url: "/api/v1/llm/summary/{run_id}"
+}
+
+export type GenerateRunSummaryErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError
+}
+
+export type GenerateRunSummaryError =
+  GenerateRunSummaryErrors[keyof GenerateRunSummaryErrors]
+
+export type GenerateRunSummaryResponses = {
+  /**
+   * Successful Response
+   */
+  200: string
+}
+
+export type GenerateRunSummaryResponse =
+  GenerateRunSummaryResponses[keyof GenerateRunSummaryResponses]

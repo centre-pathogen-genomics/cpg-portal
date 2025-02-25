@@ -85,6 +85,12 @@ import type {
   DisableToolData,
   DisableToolResponse,
   DisableToolError,
+  EnableLlmSummaryData,
+  EnableLlmSummaryResponse,
+  EnableLlmSummaryError,
+  DisableLlmSummaryData,
+  DisableLlmSummaryResponse,
+  DisableLlmSummaryError,
   InstallToolData,
   InstallToolResponse,
   InstallToolError,
@@ -137,6 +143,9 @@ import type {
   CancelRunData,
   CancelRunResponse,
   CancelRunError,
+  GenerateRunSummaryData,
+  GenerateRunSummaryResponse,
+  GenerateRunSummaryError,
 } from "./types.gen"
 
 export const client = createClient(createConfig())
@@ -783,6 +792,52 @@ export class ToolsService {
   }
 
   /**
+   * Enable Llm Summary
+   * Enable a tool by ID.
+   */
+  public static enableLlmSummary<ThrowOnError extends boolean = false>(
+    options: Options<EnableLlmSummaryData, ThrowOnError>,
+  ) {
+    return (options?.client ?? client).post<
+      EnableLlmSummaryResponse,
+      EnableLlmSummaryError,
+      ThrowOnError
+    >({
+      security: [
+        {
+          scheme: "bearer",
+          type: "http",
+        },
+      ],
+      url: "/api/v1/tools/{tool_id}/enable_llm_summary",
+      ...options,
+    })
+  }
+
+  /**
+   * Disable Llm Summary
+   * Disable a tool by ID.
+   */
+  public static disableLlmSummary<ThrowOnError extends boolean = false>(
+    options: Options<DisableLlmSummaryData, ThrowOnError>,
+  ) {
+    return (options?.client ?? client).post<
+      DisableLlmSummaryResponse,
+      DisableLlmSummaryError,
+      ThrowOnError
+    >({
+      security: [
+        {
+          scheme: "bearer",
+          type: "http",
+        },
+      ],
+      url: "/api/v1/tools/{tool_id}/disable_llm_summary",
+      ...options,
+    })
+  }
+
+  /**
    * Install Tool
    * Install a tool by ID.
    */
@@ -1242,6 +1297,31 @@ export class RunsService {
         },
       ],
       url: "/api/v1/runs/{id}/cancel",
+      ...options,
+    })
+  }
+}
+
+export class LlmService {
+  /**
+   * Generate Run Summary
+   * Generate run summary using AI.
+   */
+  public static generateRunSummary<ThrowOnError extends boolean = false>(
+    options: Options<GenerateRunSummaryData, ThrowOnError>,
+  ) {
+    return (options?.client ?? client).post<
+      GenerateRunSummaryResponse,
+      GenerateRunSummaryError,
+      ThrowOnError
+    >({
+      security: [
+        {
+          scheme: "bearer",
+          type: "http",
+        },
+      ],
+      url: "/api/v1/llm/summary/{run_id}",
       ...options,
     })
   }

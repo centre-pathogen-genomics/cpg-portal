@@ -18,7 +18,7 @@ import {
 } from "@chakra-ui/react"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { Suspense } from "react"
+import { Suspense, useState } from "react"
 import { ErrorBoundary } from "react-error-boundary"
 import { FilePublic } from "../../../client"
 import OutputAccordion from "../../../components/Runs/OutputAccordion"
@@ -30,7 +30,11 @@ import TextFile from "../../../components/Render/TextFile"
 import { readRunOptions } from "../../../client/@tanstack/react-query.gen"
 import CancelRunButton from "../../../components/Runs/CancelRunButton"
 import DeleteRunButton from "../../../components/Runs/DeleteRunButton"
-import { m } from "framer-motion"
+import AISummaryButton from "../../../components/AI/AISummary"
+import ReactMarkdown from 'react-markdown';
+import ChakraUIRenderer from 'chakra-ui-markdown-renderer';
+
+
 
 export const Route = createFileRoute("/_layout/runs/$runid")({
   component: Run,
@@ -68,6 +72,10 @@ function RunDetail() {
     },
     refetchIntervalInBackground: true,
   })
+
+  const [llmSummary, setLlmSummary] = useState<string | null>(run.llm_summary || null);
+
+  const fileTabs = run.files?.filter((file) => file.size && file.size < 500000) || [];
 
   const command = []
   if (run?.command) {
@@ -139,21 +147,40 @@ function RunDetail() {
           </Flex>
           {run.files?.filter((file) => file.size && file.size < 500000).length > 0 && (
             <>
-              <Heading size="md" mb={4}>
-               Results 
-              </Heading> 
-              <Tabs  variant="enclosed" >
-                <TabList>
-                {run.files?.filter((file) => file.size && file.size < 500000).map((file) => (
-                  <Tab key={file.id}>{file.name.toLocaleUpperCase()}</Tab>
-                ))} 
+              <Flex direction="row" justify="space-between" align="center" justifyItems={'center'} alignItems={'center'}  mb={4}>
+                <Heading size="md" >
+                Results 
+                </Heading>
+                {run.tool.llm_summary_enabled && !llmSummary && (
+                  <AISummaryButton
+                    runId={run.id}
+                    onGenerated={(summary) => {
+                      setLlmSummary(summary);
+                    }}
+                  />
+                )}
+              </Flex>
+              <Tabs variant="enclosed" overflowY={'auto'} >
+                <TabList >
+                  {run.tool.llm_summary_enabled && llmSummary && (
+                    <Tab key="llm_summary">AI Summary</Tab>
+                  )}
+                  {fileTabs.map((file, index) => (
+                    <Tab tabIndex={index} key={file.id}>{file.name.toLocaleUpperCase()}</Tab>
+                  ))}
                 </TabList>
                 <TabPanels>
-                {run.files?.map((file) => (
-                  <TabPanel key={file.id}>
-                    {renderResult(file)}
-                  </TabPanel>
-                ))}
+                  {run.tool.llm_summary_enabled && llmSummary && (
+                    <TabPanel>
+                      <Text fontWeight="bold" mb={2} fontSize={'sm'} color={'ui.danger'}>Large Language Models (AI) are prone to hallucinations and mistakes. Please use with caution.</Text>
+                      <ReactMarkdown components={ChakraUIRenderer()} children={llmSummary} skipHtml />
+                    </TabPanel>
+                  )}
+                  {fileTabs.map((file) => (
+                    <TabPanel key={file.id}>
+                      {renderResult(file)}
+                    </TabPanel>
+                  ))}
                 </TabPanels>
               </Tabs>
             </>

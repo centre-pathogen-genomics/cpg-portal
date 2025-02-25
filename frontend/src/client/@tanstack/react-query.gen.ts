@@ -72,6 +72,12 @@ import type {
   DisableToolData,
   DisableToolError,
   DisableToolResponse,
+  EnableLlmSummaryData,
+  EnableLlmSummaryError,
+  EnableLlmSummaryResponse,
+  DisableLlmSummaryData,
+  DisableLlmSummaryError,
+  DisableLlmSummaryResponse,
   InstallToolData,
   InstallToolError,
   InstallToolResponse,
@@ -109,6 +115,9 @@ import type {
   CancelRunData,
   CancelRunError,
   CancelRunResponse,
+  GenerateRunSummaryData,
+  GenerateRunSummaryError,
+  GenerateRunSummaryResponse,
 } from "../types.gen"
 import type { AxiosError } from "axios"
 import {
@@ -118,6 +127,7 @@ import {
   ToolsService,
   FilesService,
   RunsService,
+  LlmService,
   client,
 } from "../sdk.gen"
 
@@ -922,6 +932,88 @@ export const disableToolMutation = (
   return mutationOptions
 }
 
+export const enableLlmSummaryQueryKey = (
+  options: Options<EnableLlmSummaryData>,
+) => [createQueryKey("enableLlmSummary", options)]
+
+export const enableLlmSummaryOptions = (
+  options: Options<EnableLlmSummaryData>,
+) => {
+  return queryOptions({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await ToolsService.enableLlmSummary({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      })
+      return data
+    },
+    queryKey: enableLlmSummaryQueryKey(options),
+  })
+}
+
+export const enableLlmSummaryMutation = (
+  options?: Partial<Options<EnableLlmSummaryData>>,
+) => {
+  const mutationOptions: UseMutationOptions<
+    EnableLlmSummaryResponse,
+    AxiosError<EnableLlmSummaryError>,
+    Options<EnableLlmSummaryData>
+  > = {
+    mutationFn: async (localOptions) => {
+      const { data } = await ToolsService.enableLlmSummary({
+        ...options,
+        ...localOptions,
+        throwOnError: true,
+      })
+      return data
+    },
+  }
+  return mutationOptions
+}
+
+export const disableLlmSummaryQueryKey = (
+  options: Options<DisableLlmSummaryData>,
+) => [createQueryKey("disableLlmSummary", options)]
+
+export const disableLlmSummaryOptions = (
+  options: Options<DisableLlmSummaryData>,
+) => {
+  return queryOptions({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await ToolsService.disableLlmSummary({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      })
+      return data
+    },
+    queryKey: disableLlmSummaryQueryKey(options),
+  })
+}
+
+export const disableLlmSummaryMutation = (
+  options?: Partial<Options<DisableLlmSummaryData>>,
+) => {
+  const mutationOptions: UseMutationOptions<
+    DisableLlmSummaryResponse,
+    AxiosError<DisableLlmSummaryError>,
+    Options<DisableLlmSummaryData>
+  > = {
+    mutationFn: async (localOptions) => {
+      const { data } = await ToolsService.disableLlmSummary({
+        ...options,
+        ...localOptions,
+        throwOnError: true,
+      })
+      return data
+    },
+  }
+  return mutationOptions
+}
+
 export const installToolQueryKey = (options: Options<InstallToolData>) => [
   createQueryKey("installTool", options),
 ]
@@ -1383,6 +1475,47 @@ export const cancelRunMutation = (
   > = {
     mutationFn: async (localOptions) => {
       const { data } = await RunsService.cancelRun({
+        ...options,
+        ...localOptions,
+        throwOnError: true,
+      })
+      return data
+    },
+  }
+  return mutationOptions
+}
+
+export const generateRunSummaryQueryKey = (
+  options: Options<GenerateRunSummaryData>,
+) => [createQueryKey("generateRunSummary", options)]
+
+export const generateRunSummaryOptions = (
+  options: Options<GenerateRunSummaryData>,
+) => {
+  return queryOptions({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await LlmService.generateRunSummary({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      })
+      return data
+    },
+    queryKey: generateRunSummaryQueryKey(options),
+  })
+}
+
+export const generateRunSummaryMutation = (
+  options?: Partial<Options<GenerateRunSummaryData>>,
+) => {
+  const mutationOptions: UseMutationOptions<
+    GenerateRunSummaryResponse,
+    AxiosError<GenerateRunSummaryError>,
+    Options<GenerateRunSummaryData>
+  > = {
+    mutationFn: async (localOptions) => {
+      const { data } = await LlmService.generateRunSummary({
         ...options,
         ...localOptions,
         throwOnError: true,

@@ -6,6 +6,7 @@ from pydantic import EmailStr
 from sqlalchemy.dialects.postgresql import JSONB as JSON
 from sqlalchemy.orm import RelationshipProperty
 from sqlmodel import (
+    BigInteger,
     Column,
     Enum,
     Field,
@@ -26,7 +27,7 @@ class UserBase(SQLModel):
     is_superuser: bool = False
     full_name: str | None = Field(default=None, max_length=255)
     max_runs: int = 10
-    max_storage: int = 1024 * 1024 * 1024 * 25 # 25 GB
+    max_storage: int = Field(default=1024 * 1024 * 1024 * 25, sa_column=Column(BigInteger(), nullable=False)) # 25 GB
     max_storage_files: int = 300
 
 
@@ -177,6 +178,7 @@ class ToolBase(SQLModel):
     setup_files: list[SetupFile] | None = None
     params: list[Param] | None = None
     targets: list[Target] | None = None
+    llm_summary_enabled: bool = False
 
 # Properties to receive on Tool creation
 class ToolCreate(ToolBase):
@@ -241,6 +243,7 @@ class ToolMinimalPublic(SQLModel):
     favourited_count: int = 0
     run_count: int = 0
     enabled: bool = False
+    llm_summary_enabled: bool = False
 
 class ToolsPublic(SQLModel):
     data: list[ToolMinimalPublic]
@@ -257,6 +260,7 @@ class RunStatus(str, enum.Enum):
 class RunBase(SQLModel):
     taskiq_id: str
     status: RunStatus
+    llm_summary: str | None = None
     created_at: datetime
     started_at: datetime | None
     finished_at: datetime | None
@@ -336,6 +340,7 @@ class RunPublic(RunPublicMinimal):
     stdout: str | None = None
     command: str | None = None
     conda_env_pinned: str | None = None
+    llm_summary: str | None = None
     params: dict
     files: list[FilePublic]
 
