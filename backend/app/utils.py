@@ -107,10 +107,10 @@ def generate_run_finished_email(
     tool_name: str, run_id: str, run_status: RunStatus
 ) -> EmailData:
     project_name = settings.PROJECT_NAME
-    subject = f"{project_name} - {tool_name} {run_status}!"
+    subject = f"{project_name} - {tool_name} {run_status.value}!"
     link = f"{settings.FRONTEND_HOST}/runs/{run_id}"
     html_content = render_email_template(
-        template_name=f"run_{run_status}.html",
+        template_name=f"run_{run_status.value}.html",
         context={
             "project_name": settings.PROJECT_NAME,
             "tool_name": tool_name,

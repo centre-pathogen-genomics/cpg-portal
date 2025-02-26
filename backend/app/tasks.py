@@ -123,14 +123,15 @@ async def run_command_in_subprocess(
 
 def update_run(session: Session, run: Run, status: RunStatus, message=None):
     """Update the run status and optionally add a message, then commit."""
-    run.status = str(status)
+    print(f"Setting RunStatus Run(id={run.id}): {status}")
+    run.status = str(status.value)
     if message:
         print(f"Adding message to Run(id={run.id}): {message}")
         run.stdout += "\n" + message
     if run.email_on_completion and settings.emails_enabled and run.owner.email:
         print(f"Sending email for Run(id={run.id})")
-        email_html = generate_run_finished_email(run.tool.name, str(run.id), run.status)
-        send_email(run.owner.email, email_html)
+        email_data = generate_run_finished_email(run.tool.name, str(run.id), status)
+        send_email(email_to=run.owner.email, subject=email_data.subject, html_content=email_data.html_content)
     session.add(run)
     session.commit()
 
@@ -301,9 +302,7 @@ async def run_tool(
                 return False
 
             # Mark the run as completed.
-            run.status = "completed"
-            session.add(run)
-            session.commit()
+            update_run(session, run, RunStatus.completed)
 
         print(f"Run(id={run_id}) completed")
         return True
