@@ -348,7 +348,7 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
         </ButtonGroup>
         <TagInput tags={tags} setTags={setTags} />
       </Flex>
-      <Flex mt={2}>
+      <Flex mt={4}>
         <EmailOnFinished emailOnFinished={emailOnFinished} setEmailOnFinished={setEmailOnFinished} />
       </Flex>
     </Box>
