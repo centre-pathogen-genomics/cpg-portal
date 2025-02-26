@@ -86,12 +86,18 @@ async def generate_run_summary(
     --- {{ result["name"] }} ---
     {{ result["content"] }}
     {% endfor %}
+    --- REPORT FORMAT ---
+    { TITLE }
+    { ONE LINE SUMMARY }
+    { PLAIN LANGUAGE SUMMARY }
+    { FOLLOW-UP STEPS }
     --- RULES ---
     1. Remove any UUIDs from the report.
     2. Only return Markdown.
-    3. Include a plain language summary of results.
-    4. If required suggest follow-up steps.
-    5. Start with an informative title.
+    3. Only use the provided content.
+    4. Include a plain language summary of results.
+    5. Suggest follow-up steps.
+    6. Start with an informative title.
     """
 
     env = JinjaEnvironment()
