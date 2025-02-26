@@ -11,7 +11,7 @@ const EmailOnFinished =  ({ emailOnFinished, setEmailOnFinished }: EmailOnFinish
     <Checkbox  
         isChecked={emailOnFinished} 
         onChange={(e) => setEmailOnFinished(e.target.checked)}
-    >Email me when the job is finished</Checkbox>
+    >Email me when finished</Checkbox>
   )
 }
 
