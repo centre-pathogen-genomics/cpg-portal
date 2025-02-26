@@ -125,9 +125,9 @@ function RunDetail() {
             ml={2}
           >
             {["running", "pending"].includes(run.status) ? (
-              <CancelRunButton run_id={run.id} variant="ghost" />
+              <CancelRunButton run_id={run.id} />
             ) : (
-              <DeleteRunButton run_id={run.id} onDelete={() => navigate({to: "/runs"})} variant="ghost" />
+              <DeleteRunButton run_id={run.id} onDelete={() => navigate({to: "/runs"})} />
             )}
           </ButtonGroup>
       </Flex>
