@@ -73,7 +73,7 @@ export default function InputTag({ tags, setTags }: InputTagProps) {
       <Input
         maxW={{ base: "100%", md: "200px" }}
         ref={refInput}
-        placeholder="Enter tags"
+        placeholder="Add tags to run"
         htmlSize={sizeInput}
         onChange={handleChangeInput}
         onKeyDown={handleKeyDown} // Attach key event handler here

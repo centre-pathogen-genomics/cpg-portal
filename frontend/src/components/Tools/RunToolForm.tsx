@@ -7,6 +7,7 @@ import {
   FormControl,
   FormErrorMessage,
   FormLabel,
+  Heading,
   Input,
   Text,
 } from "@chakra-ui/react"
@@ -337,10 +338,13 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
           </FormControl>
         ))}
       </Box>
-      <Flex gap={2} justify={"space-between"} direction={{base: "column-reverse", md: "row"}}>
+      <Heading size="md" my={4}>
+        Run Tool
+      </Heading>
+      <Flex gap={2} justify={"space-between"} direction={{base: "column-reverse", md: "row"}} >
         <ButtonGroup>
           <Button variant="primary" type="submit" isLoading={isLoading} >
-            Run Tool
+            Submit
           </Button>
           <Button onClick={() => {reset(defaultValues); setFileStates({})}} variant="outline">
             Reset
