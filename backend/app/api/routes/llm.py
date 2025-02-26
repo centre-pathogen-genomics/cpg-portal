@@ -98,6 +98,8 @@ async def generate_run_summary(
     4. Include a plain language summary of results.
     5. Suggest follow-up steps.
     6. Start with an informative title.
+    --- REPORT ---
+    ```markdown
     """
 
     env = JinjaEnvironment()
@@ -127,7 +129,9 @@ async def generate_run_summary(
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail="Failed to generate summary. Please try again later.")
-    run.llm_summary = response.text
+
+    llm_summary_report = response.text.removeprefix("```markdown").removeprefix("```").removesuffix("```").strip()
+    run.llm_summary = llm_summary_report
     session.add(run)
     session.commit()
     return response.text
