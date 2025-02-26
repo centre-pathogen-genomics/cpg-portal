@@ -134,4 +134,4 @@ async def generate_run_summary(
     run.llm_summary = llm_summary_report
     session.add(run)
     session.commit()
-    return response.text
+    return llm_summary_report
