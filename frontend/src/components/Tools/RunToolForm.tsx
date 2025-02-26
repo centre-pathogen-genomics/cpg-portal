@@ -88,7 +88,7 @@ const FileParam = ({
       <Select
         id={param.name}
         options={files}
-        placeholder="Choose from My Files"
+        placeholder={"Choose from My Files" + (multiple ? " (multiple)" : "")}
         isMulti={multiple}
         isClearable={true}
         value={selectedOptions}
