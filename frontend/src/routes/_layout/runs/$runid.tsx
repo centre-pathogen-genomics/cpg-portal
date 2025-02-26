@@ -33,6 +33,7 @@ import DeleteRunButton from "../../../components/Runs/DeleteRunButton"
 import AISummaryButton from "../../../components/AI/AISummary"
 import ReactMarkdown from 'react-markdown';
 import ChakraUIRenderer from 'chakra-ui-markdown-renderer';
+import remarkGfm from 'remark-gfm'
 
 
 
@@ -173,7 +174,7 @@ function RunDetail() {
                   {run.tool.llm_summary_enabled && llmSummary && (
                     <TabPanel>
                       <Text fontWeight="bold" mb={2} fontSize={'sm'} color={'ui.danger'}>Large Language Models (AI) are prone to hallucinations and mistakes. Please use with caution.</Text>
-                      <ReactMarkdown components={ChakraUIRenderer()} children={llmSummary} skipHtml />
+                      <ReactMarkdown components={ChakraUIRenderer()} children={llmSummary} skipHtml remarkPlugins={[remarkGfm]} />
                     </TabPanel>
                   )}
                   {fileTabs.map((file) => (
