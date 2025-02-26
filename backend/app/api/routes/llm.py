@@ -1,4 +1,5 @@
 import uuid
+from enum import Enum
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
@@ -43,6 +44,10 @@ def get_file_content_for_prompt(file: File, threshold: int = 10000) -> str:
                 return f.read()
     return "File type not supported, content not included."
 
+class Audience(str, Enum):
+    layman = "layman"
+    expert = "expert"
+
 
 
 
@@ -51,6 +56,7 @@ async def generate_run_summary(
     session: SessionDep,
     current_user: CurrentUser,
     run_id: uuid.UUID,
+    audience: Audience = Audience.expert,
 ) -> Any:
     """
     Generate run summary using AI.
@@ -123,7 +129,7 @@ async def generate_run_summary(
                 model='gemini-2.0-flash',
                 contents=prompt,
                 config=genai.types.GenerateContentConfig(
-                    system_instruction="Acting as bioinformatics expert generate a short summary report of the following analysis."
+                    system_instruction=f"Acting as bioinformatics expert generate a short summary report of the following analysis. The report should be targeted to a {audience} audience.",
                 )
             )
     except Exception as e:

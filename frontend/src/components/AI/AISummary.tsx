@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useDisclosure } from "@chakra-ui/react";
+import { Select, useDisclosure } from "@chakra-ui/react";
 import { RiRobot2Line } from "react-icons/ri";
 
 import {
@@ -10,12 +10,14 @@ import {
   AlertDialogHeader,
   AlertDialogOverlay,
   Button,
+  Text, 
 } from "@chakra-ui/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 
 import { generateRunSummaryMutation } from "../../client/@tanstack/react-query.gen";
 import useCustomToast from "../../hooks/useCustomToast";
+import { Audience } from "../../client";
 
 interface GenerateSummaryDialogProps {
   runId: string;
@@ -37,6 +39,7 @@ const GenerateSummaryDialog = ({
   const queryClient = useQueryClient();
   const showToast = useCustomToast();
   const cancelRef = React.useRef<HTMLButtonElement | null>(null);
+  const [audience, setAudience] = useState<Audience>("expert");
 
   // Setup react-hook-form
   const { handleSubmit, formState: { isSubmitting } } = useForm();
@@ -66,7 +69,7 @@ const GenerateSummaryDialog = ({
     console.log("Generating AI Summary for run", runId);
     setIsLoading(true);
     try {
-      await mutation.mutateAsync({ path: { run_id: runId } });
+      await mutation.mutateAsync({ path: { run_id: runId }, query: {audience: audience} });
     } catch (error) {
       // Error handling is already performed in the mutation's onError
     } finally {
@@ -99,6 +102,11 @@ const GenerateSummaryDialog = ({
           </AlertDialogHeader>
           <AlertDialogBody>
             Are you sure you want to generate an AI-powered summary for this run? Your data will be sent to Google servers.
+            <Text mt={4} mb={2}>Select the audience for the summary:</Text>
+            <Select required  onChange={(e) => setAudience(e.target.value as Audience)} value={audience}>
+              <option value="expert">Expert</option>
+              <option value="layman">Layman</option>
+            </Select>
           </AlertDialogBody>
           <AlertDialogFooter gap={3}>
             {/* The Generate button shows a loading spinner and is disabled while loading */}
