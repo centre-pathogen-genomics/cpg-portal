@@ -56,7 +56,7 @@ def read_runs(
 
 @router.post("/", response_model=RunPublic)
 async def create_run(
-    *, session: SessionDep, current_user: CurrentUser, tool_id: uuid.UUID, params: dict, tags: list[str] = None
+    *, session: SessionDep, current_user: CurrentUser, tool_id: uuid.UUID, params: dict, tags: list[str] = None, email_on_completion: bool = False
 ) -> Any:
     """
     Create and run a run of a specific tool, validating against predefined tool parameters.
@@ -207,6 +207,7 @@ async def create_run(
     taskiq_task = await run_tool.kiq(run.id, cmd)
 
     run.taskiq_id = taskiq_task.task_id
+    run.email_on_completion = email_on_completion
     session.add(run)
     session.commit()
     session.refresh(run)

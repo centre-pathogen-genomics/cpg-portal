@@ -261,6 +261,7 @@ class RunBase(SQLModel):
     taskiq_id: str
     status: RunStatus
     llm_summary: str | None = None
+    email_on_completion: bool = False
     created_at: datetime
     started_at: datetime | None
     finished_at: datetime | None

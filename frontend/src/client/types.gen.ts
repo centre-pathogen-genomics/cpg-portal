@@ -1421,6 +1421,7 @@ export type CreateRunData = {
   path?: never
   query: {
     tool_id: string
+    email_on_completion?: boolean
   }
   url: "/api/v1/runs/"
 }

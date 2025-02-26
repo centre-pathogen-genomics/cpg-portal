@@ -14,7 +14,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Select, } from "chakra-react-select"
 import { type SubmitHandler, useForm } from "react-hook-form"
 import {
-  CreateRunData,
   FilesService,
   type Param,
   type RunPublic,
@@ -23,9 +22,9 @@ import { createRunMutation } from "../../client/@tanstack/react-query.gen"
 import useCustomToast from "../../hooks/useCustomToast"
 import React, { useEffect, useMemo, useState } from "react"
 import { handleError } from "../../utils"
-import { Options } from "@hey-api/client-axios"
 import FileUploadButton from "../Files/UploadFileButtonWithProgress"
 import TagInput from "../Common/TagInput"
+import EmailOnFinished from "./EmailOnFinished"
 
 
 interface EnumParamProps {
@@ -157,6 +156,7 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
   const [localFiles, setLocalFiles] = useState<{ label: string; value: string }[]>([]);
   // Tags state
   const [tags, setTags] = useState<string[]>([]);
+  const [emailOnFinished, setEmailOnFinished] = useState(false);
 
   useEffect(() => {
     if (data) {
@@ -187,7 +187,7 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
 
   
   const mutation = useMutation({
-    ...createRunMutation({query: {tool_id: toolId}}),
+    ...createRunMutation(),
     onSuccess: (run: RunPublic) => {
       showToast(
         "Success!",
@@ -215,7 +215,7 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
         delete formData[key];
       }
     }
-    await mutation.mutateAsync({body: {params:   formData, tags: tags}} as Options<CreateRunData>)
+    await mutation.mutateAsync({body: {params: formData, tags: tags}, query: {tool_id: toolId, email_on_completion: emailOnFinished}});
     setIsLoading(false);
   }
 
@@ -337,7 +337,7 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
           </FormControl>
         ))}
       </Box>
-      <Flex gap={2} justify={"space-between"} direction={{base: "column", md: "row"}}>
+      <Flex gap={2} justify={"space-between"} direction={{base: "column-reverse", md: "row"}}>
         <ButtonGroup>
           <Button variant="primary" type="submit" isLoading={isLoading} >
             Run Tool
@@ -347,6 +347,9 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
           </Button>
         </ButtonGroup>
         <TagInput tags={tags} setTags={setTags} />
+      </Flex>
+      <Flex mt={2}>
+        <EmailOnFinished emailOnFinished={emailOnFinished} setEmailOnFinished={setEmailOnFinished} />
       </Flex>
     </Box>
   )

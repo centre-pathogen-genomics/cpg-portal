@@ -12,6 +12,7 @@ from jwt.exceptions import InvalidTokenError
 
 from app.core import security
 from app.core.config import settings
+from app.models import RunStatus
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -96,6 +97,23 @@ def generate_new_account_email(
             "username": username,
             "email": email_to,
             "valid_hours": settings.EMAIL_RESET_TOKEN_EXPIRE_HOURS,
+            "link": link,
+        },
+    )
+    return EmailData(html_content=html_content, subject=subject)
+
+
+def generate_run_finished_email(
+    tool_name: str, run_id: str, run_status: RunStatus
+) -> EmailData:
+    project_name = settings.PROJECT_NAME
+    subject = f"{project_name} - {tool_name} {run_status}!"
+    link = f"{settings.FRONTEND_HOST}/runs/{run_id}"
+    html_content = render_email_template(
+        template_name=f"run_{run_status}.html",
+        context={
+            "project_name": settings.PROJECT_NAME,
+            "tool_name": tool_name,
             "link": link,
         },
     )

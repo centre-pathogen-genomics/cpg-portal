@@ -19,6 +19,7 @@ from app.core.config import settings
 from app.crud import save_file
 from app.models import File, Run, RunStatus, SetupFile, Target, Tool
 from app.tkq import broker
+from app.utils import generate_run_finished_email, send_email
 from app.wsmanager import manager
 
 SessionDep = Annotated[Session, TaskiqDepends(get_db)]
@@ -126,6 +127,10 @@ def update_run(session: Session, run: Run, status: RunStatus, message=None):
     if message:
         print(f"Adding message to Run(id={run.id}): {message}")
         run.stdout += "\n" + message
+    if run.email_on_completion and settings.emails_enabled and run.owner.email:
+        print(f"Sending email for Run(id={run.id})")
+        email_html = generate_run_finished_email(run.tool.name, str(run.id), run.status)
+        send_email(run.owner.email, email_html)
     session.add(run)
     session.commit()
 
