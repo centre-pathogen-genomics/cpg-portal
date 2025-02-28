@@ -13,7 +13,6 @@ import {
   Td,
   Th,
   Thead,
-  Tooltip,
   Tr,
   useColorModeValue,
   Text,
@@ -27,7 +26,6 @@ import CancelRunsButton from "../../../components/Runs/CancelRunsButton"
 import DeleteRunButton from "../../../components/Runs/DeleteRunButton"
 import DeleteRunsButton from "../../../components/Runs/DeleteRunsButton"
 import RunRuntime from "../../../components/Runs/RunTime"
-import StatusIcon from "../../../components/Runs/StatusIcon"
 import ParamTag from "../../../components/Runs/ParamTag"
 import { humanReadableDate } from "../../../utils"
 import StatusBadge from "../../../components/Runs/StatusBadge"
