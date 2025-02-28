@@ -214,6 +214,15 @@ function Tool() {
       <Box maxW="5xl" width="100%" mx={4} pt={6} pb={8}>
         <Flex align={'center'} justify={'space-between'} direction={'row'} mb={2} pb={2} borderBottomWidth={1} >
           <Flex>
+            <Box rounded={'md'} overflow={'hidden'} mr={2} maxW={{base: 10, md: 12}}  maxH={{base: 10, md: 12}} borderWidth={2} borderColor={"gray.200"} >
+              <Image 
+                src={tool.image ?? "https://images.unsplash.com/photo-1543145499-8193615267de?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxlZGl0b3JpYWwtZmVlZHw5fHx8ZW58MHx8fHw%3D&auto=format&fit=crop&w=800&q=60"}
+                alt={tool?.name}
+                objectFit='cover'
+                h={"100%"}
+                w={"100%"}
+              />
+            </Box>
             <Heading size="2xl" >{tool?.name}</Heading>
             {tool.version && (
               <Flex direction={'column'}>
