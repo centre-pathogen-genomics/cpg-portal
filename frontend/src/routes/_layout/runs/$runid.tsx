@@ -31,9 +31,7 @@ import { readRunOptions } from "../../../client/@tanstack/react-query.gen"
 import CancelRunButton from "../../../components/Runs/CancelRunButton"
 import DeleteRunButton from "../../../components/Runs/DeleteRunButton"
 import AISummaryButton from "../../../components/AI/AISummary"
-import ReactMarkdown from 'react-markdown';
-import ChakraUIRenderer from 'chakra-ui-markdown-renderer';
-import remarkGfm from 'remark-gfm'
+import ReactMarkdown from "../../../components/Common/Markdown"
 
 
 
@@ -84,17 +82,19 @@ function RunDetail() {
   }
 
   return (
-    <Box maxW={"5xl"} justifySelf={"center"} w={"full"} >
+    <Box maxW={"5xl"} justifySelf={"center"} w={"full"} overflowX={"hidden"}>
       <Flex direction="row" justify="space-between" align="center" mb={2} pb={2} pt={6} borderBottomWidth={1} >
         <Heading
           size="2xl"
           textAlign={{ base: "left"}}
+          overflowX={"hidden"}
+          pb={{ base: 0, md: 2}}
         >
           <Breadcrumb
             separator={<ChevronRightIcon color="gray.500" boxSize={10}/>}
           >
             <BreadcrumbItem>
-              <BreadcrumbLink display={{ base: "none", sm: "block" }}
+              <BreadcrumbLink display={{ base: "none", sm: "block" }} whiteSpace={"nowrap"}
               onClick={
                 () => navigate({
                   to: "/runs",
@@ -113,7 +113,7 @@ function RunDetail() {
             </BreadcrumbItem>
 
             <BreadcrumbItem isCurrentPage>
-              <BreadcrumbLink overflow={'clip'} >{run.id.split('-')[0]}</BreadcrumbLink>
+              <BreadcrumbLink whiteSpace={"nowrap"} >{run.name ?? run.id.split('-')[0]}</BreadcrumbLink>
             </BreadcrumbItem>
           </Breadcrumb>
         </Heading>
@@ -174,7 +174,7 @@ function RunDetail() {
                   {run.tool.llm_summary_enabled && llmSummary && (
                     <TabPanel>
                       <Text fontWeight="bold" mb={2} fontSize={'sm'} color={'ui.danger'}>Large Language Models (AI) are prone to hallucinations and mistakes. Please use with caution.</Text>
-                      <ReactMarkdown components={ChakraUIRenderer()} children={llmSummary} skipHtml remarkPlugins={[remarkGfm]} />
+                      <ReactMarkdown  markdown={llmSummary} />
                     </TabPanel>
                   )}
                   {fileTabs.map((file) => (

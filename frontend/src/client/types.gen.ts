@@ -87,6 +87,7 @@ export type ParamType =
 
 export type RunPublic = {
   id: string
+  name?: string | null
   tool: ToolMinimalPublic
   params: {
     [key: string]: unknown
@@ -105,6 +106,7 @@ export type RunPublic = {
 
 export type RunPublicMinimal = {
   id: string
+  name?: string | null
   tool: ToolMinimalPublic
   params: {
     [key: string]: unknown
@@ -154,6 +156,7 @@ export type ToolCreate = {
   version?: string | null
   image?: string | null
   description?: string | null
+  explanation_of_results_markdown?: string | null
   url?: string | null
   github_repo?: string | null
   docs_url?: string | null
@@ -176,6 +179,7 @@ export type ToolMinimalPublic = {
   name: string
   image?: string | null
   description?: string | null
+  explanation_of_results_markdown?: string | null
   tags?: Array<string> | null
   params?: Array<Param> | null
   favourited?: boolean
@@ -190,6 +194,7 @@ export type ToolPublic = {
   version?: string | null
   image?: string | null
   description?: string | null
+  explanation_of_results_markdown?: string | null
   url?: string | null
   github_repo?: string | null
   docs_url?: string | null
@@ -227,6 +232,7 @@ export type ToolUpdate = {
   version?: string | null
   image?: string | null
   description?: string | null
+  explanation_of_results_markdown?: string | null
   url?: string | null
   github_repo?: string | null
   docs_url?: string | null
@@ -1422,6 +1428,7 @@ export type CreateRunData = {
   query: {
     tool_id: string
     email_on_completion?: boolean
+    name?: string
   }
   url: "/api/v1/runs/"
 }

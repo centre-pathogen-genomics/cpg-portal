@@ -130,6 +130,9 @@ def update_run(session: Session, run: Run, status: RunStatus, message=None):
         run.stdout += "\n" + message
     if run.email_on_completion and settings.emails_enabled and run.owner.email:
         print(f"Sending email for Run(id={run.id})")
+        name = run.tool.name
+        if run.name:
+            name = f"{name} ({run.name})"
         email_data = generate_run_finished_email(run.tool.name, str(run.id), status)
         send_email(email_to=run.owner.email, subject=email_data.subject, html_content=email_data.html_content)
     session.add(run)

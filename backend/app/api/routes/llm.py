@@ -92,6 +92,10 @@ async def generate_run_summary(
     --- {{ result["name"] }} ---
     {{ result["content"] }}
     {% endfor %}
+    {%- if general_explanation -%}
+    --- GENERAL EXPLANATION ---
+    {{ general_explanation }}
+    {%- endif -%}
     --- REPORT FORMAT ---
     { TITLE }
     { ONE LINE SUMMARY }
@@ -118,6 +122,7 @@ async def generate_run_summary(
     prompt = template.render(
         name=run.tool.name,
         description=run.tool.description,
+        general_explanation=run.tool.explanation_of_results_markdown,
         command=run.command,
         status=run.status,
         logs=run.stdout,

@@ -164,6 +164,7 @@ class ToolBase(SQLModel):
     version: str | None = None
     image: str | None = None
     description: str | None = None
+    explanation_of_results_markdown: str | None = None
     url: str | None = None
     github_repo: str | None = None # :name/:repo
     docs_url: str | None = None
@@ -237,6 +238,7 @@ class ToolMinimalPublic(SQLModel):
     name: str
     image: str | None = None
     description: str | None = None
+    explanation_of_results_markdown: str | None = None
     tags: list[str] | None = None
     params: list[Param] | None = None
     favourited: bool = False
@@ -259,6 +261,7 @@ class RunStatus(str, enum.Enum):
 
 class RunBase(SQLModel):
     taskiq_id: str
+    name: str | None = None
     status: RunStatus
     llm_summary: str | None = None
     email_on_completion: bool = False
@@ -294,6 +297,7 @@ class Run(RunBase, table=True):
 
 class RunPublicMinimal(SQLModel):
     id: uuid.UUID
+    name: str | None = None
     tool: ToolMinimalPublic
     params: dict
     status: RunStatus

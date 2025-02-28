@@ -1,37 +1,20 @@
 import { Badge, Flex, HStack, Icon, Link, Text} from "@chakra-ui/react";
-import { RunPublic, RunStatus } from "../../client";
+import { RunPublic } from "../../client";
 import { HiOutlineStatusOnline } from "react-icons/hi";
 import { HiOutlineLightningBolt } from "react-icons/hi";
 import { HiOutlineTag } from "react-icons/hi";
 import { HiHashtag } from "react-icons/hi";
 import { HiCalendarDays } from "react-icons/hi2";
 import { HiOutlineClock } from "react-icons/hi2";
-
-
-
-
 import { useNavigate } from "@tanstack/react-router";
 import ParamTag from "./ParamTag";
 import { humanReadableDateTime } from "../../utils";
 import RunRuntime from "./RunTime";
+import StatusBadge from "./StatusBadge";
 
 
 interface RunMetadataProps {
   run: RunPublic
-}
-function StatusBadge({ status }: { status: RunStatus}) {
-    const colorScheme = {
-        "running": "green",
-        "failed": "red",
-        "completed": "teal",
-        "pending": "purple",
-        "cancelled": "gray",
-    } 
-    return (
-        <Badge variant='outline'  colorScheme={colorScheme[status] || "teal"}>
-            {status}
-          </Badge>
-    )
 }
 
 function Parameters({ params }: { params: Record<string, any> }) {

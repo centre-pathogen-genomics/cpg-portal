@@ -12,8 +12,11 @@ import {
 } from '@chakra-ui/react';
 import { RunPublic } from '../../client';
 import CodeBlock from '../Common/CodeBlock';
+import Markdown from '../Common/Markdown';
 import { HiOutlineDocumentText } from 'react-icons/hi';
 import { HiOutlineCommandLine } from 'react-icons/hi2';
+import { HiQuestionMarkCircle } from "react-icons/hi";
+
 import { SiAnaconda } from 'react-icons/si';
 import { useState } from 'react';
 import useWebSocket from '../../hooks/useWebsocket';
@@ -75,7 +78,23 @@ const OutputAccordion = ({ run }: { run: RunPublic }) => {
 
   return (
     <Accordion allowMultiple mb={4} wordBreak="break-all">
-      <OutputAccordionItem title="Tool Output" content={run.stdout || null} status={run.status} runId={run.id} />
+      {run.tool.explanation_of_results_markdown && (
+      <AccordionItem>
+        <AccordionButton>
+          <Box as="span" flex="1" textAlign="left">
+            <Flex alignItems="center">
+              <Icon as={HiQuestionMarkCircle} />
+              <Text ml={2}>Explanation of Results</Text>
+            </Flex>
+          </Box>
+          <AccordionIcon />
+        </AccordionButton>
+        <AccordionPanel pb={4}>
+          <Markdown markdown={run.tool.explanation_of_results_markdown} /> 
+        </AccordionPanel>
+      </AccordionItem>
+      )}
+      <OutputAccordionItem title="Tool Logs" content={run.stdout || null} status={run.status} runId={run.id} />
       <AccordionItem>
         <AccordionButton>
           <Box as="span" flex="1" textAlign="left">
@@ -94,6 +113,7 @@ const OutputAccordion = ({ run }: { run: RunPublic }) => {
           />
         </AccordionPanel>
       </AccordionItem>
+
       <AccordionItem>
         <AccordionButton>
           <Box as="span" flex="1" textAlign="left">

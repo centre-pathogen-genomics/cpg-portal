@@ -30,6 +30,7 @@ import RunRuntime from "../../../components/Runs/RunTime"
 import StatusIcon from "../../../components/Runs/StatusIcon"
 import ParamTag from "../../../components/Runs/ParamTag"
 import { humanReadableDate } from "../../../utils"
+import StatusBadge from "../../../components/Runs/StatusBadge"
 
 export const Route = createFileRoute("/_layout/runs/")({
   component: Runs,
@@ -85,14 +86,14 @@ function RunsTable() {
         <Table size={{ base: "sm" }}>
           <Thead>
             <Tr>
-              <Th width="10%">ID</Th>
-              <Th>Tool</Th>
-              <Th>Tags</Th>
-              <Th>Params</Th>
               <Th>Status</Th>
+              <Th>Name</Th>
+              <Th>Tool</Th>
+              <Th>Params</Th>
+              <Th>Tags</Th>
               <Th>Date</Th>
               <Th>Runtime</Th>
-              <Th width="10%">Actions</Th>
+              <Th>Actions</Th>
             </Tr>
           </Thead>
           <Tbody>
@@ -129,20 +130,12 @@ function RunsTable() {
                   }
                 >
                   <Td>
-                    <Tooltip placement="top" hasArrow label={run.id}>
-                      <Badge variant="outline" colorScheme="green">
-                        {run.id.split("-")[0]}
-                      </Badge>
-                    </Tooltip>
+                    <StatusBadge status={run.status}/>
+                  </Td>
+                  <Td>
+                    {run.name ?? run.id.split("-")[0]}
                   </Td>
                   <Td>{run.tool.name}</Td>
-                  <Td>
-                    {run.tags?.map((tag) => (
-                      <Badge key={tag} colorScheme="cyan" mr={1}>
-                        {tag}
-                      </Badge>
-                    ))}
-                  </Td>
                   <Td textAlign="center">
                     <Flex wrap={"wrap"} justify="start">
                       {Object.keys(run.params)
@@ -154,8 +147,13 @@ function RunsTable() {
                         ))}
                     </Flex>
                   </Td>
+                  
                   <Td>
-                    <StatusIcon status={run.status} />
+                    {run.tags?.map((tag) => (
+                      <Badge key={tag} colorScheme="cyan" mr={1}>
+                        {tag}
+                      </Badge>
+                    ))}
                   </Td>
                   <Td>{run.started_at ? humanReadableDate(run.started_at) : ""}</Td>
                   <Td>

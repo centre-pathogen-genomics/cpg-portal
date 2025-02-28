@@ -158,6 +158,7 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
   // Tags state
   const [tags, setTags] = useState<string[]>([]);
   const [emailOnFinished, setEmailOnFinished] = useState(false);
+  const [runName, setRunName] = useState<string | null>(null);
 
   useEffect(() => {
     if (data) {
@@ -216,7 +217,7 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
         delete formData[key];
       }
     }
-    await mutation.mutateAsync({body: {params: formData, tags: tags}, query: {tool_id: toolId, email_on_completion: emailOnFinished}});
+    await mutation.mutateAsync({body: {params: formData, tags: tags}, query: {tool_id: toolId, email_on_completion: emailOnFinished, name: runName ?? undefined}});
     setIsLoading(false);
   }
 
@@ -233,6 +234,22 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
   return (
     <Box as="form" onSubmit={onSubmit} w="100%">
       <Box>
+        <FormControl
+              pb={4}
+              key={"CPG_PORTAL_RUN_NAME"}
+              isInvalid={errors["CPG_PORTAL_RUN_NAME"] !== undefined}
+            >
+               <FormLabel fontSize={"md"} htmlFor={"CPG_PORTAL_RUN_NAME"} mb={0}>
+                NAME
+              </FormLabel>
+              <Text fontSize="sm" color={'gray.500'} mb={2} >Enter a name for the run (optional)</Text>
+              <Input id={"CPG_PORTAL_RUN_NAME"} onChange={(e) => setRunName(e.target.value)} />
+            {errors["CPG_PORTAL_RUN_NAME"] && (
+              <FormErrorMessage>
+                {errors["CPG_PORTAL_RUN_NAME"]?.message as React.ReactNode}
+              </FormErrorMessage>
+            )}
+        </FormControl>
         {normalizedParams?.map((param: Param) => (
           <FormControl
             pb={4}

@@ -56,7 +56,7 @@ def read_runs(
 
 @router.post("/", response_model=RunPublic)
 async def create_run(
-    *, session: SessionDep, current_user: CurrentUser, tool_id: uuid.UUID, params: dict, tags: list[str] = None, email_on_completion: bool = False
+    *, session: SessionDep, current_user: CurrentUser, tool_id: uuid.UUID, params: dict, tags: list[str] = None, email_on_completion: bool = False, name: str = None
 ) -> Any:
     """
     Create and run a run of a specific tool, validating against predefined tool parameters.
@@ -192,6 +192,7 @@ async def create_run(
     # create a run
     run = Run(
         tool_id=tool_id,
+        name=name,
         owner_id=current_user.id,
         status="pending",
         params=params,
