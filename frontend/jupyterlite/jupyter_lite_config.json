@@ -1,0 +1,11 @@
+{
+    "LiteBuildConfig": {
+      "contents": ["content"],
+      "output_dir": "../public/wasm/jupyterlite",
+      "apps": ["lab", "retro"]
+    },
+    "ServerApp": {
+      "base_url": "/wasm/jupyterlite/"
+    }
+  }
+  

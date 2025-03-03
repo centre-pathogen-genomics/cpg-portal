@@ -18,6 +18,7 @@ import {
   useColorMode,
   useColorModeValue,
   useDisclosure,
+  Badge,
 } from "@chakra-ui/react"
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router"
 import { FiLogOut, FiMenu } from "react-icons/fi"
@@ -36,6 +37,7 @@ const items = [
   { title: "Tools", path: "/" },
   { title: "My Runs", path: "/runs" },
   { title: "My Files", path: "/files" },
+  { title: "SAE", path: "/wasm/jupyterlite/index.html", isNew: true, newTab: true },
 ]
 
 
@@ -73,7 +75,7 @@ function MainMenuBar() {
     : items
 
   // Map over the final items and determine if they are active.
-  const listItems = finalItems.map(({ title, path }) => {
+  const listItems = finalItems.map(({ title, path, isNew, newTab }) => {
     let isActive = false
 
     if (title === "Tools") {
@@ -86,6 +88,24 @@ function MainMenuBar() {
       isActive = pathname.startsWith(path)
     }
 
+    if (newTab) {
+      return (
+        <Flex
+          as="a"
+          href={path}
+          key={title}
+          color={textColor}
+          _hover={{ color: "ui.main" }}
+          fontWeight="semibold"
+          align="center"
+          whiteSpace={'nowrap'}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Text>{title}</Text>{isNew && (<Badge ml={1}>New</Badge>)}
+        </Flex>
+      )
+    }
     return (
       <Flex
         as={Link}
@@ -96,8 +116,10 @@ function MainMenuBar() {
         fontWeight="semibold"
         // Apply underline style if active.
         style={isActive ? { textDecoration: "underline" } : {}}
+        align="center"
+        whiteSpace={'nowrap'}
       >
-        <Text>{title}</Text>
+        <Text>{title}</Text>{isNew && (<Badge ml={1}>New</Badge>)}
       </Flex>
     )
   })
