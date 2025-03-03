@@ -2,7 +2,6 @@ import uuid
 from typing import Annotated
 
 from fastapi import (
-    APIRouter,
     Depends,
     WebSocket,
     WebSocketDisconnect,
@@ -10,6 +9,7 @@ from fastapi import (
 )
 
 from app.api.deps import SessionDep, get_current_user_from_query
+from app.api.routers import TrailingSlashRouter as APIRouter
 from app.models import Run, User
 from app.wsmanager import manager
 
