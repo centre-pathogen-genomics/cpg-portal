@@ -8,6 +8,11 @@ WORKDIR /app
 # Copy all files to /app. This brings in your React app and any other files.
 COPY ./ /app/
 
+# Set environment variables for the React app
+ARG VITE_API_URL=${VITE_API_URL}
+ARG VITE_MAX_FILE_UPLOAD_SIZE=${VITE_MAX_FILE_UPLOAD_SIZE}
+
+
 # Install dependencies for the React app
 RUN npm install
 
