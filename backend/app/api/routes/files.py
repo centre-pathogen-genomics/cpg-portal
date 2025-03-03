@@ -3,13 +3,12 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
-from fastapi import HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, HTTPException, Query, UploadFile, status
 from fastapi.responses import FileResponse
 from sqlalchemy import desc
 from sqlmodel import func, select
 
 from app.api.deps import CurrentUser, FileDep, SessionDep
-from app.api.routers import TrailingSlashRouter as APIRouter
 from app.core.config import settings
 from app.core.security import create_access_token
 from app.crud import get_file_stats

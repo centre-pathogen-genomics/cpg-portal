@@ -1,4 +1,5 @@
-from app.api.routers import TrailingSlashRouter as APIRouter
+from fastapi import APIRouter
+
 from app.api.routes import files, llm, login, runs, tools, users, utils, websockets
 
 api_router = APIRouter()

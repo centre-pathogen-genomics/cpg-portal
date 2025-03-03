@@ -2,7 +2,7 @@ import uuid
 from enum import Enum
 from typing import Any
 
-from fastapi import Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import or_
 from sqlmodel import func, select
 
@@ -12,7 +12,6 @@ from app.api.deps import (
     SuperUser,
     get_current_active_superuser,
 )
-from app.api.routers import TrailingSlashRouter as APIRouter
 from app.models import (
     Message,
     Tool,

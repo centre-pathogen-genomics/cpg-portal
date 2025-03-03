@@ -2,11 +2,10 @@ import uuid
 from enum import Enum
 from typing import Any
 
-from fastapi import HTTPException
+from fastapi import APIRouter, HTTPException
 from google import genai
 from jinja2 import Environment as JinjaEnvironment
 
-from app.api.routers import TrailingSlashRouter as APIRouter
 from app.api.deps import CurrentUser, SessionDep
 from app.core.config import settings
 from app.models import File, Run

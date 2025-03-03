@@ -4,13 +4,12 @@ from pathlib import Path
 from shlex import quote
 from typing import Any
 
-from fastapi import HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, status
 from jinja2 import Environment as JinjaEnvironment
 from sqlalchemy import desc
 from sqlmodel import func, select
 
 from app.api.deps import CurrentUser, SessionDep
-from app.api.routers import TrailingSlashRouter as APIRouter
 from app.models import File, Message, Param, Run, RunPublic, RunsPublicMinimal, Tool
 from app.tasks import run_tool
 from app.utils import sanitise_shell_input
