@@ -28,3 +28,7 @@ openapi.json
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+
+# jupyter lite build artifacts
+public/wasm/jupyterlite
+jupyterlite/.venv
