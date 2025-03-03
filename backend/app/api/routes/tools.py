@@ -4,7 +4,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import or_
-from sqlmodel import exists, func, select
+from sqlmodel import func, select
 
 from app.api.deps import (
     CurrentUser,

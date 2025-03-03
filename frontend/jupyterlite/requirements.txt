@@ -4,7 +4,7 @@ jupyterlab~=4.3.4
 notebook~=7.3.2
 
 # JupyterLab: CPG Portal Extension
-jupyterlab-cpg-portal==0.1.7
+jupyterlab-cpg-portal==0.1.8
 
 # Python kernel (optional)
 jupyterlite-pyodide-kernel==0.5.0

@@ -1,8 +1,6 @@
-import shutil
 import uuid
 from datetime import timedelta
 from pathlib import Path
-from tempfile import TemporaryDirectory
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, UploadFile, status
