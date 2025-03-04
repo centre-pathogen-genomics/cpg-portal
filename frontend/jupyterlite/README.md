@@ -24,7 +24,7 @@ jupyter lite build
 
 # Hosting
 
-You need to set HEADERS to allow jupyterlite to load files. This is an example of how to do it in Apache (our reverse proxy):
+You need to set HEADERS for jupyterlite to work the best. This is an example of how to do it in Apache (our reverse proxy):
 ```
 <IfModule mod_headers.c>
     <Location /wasm/jupyterlite>

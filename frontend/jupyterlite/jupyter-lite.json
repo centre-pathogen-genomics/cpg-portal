@@ -4,7 +4,6 @@
       "appName": "CPG Secure Analysis Environment",
       "faviconUrl": "../../../favicon.ico",
       "disabledExtensions": [
-        "@jupyterlite/server-extension:service-worker",
         "@jupyterlab/drawio-extension",
         "jupyterlab-kernel-spy",
         "jupyterlab-tour"
