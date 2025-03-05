@@ -96,17 +96,16 @@ async def create_run(
                 )
             params[param.name] = param.default
             continue
-        if param.param_type == "files" or param.param_type == "file":
+        if param.param_type == "file":
             file_ids = params[param.name]
             if not isinstance(file_ids, list):
                 raise HTTPException(
                     status_code=400, detail=f"For parameter {param.name}, expected list of file ids, got {file_ids}"
                 )
-            if param.param_type == "file":
-                if len(file_ids) != 1:
-                    raise HTTPException(
-                        status_code=400, detail=f"For parameter {param.name}, expected single file, got {len(file_ids)}"
-                    )
+            elif not param.multiple and len(file_ids) != 1:
+                raise HTTPException(
+                    status_code=400, detail=f"For parameter {param.name}, expected list with a single file, got {len(file_ids)}"
+                )
             file_names = []
             for file_id in file_ids:
                 try:
@@ -126,10 +125,10 @@ async def create_run(
                     )
                 file_names.append(Path(file.location).name)
                 files.append(file)
-            if param.param_type == "file":
-                params[param.name] = file_names[0]
-            else:
+            if param.multiple:
                 params[param.name] = file_names
+            else:
+                params[param.name] = file_names[0]
         elif param.param_type == "bool":
             if not isinstance(params[param.name], bool):
                 raise HTTPException(

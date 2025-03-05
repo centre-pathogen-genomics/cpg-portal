@@ -311,14 +311,14 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
                {param.description || 'Check to enable'} 
               </Checkbox>
             )}
-            {(param.param_type === "file" || param.param_type === "files") && (
+            {param.param_type === "file" && (
             <FileParam
               isLoading={filesLoading}
               setIsLoading={setIsLoading}
               param={param}
               files={localFiles}  // Use localFiles instead of data
               setValue={(selected) => {
-                if (Array.isArray(selected) || param.param_type === "file") {
+                if (Array.isArray(selected) || !param.multiple) {
                   // For multi-file selection, replace the existing value.
 
                   if (!Array.isArray(selected)) {
@@ -341,7 +341,7 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
                 }
               }}
               selectedOptions={fileStates[param.name] || []}
-              multiple={param.param_type === "files"}
+              multiple={param.multiple ?? false}
               updateLocalFiles={(newFile) =>
                 setLocalFiles((prev) => [...prev, newFile])
               }
