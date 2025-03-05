@@ -53,9 +53,9 @@ return (
     <Suspense fallback={<Skeleton height="20px" />}>
     <ErrorBoundary
         fallbackRender={() => (
-        <Box textAlign="center" mt={8} w={'100%'} justifyContent={'center'} alignItems={'center'}>
+        <Box textAlign="center" mt={8} w={'100%'} justifyContent={'center'} alignItems={'center'} justifyItems={'center'}>
             <Text>Something went wrong... Please reload the page!</Text>
-            <Image src={ErrorLogo} alt="Error" />
+            <Image src={ErrorLogo} alt="Error" maxW={80}/>
         </Box>
         )}
     >
