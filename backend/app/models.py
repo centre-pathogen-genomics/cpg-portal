@@ -1,6 +1,7 @@
 import enum
 import uuid
 from datetime import datetime
+from typing import Literal
 
 from pydantic import EmailStr
 from sqlalchemy.dialects.postgresql import JSONB as JSON
@@ -12,7 +13,10 @@ from sqlmodel import (
     Field,
     Relationship,
     SQLModel,
+    String,
 )
+
+from app.core.file_types import file_types
 
 
 # Link tables for many-to-many relationships
@@ -107,14 +111,7 @@ class SetupFile(SQLModel):
     content: str
 
 
-class FileType(str, enum.Enum):
-    text = "text"
-    image = "image"
-    csv = "csv"
-    tsv = "tsv"
-    json = "json"
-    unknown = "unknown"
-
+FileType = Literal[file_types.types]
 
 class Target(SQLModel):
     path: str
@@ -317,7 +314,7 @@ class FileBase(SQLModel):
 
 class File(FileBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    file_type: FileType | None = Field(sa_column=Column(Enum(FileType)))
+    file_type: FileType = Field(sa_column=Column(String, nullable=False))
     location: str
     tags: list[str] | None = Field(default_factory=list, sa_column=Column(JSON))
     owner_id: uuid.UUID = Field(foreign_key="user.id", nullable=False)

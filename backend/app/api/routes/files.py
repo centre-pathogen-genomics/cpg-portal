@@ -3,17 +3,18 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, status
 from fastapi.responses import FileResponse
 from sqlalchemy import desc
 from sqlmodel import func, select
 
-from app.api.deps import CurrentUser, FileDep, SessionDep
+from app.api.deps import CurrentUser, FileDep, SessionDep, get_current_user
 from app.core.config import settings
+from app.core.file_types import FileTypeMetadata, file_types
 from app.core.security import create_access_token
 from app.crud import get_file_stats
 from app.crud import save_file as save_file_to_filesystem
-from app.models import File, FilePublic, FilesPublic, FilesStatistics, FileType, Message
+from app.models import File, FilePublic, FilesPublic, FilesStatistics, Message
 
 router = APIRouter()
 
@@ -52,6 +53,12 @@ def read_files(
 
     return FilesPublic(data=files, count=count)
 
+@router.get("/types", response_model=dict[str, FileTypeMetadata], dependencies=[Depends(get_current_user)])
+def get_files_allowed_types() -> Any:
+    """
+    Get allowed file types.
+    """
+    return file_types.allowed
 
 @router.get("/stats", response_model=FilesStatistics)
 def get_files_stats(session: SessionDep, current_user: CurrentUser) -> Any:
@@ -61,24 +68,6 @@ def get_files_stats(session: SessionDep, current_user: CurrentUser) -> Any:
     return get_file_stats(session, current_user)
 
 
-def guess_file_type(file: UploadFile) -> str:
-    """
-    Guess file type based on the file extension.
-    """
-    if not file.content_type:
-        return FileType.unknown
-    if file.content_type.startswith("image"):
-        return FileType.image
-    if 'csv' in file.content_type or file.filename.endswith(".csv"):
-        return FileType.csv
-    if 'json' in file.content_type or file.filename.endswith(".json"):
-        return FileType.json
-    if 'tsv' in file.content_type or file.filename.endswith(".tsv"):
-        return FileType.tsv
-    if 'text' in file.content_type or file.filename.endswith(".txt"):
-        # catch all text/... types
-        return FileType.text
-    return FileType.unknown
 
 @router.post("/", response_model=FilePublic)
 def upload_file(
@@ -96,7 +85,7 @@ def upload_file(
     # TODO: potentially convert to async func and use aiofiles (https://stackoverflow.com/questions/63580229/how-to-save-uploadfile-in-fastapi)
     # Create a temporary directory
 
-    file_type = guess_file_type(file)
+    file_type = file_types.get_type(file.filename)
 
     print(f"File type: {file_type}")
     file_metadata = save_file_to_filesystem(
