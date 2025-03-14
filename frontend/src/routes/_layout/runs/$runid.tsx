@@ -43,8 +43,9 @@ function renderResult(file: FilePublic) {
   if (file.size && file.size < 500000) {
     switch (file.file_type) {
       case "csv":
-      case "tsv":
         return <CsvFileToTable fileId={file.id} />
+      case "tsv":
+        return <CsvFileToTable tsv fileId={file.id} />
       case "json":
         return <JsonFile fileId={file.id} />
       case "text":
