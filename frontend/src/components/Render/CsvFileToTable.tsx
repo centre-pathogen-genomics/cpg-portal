@@ -17,9 +17,10 @@ import { downloadFileOptions } from '../../client/@tanstack/react-query.gen';
 
 interface CsvFileToTableProps {
   fileId: string;
+  delimiter: ("," | "\t")
 }
 
-const CsvFileToTable = ({ fileId }: CsvFileToTableProps) => {
+const CsvFileToTable = ({ fileId, delimiter = "," }: CsvFileToTableProps) => {
   // Use useSuspenseQuery to fetch the file
   const { data: csvText } = useSuspenseQuery({
     ...downloadFileOptions({path: { id: fileId }})
@@ -28,7 +29,7 @@ const CsvFileToTable = ({ fileId }: CsvFileToTableProps) => {
   // Parse CSV data
   let parsedData = { data: [] };
   try {
-    parsedData = Papa.parse(csvText as string, { header: true });
+    parsedData = Papa.parse(csvText as string, { header: true, delimiter: delimiter });
     
   } catch (error) {
     return <Skeleton height="20px" />;
