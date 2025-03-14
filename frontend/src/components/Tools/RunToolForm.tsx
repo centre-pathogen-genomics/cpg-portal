@@ -18,6 +18,7 @@ import {
   FilesService,
   type Param,
   type RunPublic,
+  FileTypeEnum,
 } from "../../client"
 import { createRunMutation } from "../../client/@tanstack/react-query.gen"
 import useCustomToast from "../../hooks/useCustomToast"
@@ -60,35 +61,64 @@ const EnumParam = ({ param, setValue }: EnumParamProps) => {
 
 interface FileParamProps {
   param: Param;
-  files: { label: string; value: string }[];
   setValue: (
     options:
       | { label: string; value: string }[]
       | { label: string; value: string }
   ) => void;
   selectedOptions: { label: string; value: string }[];
+  allowedTypes?: FileTypeEnum[];
   multiple: boolean;
-  updateLocalFiles?: (file: { label: string; value: string }) => void;
-  isLoading?: boolean;
   setIsLoading?: (loading: boolean) => void;
 }
 
 const FileParam = ({
   param,
-  files,
   setValue,
   selectedOptions,
   multiple = false,
-  updateLocalFiles,
-  isLoading,
   setIsLoading,
 }: FileParamProps) => {
+  // Local state to store files for immediate updates
+  const [files, setFiles] = useState<{ label: string; value: string, colorScheme?: string }[]>([]);
+  
+  const { data, isLoading } = useQuery({
+    queryKey: ["files"],
+    queryFn: () =>
+      FilesService.readFiles(
+        {query:
+          {
+            types: param.allowed_file_types  ? param.allowed_file_types as unknown as FileTypeEnum[] : undefined,
+          }
+        }).then(({data: files}) =>{
+          if (files?.data === undefined) {
+            return [];
+          }
+          const flatFiles = [];
+          for (const file of files?.data) {
+              flatFiles.push({
+                label: `${file.name} (${file.file_type})`,
+                value: file.id,
+                colorScheme: file.file_type === "pair" ? "blue" : undefined,
+              });
+          }
+          return flatFiles;
+        }
+        ),
+  })
+ 
+  useEffect(() => {
+    if (data) {
+      setFiles(data);
+    }
+  }, [data]);
+
   return (
     <Flex direction={"column"} gap={2}>
       <Select
         id={param.name}
         options={files}
-        placeholder={"Choose from My Files" + (multiple ? " (multiple)" : "")}
+        placeholder={"Choose" + (param.multiple ? ` multiple files` : ` a single file`) + (param.allowed_file_types ? ` (${param.allowed_file_types.join(', ')})` : "")}
         isMulti={multiple}
         isClearable={true}
         value={selectedOptions}
@@ -107,9 +137,7 @@ const FileParam = ({
         onComplete={(file) => {
           const newFile = { label: file.name, value: file.id };
           // Immediately update the local files state via the passed-in updater
-          if (updateLocalFiles) {
-            updateLocalFiles(newFile);
-          }
+          setFiles((prev) => [...prev, newFile])
           // Update the form value
           setValue(newFile);
         }}
@@ -141,30 +169,15 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
   const showToast = useCustomToast()
   const [isLoading, setIsLoading] = useState(false)
 
-  const { data, isLoading: filesLoading } = useQuery({
-    queryKey: ["files"],
-    queryFn: () =>
-      FilesService.readFiles().then(({data: files}) =>
-        files?.data
-          .map((file) => ({
-            label: `${file.name}`,
-            value: file.id,
-          }))
-      ),
-  })
+ 
   
-  // Local state to store files for immediate updates
-  const [localFiles, setLocalFiles] = useState<{ label: string; value: string }[]>([]);
+  
   // Tags state
   const [tags, setTags] = useState<string[]>([]);
   const [emailOnFinished, setEmailOnFinished] = useState(false);
   const [runName, setRunName] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (data) {
-      setLocalFiles(data);
-    }
-  }, [data]);
+ 
 
   const defaultValues = params?.reduce((acc, param) => {
     acc[param.name] = param.default
@@ -313,10 +326,8 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
             )}
             {param.param_type === "file" && (
             <FileParam
-              isLoading={filesLoading}
               setIsLoading={setIsLoading}
               param={param}
-              files={localFiles}  // Use localFiles instead of data
               setValue={(selected) => {
                 if (Array.isArray(selected) || !param.multiple) {
                   // For multi-file selection, replace the existing value.
@@ -342,9 +353,6 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
               }}
               selectedOptions={fileStates[param.name] || []}
               multiple={param.multiple ?? false}
-              updateLocalFiles={(newFile) =>
-                setLocalFiles((prev) => [...prev, newFile])
-              }
             />
           )}
             {errors[param.name] && (

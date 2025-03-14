@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import ClassVar
 
 from pydantic import BaseModel
@@ -78,9 +79,9 @@ class FileTypes:
             mime_types=["application/epub+zip"]
         ),
         "fasta": FileTypeMetadata(
-            extensions=[".fasta"],
+            extensions=[".fasta", ".fa", ".fna", ".ffn", ".frn", ".faa"],
             file_format="text",
-            mime_types=["text/plain"]
+            mime_types=["text/x-fasta"]
         ),
         "fastq": FileTypeMetadata(
             extensions=[".fastq", ".fq"],
@@ -422,6 +423,11 @@ class FileTypes:
             file_format="binary",
             mime_types=["application/zip"]
         ),
+        "pair": FileTypeMetadata(
+            extensions=[],
+            file_format="group",
+            mime_types=[]
+        ),
         "unknown": FileTypeMetadata(
             extensions=[],
             file_format="text",
@@ -463,3 +469,4 @@ class FileTypes:
         return "unknown"
 
 file_types = FileTypes()
+FileTypeEnum = Enum("FileTypeEnum", {file_type.upper(): file_type for file_type in file_types.types})

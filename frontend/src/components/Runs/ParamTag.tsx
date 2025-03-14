@@ -7,18 +7,28 @@ interface ParamTagProps {
 }
 
 
-const extractUUIDAndOtherText = (value: string): string => {
+const extractUUIDAndOtherText = (value: string | string[]): string => {
   const uuidv4Pattern = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}_/i;
-
-  const match = value.match(uuidv4Pattern);
-
-  if (match) {
-      const uuid = match[0]; // Extract the matched UUID
-      const otherText = value.substring(uuid.length).trim(); // Extract the text after the UUID
-      return otherText
+  if (!Array.isArray(value)) {
+    value = [value];
   }
-
-  return value; // If no UUID is found, treat the whole string as otherText
+  const text = [];
+  for (let i = 0; i < value.length; i++) {
+    const match = value[i].match(uuidv4Pattern);
+    if (match) {
+        const uuid = match[0]; // Extract the matched UUID
+        const otherText = value[i].substring(uuid.length).trim(); // Extract the text after the UUID
+        text.push(otherText);
+    }
+    
+  }
+  if (text.length === 0) {
+    return value.join(', ');
+  } else
+  if (text.length === 1) {
+    return text[0];
+  }
+  return `Pair(${text.join(', ')})`; // Groups
 };
 
 const ParamTag = ( {param, value}: ParamTagProps) => {

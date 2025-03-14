@@ -10,6 +10,7 @@ from sqlalchemy import desc
 from sqlmodel import func, select
 
 from app.api.deps import CurrentUser, SessionDep
+from app.core.file_types import FileTypeEnum
 from app.models import File, Message, Param, Run, RunPublic, RunsPublicMinimal, Tool
 from app.tasks import run_tool
 from app.utils import sanitise_shell_input
@@ -123,8 +124,25 @@ async def create_run(
                     raise HTTPException(
                         status_code=403, detail="Not enough permissions to use this file"
                     )
-                file_names.append(Path(file.location).name)
-                files.append(file)
+                if param.allowed_file_types and file.file_type not in param.allowed_file_types:
+                    raise HTTPException(
+                        status_code=400, detail=f"File type not allowed: {file.file_type}"
+                    )
+                if file.children:
+                    # if the file has children, add them all (don't add the parent)
+                    for child in file.children:
+                        files.append(child)
+                    child_names = [Path(child.location).name for child in file.children]
+                    if param.allowed_file_types and FileTypeEnum.PAIR.value in param.allowed_file_types:
+                        # if the parameter allows pairs, add the pair as [pair1, pair2]
+                        # TODO: add support for groups here
+                        file_names.append(child_names)
+                    else:
+                        # otherwise, add the children as separate files
+                        file_names.extend(child_names)
+                else:
+                    file_names.append(Path(file.location).name)
+                    files.append(file)
             if param.multiple:
                 params[param.name] = file_names
             else:

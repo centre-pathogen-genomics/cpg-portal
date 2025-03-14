@@ -104,8 +104,13 @@ import type {
   UploadFileData,
   UploadFileResponse,
   UploadFileError,
+  GetFilesAllowedTypesData,
+  GetFilesAllowedTypesResponse,
   GetFilesStatsData,
   GetFilesStatsResponse,
+  CreatePairData,
+  CreatePairResponse,
+  CreatePairError,
   DeleteFileData,
   DeleteFileError,
   ReadFileData,
@@ -956,6 +961,29 @@ export class FilesService {
   }
 
   /**
+   * Get Files Allowed Types
+   * Get allowed file types.
+   */
+  public static getFilesAllowedTypes<ThrowOnError extends boolean = false>(
+    options?: Options<GetFilesAllowedTypesData, ThrowOnError>,
+  ) {
+    return (options?.client ?? client).get<
+      GetFilesAllowedTypesResponse,
+      unknown,
+      ThrowOnError
+    >({
+      security: [
+        {
+          scheme: "bearer",
+          type: "http",
+        },
+      ],
+      url: "/api/v1/files/types",
+      ...options,
+    })
+  }
+
+  /**
    * Get Files Stats
    * Get saved files statistics.
    */
@@ -974,6 +1002,29 @@ export class FilesService {
         },
       ],
       url: "/api/v1/files/stats",
+      ...options,
+    })
+  }
+
+  /**
+   * Create Pair
+   * Create a group of paired-end reads.
+   */
+  public static createPair<ThrowOnError extends boolean = false>(
+    options: Options<CreatePairData, ThrowOnError>,
+  ) {
+    return (options?.client ?? client).post<
+      CreatePairResponse,
+      CreatePairError,
+      ThrowOnError
+    >({
+      security: [
+        {
+          scheme: "bearer",
+          type: "http",
+        },
+      ],
+      url: "/api/v1/files/pairs",
       ...options,
     })
   }

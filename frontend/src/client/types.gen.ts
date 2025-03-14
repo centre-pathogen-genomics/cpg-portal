@@ -33,7 +33,193 @@ export type CondaEnvPipDependency = {
 
 export type FilePublic = {
   name: string
-  file_type?: FileType | null
+  file_type?:
+    | (
+        | "avi"
+        | "bam"
+        | "bat"
+        | "beast"
+        | "bed"
+        | "bib"
+        | "bmp"
+        | "c"
+        | "cpp"
+        | "css"
+        | "csv"
+        | "docx"
+        | "epub"
+        | "fasta"
+        | "fastq"
+        | "fastq.gz"
+        | "flac"
+        | "geojson"
+        | "gexf"
+        | "gff"
+        | "go"
+        | "graphml"
+        | "gzip"
+        | "hdf5"
+        | "hs"
+        | "html"
+        | "ical"
+        | "ico"
+        | "ini"
+        | "ipynb"
+        | "iqtree"
+        | "java"
+        | "jpeg"
+        | "js"
+        | "jsmap"
+        | "json"
+        | "jsonl"
+        | "kt"
+        | "log"
+        | "manifest"
+        | "matlab"
+        | "md"
+        | "mp3"
+        | "mp4"
+        | "newick"
+        | "nexus"
+        | "obj"
+        | "otf"
+        | "pdb"
+        | "pdf"
+        | "php"
+        | "phy"
+        | "pl"
+        | "text"
+        | "png"
+        | "pptx"
+        | "py"
+        | "r"
+        | "rar"
+        | "rb"
+        | "rmd"
+        | "rs"
+        | "sam"
+        | "scala"
+        | "sh"
+        | "sql"
+        | "stl"
+        | "svg"
+        | "tex"
+        | "tiff"
+        | "toml"
+        | "tsv"
+        | "ttf"
+        | "vcf"
+        | "vue"
+        | "wasm"
+        | "wav"
+        | "wheel"
+        | "xlsx"
+        | "xml"
+        | "yaml"
+        | "zip"
+        | "pair"
+        | "unknown"
+      )
+    | null
+  size?: number | null
+  saved?: boolean
+  tags?: Array<string> | null
+  id: string
+  children?: Array<FilePublicChild> | null
+  parent_id?: string | null
+  created_at: string
+}
+
+export type FilePublicChild = {
+  name: string
+  file_type?:
+    | (
+        | "avi"
+        | "bam"
+        | "bat"
+        | "beast"
+        | "bed"
+        | "bib"
+        | "bmp"
+        | "c"
+        | "cpp"
+        | "css"
+        | "csv"
+        | "docx"
+        | "epub"
+        | "fasta"
+        | "fastq"
+        | "fastq.gz"
+        | "flac"
+        | "geojson"
+        | "gexf"
+        | "gff"
+        | "go"
+        | "graphml"
+        | "gzip"
+        | "hdf5"
+        | "hs"
+        | "html"
+        | "ical"
+        | "ico"
+        | "ini"
+        | "ipynb"
+        | "iqtree"
+        | "java"
+        | "jpeg"
+        | "js"
+        | "jsmap"
+        | "json"
+        | "jsonl"
+        | "kt"
+        | "log"
+        | "manifest"
+        | "matlab"
+        | "md"
+        | "mp3"
+        | "mp4"
+        | "newick"
+        | "nexus"
+        | "obj"
+        | "otf"
+        | "pdb"
+        | "pdf"
+        | "php"
+        | "phy"
+        | "pl"
+        | "text"
+        | "png"
+        | "pptx"
+        | "py"
+        | "r"
+        | "rar"
+        | "rb"
+        | "rmd"
+        | "rs"
+        | "sam"
+        | "scala"
+        | "sh"
+        | "sql"
+        | "stl"
+        | "svg"
+        | "tex"
+        | "tiff"
+        | "toml"
+        | "tsv"
+        | "ttf"
+        | "vcf"
+        | "vue"
+        | "wasm"
+        | "wav"
+        | "wheel"
+        | "xlsx"
+        | "xml"
+        | "yaml"
+        | "zip"
+        | "pair"
+        | "unknown"
+      )
+    | null
   size?: number | null
   saved?: boolean
   tags?: Array<string> | null
@@ -42,7 +228,97 @@ export type FilePublic = {
   created_at: string
 }
 
-export type FileType = "text" | "image" | "csv" | "tsv" | "json" | "unknown"
+export type FileTypeEnum =
+  | "avi"
+  | "bam"
+  | "bat"
+  | "beast"
+  | "bed"
+  | "bib"
+  | "bmp"
+  | "c"
+  | "cpp"
+  | "css"
+  | "csv"
+  | "docx"
+  | "epub"
+  | "fasta"
+  | "fastq"
+  | "fastq.gz"
+  | "flac"
+  | "geojson"
+  | "gexf"
+  | "gff"
+  | "go"
+  | "graphml"
+  | "gzip"
+  | "hdf5"
+  | "hs"
+  | "html"
+  | "ical"
+  | "ico"
+  | "ini"
+  | "ipynb"
+  | "iqtree"
+  | "java"
+  | "jpeg"
+  | "js"
+  | "jsmap"
+  | "json"
+  | "jsonl"
+  | "kt"
+  | "log"
+  | "manifest"
+  | "matlab"
+  | "md"
+  | "mp3"
+  | "mp4"
+  | "newick"
+  | "nexus"
+  | "obj"
+  | "otf"
+  | "pdb"
+  | "pdf"
+  | "php"
+  | "phy"
+  | "pl"
+  | "text"
+  | "png"
+  | "pptx"
+  | "py"
+  | "r"
+  | "rar"
+  | "rb"
+  | "rmd"
+  | "rs"
+  | "sam"
+  | "scala"
+  | "sh"
+  | "sql"
+  | "stl"
+  | "svg"
+  | "tex"
+  | "tiff"
+  | "toml"
+  | "tsv"
+  | "ttf"
+  | "vcf"
+  | "vue"
+  | "wasm"
+  | "wav"
+  | "wheel"
+  | "xlsx"
+  | "xml"
+  | "yaml"
+  | "zip"
+  | "pair"
+  | "unknown"
+
+export type FileTypeMetadata = {
+  extensions: Array<string>
+  file_format: string
+  mime_types: Array<string>
+}
 
 export type FilesPublic = {
   data: Array<FilePublic>
@@ -70,20 +346,100 @@ export type NewPassword = {
 export type Param = {
   name: string
   param_type: ParamType
+  allowed_file_types?: Array<
+    | "avi"
+    | "bam"
+    | "bat"
+    | "beast"
+    | "bed"
+    | "bib"
+    | "bmp"
+    | "c"
+    | "cpp"
+    | "css"
+    | "csv"
+    | "docx"
+    | "epub"
+    | "fasta"
+    | "fastq"
+    | "fastq.gz"
+    | "flac"
+    | "geojson"
+    | "gexf"
+    | "gff"
+    | "go"
+    | "graphml"
+    | "gzip"
+    | "hdf5"
+    | "hs"
+    | "html"
+    | "ical"
+    | "ico"
+    | "ini"
+    | "ipynb"
+    | "iqtree"
+    | "java"
+    | "jpeg"
+    | "js"
+    | "jsmap"
+    | "json"
+    | "jsonl"
+    | "kt"
+    | "log"
+    | "manifest"
+    | "matlab"
+    | "md"
+    | "mp3"
+    | "mp4"
+    | "newick"
+    | "nexus"
+    | "obj"
+    | "otf"
+    | "pdb"
+    | "pdf"
+    | "php"
+    | "phy"
+    | "pl"
+    | "text"
+    | "png"
+    | "pptx"
+    | "py"
+    | "r"
+    | "rar"
+    | "rb"
+    | "rmd"
+    | "rs"
+    | "sam"
+    | "scala"
+    | "sh"
+    | "sql"
+    | "stl"
+    | "svg"
+    | "tex"
+    | "tiff"
+    | "toml"
+    | "tsv"
+    | "ttf"
+    | "vcf"
+    | "vue"
+    | "wasm"
+    | "wav"
+    | "wheel"
+    | "xlsx"
+    | "xml"
+    | "yaml"
+    | "zip"
+    | "pair"
+    | "unknown"
+  > | null
+  multiple?: boolean
   description?: string | null
   default?: number | number | string | boolean | null
   options?: Array<string> | null
   required?: boolean
 }
 
-export type ParamType =
-  | "str"
-  | "int"
-  | "float"
-  | "bool"
-  | "enum"
-  | "file"
-  | "files"
+export type ParamType = "str" | "int" | "float" | "bool" | "enum" | "file"
 
 export type RunPublic = {
   id: string
@@ -137,7 +493,91 @@ export type SetupFile = {
 
 export type Target = {
   path: string
-  target_type: FileType
+  target_type:
+    | "avi"
+    | "bam"
+    | "bat"
+    | "beast"
+    | "bed"
+    | "bib"
+    | "bmp"
+    | "c"
+    | "cpp"
+    | "css"
+    | "csv"
+    | "docx"
+    | "epub"
+    | "fasta"
+    | "fastq"
+    | "fastq.gz"
+    | "flac"
+    | "geojson"
+    | "gexf"
+    | "gff"
+    | "go"
+    | "graphml"
+    | "gzip"
+    | "hdf5"
+    | "hs"
+    | "html"
+    | "ical"
+    | "ico"
+    | "ini"
+    | "ipynb"
+    | "iqtree"
+    | "java"
+    | "jpeg"
+    | "js"
+    | "jsmap"
+    | "json"
+    | "jsonl"
+    | "kt"
+    | "log"
+    | "manifest"
+    | "matlab"
+    | "md"
+    | "mp3"
+    | "mp4"
+    | "newick"
+    | "nexus"
+    | "obj"
+    | "otf"
+    | "pdb"
+    | "pdf"
+    | "php"
+    | "phy"
+    | "pl"
+    | "text"
+    | "png"
+    | "pptx"
+    | "py"
+    | "r"
+    | "rar"
+    | "rb"
+    | "rmd"
+    | "rs"
+    | "sam"
+    | "scala"
+    | "sh"
+    | "sql"
+    | "stl"
+    | "svg"
+    | "tex"
+    | "tiff"
+    | "toml"
+    | "tsv"
+    | "ttf"
+    | "vcf"
+    | "vue"
+    | "wasm"
+    | "wav"
+    | "wheel"
+    | "xlsx"
+    | "xml"
+    | "yaml"
+    | "zip"
+    | "pair"
+    | "unknown"
   required?: boolean
 }
 
@@ -1152,6 +1592,7 @@ export type ReadFilesData = {
     skip?: number
     limit?: number
     order_by?: string
+    types?: Array<FileTypeEnum>
   }
   url: "/api/v1/files/"
 }
@@ -1199,6 +1640,25 @@ export type UploadFileResponses = {
 
 export type UploadFileResponse = UploadFileResponses[keyof UploadFileResponses]
 
+export type GetFilesAllowedTypesData = {
+  body?: never
+  path?: never
+  query?: never
+  url: "/api/v1/files/types"
+}
+
+export type GetFilesAllowedTypesResponses = {
+  /**
+   * Successful Response
+   */
+  200: {
+    [key: string]: FileTypeMetadata
+  }
+}
+
+export type GetFilesAllowedTypesResponse =
+  GetFilesAllowedTypesResponses[keyof GetFilesAllowedTypesResponses]
+
 export type GetFilesStatsData = {
   body?: never
   path?: never
@@ -1215,6 +1675,35 @@ export type GetFilesStatsResponses = {
 
 export type GetFilesStatsResponse =
   GetFilesStatsResponses[keyof GetFilesStatsResponses]
+
+export type CreatePairData = {
+  body?: never
+  path?: never
+  query: {
+    name: string
+    forward: string
+    reverse: string
+  }
+  url: "/api/v1/files/pairs"
+}
+
+export type CreatePairErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError
+}
+
+export type CreatePairError = CreatePairErrors[keyof CreatePairErrors]
+
+export type CreatePairResponses = {
+  /**
+   * Successful Response
+   */
+  200: FilePublic
+}
+
+export type CreatePairResponse = CreatePairResponses[keyof CreatePairResponses]
 
 export type DeleteFileData = {
   body?: never

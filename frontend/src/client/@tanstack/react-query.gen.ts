@@ -89,7 +89,11 @@ import type {
   UploadFileData,
   UploadFileError,
   UploadFileResponse,
+  GetFilesAllowedTypesData,
   GetFilesStatsData,
+  CreatePairData,
+  CreatePairError,
+  CreatePairResponse,
   DeleteFileData,
   DeleteFileError,
   ReadFileData,
@@ -1151,6 +1155,27 @@ export const uploadFileMutation = (
   return mutationOptions
 }
 
+export const getFilesAllowedTypesQueryKey = (
+  options?: Options<GetFilesAllowedTypesData>,
+) => [createQueryKey("getFilesAllowedTypes", options)]
+
+export const getFilesAllowedTypesOptions = (
+  options?: Options<GetFilesAllowedTypesData>,
+) => {
+  return queryOptions({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await FilesService.getFilesAllowedTypes({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      })
+      return data
+    },
+    queryKey: getFilesAllowedTypesQueryKey(options),
+  })
+}
+
 export const getFilesStatsQueryKey = (options?: Options<GetFilesStatsData>) => [
   createQueryKey("getFilesStats", options),
 ]
@@ -1168,6 +1193,45 @@ export const getFilesStatsOptions = (options?: Options<GetFilesStatsData>) => {
     },
     queryKey: getFilesStatsQueryKey(options),
   })
+}
+
+export const createPairQueryKey = (options: Options<CreatePairData>) => [
+  createQueryKey("createPair", options),
+]
+
+export const createPairOptions = (options: Options<CreatePairData>) => {
+  return queryOptions({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await FilesService.createPair({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      })
+      return data
+    },
+    queryKey: createPairQueryKey(options),
+  })
+}
+
+export const createPairMutation = (
+  options?: Partial<Options<CreatePairData>>,
+) => {
+  const mutationOptions: UseMutationOptions<
+    CreatePairResponse,
+    AxiosError<CreatePairError>,
+    Options<CreatePairData>
+  > = {
+    mutationFn: async (localOptions) => {
+      const { data } = await FilesService.createPair({
+        ...options,
+        ...localOptions,
+        throwOnError: true,
+      })
+      return data
+    },
+  }
+  return mutationOptions
 }
 
 export const deleteFileMutation = (

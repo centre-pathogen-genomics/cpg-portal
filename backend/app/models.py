@@ -1,7 +1,7 @@
 import enum
 import uuid
 from datetime import datetime
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic import EmailStr
 from sqlalchemy.dialects.postgresql import JSONB as JSON
@@ -110,7 +110,7 @@ class SetupFile(SQLModel):
     name: str
     content: str
 
-
+# This literal type is used in DB to prevent hardcoding file types in the DB
 FileType = Literal[file_types.types]
 
 class Target(SQLModel):
@@ -130,7 +130,8 @@ class ParamType(str, enum.Enum):
 class Param(SQLModel):
     name: str
     param_type: ParamType
-    multiple: bool = False 
+    allowed_file_types: list[FileType] | None = None
+    multiple: bool = False
     description: str | None = None
     default: int | float | str | bool | None = None
     options: list[str] | None = None
@@ -315,18 +316,44 @@ class FileBase(SQLModel):
 class File(FileBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     file_type: FileType = Field(sa_column=Column(String, nullable=False))
-    location: str
+    location: str | None = None
     tags: list[str] | None = Field(default_factory=list, sa_column=Column(JSON))
+
+    parent_id: uuid.UUID | None = Field(
+        foreign_key='file.id',  # notice the lowercase "n" to refer to the database table name
+        default=None,
+        nullable=True
+    )
+    parent: Optional['File'] = Relationship(
+        back_populates='children',
+        sa_relationship_kwargs={
+            "remote_side": 'File.id'  # notice the uppercase "F" to refer to this table class
+        }
+    )
+    children: list['File'] = Relationship(
+        back_populates='parent',
+        sa_relationship_kwargs={
+            "order_by": "File.created_at"  # Orders the children by created_at
+                                           # This ensure pairs are ordered correctly e.g. R1, R2
+        }
+    )
     owner_id: uuid.UUID = Field(foreign_key="user.id", nullable=False)
-    owner: "User" = Relationship(back_populates="files")
+    owner: User = Relationship(back_populates="files")
     run_id: uuid.UUID = Field(foreign_key="run.id", nullable=True)
-    run: "Run" = Relationship(back_populates="files")
+    run: Run = Relationship(back_populates="files")
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+
+
+class FilePublicChild(FileBase):
+    id: uuid.UUID
+    run_id: uuid.UUID | None = None
+    created_at: datetime
 
 
 class FilePublic(FileBase):
     id: uuid.UUID
-    run_id: uuid.UUID | None = None
+    children: list[FilePublicChild] | None = None
+    parent_id: uuid.UUID | None = None
     created_at: datetime
 
 

@@ -11,22 +11,22 @@ interface OutputFileProps {
 }
 
 function OutputFile({ file }: OutputFileProps) {
-  return (
-    <Flex borderWidth='1px' borderRadius='lg' overflow='hidden' p={2}>
-        <HStack spacing={2}>
-            <Icon boxSize={8} as={HiOutlineDocument} />
-            <VStack direction={'column'} justify={'start'} align={'start'} >
-                <HStack spacing={2}>
-                    <Heading size={'sm'} >{file.name}</Heading>
-                </HStack> 
-                <HStack spacing={2} minW={"300px"}>
-                    <DownloadFileButton size="xs" fileId={file.id} fileSize={file.size ? humanReadableFileSize(file.size): "Unknown size"} />
-                    <SaveFileButton size="xs" fileId={file.id} saved={file.saved ? file.saved : false } />
-                </HStack>
-            </VStack>
-        </HStack>
-    </Flex>
-  );
-}
+    return (
+        <Flex borderWidth='1px' borderRadius='lg' overflow='hidden' p={2}>
+            <HStack spacing={2}>
+                <Icon boxSize={8} as={HiOutlineDocument} />
+                <VStack direction={'column'} justify={'start'} align={'start'} >
+                    <HStack spacing={2}>
+                        <Heading size={'sm'} >{file.name}</Heading>
+                    </HStack> 
+                    <HStack spacing={2} minW={"300px"}>
+                        <DownloadFileButton size="xs" file={file} fileSize={file.size ? humanReadableFileSize(file.size): "Unknown size"} />
+                        <SaveFileButton size="xs" fileId={file.id} saved={file.saved ? file.saved : false } />
+                    </HStack>
+                </VStack>
+            </HStack>
+        </Flex>
+    );
+    }
 
 export default OutputFile;

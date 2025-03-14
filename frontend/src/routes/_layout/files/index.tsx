@@ -19,7 +19,7 @@ import {
 } from "@chakra-ui/react"
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import FileUpload from "../../../components/Files/UploadFileDragAndDropWithProgress"
+import FileUpload from "../../../components/Files/UploadFileButtonWithProgress"
 import DeleteFileButton from "../../../components/Files/DeleteFileButton"
 import DeleteFilesButton from "../../../components/Files/DeleteFilesButton"
 import DownloadFileButton from "../../../components/Files/DownloadFileButton"
@@ -56,7 +56,7 @@ function FilesTable() {
     queryKey: ["files", pageSize],
     queryFn: async ({ pageParam = 1 }) => {
       const response = await FilesService.readFiles({
-        query: { skip: (pageParam - 1) * pageSize, limit: pageSize },
+        query: { skip: (pageParam - 1) * pageSize, limit: pageSize},
       })
       return response.data
     },
@@ -124,7 +124,7 @@ function FilesTable() {
                   <Td>{humanReadableDate(file.created_at)}</Td>
                   <Td>
                     <ButtonGroup size="sm">
-                      <DownloadFileButton size="sm" fileId={file.id} />
+                      <DownloadFileButton size="sm" file={file}  />
                       <DeleteFileButton file={file} />
                     </ButtonGroup>
                   </Td>
@@ -162,7 +162,7 @@ function Files() {
       <Stack spacing={1} my={4}>
         <StorageStats size="md"/>
       </Stack> 
-      <FileUpload />
+      <FileUpload dragAndDrop />
       <Flex justify="space-between" align="center" my={4}>
         <Stack spacing={1}>
           <Heading size="md">Saved files</Heading>

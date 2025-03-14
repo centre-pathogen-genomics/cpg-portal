@@ -21,7 +21,7 @@ interface UploadContextValue {
     onProgress: (progress: number) => void, 
     onComplete: ((file: FilePublic) => void) | undefined,
     controller: AbortController,
-  ) => Promise<void>;
+  ) => Promise<FilePublic>;
   isUploading: boolean;
   progress: number;
 }
@@ -52,6 +52,7 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (response.data?.id && onComplete) {
         onComplete(response.data);
       }
+      return response.data;
     } catch (error) {
       console.error("Error uploading file:", error);
       throw error;
