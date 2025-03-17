@@ -22,6 +22,7 @@ services:
   nats:
     image: nats:2.9.15-alpine
     hostname: nats
+    restart: always
     command:
       - "-m"
       - "8222"
