@@ -3,6 +3,7 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from shlex import quote
 from typing import Any
 
 import emails  # type: ignore
@@ -149,6 +150,22 @@ def sanitise_shell_input(input_string: str) -> str:
     Any other character is removed.
     """
     return re.sub(r'[^a-zA-Z0-9\-_\.\+]', '_', input_string)  # replace invalid characters with "_"
+
+def escape(value):
+    if isinstance(value, list):
+        return [escape(i) for i in value]
+    elif isinstance(value, str):
+        return quote(sanitise_shell_input(value))
+    elif isinstance(value, bool):
+        return value
+    elif isinstance(value, int):
+        return value
+    elif isinstance(value, float):
+        return value
+    elif value is None:
+        return None
+    else:
+        raise Exception(f"Unknown parameter type: {type(value)}")
 
 def flatten(lst: list) -> list:
     """Recursively flattens a nested list."""
