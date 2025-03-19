@@ -1,7 +1,6 @@
 import json
 import uuid
 from pathlib import Path
-from shlex import quote
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, status
@@ -13,7 +12,7 @@ from app.api.deps import CurrentUser, SessionDep
 from app.core.file_types import FileTypeEnum
 from app.models import File, Message, Param, Run, RunPublic, RunsPublicMinimal, Tool
 from app.tasks import run_tool
-from app.utils import flatten, sanitise_shell_input
+from app.utils import escape, flatten
 from app.wsmanager import manager
 
 router = APIRouter()
@@ -184,21 +183,11 @@ async def create_run(
     # escape parameters
     escaped_params = {}
     for k, v in params.items():
-        if isinstance(v, list):
-            escaped_params[k] = [quote(sanitise_shell_input(str(i))) for i in v]
-        elif isinstance(v, str):
-            escaped_params[k] = quote(sanitise_shell_input(v))
-        elif isinstance(v, bool):
-            escaped_params[k] = v
-        elif isinstance(v, int):
-            escaped_params[k] = v
-        elif isinstance(v, float):
-            escaped_params[k] = v
-        elif v is None:
-            escaped_params[k] = None
-        else:
+        try:
+            escaped_params[k] = escape(v)
+        except Exception:
             raise HTTPException(
-                status_code=500, detail=f"Unknown parameter type: {type(v)}"
+                status_code=400, detail=f"Invalid parameter value: {v}"
             )
 
     # create command
