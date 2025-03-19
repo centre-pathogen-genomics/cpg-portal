@@ -150,3 +150,12 @@ def sanitise_shell_input(input_string: str) -> str:
     """
     return re.sub(r'[^a-zA-Z0-9\-_\.\+]', '_', input_string)  # replace invalid characters with "_"
 
+def flatten(lst: list) -> list:
+    """Recursively flattens a nested list."""
+    result = []
+    for item in lst:
+        if isinstance(item, list):
+            result.extend(flatten(item))
+        else:
+            result.append(item)
+    return result

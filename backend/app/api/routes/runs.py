@@ -13,7 +13,7 @@ from app.api.deps import CurrentUser, SessionDep
 from app.core.file_types import FileTypeEnum
 from app.models import File, Message, Param, Run, RunPublic, RunsPublicMinimal, Tool
 from app.tasks import run_tool
-from app.utils import sanitise_shell_input
+from app.utils import flatten, sanitise_shell_input
 from app.wsmanager import manager
 
 router = APIRouter()
@@ -203,6 +203,8 @@ async def create_run(
 
     # create command
     env = JinjaEnvironment()
+    # add custom filters
+    env.filters["flatten"] = flatten
     command_template = env.from_string(tool.command)
     cmd = command_template.render(**escaped_params)
 
