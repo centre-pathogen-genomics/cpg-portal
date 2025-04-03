@@ -19,7 +19,7 @@ function Tools() {
       <Flex direction="column" align="center" my={8} py={2} >
         <Image
           src={Logo}
-          alt="FastAPI logo"
+          alt="CPG logo"
           height="auto"
           maxW={{ base: "xs", md: "md" }} 
           alignSelf="center"

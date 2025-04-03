@@ -1,7 +1,7 @@
 {
     "name": "CPG Portal",
     "short_name": "CPG Portal",
-    "description": "Centre for Pathogen Genomics Bioinformatics Portal",
+    "description": "Centre for Pathogen Genomics Bioinformatics Analysis Portal",
     "icons": [
         {
             "src": "assets/images/android-chrome-192x192.png",
