@@ -423,17 +423,18 @@ class FileTypes:
             file_format="binary",
             mime_types=["application/zip"]
         ),
-        "pair": FileTypeMetadata(
+    }
+    # special types
+    allowed["pair"] = FileTypeMetadata(
             extensions=[],
             file_format="group",
             mime_types=[]
-        ),
-        "unknown": FileTypeMetadata(
+    )
+    allowed["unknown"] = FileTypeMetadata(
             extensions=[],
             file_format="text",
             mime_types=[]
-        ),
-    }
+    )
 
     # Class-level variable to store the list file types.
     types: ClassVar[tuple[str]] = ()
