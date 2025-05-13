@@ -60,7 +60,7 @@ class CondaEnvManger:
             tmp.flush()  # Ensure all data is written before the file is used.
             print(f"Environment file path: {tmp.name}")
             print(f"Environment file content:\n{self.env_yaml_str}")
-            command = f"mamba env create --yes --quiet --no-default-packages -f {tmp.name} -p {self.path}"
+            command = f"mamba env create --yes --quiet -f {tmp.name} -p {self.path}"
             returncode, stdout = await self._run_command(command)
             if returncode != 0:
                 raise CondaEnvMangerInstallError(stdout)
