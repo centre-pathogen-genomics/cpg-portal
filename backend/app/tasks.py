@@ -214,19 +214,27 @@ def process_targets(session, run, tmp_dir):
     """Process target files: check their existence and save them."""
     env = JinjaEnvironment()
     missing_targets = []
+
     if run.tool.targets:
         for target_data in run.tool.targets:
             target = Target(**target_data)
             print(f"Formatting target path: {target.path}")
+
+            # Render the template path
             template = env.from_string(target.path)
             rendered_path = template.render(**run.params)
-            target_file = tmp_dir / rendered_path
-            if target.required and not target_file.exists():
-                print(f"Target file {target_file} does not exist")
-                run.stdout += f"\nTarget file '{target_file.name}' does not exist!"
-                missing_targets.append(target_file)
+
+            # Get matching file paths
+            matched_files = list((tmp_dir).glob(rendered_path))
+
+            if target.required and not matched_files:
+                print(f"No files matched for required target pattern: {rendered_path}")
+                run.stdout += f"\nNo files matched pattern '{rendered_path}'!"
+                missing_targets.append(rendered_path)
                 continue
-            if target.required or target_file.exists():
+
+            # Save all matched files
+            for target_file in matched_files:
                 print(f"Saving target file: {target_file}")
                 with open(target_file, "rb") as tf:
                     file_obj = save_file(
@@ -239,9 +247,11 @@ def process_targets(session, run, tmp_dir):
                         tags=run.tags,
                     )
                 run.files.append(file_obj)
-        if missing_targets:
-            update_run(session, run, RunStatus.failed, "Missing required target")
-            return False
+
+    if missing_targets:
+        update_run(session, run, RunStatus.failed, "Missing required target(s)")
+        return False
+
     return True
 
 @broker.task
