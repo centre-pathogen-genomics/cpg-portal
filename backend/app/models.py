@@ -316,6 +316,7 @@ class FileBase(SQLModel):
 class File(FileBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     file_type: FileType = Field(sa_column=Column(String, nullable=False))
+    size: int | None = Field(default=None, sa_column=Column(BigInteger(), nullable=True))
     location: str | None = None
     tags: list[str] | None = Field(default_factory=list, sa_column=Column(JSON))
 
