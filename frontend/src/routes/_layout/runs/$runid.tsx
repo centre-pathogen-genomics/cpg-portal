@@ -27,6 +27,7 @@ import OutputFile from "../../../components/Runs/OutputFile"
 import CsvFileToTable from "../../../components/Render/CsvFileToTable"
 import JsonFile from "../../../components/Render/JsonFile"
 import TextFile from "../../../components/Render/TextFile"
+import ImageFile from "../../../components/Render/Image"
 import { readRunOptions } from "../../../client/@tanstack/react-query.gen"
 import CancelRunButton from "../../../components/Runs/CancelRunButton"
 import DeleteRunButton from "../../../components/Runs/DeleteRunButton"
@@ -50,6 +51,9 @@ function renderResult(file: FilePublic) {
         return <JsonFile fileId={file.id} />
       case "text":
         return <TextFile fileId={file.id} />
+      case "png":
+      case "jpeg":
+        return <ImageFile fileId={file.id} />
       default:
         return null
     }
