@@ -34,7 +34,7 @@ COPY ./ /app/
 WORKDIR /app/jupyterlite
 
 # Install Python dependencies from the JupyterLite requirements file
-RUN pip install -r requirements.txt
+RUN pip install --default-timeout=100 -r requirements.txt
 
 # Build JupyterLite.
 # Ensure your jupyterlite/jupyter_lite_config.json has "output_dir": "dist"
