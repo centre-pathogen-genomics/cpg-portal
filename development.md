@@ -1,4 +1,4 @@
-# FastAPI Project - Development
+# Development
 
 ## Docker Compose
 
