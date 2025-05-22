@@ -2,7 +2,7 @@
 
 This mono-repo contains the source code for the CPG Portal. 
 
-![CPG Portal](img/workflows.png)
+<img width="1624" alt="image" src="https://github.com/user-attachments/assets/011f9a0e-45d3-4d77-b2a0-876c14a59dc9" />
 
 The CPG Portal is design to be completely* data driven. Tasks are configure/managed/run via the API and stored in the database. The front-end components (e.g. forms and results) are dynamically generated based on the Task data.
 
