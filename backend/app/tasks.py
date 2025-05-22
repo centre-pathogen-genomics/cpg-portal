@@ -68,19 +68,16 @@ async def run_command_in_subprocess(
             if not line:
                 break  # EOF reached
             decoded_line = line.decode().rstrip()
-            print(decoded_line)  # Optional: print to console
+            print(decoded_line)
             log_lines.append(decoded_line)
 
             # Update the DB immediately
             try:
                 # For immediate update
-                print(f"Updating log for Run(id={run_id})")
                 session.refresh(run)
                 run.stdout += decoded_line + "\n"
                 session.add(run)
                 session.commit()
-                # Broadcast the log line to the client
-                print(f"Broadcasting log for Run(id={run_id})")
                 await manager.broadcast(
                     json.dumps(
                         {
