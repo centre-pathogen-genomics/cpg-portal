@@ -6,6 +6,7 @@ import { AxiosError } from "axios"
 import { loginAccessTokenMutation, readUserMeOptions, registerUserMutation } from "../client/@tanstack/react-query.gen"
 import useCustomToast from "./useCustomToast"
 import { LoginService } from "../client"
+import { handleError } from "../utils"
 
 const isLoggedIn = () => {
   return localStorage.getItem("access_token") !== null
@@ -50,7 +51,7 @@ const useAuth = () => {
       )
     },
     onError: (err) => {
-      showToast("Something went wrong.", err.message, "error")
+      handleError(err, showToast)
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] })

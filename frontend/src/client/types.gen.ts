@@ -1053,6 +1053,35 @@ export type RegisterUserResponses = {
 export type RegisterUserResponse =
   RegisterUserResponses[keyof RegisterUserResponses]
 
+export type ActivateAccountData = {
+  body?: never
+  path?: never
+  query: {
+    token: string
+  }
+  url: "/api/v1/users/activate"
+}
+
+export type ActivateAccountErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError
+}
+
+export type ActivateAccountError =
+  ActivateAccountErrors[keyof ActivateAccountErrors]
+
+export type ActivateAccountResponses = {
+  /**
+   * Successful Response
+   */
+  200: Message
+}
+
+export type ActivateAccountResponse =
+  ActivateAccountResponses[keyof ActivateAccountResponses]
+
 export type DeleteUserData = {
   body?: never
   path: {
@@ -1178,6 +1207,23 @@ export type HealthCheckResponses = {
 
 export type HealthCheckResponse =
   HealthCheckResponses[keyof HealthCheckResponses]
+
+export type MaxUploadSizeData = {
+  body?: never
+  path?: never
+  query?: never
+  url: "/api/v1/utils/max-upload-size/"
+}
+
+export type MaxUploadSizeResponses = {
+  /**
+   * Successful Response
+   */
+  200: number
+}
+
+export type MaxUploadSizeResponse =
+  MaxUploadSizeResponses[keyof MaxUploadSizeResponses]
 
 export type ReadToolsData = {
   body?: never

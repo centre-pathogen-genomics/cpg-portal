@@ -41,6 +41,9 @@ import type {
   RegisterUserData,
   RegisterUserResponse,
   RegisterUserError,
+  ActivateAccountData,
+  ActivateAccountResponse,
+  ActivateAccountError,
   DeleteUserData,
   DeleteUserResponse,
   DeleteUserError,
@@ -55,6 +58,8 @@ import type {
   TestEmailError,
   HealthCheckData,
   HealthCheckResponse,
+  MaxUploadSizeData,
+  MaxUploadSizeResponse,
   ReadToolsData,
   ReadToolsResponse,
   ReadToolsError,
@@ -417,7 +422,7 @@ export class UsersService {
 
   /**
    * Register User
-   * Create new user without the need to be logged in.
+   * Register a new inactive user and send them an account activation email.
    */
   public static registerUser<ThrowOnError extends boolean = false>(
     options: Options<RegisterUserData, ThrowOnError>,
@@ -427,18 +432,29 @@ export class UsersService {
       RegisterUserError,
       ThrowOnError
     >({
-      security: [
-        {
-          scheme: "bearer",
-          type: "http",
-        },
-      ],
       url: "/api/v1/users/signup",
       ...options,
       headers: {
         "Content-Type": "application/json",
         ...options?.headers,
       },
+    })
+  }
+
+  /**
+   * Activate Account
+   * Activate user account from confirmation email token.
+   */
+  public static activateAccount<ThrowOnError extends boolean = false>(
+    options: Options<ActivateAccountData, ThrowOnError>,
+  ) {
+    return (options?.client ?? client).get<
+      ActivateAccountResponse,
+      ActivateAccountError,
+      ThrowOnError
+    >({
+      url: "/api/v1/users/activate",
+      ...options,
     })
   }
 
@@ -552,6 +568,23 @@ export class UtilsService {
       ThrowOnError
     >({
       url: "/api/v1/utils/health-check/",
+      ...options,
+    })
+  }
+
+  /**
+   * Max Upload Size
+   * Get the maximum upload size.
+   */
+  public static maxUploadSize<ThrowOnError extends boolean = false>(
+    options?: Options<MaxUploadSizeData, ThrowOnError>,
+  ) {
+    return (options?.client ?? client).get<
+      MaxUploadSizeResponse,
+      unknown,
+      ThrowOnError
+    >({
+      url: "/api/v1/utils/max-upload-size/",
       ...options,
     })
   }

@@ -37,6 +37,7 @@ import type {
   RegisterUserData,
   RegisterUserError,
   RegisterUserResponse,
+  ActivateAccountData,
   DeleteUserData,
   DeleteUserError,
   DeleteUserResponse,
@@ -48,6 +49,7 @@ import type {
   TestEmailError,
   TestEmailResponse,
   HealthCheckData,
+  MaxUploadSizeData,
   ReadToolsData,
   CreateToolData,
   CreateToolError,
@@ -546,6 +548,27 @@ export const registerUserMutation = (
   return mutationOptions
 }
 
+export const activateAccountQueryKey = (
+  options: Options<ActivateAccountData>,
+) => [createQueryKey("activateAccount", options)]
+
+export const activateAccountOptions = (
+  options: Options<ActivateAccountData>,
+) => {
+  return queryOptions({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await UsersService.activateAccount({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      })
+      return data
+    },
+    queryKey: activateAccountQueryKey(options),
+  })
+}
+
 export const deleteUserMutation = (
   options?: Partial<Options<DeleteUserData>>,
 ) => {
@@ -660,6 +683,25 @@ export const healthCheckOptions = (options?: Options<HealthCheckData>) => {
       return data
     },
     queryKey: healthCheckQueryKey(options),
+  })
+}
+
+export const maxUploadSizeQueryKey = (options?: Options<MaxUploadSizeData>) => [
+  createQueryKey("maxUploadSize", options),
+]
+
+export const maxUploadSizeOptions = (options?: Options<MaxUploadSizeData>) => {
+  return queryOptions({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await UtilsService.maxUploadSize({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      })
+      return data
+    },
+    queryKey: maxUploadSizeQueryKey(options),
   })
 }
 
