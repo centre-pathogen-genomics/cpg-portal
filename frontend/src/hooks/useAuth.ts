@@ -46,7 +46,7 @@ const useAuth = () => {
       navigate({ to: "/login" })
       showToast(
         "Account created.",
-        "Your account has been created successfully.",
+        "An email has been sent to you with a link to activate your account.",
         "success",
       )
     },
