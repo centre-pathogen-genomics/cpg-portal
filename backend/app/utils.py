@@ -104,6 +104,25 @@ def generate_new_account_email(
     return EmailData(html_content=html_content, subject=subject)
 
 
+def generate_account_activation_email(
+    email_to: str, username: str, token: str
+) -> EmailData:
+    project_name = settings.PROJECT_NAME
+    subject = f"{project_name} - Account activation"
+    link = f"{settings.FRONTEND_HOST}/activate-account?token={token}"
+    html_content = render_email_template(
+        template_name="activate_account.html",
+        context={
+            "project_name": settings.PROJECT_NAME,
+            "username": username,
+            "email": email_to,
+            "valid_hours": settings.EMAIL_RESET_TOKEN_EXPIRE_HOURS,
+            "link": link,
+        },
+    )
+    return EmailData(html_content=html_content, subject=subject)
+
+
 def generate_run_finished_email(
     tool_name: str, run_id: str, run_status: RunStatus
 ) -> EmailData:
@@ -121,7 +140,7 @@ def generate_run_finished_email(
     return EmailData(html_content=html_content, subject=subject)
 
 
-def generate_password_reset_token(email: str) -> str:
+def generate_token_from_email(email: str) -> str:
     delta = timedelta(hours=settings.EMAIL_RESET_TOKEN_EXPIRE_HOURS)
     now = datetime.now(timezone.utc)
     expires = now + delta
@@ -134,7 +153,7 @@ def generate_password_reset_token(email: str) -> str:
     return encoded_jwt
 
 
-def verify_password_reset_token(token: str) -> str | None:
+def verify_email_token(token: str) -> str | None:
     try:
         decoded_token = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]

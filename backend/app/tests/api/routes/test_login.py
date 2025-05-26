@@ -6,7 +6,7 @@ from sqlmodel import Session, select
 from app.core.config import settings
 from app.core.security import verify_password
 from app.models import User
-from app.utils import generate_password_reset_token
+from app.utils import generate_token_from_email
 
 
 def test_get_access_token(client: TestClient) -> None:
@@ -72,7 +72,7 @@ def test_recovery_password_user_not_exits(
 def test_reset_password(
     client: TestClient, superuser_token_headers: dict[str, str], db: Session
 ) -> None:
-    token = generate_password_reset_token(email=settings.FIRST_SUPERUSER)
+    token = generate_token_from_email(email=settings.FIRST_SUPERUSER)
     data = {"new_password": "changethis", "token": token}
     r = client.post(
         f"{settings.API_V1_STR}/reset-password/",

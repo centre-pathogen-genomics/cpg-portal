@@ -12,10 +12,10 @@ from app.core.config import settings
 from app.core.security import get_password_hash
 from app.models import Message, NewPassword, Token, UserPublic
 from app.utils import (
-    generate_password_reset_token,
     generate_reset_password_email,
+    generate_token_from_email,
     send_email,
-    verify_password_reset_token,
+    verify_email_token,
 )
 
 router = APIRouter()
@@ -63,7 +63,7 @@ def recover_password(email: str, session: SessionDep) -> Message:
             status_code=404,
             detail="The user with this email does not exist in the system.",
         )
-    password_reset_token = generate_password_reset_token(email=email)
+    password_reset_token = generate_token_from_email(email=email)
     email_data = generate_reset_password_email(
         email_to=user.email, email=email, token=password_reset_token
     )
@@ -80,7 +80,7 @@ def reset_password(session: SessionDep, body: NewPassword) -> Message:
     """
     Reset password
     """
-    email = verify_password_reset_token(token=body.token)
+    email = verify_email_token(token=body.token)
     if not email:
         raise HTTPException(status_code=400, detail="Invalid token")
     user = crud.get_user_by_email(session=session, email=email)
@@ -114,7 +114,7 @@ def recover_password_html_content(email: str, session: SessionDep) -> Any:
             status_code=404,
             detail="The user with this username does not exist in the system.",
         )
-    password_reset_token = generate_password_reset_token(email=email)
+    password_reset_token = generate_token_from_email(email=email)
     email_data = generate_reset_password_email(
         email_to=user.email, email=email, token=password_reset_token
     )

@@ -24,9 +24,11 @@ from app.models import (
     UserUpdateMe,
 )
 from app.utils import (
+    generate_account_activation_email,
     generate_new_account_email,
-    generate_password_reset_token,
+    generate_token_from_email,
     send_email,
+    verify_email_token,
 )
 
 router = APIRouter()
@@ -67,7 +69,7 @@ def create_user(*, session: SessionDep, user_in: UserCreate) -> Any:
 
     user = crud.create_user(session=session, user_create=user_in)
     if settings.emails_enabled and user_in.email:
-        password_reset_token = generate_password_reset_token(email=user_in.email)
+        password_reset_token = generate_token_from_email(email=user_in.email)
         email_data = generate_new_account_email(
             email_to=user_in.email, username=user_in.email, token=password_reset_token
         )
@@ -149,17 +151,56 @@ def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Any:
 @router.post("/signup", response_model=UserPublic)
 def register_user(session: SessionDep, user_in: UserRegister) -> Any:
     """
-    Create new user without the need to be logged in.
+    Register a new inactive user and send them an account activation email.
     """
-    user = crud.get_user_by_email(session=session, email=user_in.email)
-    if user:
+    existing_user = crud.get_user_by_email(session=session, email=user_in.email)
+    if existing_user:
         raise HTTPException(
             status_code=400,
             detail="The user with this email already exists in the system",
         )
+
     user_create = UserCreate.model_validate(user_in)
+    user_create.is_active = False
     user = crud.create_user(session=session, user_create=user_create)
+
+    if settings.emails_enabled and user.email:
+        activation_token = generate_token_from_email(email=user.email)
+        email_data = generate_account_activation_email(
+            email_to=user.email,
+            username=user.email,
+            token=activation_token,
+        )
+        send_email(
+            email_to=user.email,
+            subject=email_data.subject,
+            html_content=email_data.html_content,
+        )
+
     return user
+
+
+@router.get("/activate")
+def activate_account(token: str, session: SessionDep) -> Message:
+    """
+    Activate user account from confirmation email token.
+    """
+    try:
+        email = verify_email_token(token)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
+
+    user = crud.get_user_by_email(session=session, email=email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user.is_active:
+        return Message(message="User already activated.")
+
+    user.is_active = True
+    session.add(user)
+    session.commit()
+    return Message(message="User activated successfully.")
 
 
 @router.get("/{user_id}", response_model=UserPublic)
