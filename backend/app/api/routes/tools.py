@@ -48,7 +48,7 @@ def read_tools(
     # Build the query
     if current_user is None:
         # If the user is anonymous, we don't need to join with UserFavouriteToolsLink
-        query = select(Tool).order_by(getattr(Tool, order_by).desc()).offset(skip).limit(limit)
+        query = select(Tool).order_by(getattr(Tool, order_by).desc()).offset(skip).limit(limit).where((Tool.enabled) & (Tool.status == "installed"))
         result = session.exec(query).all()
         count_query = select(func.count()).select_from(Tool)
         count = session.exec(count_query).one()
