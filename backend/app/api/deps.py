@@ -16,7 +16,10 @@ from app.models import File, TokenPayload, User
 reusable_oauth2 = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_V1_STR}/login/access-token"
 )
-
+optional_oauth2 = OAuth2PasswordBearer(
+    tokenUrl=f"{settings.API_V1_STR}/login/access-token",
+    auto_error=False,
+)
 
 def get_db() -> Generator[Session, None, None]:
     with Session(engine) as session:
@@ -46,21 +49,21 @@ def get_current_user(session: SessionDep, token: TokenDep) -> User:
     return user
 
 def get_current_user_or_anonymous(
-    session: SessionDep, token: TokenDep | None = None
+    session: SessionDep,
+    token: Annotated[str | None, Depends(optional_oauth2)],
 ) -> User | None:
+    # no header → anonymous
     if token is None:
         return None
     try:
-        payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
-        )
-        token_data = TokenPayload(**payload)
-    except (InvalidTokenError, ValidationError):
-        return None
-    user = session.get(User, token_data.sub)
-    if not user or not user.is_active:
-        return None
-    return user
+        # valid bearer token → real user
+        return get_current_user(session, token)
+    except HTTPException as e:
+        # invalid token → treat as anonymous
+        if e.status_code == status.HTTP_403_FORBIDDEN:
+            return None
+        # other errors (404, 400) bubble up
+        raise
 
 def get_current_user_from_query(session: SessionDep, token: Annotated[str | None, Query()] = None) -> User:
     if token is None:
