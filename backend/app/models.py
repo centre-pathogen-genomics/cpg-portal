@@ -236,14 +236,12 @@ class ToolMinimalPublic(SQLModel):
     name: str
     image: str | None = None
     description: str | None = None
-    explanation_of_results_markdown: str | None = None
     tags: list[str] | None = None
     params: list[Param] | None = None
     favourited: bool = False
     favourited_count: int = 0
     run_count: int = 0
     enabled: bool = False
-    llm_summary_enabled: bool = False
 
 class ToolsPublic(SQLModel):
     data: list[ToolMinimalPublic]
