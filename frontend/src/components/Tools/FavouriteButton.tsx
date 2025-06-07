@@ -10,9 +10,10 @@ interface FavouriteButtonProps {
     isFavourited: boolean;
     setIsFavourited: (isFavourited: boolean) => void;
     withCount?: boolean;
+    disabled?: boolean;
     }
 
-function FavouriteButton({ tool, isFavourited, setIsFavourited, withCount }: FavouriteButtonProps) {
+function FavouriteButton({ tool, isFavourited, setIsFavourited, withCount, disabled }: FavouriteButtonProps) {
     const colourMode = useColorModeValue("ui.light","ui.dark");
     const favouriteTool = useMutation({
         ...favouriteToolMutation(),
@@ -50,6 +51,7 @@ function FavouriteButton({ tool, isFavourited, setIsFavourited, withCount }: Fav
         color={isFavourited ? "red.500" : undefined}
         onClick={(e) => {
             e.stopPropagation();
+            if (disabled) return; // Prevent action if disabled
             if (isFavourited) {
                 unfavouriteTool.mutate({path: { tool_id: tool.id }});   
             } else {
@@ -71,6 +73,7 @@ function FavouriteButton({ tool, isFavourited, setIsFavourited, withCount }: Fav
                 icon={isFavourited ? <HiHeart /> : <HiOutlineHeart />}
                 onClick={(e) => {
                   e.stopPropagation();
+                  if (disabled) return; // Prevent action if disabled
                   if (isFavourited) {
                       unfavouriteTool.mutate({path: { tool_id: tool.id }});   
                   } else {

@@ -24,13 +24,16 @@ export const Route = createFileRoute("/_layout")({
     }
     
     const tokenIsValid = await checkToken();
-    if (!tokenIsValid) {
+    const isIndex = window.location.pathname === "/";
+    if (!tokenIsValid && !isIndex) {
       throw redirect({
         to: "/login",
         search: {
           redirect: location.pathname,
         },
       });
+    } else if (!tokenIsValid && isIndex) {
+      return; // Allow access to index page without token
     }
     
     // Update the global timestamp

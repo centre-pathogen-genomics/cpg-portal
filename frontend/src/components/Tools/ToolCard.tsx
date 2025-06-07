@@ -22,6 +22,7 @@ import RunToolModal from "./RunToolModal"; // Adjust the import path as needed
 import FavouriteButton from "./FavouriteButton";
 import '../../assets/css/App.css';
 import { useState } from "react";
+import useAuth from "../../hooks/useAuth"
 
 interface ToolCardProps {
   tool: ToolMinimalPublic;
@@ -30,6 +31,7 @@ interface ToolCardProps {
 const ToolCard = ({ tool }: ToolCardProps) => {
   const runToolModal = useDisclosure();
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
   const colourMode = useColorModeValue("ui.light","ui.dark");
   const [isFavourited, setIsFavourited] = useState(tool.favourited ?? false); 
   
@@ -81,6 +83,7 @@ const ToolCard = ({ tool }: ToolCardProps) => {
             alt="Caffe Latte"
             _groupHover={{ filter: "brightness(1.2)" }}
           />
+          { currentUser && (
           <Flex
             _groupHover={{ display: "block" }}
             position="absolute"
@@ -108,6 +111,7 @@ const ToolCard = ({ tool }: ToolCardProps) => {
               ></IconButton>
             </ButtonGroup>
           </Flex>
+          )}
         </Flex>
 
         <CardHeader pb={0}>
@@ -127,7 +131,7 @@ const ToolCard = ({ tool }: ToolCardProps) => {
             ))}
           </Flex>
           <Flex color="gray.500">
-            <FavouriteButton tool={tool} isFavourited={isFavourited} setIsFavourited={setIsFavourited} withCount={true} /> 
+            <FavouriteButton tool={tool} isFavourited={isFavourited} setIsFavourited={setIsFavourited} withCount={true} disabled={currentUser == undefined} /> 
             <Flex align="center" justify="center" gap="0.5">
               <HiOutlinePlay />
               {tool.run_count ? tool.run_count : 0}
