@@ -45,7 +45,6 @@ def read_tools(
     """
     Retrieve tools with a favourited status for the current user.
     """
-    # Build the query
     if current_user is None:
         # If the user is anonymous, we don't need to join with UserFavouriteToolsLink
         query = select(Tool).order_by(getattr(Tool, order_by).desc()).offset(skip).limit(limit).where((Tool.enabled) & (Tool.status == "installed"))
@@ -53,7 +52,7 @@ def read_tools(
         count_query = select(func.count()).select_from(Tool)
         count = session.exec(count_query).one()
         return ToolsPublic(data=result, count=count)
-    assert isinstance(current_user, CurrentUser), "current_user must be an instance of CurrentUser"
+    # Build the query
     query = (
         select(
             Tool,
