@@ -45,6 +45,23 @@ def get_current_user(session: SessionDep, token: TokenDep) -> User:
         raise HTTPException(status_code=400, detail="Inactive user")
     return user
 
+def get_current_user_or_anonymous(
+    session: SessionDep, token: TokenDep | None = None
+) -> User | None:
+    if token is None:
+        return None
+    try:
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
+        )
+        token_data = TokenPayload(**payload)
+    except (InvalidTokenError, ValidationError):
+        return None
+    user = session.get(User, token_data.sub)
+    if not user or not user.is_active:
+        return None
+    return user
+
 def get_current_user_from_query(session: SessionDep, token: Annotated[str | None, Query()] = None) -> User:
     if token is None:
         raise HTTPException(
@@ -55,6 +72,7 @@ def get_current_user_from_query(session: SessionDep, token: Annotated[str | None
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+CurrentUserOrAnonymous = Annotated[User | None, Depends(get_current_user_or_anonymous)]
 
 
 def get_current_active_superuser(current_user: CurrentUser) -> User:

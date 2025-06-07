@@ -25,20 +25,11 @@ import { FiLogOut, FiMenu } from "react-icons/fi"
 import { HiOutlineMoon, HiOutlineSun } from "react-icons/hi";
 
 import useAuth from "../../hooks/useAuth"
-import { useQueryClient } from "@tanstack/react-query";
-import { UserPublic } from "../../client";
 import SidebarItems from "./SidebarItems"
 import StorageStats from "../Files/StorageStats"
 import UserMenu from "./UserMenu"
 import { HiOutlineSearch } from "react-icons/hi";
 import { useForm } from "react-hook-form"
-
-const items = [
-  { title: "Tools", path: "/" },
-  { title: "My Runs", path: "/runs" },
-  { title: "My Files", path: "/files" },
-  { title: "SAE", path: "/wasm/jupyterlite/index.html", isNew: true, newTab: true },
-]
 
 
 function DarkModeToggle() {
@@ -56,23 +47,31 @@ function DarkModeToggle() {
 
 
 function MainMenuBar() {
-  const queryClient = useQueryClient()
   const bgColor = useColorModeValue("white", "ui.dark")
   const secBgColor = useColorModeValue("ui.secondary", "ui.darkSlate")
   const textColor = useColorModeValue("ui.dark", "ui.light")
-  const currentUser = queryClient.getQueryData<UserPublic>(["currentUser"])
   const { isOpen, onOpen, onClose } = useDisclosure()
-  const { logout } = useAuth()
+  const { logout, user: currentUser } = useAuth()
   const navigate = useNavigate()
 
    // Use useRouter to get the current pathname.
    const router = useRouterState()
    const pathname = router.location.pathname
 
+  const signedIn = currentUser !== undefined
+  const userItems = signedIn ? [
+    { title: "Tools", path: "/" },
+    { title: "My Runs", path: "/runs" },
+    { title: "My Files", path: "/files" },
+    { title: "SAE", path: "/wasm/jupyterlite/index.html", isNew: true, newTab: true },
+    { title: "About", path: "/about" },
+  ] : []
 
-  const finalItems = currentUser?.is_superuser
-    ? [...items, { title: "Admin", path: "/admin" }]
-    : items
+  const superUserItems = currentUser?.is_superuser
+    ? [...userItems, { title: "Admin", path: "/admin" }]
+    : userItems
+
+  const finalItems: { title: string, path: string, isNew?: boolean, newTab?: boolean }[] = [...superUserItems]
 
   // Map over the final items and determine if they are active.
   const listItems = finalItems.map(({ title, path, isNew, newTab }) => {
@@ -150,12 +149,14 @@ function MainMenuBar() {
   }
   return (
     <Flex position={'sticky'} top={0}  w={'100%'} bg={bgColor} color={textColor} justify={'space-between'} align={'center'} py={2} pl={4} pr={6} zIndex={1000}>
-        {/* Logo */}
+        
         <Flex flexGrow={1} align={'center'} gap={4} mr={4}>
+          {/* Logo */}
           <Flex as={Link} to="/" >
             <Image display={{ base: "none", md: "block" }} src={Logo} alt="Logo" py={2} ml={3} maxH={14} />
             <Image display={{ base: "block", md: "none" }} src={Icon} alt="Logo" py={2}  maxH={14} />
           </Flex>
+          {/* Search Bar */}
           <Box flexGrow={1} maxW={"xl"} as="form" onSubmit={handleSubmit(onSubmit)}>
             <FormControl >
               <InputGroup>
@@ -168,6 +169,7 @@ function MainMenuBar() {
               </InputGroup>
             </FormControl>
           </Box>
+          {/* Navigation Links */}
           <Flex gap={4} display={{ base: "none", md: "flex" }}>
             {listItems} 
           </Flex>
@@ -175,48 +177,58 @@ function MainMenuBar() {
         <Box mx={2} display={{ base: "none", md: "block" }}>
           <DarkModeToggle />
         </Box>
-        
-        <Flex>
-          <UserMenu />
-          <IconButton
-            onClick={onOpen}
-            display={{ base: "flex", md: "none" }}
-            aria-label="Open Menu"
-            fontSize="20px"
-            icon={<FiMenu />}
-          />
-        <Drawer isOpen={isOpen} placement="right" onClose={onClose}>
-            <DrawerOverlay />
-            <DrawerContent maxW="250px">
-              <DrawerCloseButton />
-              <DrawerBody py={0}>
-                <Flex flexDir="column" justify="space-between">
-                  <Box>
-                    <Image src={Logo} alt="logo" p={4} />
-                    <SidebarItems onClose={onClose} />
-                    <Flex
-                      as="button"
-                      onClick={handleLogout}
-                      p={2}
-                      color="ui.danger"
-                      fontWeight="bold"
-                      alignItems="center"
-                    >
-                      <FiLogOut />
-                      <Text ml={2}>Log out</Text>
-                    </Flex>
-                  </Box>
-                  {currentUser?.email && (
-                    <Text color={textColor} noOfLines={2} fontSize="sm" p={2}>
-                      Logged in as: {currentUser.email}
-                    </Text>
-                  )}
-                  <StorageStats />
-                </Flex>
-              </DrawerBody>
-            </DrawerContent>
-          </Drawer>
-        </Flex>
+        {currentUser ? (
+          <Flex>
+            <UserMenu />
+            <IconButton
+              onClick={onOpen}
+              display={{ base: "flex", md: "none" }}
+              aria-label="Open Menu"
+              fontSize="20px"
+              icon={<FiMenu />}
+            />
+          <Drawer isOpen={isOpen} placement="right" onClose={onClose}>
+              <DrawerOverlay />
+              <DrawerContent maxW="250px">
+                <DrawerCloseButton />
+                <DrawerBody py={0}>
+                  <Flex flexDir="column" justify="space-between">
+                    <Box>
+                      <Image src={Logo} alt="logo" p={4} />
+                      <SidebarItems onClose={onClose} />
+                      <Flex
+                        as="button"
+                        onClick={handleLogout}
+                        p={2}
+                        color="ui.danger"
+                        fontWeight="bold"
+                        alignItems="center"
+                      >
+                        <FiLogOut />
+                        <Text ml={2}>Log out</Text>
+                      </Flex>
+                    </Box>
+                    {currentUser?.email && (
+                      <Text color={textColor} noOfLines={2} fontSize="sm" p={2}>
+                        Logged in as: {currentUser.email}
+                      </Text>
+                    )}
+                    <StorageStats />
+                  </Flex>
+                </DrawerBody>
+              </DrawerContent>
+            </Drawer>
+          </Flex>) : (
+            // If not signed in, show login/signup links
+            <Flex gap={4} display={{ base: "none", md: "flex" }}>
+              <Link to="/signup">
+                <Text color={textColor} _hover={{ color: "ui.main" }} fontWeight="semibold">Sign Up</Text>
+              </Link>
+              <Link to="/login">
+                <Text color={textColor} _hover={{ color: "ui.main" }} fontWeight="semibold">Log In</Text>
+              </Link>
+            </Flex>
+          )}
     </Flex>
   );
 }

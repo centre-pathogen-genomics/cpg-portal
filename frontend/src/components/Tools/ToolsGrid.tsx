@@ -40,7 +40,7 @@ return (
 )
 }
 
-function ToolsGrid({ search }: { search?: string }) {
+function ToolsGrid({ search, hideFilters }: { search?: string, hideFilters?: boolean }) {
 const [orderBy, setOrderBy] = useState<ToolsOrderBy>("run_count") // Default orderBy state
 const [showFavourites, setShowFavourites] = useState(false)
 
@@ -59,20 +59,23 @@ return (
         </Box>
         )}
     >
-        <Flex justify="space-between" align={"end"}   mb={4}>
-        <Select w='200px' value={orderBy} onChange={handleOrderByChange}>
-            <option value='run_count'>Popular</option>
-            <option value='created_at'>New & Noteworthy</option>
-        </Select>
-        {/* <Tooltip placement='top' hasArrow label='Show favourites'> */}
-        <Flex align='center'>
-        <FormLabel htmlFor='show-favourites' mb='0' mr={1}>
-            Favourites
-        </FormLabel>
-        <Switch size='md' id="show-favourites" isChecked={showFavourites} onChange={() => setShowFavourites(!showFavourites)} />
-        {/* </Tooltip> */}
-        </Flex>
-        </Flex>
+        {!hideFilters && (
+            <Flex justify="space-between" align={"end"}   mb={4}>
+                <Select w='200px' value={orderBy} onChange={handleOrderByChange}>
+                    <option value='run_count'>Popular</option>
+                    <option value='created_at'>New & Noteworthy</option>
+                </Select>
+                {/* <Tooltip placement='top' hasArrow label='Show favourites'> */}
+                <Flex align='center'>
+                <FormLabel htmlFor='show-favourites' mb='0' mr={1}>
+                    Favourites
+                </FormLabel>
+                <Switch size='md' id="show-favourites" isChecked={showFavourites} onChange={() => setShowFavourites(!showFavourites)} />
+                {/* </Tooltip> */}
+                </Flex>
+            </Flex>
+        )}
+        {/* Render the ToolCards component with the selected orderBy and showFavourites state */}
         <ToolCards orderBy={orderBy} showFavourites={showFavourites} search={search} />
     </ErrorBoundary>
     </Suspense>

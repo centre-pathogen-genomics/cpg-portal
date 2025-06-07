@@ -8,6 +8,7 @@ from sqlmodel import func, select
 
 from app.api.deps import (
     CurrentUser,
+    CurrentUserOrAnonymous,
     SessionDep,
     SuperUser,
     get_current_active_superuser,
@@ -34,7 +35,7 @@ class ToolsOrderBy(str, Enum):
 @router.get("/", response_model=ToolsPublic)
 def read_tools(
     session: SessionDep,
-    current_user: CurrentUser,
+    current_user: CurrentUserOrAnonymous,
     skip: int = 0,
     limit: int = 100,
     order_by: ToolsOrderBy = ToolsOrderBy.run_count,
@@ -45,6 +46,14 @@ def read_tools(
     Retrieve tools with a favourited status for the current user.
     """
     # Build the query
+    if current_user is None:
+        # If the user is anonymous, we don't need to join with UserFavouriteToolsLink
+        query = select(Tool).order_by(getattr(Tool, order_by).desc()).offset(skip).limit(limit)
+        result = session.exec(query).all()
+        count_query = select(func.count()).select_from(Tool)
+        count = session.exec(count_query).one()
+        return ToolsPublic(data=result, count=count)
+    assert isinstance(current_user, CurrentUser), "current_user must be an instance of CurrentUser"
     query = (
         select(
             Tool,
