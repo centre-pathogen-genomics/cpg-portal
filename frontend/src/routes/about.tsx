@@ -150,7 +150,7 @@ function About() {
             color="teal.500"
           >
             Wytamma Wirth
-          </Link>{" "}
+          </Link>
           , in collaboration with{" "}
           <Link
             href="https://www.doherty.edu.au/people/associate-professor-torsten-seemann"
@@ -158,7 +158,7 @@ function About() {
             color="teal.500"
           >
             Torsten Seemann
-          </Link>{" "}
+          </Link>
           , with the support of a team of talented reachers, scientists,
           bioinformaticians at the Centre for Pathogen Genomics.
         </Text>
