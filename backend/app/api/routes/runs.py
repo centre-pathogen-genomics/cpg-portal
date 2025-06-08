@@ -355,6 +355,30 @@ def cancel_run(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) ->
     session.commit()
     return run
 
+@router.patch("/{id}/rename", response_model=RunPublic)
+def rename_run(
+    session: SessionDep, current_user: CurrentUser, id: uuid.UUID, name: str
+) -> Any:
+    """
+    Rename a specific run by ID.
+    """
+    # Fetch the run
+    run = session.get(Run, id)
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    # Check permissions
+    if run.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+
+    # Update the name
+    run.name = name
+    session.add(run)
+    session.commit()
+    session.refresh(run)
+
+    return run
+
 @router.delete("/{id}", response_model=Message)
 def delete_run(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
     """

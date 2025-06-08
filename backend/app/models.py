@@ -242,6 +242,7 @@ class ToolMinimalPublic(SQLModel):
     favourited_count: int = 0
     run_count: int = 0
     enabled: bool = False
+    llm_summary_enabled: bool = False
 
 class ToolsPublic(SQLModel):
     data: list[ToolMinimalPublic]

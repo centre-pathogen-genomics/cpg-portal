@@ -619,7 +619,6 @@ export type ToolMinimalPublic = {
   name: string
   image?: string | null
   description?: string | null
-  explanation_of_results_markdown?: string | null
   tags?: Array<string> | null
   params?: Array<Param> | null
   favourited?: boolean
@@ -2112,6 +2111,35 @@ export type CancelRunResponses = {
 }
 
 export type CancelRunResponse = CancelRunResponses[keyof CancelRunResponses]
+
+export type RenameRunData = {
+  body?: never
+  path: {
+    id: string
+  }
+  query: {
+    name: string
+  }
+  url: "/api/v1/runs/{id}/rename"
+}
+
+export type RenameRunErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError
+}
+
+export type RenameRunError = RenameRunErrors[keyof RenameRunErrors]
+
+export type RenameRunResponses = {
+  /**
+   * Successful Response
+   */
+  200: RunPublic
+}
+
+export type RenameRunResponse = RenameRunResponses[keyof RenameRunResponses]
 
 export type GenerateRunSummaryData = {
   body?: never

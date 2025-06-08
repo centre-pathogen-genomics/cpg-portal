@@ -153,6 +153,9 @@ import type {
   CancelRunData,
   CancelRunResponse,
   CancelRunError,
+  RenameRunData,
+  RenameRunResponse,
+  RenameRunError,
   GenerateRunSummaryData,
   GenerateRunSummaryResponse,
   GenerateRunSummaryError,
@@ -1381,6 +1384,29 @@ export class RunsService {
         },
       ],
       url: "/api/v1/runs/{id}/cancel",
+      ...options,
+    })
+  }
+
+  /**
+   * Rename Run
+   * Rename a specific run by ID.
+   */
+  public static renameRun<ThrowOnError extends boolean = false>(
+    options: Options<RenameRunData, ThrowOnError>,
+  ) {
+    return (options?.client ?? client).patch<
+      RenameRunResponse,
+      RenameRunError,
+      ThrowOnError
+    >({
+      security: [
+        {
+          scheme: "bearer",
+          type: "http",
+        },
+      ],
+      url: "/api/v1/runs/{id}/rename",
       ...options,
     })
   }

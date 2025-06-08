@@ -121,6 +121,9 @@ import type {
   CancelRunData,
   CancelRunError,
   CancelRunResponse,
+  RenameRunData,
+  RenameRunError,
+  RenameRunResponse,
   GenerateRunSummaryData,
   GenerateRunSummaryError,
   GenerateRunSummaryResponse,
@@ -1581,6 +1584,26 @@ export const cancelRunMutation = (
   > = {
     mutationFn: async (localOptions) => {
       const { data } = await RunsService.cancelRun({
+        ...options,
+        ...localOptions,
+        throwOnError: true,
+      })
+      return data
+    },
+  }
+  return mutationOptions
+}
+
+export const renameRunMutation = (
+  options?: Partial<Options<RenameRunData>>,
+) => {
+  const mutationOptions: UseMutationOptions<
+    RenameRunResponse,
+    AxiosError<RenameRunError>,
+    Options<RenameRunData>
+  > = {
+    mutationFn: async (localOptions) => {
+      const { data } = await RunsService.renameRun({
         ...options,
         ...localOptions,
         throwOnError: true,
