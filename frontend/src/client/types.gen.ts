@@ -626,6 +626,7 @@ export type ToolMinimalPublic = {
   run_count?: number
   enabled?: boolean
   llm_summary_enabled?: boolean
+  explanation_of_results_markdown?: string | null
 }
 
 export type ToolPublic = {

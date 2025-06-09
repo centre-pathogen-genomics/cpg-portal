@@ -243,6 +243,7 @@ class ToolMinimalPublic(SQLModel):
     run_count: int = 0
     enabled: bool = False
     llm_summary_enabled: bool = False
+    explanation_of_results_markdown: str | None = None
 
 class ToolsPublic(SQLModel):
     data: list[ToolMinimalPublic]
