@@ -383,6 +383,11 @@ class FileTypes:
             file_format="text",
             mime_types=["text/x-vcf"]
         ),
+        "vcf.gz": FileTypeMetadata(
+            extensions=[".vcf.gz"],
+            file_format="binary",
+            mime_types=["application/gzip"]
+        ),
         "vue": FileTypeMetadata(
             extensions=[".vue"],
             file_format="text",
