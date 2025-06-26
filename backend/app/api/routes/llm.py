@@ -105,9 +105,10 @@ async def generate_run_summary(
     1. Remove any UUIDs from the report.
     2. Only return Markdown.
     3. Only use the provided content.
-    4. Include a plain language summary of results.
-    5. Suggest follow-up steps.
-    6. Start with an informative title.
+    4. Do not make up any information or guess.
+    5. Include a plain language summary of results.
+    6. Suggest follow-up steps.
+    7. Start with an informative title.
     --- REPORT ---
     ```markdown
     """
