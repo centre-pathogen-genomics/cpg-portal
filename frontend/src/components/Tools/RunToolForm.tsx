@@ -384,10 +384,10 @@ const RunToolForm = ({ toolId, params, onSuccess, isDisabled=false }: RunToolFor
             Reset
           </Button>
         </ButtonGroup>
-        <TagInput tags={tags} setTags={setTags} isDisabled />
+        <TagInput tags={tags} setTags={setTags} isDisabled={isDisabled} />
       </Flex>
       <Flex mt={4}>
-        <EmailOnFinished emailOnFinished={emailOnFinished} setEmailOnFinished={setEmailOnFinished} isDisabled />
+        <EmailOnFinished emailOnFinished={emailOnFinished} setEmailOnFinished={setEmailOnFinished} isDisabled={isDisabled} />
       </Flex>
     </Box>
   )
