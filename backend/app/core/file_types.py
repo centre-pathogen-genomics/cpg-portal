@@ -113,6 +113,11 @@ class FileTypes:
             file_format="text",
             mime_types=["text/gff"]
         ),
+        "genbank": FileTypeMetadata(
+            extensions=[".gb", ".gbk", ".genbank"],
+            file_format="text",
+            mime_types=["text/x-genbank"]
+        ),
         "go": FileTypeMetadata(
             extensions=[".go"],
             file_format="text",
