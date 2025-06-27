@@ -76,6 +76,12 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
             color="ui.danger"
             fontWeight="bold"
             alignItems="center"
+            _hover={{
+              textDecoration: "underline",
+              backgroundColor: useColorModeValue("ui.light", "ui.dark"),
+              borderRadius: "12px",
+            }}
+            w={"100%"}
           >
             <FiLogOut />
             <Text ml={2}>Log out</Text>
