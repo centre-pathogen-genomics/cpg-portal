@@ -183,7 +183,7 @@ function MainMenuBar() {
               <Link to="/signup">
                 <Text color={textColor} _hover={{ color: "ui.main" }} fontWeight="semibold">Sign Up</Text>
               </Link>
-              <Link to="/login">
+              <Link to="/login" search={{redirect: pathname}}>
                 <Text color={textColor} _hover={{ color: "ui.main" }} fontWeight="semibold">Log In</Text>
               </Link>
             </Flex>
