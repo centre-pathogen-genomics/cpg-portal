@@ -4,9 +4,10 @@ import { Flex, Tag, TagCloseButton, Input } from "@chakra-ui/react";
 interface InputTagProps {
   tags: string[];
   setTags: React.Dispatch<React.SetStateAction<string[]>>;
+  isDisabled?: boolean; // Optional prop to disable input
 }
 
-export default function InputTag({ tags, setTags }: InputTagProps) {
+export default function InputTag({ tags, setTags, isDisabled = false }: InputTagProps) {
   const [sizeInput, setSizeInput] = useState<number>(1);
   const refInput = useRef<HTMLInputElement>(null);
 
@@ -78,6 +79,7 @@ export default function InputTag({ tags, setTags }: InputTagProps) {
         onChange={handleChangeInput}
         onKeyDown={handleKeyDown} // Attach key event handler here
         onBlur={addTag} // Add remaining input text as a tag on blur
+        disabled={isDisabled} // Disable input if prop is true
       />
     </Flex>
   );

@@ -107,7 +107,7 @@ def read_tools(
     return ToolsPublic(data=tools_with_favourite_status, count=count)
 
 def read_tool_with_favourite(
-    session: SessionDep, current_user: CurrentUser, *, tool_id: uuid.UUID | None = None, name: str | None = None
+    session: SessionDep, current_user: CurrentUserOrAnonymous, *, tool_id: uuid.UUID | None = None, name: str | None = None
 ) -> select:
 
     """
@@ -115,6 +115,14 @@ def read_tool_with_favourite(
     """
     if (tool_id and name) or (not tool_id and not name):
         raise ValueError("Either tool_id or name must be provided")
+    if current_user is None:
+        # If the user is anonymous, we don't need to join with UserFavouriteToolsLink
+        query = select(Tool).where((Tool.enabled) & (Tool.status == "installed"))
+        if tool_id:
+            query = query.where(Tool.id == tool_id)
+        elif name:
+            query = query.where(func.lower(Tool.name) == name.lower())
+        return session.exec(query).first()
     query = (
         select(
             Tool,
@@ -147,7 +155,7 @@ def read_tool_with_favourite(
 
 @router.get("/name/{tool_name}", response_model=ToolPublic)
 def read_tool_by_name(
-    *, session: SessionDep, current_user: CurrentUser, tool_name: str
+    *, session: SessionDep, current_user: CurrentUserOrAnonymous, tool_name: str
 ) -> Any:
     """
     Retrieve tool by name.
@@ -158,7 +166,7 @@ def read_tool_by_name(
 
 @router.get("/{tool_id}", response_model=ToolPublic)
 def read_tool(
-    *, session: SessionDep, current_user: CurrentUser, tool_id: uuid.UUID
+    *, session: SessionDep, current_user: CurrentUserOrAnonymous, tool_id: uuid.UUID
 ) -> Any:
     """
     Retrieve tool by ID with favourited status.

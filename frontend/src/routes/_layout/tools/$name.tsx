@@ -168,6 +168,7 @@ function Tool() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const currentUser = queryClient.getQueryData<UserPublic>(readUserMeQueryKey())
+  const anonymousUser = currentUser === undefined
   const { name } = Route.useParams()
   const { isError, data: tool, isPending } = useQuery({
     ...readToolByNameOptions({path: {tool_name: name}}),
@@ -267,9 +268,15 @@ function Tool() {
         </Flex>
         <Text mb={4} >{tool.description}</Text>
         <Heading size="lg" mb={4}>Configure Tool</Heading>
+        { anonymousUser && (
+          <Text color="red.600" mb={4}>
+            You must be <RouterLink to="/login" style={{ color: "blue.500", textDecoration: "underline"}}>logged in</RouterLink> to run this tool
+          </Text>
+        )}
         <RunToolForm
           toolId={tool.id}
           params={tool.params ? tool.params : []}
+          isDisabled={anonymousUser}
           onSuccess={(run) => {
             navigate({
               to: `/runs/${run.id}`,

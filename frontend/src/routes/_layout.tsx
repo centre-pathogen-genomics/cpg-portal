@@ -25,15 +25,18 @@ export const Route = createFileRoute("/_layout")({
     
     const tokenIsValid = await checkToken();
     const isIndex = window.location.pathname === "/";
-    if (!tokenIsValid && !isIndex) {
+    const isTool = window.location.pathname.startsWith("/tools/");
+    if (!tokenIsValid && !(isIndex || isTool)) {
       throw redirect({
         to: "/login",
         search: {
           redirect: location.pathname,
         },
       });
-    } else if (!tokenIsValid && isIndex) {
-      return; // Allow access to index page without token
+    } else if (!tokenIsValid && (isIndex || isTool)) {
+      // If the token is invalid and the user is on the index or tool page, allow
+      // the page to load the tool form will be disabled
+      return;
     }
     
     // Update the global timestamp

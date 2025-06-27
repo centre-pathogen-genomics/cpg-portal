@@ -162,9 +162,10 @@ interface RunToolFormProps {
   toolId: string
   params: Param[]
   onSuccess?: (run: RunPublic) => void
+  isDisabled?: boolean
 }
 
-const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
+const RunToolForm = ({ toolId, params, onSuccess, isDisabled=false }: RunToolFormProps) => {
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
   const [isLoading, setIsLoading] = useState(false)
@@ -251,6 +252,7 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
               pb={4}
               key={"CPG_PORTAL_RUN_NAME"}
               isInvalid={errors["CPG_PORTAL_RUN_NAME"] !== undefined}
+              isDisabled={isDisabled}
             >
                <FormLabel fontSize={"md"} htmlFor={"CPG_PORTAL_RUN_NAME"} mb={0}>
                 NAME
@@ -269,6 +271,7 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
             key={param.name}
             isRequired={param.required}
             isInvalid={errors[param.name] !== undefined}
+            isDisabled={isDisabled}
           >
               <FormLabel fontSize={"md"} htmlFor={param.name} mb={0}>
                 {param.name.toUpperCase()}
@@ -367,18 +370,18 @@ const RunToolForm = ({ toolId, params, onSuccess }: RunToolFormProps) => {
         Run Tool
       </Heading>
       <Flex gap={2} justify={"space-between"} direction={{base: "column-reverse", md: "row"}} >
-        <ButtonGroup>
-          <Button variant="primary" type="submit" isLoading={isLoading} >
+        <ButtonGroup isDisabled={isDisabled}>
+          <Button variant="primary" type="submit" isLoading={isLoading}>
             Submit
           </Button>
           <Button onClick={() => {reset(defaultValues); setFileStates({})}} variant="outline">
             Reset
           </Button>
         </ButtonGroup>
-        <TagInput tags={tags} setTags={setTags} />
+        <TagInput tags={tags} setTags={setTags} isDisabled />
       </Flex>
       <Flex mt={4}>
-        <EmailOnFinished emailOnFinished={emailOnFinished} setEmailOnFinished={setEmailOnFinished} />
+        <EmailOnFinished emailOnFinished={emailOnFinished} setEmailOnFinished={setEmailOnFinished} isDisabled />
       </Flex>
     </Box>
   )
