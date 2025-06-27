@@ -72,14 +72,16 @@ function SignUp() {
           gap={4}
           centerContent
         >
-          <Image
-            src={Logo}
-            alt="CPG logo"
-            height="auto"
-            maxW="2xs"
-            alignSelf="center"
-            mb={4}
-          />
+          <Flex as={RouterLink} to="/" justify="center">
+            <Image
+              src={Logo}
+              alt="CPG logo"
+              height="auto"
+              maxW="2xs"
+              alignSelf="center"
+              mb={4}
+            />
+          </Flex>
           <FormControl id="full_name" isInvalid={!!errors.full_name}>
             <FormLabel htmlFor="full_name" srOnly>
               Full Name

@@ -2,6 +2,7 @@ import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons"
 import {
   Button,
   Container,
+  Flex,
   FormControl,
   FormErrorMessage,
   Icon,
@@ -76,14 +77,16 @@ function Login() {
         gap={4}
         centerContent
       >
-        <Image
-          src={Logo}
-          alt="CPG logo"
-          height="auto"
-          maxW="2xs"
-          alignSelf="center"
-          mb={4}
-        />
+        <Flex as={RouterLink} to="/" justify="center">
+          <Image
+            src={Logo}
+            alt="CPG logo"
+            height="auto"
+            maxW="2xs"
+            alignSelf="center"
+            mb={4}
+          />
+        </Flex>
         <FormControl id="username" isInvalid={!!errors.username || !!error}>
           <Input
             id="username"
