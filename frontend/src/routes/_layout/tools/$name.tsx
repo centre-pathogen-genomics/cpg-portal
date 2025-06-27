@@ -270,7 +270,10 @@ function Tool() {
         <Heading size="lg" mb={4}>Configure Tool</Heading>
         { anonymousUser && (
           <Text color="red.600" mb={4}>
-            You must be <RouterLink to="/login" style={{ color: "blue.500", textDecoration: "underline"}}>logged in</RouterLink> to run this tool
+            You must be {" "}
+            <RouterLink to="/login" style={{ color: "blue.500", textDecoration: "underline"}} search={{redirect: `/tools/${tool.name}`}}>
+            logged in
+            </RouterLink> to run this tool
           </Text>
         )}
         <RunToolForm
