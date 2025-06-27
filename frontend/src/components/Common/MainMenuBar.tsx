@@ -21,12 +21,11 @@ import {
   Badge,
 } from "@chakra-ui/react"
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router"
-import { FiLogOut, FiMenu } from "react-icons/fi"
+import { FiMenu } from "react-icons/fi"
 import { HiOutlineMoon, HiOutlineSun } from "react-icons/hi";
 
 import useAuth from "../../hooks/useAuth"
 import SidebarItems from "./SidebarItems"
-import StorageStats from "../Files/StorageStats"
 import UserMenu from "./UserMenu"
 import { HiOutlineSearch } from "react-icons/hi";
 import { useForm } from "react-hook-form"
@@ -51,7 +50,7 @@ function MainMenuBar() {
   const secBgColor = useColorModeValue("ui.secondary", "ui.darkSlate")
   const textColor = useColorModeValue("ui.dark", "ui.light")
   const { isOpen, onOpen, onClose } = useDisclosure()
-  const { logout, user: currentUser } = useAuth()
+  const { user: currentUser } = useAuth()
   const navigate = useNavigate()
 
    // Use useRouter to get the current pathname.
@@ -65,7 +64,7 @@ function MainMenuBar() {
     { title: "My Files", path: "/files" },
     { title: "SAE", path: "/wasm/jupyterlite/index.html", isNew: true, newTab: true },
     { title: "About", path: "/about" },
-  ] : []
+  ] : [{ title: "About", path: "/about" }]
 
   const superUserItems = currentUser?.is_superuser
     ? [...userItems, { title: "Admin", path: "/admin" }]
@@ -144,9 +143,7 @@ function MainMenuBar() {
       }
       navigate({to:`/search/${search}`})
     }
-  const handleLogout = async () => {
-    logout()
-  }
+
   return (
     <Flex position={'sticky'} top={0}  w={'100%'} bg={bgColor} color={textColor} justify={'space-between'} align={'center'} py={2} pl={4} pr={6} zIndex={1000}>
         
@@ -180,44 +177,6 @@ function MainMenuBar() {
         {currentUser ? (
           <Flex>
             <UserMenu />
-            <IconButton
-              onClick={onOpen}
-              display={{ base: "flex", md: "none" }}
-              aria-label="Open Menu"
-              fontSize="20px"
-              icon={<FiMenu />}
-            />
-          <Drawer isOpen={isOpen} placement="right" onClose={onClose}>
-              <DrawerOverlay />
-              <DrawerContent maxW="250px">
-                <DrawerCloseButton />
-                <DrawerBody py={0}>
-                  <Flex flexDir="column" justify="space-between">
-                    <Box>
-                      <Image src={Logo} alt="logo" p={4} />
-                      <SidebarItems onClose={onClose} />
-                      <Flex
-                        as="button"
-                        onClick={handleLogout}
-                        p={2}
-                        color="ui.danger"
-                        fontWeight="bold"
-                        alignItems="center"
-                      >
-                        <FiLogOut />
-                        <Text ml={2}>Log out</Text>
-                      </Flex>
-                    </Box>
-                    {currentUser?.email && (
-                      <Text color={textColor} noOfLines={2} fontSize="sm" p={2}>
-                        Logged in as: {currentUser.email}
-                      </Text>
-                    )}
-                    <StorageStats />
-                  </Flex>
-                </DrawerBody>
-              </DrawerContent>
-            </Drawer>
           </Flex>) : (
             // If not signed in, show login/signup links
             <Flex gap={4} display={{ base: "none", md: "flex" }}>
@@ -229,6 +188,27 @@ function MainMenuBar() {
               </Link>
             </Flex>
           )}
+          <IconButton
+              onClick={onOpen}
+              display={{ base: "flex", md: "none" }}
+              aria-label="Open Menu"
+              fontSize="20px"
+              icon={<FiMenu />}
+            />
+          <Drawer isOpen={isOpen} placement="right" onClose={onClose}>
+            <DrawerOverlay />
+            <DrawerContent maxW="250px">
+              <DrawerCloseButton />
+              <DrawerBody py={0}>
+                <Flex flexDir="column" justify="space-between">
+                  <Box>
+                    <Image src={Logo} alt="logo" p={4} />
+                    <SidebarItems onClose={onClose} />
+                  </Box>
+                </Flex>
+              </DrawerBody>
+            </DrawerContent>
+          </Drawer>
     </Flex>
   );
 }

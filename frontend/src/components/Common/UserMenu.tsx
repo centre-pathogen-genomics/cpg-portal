@@ -4,106 +4,63 @@ import {
   Avatar,
   Menu,
   MenuButton,
-  MenuItem,
   MenuList,
+  useDisclosure,
   useColorModeValue,
 } from "@chakra-ui/react";
-import { Link } from "@tanstack/react-router";
-import { FiLogOut, FiUser, FiSettings } from "react-icons/fi";
-import { IoGlasses } from "react-icons/io5";
-
 
 import useAuth from "../../hooks/useAuth";
+import SidebarItems from "./SidebarItems";
 
 async function sha256(message: string) {
-  // Encode as UTF-8
   const msgBuffer = new TextEncoder().encode(message);
-
-  // Hash the message
   const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
-
-  // Convert ArrayBuffer to Array
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-
-  // Convert bytes to hex string
-  const hashHex = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
-  return hashHex;
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-const generateGravatarUrl = async (email: string | undefined) => {
-  if (!email) return "/assets/images/user.png"; // Default avatar
+const generateGravatarUrl = async (email?: string) => {
+  if (!email) return "/assets/images/user.png";
   const hash = await sha256(email.trim().toLowerCase());
   return `https://www.gravatar.com/avatar/${hash}?d=mp`;
 };
 
 const UserMenu = () => {
-  const { logout, user } = useAuth();
-  const [gravatarUrl, setGravatarUrl] = useState<string>("/assets/images/user.png");
-  const outlineColor = useColorModeValue("ui.main", "ui.light")
+  const { user } = useAuth();
+  const [gravatarUrl, setGravatarUrl] = useState("/assets/images/user.png");
+  const outlineColor = useColorModeValue("ui.main", "ui.light");
+
+  // useDisclosure gives us isOpen, onOpen, onClose
+  const { isOpen, onOpen, onClose } = useDisclosure();
 
   useEffect(() => {
     const fetchGravatarUrl = async () => {
       const url = await generateGravatarUrl(user?.email);
       setGravatarUrl(url);
     };
-
     fetchGravatarUrl();
   }, [user?.email]);
 
-  const handleLogout = async () => {
-    logout();
-  };
-
   return (
-    <>
-      {/* Desktop */}
-      <Box
-        display={{ base: "none", md: "block" }}
-        
-      >
-        <Menu >
-          <MenuButton
-            as={Avatar}
-            src={gravatarUrl}
-            // name={user?.full_name || "User"}
-            size="md"
-            data-testid="user-menu"
-            borderWidth={2.5}
-            borderColor={'ui.main'}
-            cursor={"pointer"}
-            // bg='transparent'
-            bg={'gray.300'}
-            fill={outlineColor}
-          />
-          <MenuList>
-            <MenuItem icon={<FiSettings fontSize="18px" />} as={Link} to="settings">
-              Settings
-            </MenuItem>
-            <MenuItem
-              icon={<IoGlasses fontSize="18px" />}
-              as={Link}
-              to="stream"
-              target="_blank" 
-            >
-              Stream
-            </MenuItem>
-            {user?.is_superuser && (
-            <MenuItem icon={<FiUser fontSize="18px" />} as={Link} to="admin">
-              Admin
-            </MenuItem> 
-            )}
-            <MenuItem
-              icon={<FiLogOut fontSize="18px" />}
-              onClick={handleLogout}
-              color="ui.danger"
-              fontWeight="bold"
-            >
-              Log out
-            </MenuItem>
-          </MenuList>
-        </Menu>
-      </Box>
-    </>
+    <Box display={{ base: "none", md: "block" }}>
+      <Menu isOpen={isOpen} onClose={onClose}>
+        <MenuButton
+          as={Avatar}
+          src={gravatarUrl}
+          size="md"
+          data-testid="user-menu"
+          borderWidth={2.5}
+          borderColor="ui.main"
+          cursor="pointer"
+          bg="gray.300"
+          onClick={onOpen}        // open when clicked
+          _hover={{ outline: `2px solid ${outlineColor}` }}
+        />
+        <MenuList p={2}>
+          <SidebarItems onClose={onClose} />
+        </MenuList>
+      </Menu>
+    </Box>
   );
 };
 

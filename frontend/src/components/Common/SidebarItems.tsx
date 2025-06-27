@@ -1,33 +1,36 @@
 import { Box, Flex, Icon, Text, useColorModeValue } from "@chakra-ui/react"
-import { useQueryClient } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
-import { FiCodesandbox, FiFile, FiHome, FiSettings, FiUsers } from "react-icons/fi"
-import { readUserMeQueryKey } from "../../client/@tanstack/react-query.gen"
+import { FiCodesandbox, FiFile, FiHome, FiInfo, FiLogIn, FiLogOut, FiSettings, FiUsers } from "react-icons/fi"
 import { IoGlasses } from "react-icons/io5";
 
-import type { UserPublic } from "../../client"
-
-const items = [
-  { icon: FiHome, title: "Tools", path: "/" },
-  { icon: FiCodesandbox, title: "My Runs", path: "/runs" },
-  { icon: FiFile, title: "My Files", path: "/files" },
-  { icon: FiSettings, title: "Settings", path: "/settings" },
-  { icon: IoGlasses, title: "Stream", path: "/stream", external: true },
-]
+import useAuth from "../../hooks/useAuth"
+import StorageStats from "../Files/StorageStats"
 
 interface SidebarItemsProps {
   onClose?: () => void
 }
 
 const SidebarItems = ({ onClose }: SidebarItemsProps) => {
-  const queryClient = useQueryClient()
   const textColor = useColorModeValue("ui.main", "ui.light")
-  const bgActive = useColorModeValue("#E2E8F0", "#4A5568")
-  const currentUser = queryClient.getQueryData<UserPublic>(readUserMeQueryKey())
+  const { logout, user: currentUser } = useAuth()
+
+  const userItems = currentUser ? [
+    { icon: FiHome, title: "Tools", path: "/" },
+    { icon: FiCodesandbox, title: "My Runs", path: "/runs" },
+    { icon: FiFile, title: "My Files", path: "/files" },
+    { icon: FiInfo, title: "About", path: "/about" },
+    { icon: FiSettings, title: "Settings", path: "/settings" },
+    { icon: IoGlasses, title: "Stream", path: "/stream", external: true },
+  ] : [
+      { icon: FiHome, title: "Tools", path: "/" },
+      { icon: FiInfo, title: "About", path: "/about" },
+      { icon: FiLogIn, title: "Login", path: "/login" },
+      { icon: FiUsers, title: "Sign Up", path: "/signup" },
+    ]
 
   const finalItems = currentUser?.is_superuser
-    ? [...items, { icon: FiUsers, title: "Admin", path: "/admin" }]
-    : items
+    ? [...userItems, { icon: FiUsers, title: "Admin", path: "/admin" }]
+    : userItems
 
   const listItems = finalItems.map(({ icon, title, path, external }) => (
     <Flex
@@ -38,22 +41,52 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
       key={title}
       activeProps={{
         style: {
-          background: bgActive,
+          textDecoration: "underline",
           borderRadius: "12px",
         },
       }}
       color={textColor}
       onClick={onClose}
       target={external ? "_blank" : undefined}
+      _hover={{
+        textDecoration: "underline",
+        backgroundColor: useColorModeValue("ui.light", "ui.dark"),
+        borderRadius: "12px",
+        }}
     >
-      <Icon as={icon} alignSelf="center" />
+      <Icon as={icon} alignSelf="center" fontSize={18} />
       <Text ml={2}>{title}</Text>
     </Flex>
   ))
 
+  const handleLogout = async () => {
+    logout()
+  }
+
+
   return (
     <>
       <Box>{listItems}</Box>
+      {currentUser && (
+        <Box>
+          <Flex
+            as="button"
+            onClick={handleLogout}
+            p={2}
+            color="ui.danger"
+            fontWeight="bold"
+            alignItems="center"
+          >
+            <FiLogOut />
+            <Text ml={2}>Log out</Text>
+          </Flex>
+          <Box mt={4} mb={2} borderBottom="1px solid" borderColor="ui.secondary" />
+          <StorageStats />
+          <Text color={textColor} noOfLines={2} fontSize="sm">
+            Logged in as: {currentUser.email}
+          </Text>
+        </Box>
+      )}
     </>
   )
 }
