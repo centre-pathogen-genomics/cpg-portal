@@ -56,7 +56,7 @@ const UserMenu = () => {
           onClick={onOpen}        // open when clicked
           _hover={{ outline: `2px solid ${outlineColor}` }}
         />
-        <MenuList p={2}>
+        <MenuList p={2} maxW={"80px"}>
           <SidebarItems onClose={onClose} />
         </MenuList>
       </Menu>

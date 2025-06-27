@@ -86,10 +86,10 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
             <FiLogOut />
             <Text ml={2}>Log out</Text>
           </Flex>
-          <Box mt={4} mb={2} borderBottom="1px solid" borderColor="ui.secondary" />
+          <Box mt={2} mb={2} borderBottom="1px solid" borderColor="ui.secondary" />
           <StorageStats />
-          <Text color={textColor} noOfLines={2} fontSize="sm">
-            Logged in as: {currentUser.email}
+          <Text color={textColor} noOfLines={2} fontSize="sm" mt={2}>
+              {currentUser.email}
           </Text>
         </Box>
       )}
