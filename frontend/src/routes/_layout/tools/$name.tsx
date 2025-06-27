@@ -231,7 +231,9 @@ function Tool() {
               </Flex>
             )}
           </Flex>
-          <FavouriteButton tool={tool} isFavourited={isFavourited} setIsFavourited={setIsFavourited} />
+          { currentUser && (
+            <FavouriteButton tool={tool} isFavourited={isFavourited} setIsFavourited={setIsFavourited} />
+          )}
         </Flex>
         {/* {tool?.image && (<Image maxH={200} src={tool?.image} alt={tool?.name} mb={4} />)} */}
         <Flex gap={1} wrap={'wrap'} mb={2}>
