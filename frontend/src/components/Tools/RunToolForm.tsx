@@ -70,6 +70,7 @@ interface FileParamProps {
   allowedTypes?: FileTypeEnum[];
   multiple: boolean;
   setIsLoading?: (loading: boolean) => void;
+  isDisabled?: boolean;
 }
 
 const FileParam = ({
@@ -78,11 +79,13 @@ const FileParam = ({
   selectedOptions,
   multiple = false,
   setIsLoading,
+  isDisabled = false,
 }: FileParamProps) => {
   // Local state to store files for immediate updates
   const [files, setFiles] = useState<{ label: string; value: string, colorScheme?: string }[]>([]);
   
   const { data, isLoading } = useQuery({
+    enabled: !isDisabled,
     queryKey: ["files"],
     queryFn: () =>
       FilesService.readFiles(
@@ -133,6 +136,7 @@ const FileParam = ({
         selectedOptionStyle="check"
         
       />
+      {!isDisabled && (
       <FileUploadButton
         onComplete={(file) => {
           const newFile = { label: file.name, value: file.id };
@@ -153,6 +157,7 @@ const FileParam = ({
           }
         }}
       />
+    )}
     </Flex>
   );
 };
@@ -330,6 +335,7 @@ const RunToolForm = ({ toolId, params, onSuccess, isDisabled=false }: RunToolFor
             {param.param_type === "file" && (
             <FileParam
               setIsLoading={setIsLoading}
+              isDisabled={isDisabled}
               param={param}
               setValue={(selected) => {
                 if (Array.isArray(selected) || !param.multiple) {
