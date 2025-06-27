@@ -21,6 +21,7 @@ import {
 import { CheckCircleIcon } from "@chakra-ui/icons";
 import { Link as RouterLink } from "@tanstack/react-router";
 import Logo from "/assets/images/cpg-logo.png";
+import MainMenuBar from "../components/Common/MainMenuBar";
 
 export const Route = createFileRoute("/about")({
   component: About,
@@ -28,6 +29,8 @@ export const Route = createFileRoute("/about")({
 
 function About() {
   return (
+    <Box>
+    <MainMenuBar />
     <Container maxW="4xl" py={10}>
       <Stack spacing={8}>
         {/* Header */}
@@ -196,6 +199,7 @@ function About() {
         </Text>
       </Stack>
     </Container>
+    </Box>
   );
 }
 
