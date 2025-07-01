@@ -13,6 +13,14 @@ import FavouriteButton from "../../../components/Tools/FavouriteButton"
 
 export const Route = createFileRoute("/_layout/tools/$name")({
   component: Tool,
+  loader: async ({ params }) => {
+    return { toolName: params.name }
+  },
+  meta: ({ loaderData }) => [
+    {
+      title: `${loaderData?.toolName} | CPG Portal`,
+    },
+  ],
 })
 
 function EnableToolButton({tool}: {tool: ToolPublic}) {
@@ -174,9 +182,10 @@ function Tool() {
     ...readToolByNameOptions({path: {tool_name: name}}),
   })
 
-  useEffect(() => {
+  useEffect(() => { 
     if (tool) {
       setIsFavourited(tool.favourited ?? false);
+      document.title = `${tool.name} | CPG Portal`;
     }
   }
   , [tool])
