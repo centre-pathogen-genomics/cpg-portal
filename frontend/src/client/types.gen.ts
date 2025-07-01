@@ -55,6 +55,7 @@ export type FilePublic = {
         | "geojson"
         | "gexf"
         | "gff"
+        | "genbank"
         | "go"
         | "graphml"
         | "gzip"
@@ -109,6 +110,7 @@ export type FilePublic = {
         | "tsv"
         | "ttf"
         | "vcf"
+        | "vcf.gz"
         | "vue"
         | "wasm"
         | "wav"
@@ -154,6 +156,7 @@ export type FilePublicChild = {
         | "geojson"
         | "gexf"
         | "gff"
+        | "genbank"
         | "go"
         | "graphml"
         | "gzip"
@@ -208,6 +211,7 @@ export type FilePublicChild = {
         | "tsv"
         | "ttf"
         | "vcf"
+        | "vcf.gz"
         | "vue"
         | "wasm"
         | "wav"
@@ -226,6 +230,21 @@ export type FilePublicChild = {
   id: string
   run_id?: string | null
   created_at: string
+}
+
+export type FileStats = {
+  total: number
+  saved: number
+  temporary: number
+  total_size_bytes: number
+  saved_size_bytes: number
+  temporary_size_bytes: number
+  average_size_bytes: number
+  total_size_gb: number
+  saved_size_gb: number
+  by_type: {
+    [key: string]: number
+  }
 }
 
 export type FileTypeEnum =
@@ -249,6 +268,7 @@ export type FileTypeEnum =
   | "geojson"
   | "gexf"
   | "gff"
+  | "genbank"
   | "go"
   | "graphml"
   | "gzip"
@@ -303,6 +323,7 @@ export type FileTypeEnum =
   | "tsv"
   | "ttf"
   | "vcf"
+  | "vcf.gz"
   | "vue"
   | "wasm"
   | "wav"
@@ -367,6 +388,7 @@ export type Param = {
     | "geojson"
     | "gexf"
     | "gff"
+    | "genbank"
     | "go"
     | "graphml"
     | "gzip"
@@ -421,6 +443,7 @@ export type Param = {
     | "tsv"
     | "ttf"
     | "vcf"
+    | "vcf.gz"
     | "vue"
     | "wasm"
     | "wav"
@@ -474,6 +497,18 @@ export type RunPublicMinimal = {
   finished_at?: string | null
 }
 
+export type RunStats = {
+  total: number
+  by_status: {
+    [key: string]: number
+  }
+  currently_running: number
+  success_rate_percent: number
+  average_runtime_seconds: number
+  average_runtime_minutes: number
+  last_24_hours: number
+}
+
 export type RunStatus =
   | "pending"
   | "running"
@@ -489,6 +524,39 @@ export type RunsPublicMinimal = {
 export type SetupFile = {
   name: string
   content: string
+}
+
+export type StatsResponse = {
+  users: SummaryUserStats
+  tools: SummaryToolStats
+  runs: SummaryRunStats
+  files: SummaryFileStats
+}
+
+export type SummaryFileStats = {
+  total: number
+  total_size_gb: number
+}
+
+export type SummaryRunStats = {
+  total: number
+  currently_running: number
+}
+
+export type SummaryToolStats = {
+  total: number
+  enabled: number
+}
+
+export type SummaryUserStats = {
+  total: number
+}
+
+export type SystemStats = {
+  users: UserStats
+  files: FileStats
+  runs: RunStats
+  tools: ToolStats
 }
 
 export type Target = {
@@ -514,6 +582,7 @@ export type Target = {
     | "geojson"
     | "gexf"
     | "gff"
+    | "genbank"
     | "go"
     | "graphml"
     | "gzip"
@@ -568,6 +637,7 @@ export type Target = {
     | "tsv"
     | "ttf"
     | "vcf"
+    | "vcf.gz"
     | "vue"
     | "wasm"
     | "wav"
@@ -660,6 +730,21 @@ export type ToolPublic = {
   id: string
 }
 
+export type ToolStats = {
+  total: number
+  enabled: number
+  disabled: number
+  by_status: {
+    [key: string]: number
+  }
+  most_popular: Array<{
+    [key: string]: unknown
+  }>
+  most_favourited: Array<{
+    [key: string]: unknown
+  }>
+}
+
 export type ToolStatus =
   | "uninstalled"
   | "uninstalling"
@@ -732,6 +817,13 @@ export type UserRegister = {
   email: string
   password: string
   full_name?: string | null
+}
+
+export type UserStats = {
+  total: number
+  active: number
+  superusers: number
+  active_last_30_days: number
 }
 
 export type UserUpdate = {
@@ -2172,3 +2264,37 @@ export type GenerateRunSummaryResponses = {
 
 export type GenerateRunSummaryResponse =
   GenerateRunSummaryResponses[keyof GenerateRunSummaryResponses]
+
+export type GetSystemStatsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: "/api/v1/stats/stats"
+}
+
+export type GetSystemStatsResponses = {
+  /**
+   * Successful Response
+   */
+  200: SystemStats
+}
+
+export type GetSystemStatsResponse =
+  GetSystemStatsResponses[keyof GetSystemStatsResponses]
+
+export type GetStatsSummaryData = {
+  body?: never
+  path?: never
+  query?: never
+  url: "/api/v1/stats/stats/summary"
+}
+
+export type GetStatsSummaryResponses = {
+  /**
+   * Successful Response
+   */
+  200: StatsResponse
+}
+
+export type GetStatsSummaryResponse =
+  GetStatsSummaryResponses[keyof GetStatsSummaryResponses]

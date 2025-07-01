@@ -127,6 +127,8 @@ import type {
   GenerateRunSummaryData,
   GenerateRunSummaryError,
   GenerateRunSummaryResponse,
+  GetSystemStatsData,
+  GetStatsSummaryData,
 } from "../types.gen"
 import type { AxiosError } from "axios"
 import {
@@ -137,6 +139,7 @@ import {
   FilesService,
   RunsService,
   LlmService,
+  StatsService,
   client,
 } from "../sdk.gen"
 
@@ -1653,4 +1656,46 @@ export const generateRunSummaryMutation = (
     },
   }
   return mutationOptions
+}
+
+export const getSystemStatsQueryKey = (
+  options?: Options<GetSystemStatsData>,
+) => [createQueryKey("getSystemStats", options)]
+
+export const getSystemStatsOptions = (
+  options?: Options<GetSystemStatsData>,
+) => {
+  return queryOptions({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await StatsService.getSystemStats({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      })
+      return data
+    },
+    queryKey: getSystemStatsQueryKey(options),
+  })
+}
+
+export const getStatsSummaryQueryKey = (
+  options?: Options<GetStatsSummaryData>,
+) => [createQueryKey("getStatsSummary", options)]
+
+export const getStatsSummaryOptions = (
+  options?: Options<GetStatsSummaryData>,
+) => {
+  return queryOptions({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await StatsService.getStatsSummary({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      })
+      return data
+    },
+    queryKey: getStatsSummaryQueryKey(options),
+  })
 }

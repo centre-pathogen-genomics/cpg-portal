@@ -159,6 +159,10 @@ import type {
   GenerateRunSummaryData,
   GenerateRunSummaryResponse,
   GenerateRunSummaryError,
+  GetSystemStatsData,
+  GetSystemStatsResponse,
+  GetStatsSummaryData,
+  GetStatsSummaryResponse,
 } from "./types.gen"
 
 export const client = createClient(createConfig())
@@ -1432,6 +1436,60 @@ export class LlmService {
         },
       ],
       url: "/api/v1/llm/summary/{run_id}",
+      ...options,
+    })
+  }
+}
+
+export class StatsService {
+  /**
+   * Get System Stats
+   * Get comprehensive system statistics for admin panel.
+   *
+   * Returns statistics about users, files, runs, and tools.
+   * Requires superuser privileges.
+   */
+  public static getSystemStats<ThrowOnError extends boolean = false>(
+    options?: Options<GetSystemStatsData, ThrowOnError>,
+  ) {
+    return (options?.client ?? client).get<
+      GetSystemStatsResponse,
+      unknown,
+      ThrowOnError
+    >({
+      security: [
+        {
+          scheme: "bearer",
+          type: "http",
+        },
+      ],
+      url: "/api/v1/stats/stats",
+      ...options,
+    })
+  }
+
+  /**
+   * Get Stats Summary
+   * Get a summary of key system statistics for admin panel.
+   *
+   * Returns a condensed view of the most important metrics.
+   * Requires superuser privileges.
+   */
+  public static getStatsSummary<ThrowOnError extends boolean = false>(
+    options?: Options<GetStatsSummaryData, ThrowOnError>,
+  ) {
+    return (options?.client ?? client).get<
+      GetStatsSummaryResponse,
+      unknown,
+      ThrowOnError
+    >({
+      security: [
+        {
+          scheme: "bearer",
+          type: "http",
+        },
+      ],
+      url: "/api/v1/stats/stats/summary",
       ...options,
     })
   }
