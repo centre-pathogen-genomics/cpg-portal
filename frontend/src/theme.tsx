@@ -1,4 +1,4 @@
-import { extendTheme } from "@chakra-ui/react"
+import { extendTheme, type ThemeConfig } from "@chakra-ui/react"
 
 const disabledStyles = {
   _disabled: {
@@ -6,7 +6,14 @@ const disabledStyles = {
   },
 }
 
+// Configure color mode to use system preference by default
+const config: ThemeConfig = {
+  initialColorMode: "system",
+  useSystemColorMode: true,
+}
+
 const theme = extendTheme({
+  config,
   colors: {
     ui: {
       main: "#009688",

@@ -22,9 +22,6 @@ const Appearance = () => {
             {/* TODO: Add system default option */}
             <Radio value="light" colorScheme="teal">
               Light Mode
-              <Badge ml="1" colorScheme="teal">
-                Default
-              </Badge>
             </Radio>
             <Radio value="dark" colorScheme="teal">
               Dark Mode
