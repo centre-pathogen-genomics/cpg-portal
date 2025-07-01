@@ -1,5 +1,4 @@
 import {
-  Badge,
   Container,
   Heading,
   Radio,
