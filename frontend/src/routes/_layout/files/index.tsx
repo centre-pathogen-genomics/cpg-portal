@@ -29,6 +29,13 @@ import { humanReadableDate, humanReadableFileSize } from "../../../utils"
 
 export const Route = createFileRoute("/_layout/files/")({
   component: Files,
+  head: () => ({
+    meta: [
+      {
+        title: "My Files | CPG Portal",
+      },
+    ],
+  })
 })
 
 function FilesTable() {

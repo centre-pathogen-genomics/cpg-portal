@@ -1,4 +1,4 @@
-import { Outlet, createRootRoute } from "@tanstack/react-router"
+import { HeadContent, Outlet, createRootRoute } from "@tanstack/react-router"
 import React, { Suspense } from "react"
 
 import NotFound from "../components/Common/NotFound"
@@ -24,6 +24,7 @@ const TanStackDevtools =
 export const Route = createRootRoute({
   component: () => (
     <>
+      <HeadContent />
       <Outlet />
       <Suspense>
         <TanStackDevtools />
@@ -31,4 +32,15 @@ export const Route = createRootRoute({
     </>
   ),
   notFoundComponent: () => <NotFound />,
+  head: () => ({
+    meta: [
+      {
+        name: "description",
+        content: "Centre for Pathogen Genomics Bioinformatics Analysis Portal | Explore and run tools from the most talented and accomplished scientists ready to take on your next project",
+      },
+      { 
+        title: "CPG Portal"
+      }
+    ],
+  }),
 })

@@ -9,6 +9,13 @@ import ToolsGrid from "../../../components/Tools/ToolsGrid"
 
 export const Route = createFileRoute("/_layout/search/$query")({
   component: SearchResults,
+  head: () => ({
+    meta: [
+      {
+        title: "Search | CPG Portal",
+      },
+    ],
+  }),
 })
 
 

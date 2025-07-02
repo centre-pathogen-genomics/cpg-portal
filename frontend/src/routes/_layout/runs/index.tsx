@@ -32,6 +32,13 @@ import StatusBadge from "../../../components/Runs/StatusBadge"
 
 export const Route = createFileRoute("/_layout/runs/")({
   component: Runs,
+  head: () => ({
+    meta: [
+      {
+        title: "My Runs | CPG Portal",
+      },
+    ],
+  }),
 })
 
 function RunsTable() {
