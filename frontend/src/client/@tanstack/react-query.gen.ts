@@ -124,6 +124,9 @@ import type {
   RenameRunData,
   RenameRunError,
   RenameRunResponse,
+  ToggleRunSharingData,
+  ToggleRunSharingError,
+  ToggleRunSharingResponse,
   GenerateRunSummaryData,
   GenerateRunSummaryError,
   GenerateRunSummaryResponse,
@@ -1607,6 +1610,26 @@ export const renameRunMutation = (
   > = {
     mutationFn: async (localOptions) => {
       const { data } = await RunsService.renameRun({
+        ...options,
+        ...localOptions,
+        throwOnError: true,
+      })
+      return data
+    },
+  }
+  return mutationOptions
+}
+
+export const toggleRunSharingMutation = (
+  options?: Partial<Options<ToggleRunSharingData>>,
+) => {
+  const mutationOptions: UseMutationOptions<
+    ToggleRunSharingResponse,
+    AxiosError<ToggleRunSharingError>,
+    Options<ToggleRunSharingData>
+  > = {
+    mutationFn: async (localOptions) => {
+      const { data } = await RunsService.toggleRunSharing({
         ...options,
         ...localOptions,
         throwOnError: true,

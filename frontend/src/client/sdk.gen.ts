@@ -156,6 +156,9 @@ import type {
   RenameRunData,
   RenameRunResponse,
   RenameRunError,
+  ToggleRunSharingData,
+  ToggleRunSharingResponse,
+  ToggleRunSharingError,
   GenerateRunSummaryData,
   GenerateRunSummaryResponse,
   GenerateRunSummaryError,
@@ -1411,6 +1414,29 @@ export class RunsService {
         },
       ],
       url: "/api/v1/runs/{id}/rename",
+      ...options,
+    })
+  }
+
+  /**
+   * Toggle Run Sharing
+   * Toggle sharing status of a specific run by ID.
+   */
+  public static toggleRunSharing<ThrowOnError extends boolean = false>(
+    options: Options<ToggleRunSharingData, ThrowOnError>,
+  ) {
+    return (options?.client ?? client).patch<
+      ToggleRunSharingResponse,
+      ToggleRunSharingError,
+      ThrowOnError
+    >({
+      security: [
+        {
+          scheme: "bearer",
+          type: "http",
+        },
+      ],
+      url: "/api/v1/runs/{id}/share",
       ...options,
     })
   }
