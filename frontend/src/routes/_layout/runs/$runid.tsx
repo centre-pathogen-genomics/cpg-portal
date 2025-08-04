@@ -12,7 +12,7 @@ import {
   Text,
 } from "@chakra-ui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Suspense, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { FilePublic } from "../../../client";
@@ -28,6 +28,7 @@ import CancelRunButton from "../../../components/Runs/CancelRunButton";
 import DeleteRunButton from "../../../components/Runs/DeleteRunButton";
 import EditRunName from "../../../components/Runs/EditRunName";
 import AISummaryButton from "../../../components/AI/AISummary";
+import ShareRunButton from "../../../components/Runs/ShareRunButton";
 import ReactMarkdown from "../../../components/Common/Markdown";
 
 export const Route = createFileRoute("/_layout/runs/$runid")({
@@ -86,20 +87,19 @@ function RunDetail() {
   return (
     <Box maxW={"5xl"} justifySelf={"center"} w={"full"} overflowX={"hidden"} px={2}>
       <Flex align={"center"} justify={'space-between'} gap={2}>
-          <Text fontSize={{base: "xs", md: "md"}} color="gray.500" justifySelf={"baseline"} overflowX={"clip"}>
-            {run.id}
-          </Text>
+          <Flex
+            as={Link}
+            to={"/runs"}
+            key={"Runs"}
+            _hover={{ color: "ui.main" }}
+            fontWeight="semibold"
+            align="center"
+            whiteSpace={'nowrap'}
+          >
+            <Text>← Back to My Runs</Text>
+          </Flex>
           <Flex gap={2} alignItems={"center"}>
-            {/* <Button
-              variant="solid"
-              size={"xs"}
-              colorScheme="teal"
-              onClick={(e) => {
-                e.stopPropagation();
-              }}
-            >
-              Share
-            </Button> */}
+            {!run.owner_name && <ShareRunButton run={run} />}
             {["running", "pending"].includes(run.status) ? (
               <CancelRunButton run_id={run.id} />
             ) : (
