@@ -334,9 +334,15 @@ def read_run(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> A
     run: Run = session.get(Run, id)
     if not run:
         raise HTTPException(status_code=404, detail="Run not found")
-    if run.owner_id != current_user.id:
+    if run.owner_id != current_user.id and not run.shared:
         raise HTTPException(status_code=400, detail="Not enough permissions")
-    return run
+    
+    # Convert to RunPublic and add owner name if shared
+    run_data = RunPublic.model_validate(run)
+    if run.shared and run.owner_id != current_user.id:
+        run_data.owner_name = run.owner.full_name
+    
+    return run_data
 
 @router.patch("/{id}/cancel", response_model=RunPublic)
 def cancel_run(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
@@ -426,3 +432,26 @@ def delete_run(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) ->
 
     return Message(message=f"Deleted run {id} and {deleted_files_count} files")
 
+@router.patch("/{id}/share", response_model=RunPublic)
+def toggle_run_sharing(
+    session: SessionDep, current_user: CurrentUser, id: uuid.UUID, shared: bool
+) -> Any:
+    """
+    Toggle sharing status of a specific run by ID.
+    """
+    # Fetch the run
+    run = session.get(Run, id)
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    # Check permissions
+    if run.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+
+    # Update the sharing status
+    run.shared = shared
+    session.add(run)
+    session.commit()
+    session.refresh(run)
+
+    return run
