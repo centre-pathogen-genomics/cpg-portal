@@ -20,9 +20,30 @@ from app.models import (
     FilesPublic,
     FilesStatistics,
     Message,
+    Run,
 )
 
 router = APIRouter()
+
+
+def check_file_access(session: SessionDep, current_user: CurrentUser, file_metadata: File) -> bool:
+    """
+    Check if the current user has access to the file.
+    Returns True if:
+    1. User owns the file, OR
+    2. File belongs to a shared run
+    """
+    if file_metadata.owner_id == current_user.id:
+        return True
+    
+    # Check if file belongs to a shared run
+    if file_metadata.run_id:
+        run = session.get(Run, file_metadata.run_id)
+        if run and run.shared:
+            return True
+    
+    return False
+
 
 @router.get("/", response_model=FilesPublic)
 def read_files(
@@ -164,7 +185,7 @@ def read_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> 
     file_metadata = session.get(File, id)
     if not file_metadata:
         raise HTTPException(status_code=404, detail="File not found")
-    if file_metadata.owner_id != current_user.id:
+    if not check_file_access(session, current_user, file_metadata):
         raise HTTPException(status_code=400, detail="Not enough permissions")
     return file_metadata
 
@@ -238,7 +259,7 @@ def download_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID)
     file_metadata = session.get(File, id)
     if not file_metadata:
         raise HTTPException(status_code=404, detail="File not found")
-    if file_metadata.owner_id != current_user.id:
+    if not check_file_access(session, current_user, file_metadata):
         raise HTTPException(status_code=400, detail="Not enough permissions")
     if file_metadata.file_type == FileTypeEnum.PAIR.value:
         # TODO: Download zipped files?
@@ -255,7 +276,7 @@ def get_download_token(session: SessionDep, current_user: CurrentUser, id: uuid.
     file_metadata = session.get(File, id)
     if not file_metadata:
         raise HTTPException(status_code=404, detail="File not found")
-    if file_metadata.owner_id != current_user.id:
+    if not check_file_access(session, current_user, file_metadata):
         raise HTTPException(status_code=400, detail="Not enough permissions")
     access_token_expires = timedelta(minutes=minutes if minutes > 0 and minutes <= 60 * 24 else 1)
     return create_access_token(
