@@ -86,7 +86,7 @@ const FileParam = ({
   
   const { data, isLoading } = useQuery({
     enabled: !isDisabled,
-    queryKey: ["files"],
+    queryKey: ["files", param.name],
     queryFn: () =>
       FilesService.readFiles(
         {query:
