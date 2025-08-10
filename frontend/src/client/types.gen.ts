@@ -472,10 +472,12 @@ export type RunPublic = {
     [key: string]: unknown
   }
   status: RunStatus
+  shared?: boolean
   tags?: Array<string> | null
   created_at: string
   started_at?: string | null
   finished_at?: string | null
+  owner_name?: string | null
   stdout?: string | null
   command?: string | null
   conda_env_pinned?: string | null
@@ -491,10 +493,12 @@ export type RunPublicMinimal = {
     [key: string]: unknown
   }
   status: RunStatus
+  shared?: boolean
   tags?: Array<string> | null
   created_at: string
   started_at?: string | null
   finished_at?: string | null
+  owner_name?: string | null
 }
 
 export type RunStats = {
@@ -1922,6 +1926,33 @@ export type SaveFileResponses = {
 
 export type SaveFileResponse = SaveFileResponses[keyof SaveFileResponses]
 
+export type CopyFileData = {
+  body?: never
+  path: {
+    id: string
+  }
+  query?: never
+  url: "/api/v1/files/{id}/copy"
+}
+
+export type CopyFileErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError
+}
+
+export type CopyFileError = CopyFileErrors[keyof CopyFileErrors]
+
+export type CopyFileResponses = {
+  /**
+   * Successful Response
+   */
+  200: FilePublic
+}
+
+export type CopyFileResponse = CopyFileResponses[keyof CopyFileResponses]
+
 export type DownloadFileData = {
   body?: never
   path: {
@@ -2233,6 +2264,37 @@ export type RenameRunResponses = {
 }
 
 export type RenameRunResponse = RenameRunResponses[keyof RenameRunResponses]
+
+export type ToggleRunSharingData = {
+  body?: never
+  path: {
+    id: string
+  }
+  query: {
+    shared: boolean
+  }
+  url: "/api/v1/runs/{id}/share"
+}
+
+export type ToggleRunSharingErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError
+}
+
+export type ToggleRunSharingError =
+  ToggleRunSharingErrors[keyof ToggleRunSharingErrors]
+
+export type ToggleRunSharingResponses = {
+  /**
+   * Successful Response
+   */
+  200: RunPublic
+}
+
+export type ToggleRunSharingResponse =
+  ToggleRunSharingResponses[keyof ToggleRunSharingResponses]
 
 export type GenerateRunSummaryData = {
   body?: never

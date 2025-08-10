@@ -263,6 +263,7 @@ class RunBase(SQLModel):
     status: RunStatus
     llm_summary: str | None = None
     email_on_completion: bool = False
+    shared: bool = False
     created_at: datetime
     started_at: datetime | None
     finished_at: datetime | None
@@ -299,10 +300,12 @@ class RunPublicMinimal(SQLModel):
     tool: ToolMinimalPublic
     params: dict
     status: RunStatus
+    shared: bool = False
     tags: list[str] | None = None
     created_at: datetime
     started_at: datetime | None = None
     finished_at: datetime | None = None
+    owner_name: str | None = None  # Full name of the run owner, only shown for shared runs
 
 
 class FileBase(SQLModel):

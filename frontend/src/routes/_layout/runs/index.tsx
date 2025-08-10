@@ -30,6 +30,7 @@ import ParamTag from "../../../components/Runs/ParamTag"
 import { humanReadableDate } from "../../../utils"
 import StatusBadge from "../../../components/Runs/StatusBadge"
 
+
 export const Route = createFileRoute("/_layout/runs/")({
   component: Runs,
   head: () => ({
@@ -96,6 +97,7 @@ function RunsTable() {
               <Th>Tool</Th>
               <Th>Params</Th>
               <Th>Tags</Th>
+              <Th>Shared</Th>
               <Th>Date</Th>
               <Th>Runtime</Th>
               <Th>Actions</Th>
@@ -105,7 +107,7 @@ function RunsTable() {
             {isLoading ? (
               // Show skeletons while loading the first page.
               <Tr>
-                {new Array(5).fill(null).map((_, index) => (
+                {new Array(6).fill(null).map((_, index) => (
                   <Td key={index}>
                     <SkeletonText noOfLines={1} paddingBlock="16px" />
                   </Td>
@@ -114,7 +116,7 @@ function RunsTable() {
             ) : isError ? (
               // Display error message if something went wrong.
               <Tr>
-                <Td colSpan={8}>
+                <Td colSpan={9}>
                   <Text color="red.500">Error: {(error as Error).message}</Text>
                 </Td>
               </Tr>
@@ -159,6 +161,17 @@ function RunsTable() {
                         {tag}
                       </Badge>
                     ))}
+                  </Td>
+                  <Td >
+                    {run.shared ? (
+                      <Badge colorScheme="green" variant="solid">
+                        TRUE
+                      </Badge>
+                    ) : (
+                      <Badge colorScheme="gray" variant="solid">
+                        FALSE
+                      </Badge>
+                    )}
                   </Td>
                   <Td>{run.started_at ? humanReadableDate(run.started_at) : ""}</Td>
                   <Td>

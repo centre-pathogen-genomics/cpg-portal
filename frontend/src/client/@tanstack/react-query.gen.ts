@@ -102,6 +102,9 @@ import type {
   SaveFileData,
   SaveFileError,
   SaveFileResponse,
+  CopyFileData,
+  CopyFileError,
+  CopyFileResponse,
   DownloadFileData,
   GetDownloadTokenData,
   DownloadFileWithTokenData,
@@ -124,6 +127,9 @@ import type {
   RenameRunData,
   RenameRunError,
   RenameRunResponse,
+  ToggleRunSharingData,
+  ToggleRunSharingError,
+  ToggleRunSharingResponse,
   GenerateRunSummaryData,
   GenerateRunSummaryError,
   GenerateRunSummaryResponse,
@@ -1358,6 +1364,43 @@ export const saveFileMutation = (options?: Partial<Options<SaveFileData>>) => {
   return mutationOptions
 }
 
+export const copyFileQueryKey = (options: Options<CopyFileData>) => [
+  createQueryKey("copyFile", options),
+]
+
+export const copyFileOptions = (options: Options<CopyFileData>) => {
+  return queryOptions({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await FilesService.copyFile({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      })
+      return data
+    },
+    queryKey: copyFileQueryKey(options),
+  })
+}
+
+export const copyFileMutation = (options?: Partial<Options<CopyFileData>>) => {
+  const mutationOptions: UseMutationOptions<
+    CopyFileResponse,
+    AxiosError<CopyFileError>,
+    Options<CopyFileData>
+  > = {
+    mutationFn: async (localOptions) => {
+      const { data } = await FilesService.copyFile({
+        ...options,
+        ...localOptions,
+        throwOnError: true,
+      })
+      return data
+    },
+  }
+  return mutationOptions
+}
+
 export const downloadFileQueryKey = (options: Options<DownloadFileData>) => [
   createQueryKey("downloadFile", options),
 ]
@@ -1607,6 +1650,26 @@ export const renameRunMutation = (
   > = {
     mutationFn: async (localOptions) => {
       const { data } = await RunsService.renameRun({
+        ...options,
+        ...localOptions,
+        throwOnError: true,
+      })
+      return data
+    },
+  }
+  return mutationOptions
+}
+
+export const toggleRunSharingMutation = (
+  options?: Partial<Options<ToggleRunSharingData>>,
+) => {
+  const mutationOptions: UseMutationOptions<
+    ToggleRunSharingResponse,
+    AxiosError<ToggleRunSharingError>,
+    Options<ToggleRunSharingData>
+  > = {
+    mutationFn: async (localOptions) => {
+      const { data } = await RunsService.toggleRunSharing({
         ...options,
         ...localOptions,
         throwOnError: true,

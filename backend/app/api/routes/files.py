@@ -20,9 +20,28 @@ from app.models import (
     FilesPublic,
     FilesStatistics,
     Message,
+    Run,
 )
 
 router = APIRouter()
+
+
+def check_file_access(session: SessionDep, current_user: CurrentUser, file_metadata: File) -> bool:
+    """
+    Check if the current user has access to the file.
+    Returns True if:
+    1. User owns the file, OR
+    2. File belongs to a shared run
+    """
+    if file_metadata.owner_id == current_user.id:
+        return True
+    # Check if file belongs to a shared run
+    if file_metadata.run_id:
+        run = session.get(Run, file_metadata.run_id)
+        if run and run.shared:
+            return True
+    return False
+
 
 @router.get("/", response_model=FilesPublic)
 def read_files(
@@ -164,7 +183,7 @@ def read_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> 
     file_metadata = session.get(File, id)
     if not file_metadata:
         raise HTTPException(status_code=404, detail="File not found")
-    if file_metadata.owner_id != current_user.id:
+    if not check_file_access(session, current_user, file_metadata):
         raise HTTPException(status_code=400, detail="Not enough permissions")
     return file_metadata
 
@@ -184,6 +203,107 @@ def save_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> 
     session.commit()
     session.refresh(file_metadata)
     return file_metadata
+
+
+# Support both path styles to be resilient to client generation quirks
+@router.post("/{id}/copy", response_model=FilePublic)
+def copy_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
+    """
+    Copy a file (or pair) the user has access to into their own saved files.
+    - If the user already owns the file, simply mark it saved and return it.
+    - If the file is accessible via a shared run, duplicate the file(s) and
+      create new metadata owned by the current user with saved=True.
+    """
+    source = session.get(File, id)
+    if not source:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    # Otherwise, ensure the user has access (e.g., via a shared run)
+    if not check_file_access(session, current_user, source):
+        raise HTTPException(status_code=400, detail="Not enough permissions")
+
+    # Calculate storage impact
+    files_to_copy = []
+    total_size_to_add = 0
+    files_count_to_add = 0
+
+    if source.file_type == FileTypeEnum.PAIR.value:
+        if not source.children or len(source.children) != 2:
+            raise HTTPException(status_code=400, detail="Invalid pair file")
+        for child in source.children:
+            if not child.location:
+                raise HTTPException(status_code=404, detail="File not found")
+            path = Path(child.location)
+            if not path.exists():
+                raise HTTPException(status_code=404, detail="File not found")
+            files_to_copy.append(child)
+            total_size_to_add += child.size or path.stat().st_size
+            files_count_to_add += 1
+    else:
+        if not source.location:
+            raise HTTPException(status_code=404, detail="File not found")
+        path = Path(source.location)
+        if not path.exists():
+            raise HTTPException(status_code=404, detail="File not found")
+        files_to_copy.append(source)
+        total_size_to_add += source.size or path.stat().st_size
+        files_count_to_add += 1
+
+    # Enforce storage limits similar to upload
+    storage_stats = get_file_stats(session, current_user)
+    if storage_stats.total_size + total_size_to_add > current_user.max_storage:
+        raise HTTPException(
+            status_code=413,
+            detail=f"Not enough storage space. Max allowed storage size is {current_user.max_storage} bytes",
+        )
+    if storage_stats.count + files_count_to_add > current_user.max_storage_files:
+        raise HTTPException(
+            status_code=413,
+            detail=f"Not enough storage space. Max allowed number of files is {current_user.max_storage_files}",
+        )
+
+    # Perform the copy
+    new_children: list[File] = []
+    for original in files_to_copy:
+        # Open original content and save as a new file owned by current user
+        file_path = Path(original.location) if original.location else None
+        if not file_path or not file_path.exists():
+            raise HTTPException(status_code=404, detail="File not found")
+        with open(file_path, "rb") as fsrc:
+            copied = save_file_to_filesystem(
+                session=session,
+                name=original.name,
+                file=fsrc,
+                file_type=original.file_type,
+                owner_id=current_user.id,
+                saved=True,
+            )
+        # Preserve tags if present
+        if hasattr(original, "tags") and original.tags:
+            copied.tags = list(original.tags)
+            session.add(copied)
+            session.commit()
+            session.refresh(copied)
+        new_children.append(copied)
+
+    # If original was a pair, create a new pair parent for the user
+    if source.file_type == FileTypeEnum.PAIR.value:
+        sum_size = sum(c.size for c in new_children)
+        pair_metadata = File(
+            name=source.name,
+            owner_id=current_user.id,
+            file_type=FileTypeEnum.PAIR.value,
+            children=new_children,
+            size=sum_size,
+            saved=True,
+        )
+        session.add(pair_metadata)
+        session.commit()
+        session.refresh(pair_metadata)
+        return pair_metadata
+
+    # Single file copy
+    return new_children[0]
 
 
 @router.delete("/{id}")
@@ -238,7 +358,7 @@ def download_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID)
     file_metadata = session.get(File, id)
     if not file_metadata:
         raise HTTPException(status_code=404, detail="File not found")
-    if file_metadata.owner_id != current_user.id:
+    if not check_file_access(session, current_user, file_metadata):
         raise HTTPException(status_code=400, detail="Not enough permissions")
     if file_metadata.file_type == FileTypeEnum.PAIR.value:
         # TODO: Download zipped files?
@@ -255,7 +375,7 @@ def get_download_token(session: SessionDep, current_user: CurrentUser, id: uuid.
     file_metadata = session.get(File, id)
     if not file_metadata:
         raise HTTPException(status_code=404, detail="File not found")
-    if file_metadata.owner_id != current_user.id:
+    if not check_file_access(session, current_user, file_metadata):
         raise HTTPException(status_code=400, detail="Not enough permissions")
     access_token_expires = timedelta(minutes=minutes if minutes > 0 and minutes <= 60 * 24 else 1)
     return create_access_token(
