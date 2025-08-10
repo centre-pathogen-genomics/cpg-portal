@@ -130,7 +130,7 @@ function RunDetail() {
           <Flex wrap="nowrap" overflowX={"auto"} mb={4}>
             {run.files.map((file) => (
               <Flex key={file.id} mb={2} mr={2}>
-                <OutputFile file={file} />
+                <OutputFile file={file} copyFile={run.owner_name ? true : false} />
               </Flex>
             ))}
           </Flex>
@@ -146,7 +146,7 @@ function RunDetail() {
                 mb={4}
               >
                 <Heading size="md">Results</Heading>
-                {run.tool.llm_summary_enabled && !llmSummary && (
+                {run.tool.llm_summary_enabled && !llmSummary && !run.owner_name && (
                   <AISummaryButton
                     runId={run.id}
                     onGenerated={(summary) => {

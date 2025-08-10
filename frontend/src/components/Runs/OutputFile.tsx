@@ -2,15 +2,17 @@ import { FilePublic } from "../../client"
 import { Flex, Heading, HStack, Icon, VStack } from "@chakra-ui/react"
 import DownloadFileButton from "../Files/DownloadFileButton"
 import SaveFileButton from "../Files/SaveFileButton"
+import CopyFileButton from "../Files/CopyFileButton";
 import { HiOutlineDocument } from "react-icons/hi2";
 import { humanReadableFileSize } from "../../utils";
 
 
 interface OutputFileProps {
     file: FilePublic;
+    copyFile?: boolean;
 }
 
-function OutputFile({ file }: OutputFileProps) {
+function OutputFile({ file, copyFile }: OutputFileProps) {
     return (
         <Flex borderWidth='1px' borderRadius='lg' overflow='hidden' p={2}>
             <HStack spacing={2}>
@@ -21,7 +23,11 @@ function OutputFile({ file }: OutputFileProps) {
                     </HStack> 
                     <HStack spacing={2} minW={"300px"}>
                         <DownloadFileButton size="xs" file={file} fileSize={file.size ? humanReadableFileSize(file.size): "Unknown size"} />
-                        <SaveFileButton size="xs" fileId={file.id} saved={file.saved ? file.saved : false } />
+                        {copyFile ? (
+                            <CopyFileButton fileId={file.id} size="xs" />
+                        ) : (
+                            <SaveFileButton size="xs" fileId={file.id} saved={file.saved ? file.saved : false } />
+                        )}
                     </HStack>
                 </VStack>
             </HStack>
