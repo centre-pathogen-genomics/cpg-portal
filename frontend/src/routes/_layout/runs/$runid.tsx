@@ -117,7 +117,7 @@ function RunDetail() {
         mb={2}
         mt={1}
       >
-        <EditRunName run={run} />
+        <EditRunName run={run} editable={!run.owner_name} />
       </Flex>
       <Box my={4}>
         <RunMetadata run={run} />
