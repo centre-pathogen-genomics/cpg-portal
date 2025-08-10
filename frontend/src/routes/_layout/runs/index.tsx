@@ -16,7 +16,6 @@ import {
   Tr,
   useColorModeValue,
   Text,
-  Icon,
 } from "@chakra-ui/react"
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
@@ -30,7 +29,7 @@ import RunRuntime from "../../../components/Runs/RunTime"
 import ParamTag from "../../../components/Runs/ParamTag"
 import { humanReadableDate } from "../../../utils"
 import StatusBadge from "../../../components/Runs/StatusBadge"
-import { FiShare2 } from "react-icons/fi"
+
 
 export const Route = createFileRoute("/_layout/runs/")({
   component: Runs,
@@ -163,9 +162,15 @@ function RunsTable() {
                       </Badge>
                     ))}
                   </Td>
-                  <Td textAlign="center">
-                    {run.shared && (
-                      <Icon as={FiShare2} color="green.500" />
+                  <Td >
+                    {run.shared ? (
+                      <Badge colorScheme="green" variant="solid">
+                        TRUE
+                      </Badge>
+                    ) : (
+                      <Badge colorScheme="gray" variant="solid">
+                        FALSE
+                      </Badge>
                     )}
                   </Td>
                   <Td>{run.started_at ? humanReadableDate(run.started_at) : ""}</Td>
