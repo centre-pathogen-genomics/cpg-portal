@@ -1926,6 +1926,33 @@ export type SaveFileResponses = {
 
 export type SaveFileResponse = SaveFileResponses[keyof SaveFileResponses]
 
+export type CopyFileData = {
+  body?: never
+  path: {
+    id: string
+  }
+  query?: never
+  url: "/api/v1/files/{id}/copy"
+}
+
+export type CopyFileErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError
+}
+
+export type CopyFileError = CopyFileErrors[keyof CopyFileErrors]
+
+export type CopyFileResponses = {
+  /**
+   * Successful Response
+   */
+  200: FilePublic
+}
+
+export type CopyFileResponse = CopyFileResponses[keyof CopyFileResponses]
+
 export type DownloadFileData = {
   body?: never
   path: {

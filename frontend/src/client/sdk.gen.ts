@@ -124,6 +124,9 @@ import type {
   SaveFileData,
   SaveFileResponse,
   SaveFileError,
+  CopyFileData,
+  CopyFileResponse,
+  CopyFileError,
   DownloadFileData,
   DownloadFileError,
   GetDownloadTokenData,
@@ -1137,6 +1140,32 @@ export class FilesService {
         },
       ],
       url: "/api/v1/files{id}/save",
+      ...options,
+    })
+  }
+
+  /**
+   * Copy File
+   * Copy a file (or pair) the user has access to into their own saved files.
+   * - If the user already owns the file, simply mark it saved and return it.
+   * - If the file is accessible via a shared run, duplicate the file(s) and
+   * create new metadata owned by the current user with saved=True.
+   */
+  public static copyFile<ThrowOnError extends boolean = false>(
+    options: Options<CopyFileData, ThrowOnError>,
+  ) {
+    return (options?.client ?? client).post<
+      CopyFileResponse,
+      CopyFileError,
+      ThrowOnError
+    >({
+      security: [
+        {
+          scheme: "bearer",
+          type: "http",
+        },
+      ],
+      url: "/api/v1/files/{id}/copy",
       ...options,
     })
   }
