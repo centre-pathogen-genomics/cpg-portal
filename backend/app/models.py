@@ -191,6 +191,7 @@ class ToolUpdate(ToolBase):
     name: str | None = None  # type: ignore
     command: str | None = None
     status: ToolStatus | None = None
+    installation_log: str | None = None
 
 # Database model, database table inferred from class name
 class Tool(ToolBase, table=True):
