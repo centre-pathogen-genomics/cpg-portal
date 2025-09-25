@@ -1,4 +1,3 @@
-import React from "react"
 import { Button } from "@chakra-ui/react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { FilesService, type FilePublic } from "../../client"
