@@ -6,6 +6,14 @@ import {
   Container,
   Flex,
   Heading,
+  Input,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
   SkeletonText,
   Stack,
   Table,
@@ -16,6 +24,7 @@ import {
   Thead,
   Tr,
   Text,
+  useDisclosure,
 } from "@chakra-ui/react"
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
@@ -184,6 +193,8 @@ function Files() {
   const [selected, setSelected] = useState<string[]>([])
   const [groupLoading, setGroupLoading] = useState(false)
   const [groupError, setGroupError] = useState<string | null>(null)
+  const [groupName, setGroupName] = useState("")
+  const { isOpen, onOpen, onClose } = useDisclosure()
 
   const deselectAll = () => {
     setSelected([])
@@ -194,16 +205,23 @@ function Files() {
     setGroupLoading(true)
     setGroupError(null)
     try {
-      const name = prompt("Enter a name for the group:")
-      if (!name) throw new Error("Group name is required")
-      await FilesService.createGroup({body: selected, query: {name: name}})
+      if (!groupName.trim()) throw new Error("Group name is required")
+      await FilesService.createGroup({body: selected, query: {name: groupName.trim()}})
       setSelected([])
+      setGroupName("")
+      onClose()
       queryClient.invalidateQueries({ queryKey: ["files"] })
     } catch (e: any) {
       setGroupError(e?.message || "Failed to create group")
     } finally {
       setGroupLoading(false)
     }
+  }
+
+  const handleOpenModal = () => {
+    setGroupName("")
+    setGroupError(null)
+    onOpen()
   }
 
   return (
@@ -229,7 +247,7 @@ function Files() {
         <ButtonGroup>
           {selected.length > 0 && (
             <>
-              <Button colorScheme="blue" size="sm" onClick={handleCreateGroup} isLoading={groupLoading}>
+              <Button colorScheme="blue" size="sm" onClick={handleOpenModal}>
                 Create Group ({selected.length})
               </Button>
               <Button size="sm" onClick={deselectAll} variant="ghost">Clear</Button>
@@ -244,6 +262,48 @@ function Files() {
         </Text>
       )}
       <FilesTable selected={selected} setSelected={setSelected} />
+
+      {/* Create Group Modal */}
+      <Modal isOpen={isOpen} onClose={onClose}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Create File Group</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Text mb={4}>
+              Enter a name for the group of {selected.length} files:
+            </Text>
+            <Input
+              placeholder="Group name"
+              value={groupName}
+              onChange={(e) => setGroupName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleCreateGroup()
+                }
+              }}
+            />
+            {groupError && (
+              <Text color="red.500" mt={2} fontSize="sm">
+                {groupError}
+              </Text>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onClose}>
+              Cancel
+            </Button>
+            <Button 
+              colorScheme="blue" 
+              onClick={handleCreateGroup} 
+              isLoading={groupLoading}
+              disabled={!groupName.trim()}
+            >
+              Create Group
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Container>
   )
 }
