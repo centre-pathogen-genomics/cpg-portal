@@ -198,10 +198,6 @@ function Files() {
   const [groupName, setGroupName] = useState("")
   const { isOpen, onOpen, onClose } = useDisclosure()
 
-  const deselectAll = () => {
-    setSelected([])
-  }
-
   // Create group handler
   const handleCreateGroup = async () => {
     setGroupLoading(true)
