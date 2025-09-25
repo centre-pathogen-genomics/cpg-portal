@@ -91,7 +91,7 @@ function FilesTable({ selected, setSelected }: FilesTableProps) {
     setSelected((prev) => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
   }
   const selectAll = () => {
-    setSelected(files.map(f => f.id))
+    setSelected(files.filter(f => f.file_type !== "group").map(f => f.id))
   }
   const deselectAll = () => {
     setSelected([])
@@ -107,8 +107,8 @@ function FilesTable({ selected, setSelected }: FilesTableProps) {
                 <input
                   type="checkbox"
                   aria-label="Select all"
-                  checked={selected.length === files.length && files.length > 0}
-                  onChange={selected.length === files.length ? deselectAll : selectAll}
+                  checked={selected.length === files.filter(f => f.file_type !== "group").length && files.length > 0}
+                  onChange={selected.length === files.filter(f => f.file_type !== "group").length ? deselectAll : selectAll}
                 />
               </Th>
               <Th>Name</Th>
@@ -143,12 +143,14 @@ function FilesTable({ selected, setSelected }: FilesTableProps) {
               files.map((file) => (
                 <Tr key={file.id}>
                   <Td px={2} width="1%">
+                  {file.file_type !== "group" && (
                     <input
                       type="checkbox"
                       aria-label={`Select file ${file.name}`}
                       checked={selected.includes(file.id)}
                       onChange={() => toggleSelect(file.id)}
                     />
+                  )}
                   </Td>
                   <Td>{file.name}{file.children?.length ? ` (Group of ${file.children.length})` : ""}</Td>
                   <Td>
@@ -245,22 +247,12 @@ function Files() {
           <Text>Files that are associated with your account.</Text>
         </Stack>
         <ButtonGroup>
-          {selected.length > 0 && (
-            <>
-              <Button colorScheme="blue" size="sm" onClick={handleOpenModal}>
-                Create Group ({selected.length})
-              </Button>
-              <Button size="sm" onClick={deselectAll} variant="ghost">Clear</Button>
-            </>
-          )}
+          <Button colorScheme="blue" onClick={handleOpenModal} isDisabled={selected.length === 0}>
+            {selected.length ? `Create Group (${selected.length})` : `Select to Group`}
+          </Button>
           <DeleteFilesButton />
         </ButtonGroup>
       </Flex>
-      {groupError && (
-        <Text color="red.500" mb={2}>
-          {groupError}
-        </Text>
-      )}
       <FilesTable selected={selected} setSelected={setSelected} />
 
       {/* Create Group Modal */}
