@@ -83,6 +83,16 @@ const FileParam = ({
 }: FileParamProps) => {
   // Local state to store files for immediate updates
   const [files, setFiles] = useState<{ label: string; value: string, colorScheme?: string }[]>([]);
+  const types = param.allowed_file_types ? param.allowed_file_types.map(t => t as FileTypeEnum) : undefined;
+  // if multiple selection is enabled, always add group to the allowed types
+  if (param.allowed_file_types && multiple && !param.allowed_file_types.includes("group")) {
+    types?.push("group");
+  }
+
+  const colorSchemeMap: Record<string, string> = {
+    "pair": "blue",
+    "group": "green",
+  };
   
   const { data, isLoading } = useQuery({
     enabled: !isDisabled,
@@ -102,7 +112,7 @@ const FileParam = ({
               flatFiles.push({
                 label: `${file.name} (${file.file_type})`,
                 value: file.id,
-                colorScheme: file.file_type === "pair" ? "blue" : undefined,
+                colorScheme: file.file_type ? colorSchemeMap[file.file_type] : undefined,
               });
           }
           return flatFiles;

@@ -120,6 +120,7 @@ export type FilePublic = {
         | "yaml"
         | "zip"
         | "pair"
+        | "group"
         | "unknown"
       )
     | null
@@ -221,6 +222,7 @@ export type FilePublicChild = {
         | "yaml"
         | "zip"
         | "pair"
+        | "group"
         | "unknown"
       )
     | null
@@ -333,6 +335,7 @@ export type FileTypeEnum =
   | "yaml"
   | "zip"
   | "pair"
+  | "group"
   | "unknown"
 
 export type FileTypeMetadata = {
@@ -453,6 +456,7 @@ export type Param = {
     | "yaml"
     | "zip"
     | "pair"
+    | "group"
     | "unknown"
   > | null
   multiple?: boolean
@@ -651,6 +655,7 @@ export type Target = {
     | "yaml"
     | "zip"
     | "pair"
+    | "group"
     | "unknown"
   required?: boolean
 }
@@ -1846,6 +1851,62 @@ export type CreatePairResponses = {
 }
 
 export type CreatePairResponse = CreatePairResponses[keyof CreatePairResponses]
+
+export type CreateGroupData = {
+  body: Array<string>
+  path?: never
+  query: {
+    name: string
+  }
+  url: "/api/v1/files/groups"
+}
+
+export type CreateGroupErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError
+}
+
+export type CreateGroupError = CreateGroupErrors[keyof CreateGroupErrors]
+
+export type CreateGroupResponses = {
+  /**
+   * Successful Response
+   */
+  200: FilePublic
+}
+
+export type CreateGroupResponse =
+  CreateGroupResponses[keyof CreateGroupResponses]
+
+export type UngroupFileData = {
+  body?: never
+  path: {
+    id: string
+  }
+  query?: never
+  url: "/api/v1/files/{id}/ungroup"
+}
+
+export type UngroupFileErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError
+}
+
+export type UngroupFileError = UngroupFileErrors[keyof UngroupFileErrors]
+
+export type UngroupFileResponses = {
+  /**
+   * Successful Response
+   */
+  200: Message
+}
+
+export type UngroupFileResponse =
+  UngroupFileResponses[keyof UngroupFileResponses]
 
 export type DeleteFileData = {
   body?: never

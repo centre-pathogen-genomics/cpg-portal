@@ -440,6 +440,11 @@ class FileTypes:
             file_format="group",
             mime_types=[]
     )
+    allowed["group"] = FileTypeMetadata(
+            extensions=[],
+            file_format="group",
+            mime_types=[]
+    )
     allowed["unknown"] = FileTypeMetadata(
             extensions=[],
             file_format="text",

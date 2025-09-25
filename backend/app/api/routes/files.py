@@ -57,9 +57,12 @@ def read_files(
     """
     if not types:
         types = []
-    print(f"Types: {types}")
-    # start with all the top level files
-    base_where = (File.owner_id == current_user.id) & (File.saved) & (File.parent_id.is_(None))
+
+    base_where_owner = (File.owner_id == current_user.id)
+    base_where_saved = base_where_owner & (File.saved)
+    # start with all the top level files (not in a group or pair)
+    base_where_not_group = base_where_saved & (File.parent_id.is_(None))
+    base_where = base_where_not_group
 
     # filter by file types if requested
     if types:
@@ -136,6 +139,7 @@ def upload_file(
     return file_metadata
 
 
+
 @router.post("/pairs", response_model=FilePublic)
 def create_pair(
     session: SessionDep, current_user: CurrentUser, name: str, forward: uuid.UUID, reverse: uuid.UUID
@@ -174,6 +178,82 @@ def create_pair(
     session.commit()
     print(f"Pair created: {pair_metadata}")
     return pair_metadata
+
+
+# New endpoint to create a group of any size
+@router.post("/groups", response_model=FilePublic)
+def create_group(
+    session: SessionDep, current_user: CurrentUser, name: str, file_ids: list[uuid.UUID]
+) -> Any:
+    """
+    Create a group of files of any size.
+    """
+    unique_file_ids = set(file_ids) # Remove duplicates
+    file_ids = list(unique_file_ids)
+    if not file_ids or len(file_ids) < 1:
+        raise HTTPException(status_code=400, detail="At least one file must be provided")
+    if len(file_ids) > settings.MAX_FILES_IN_GROUP:
+        raise HTTPException(status_code=400, detail=f"A maximum of {settings.MAX_FILES_IN_GROUP} files can be grouped together")
+    # Fetch all files and check ownership
+    files = []
+    sum_size = 0
+    for file_id in file_ids:
+        file = session.get(File, file_id)
+        if not file:
+            raise HTTPException(status_code=404, detail=f"File not found: {file_id}")
+        if file.owner_id != current_user.id:
+            raise HTTPException(status_code=400, detail="Not enough permissions")
+        if file.file_type == FileTypeEnum.GROUP.value:
+            raise HTTPException(status_code=400, detail="Cannot include a group within another group")
+        files.append(file)
+        sum_size += file.size
+    # Create the group
+    group_metadata = File(
+        name=name,
+        owner_id=current_user.id,
+        file_type=FileTypeEnum.GROUP.value,
+        children=files,
+        size=sum_size,
+        saved=True,
+    )
+    session.add(group_metadata)
+    session.commit()
+    session.refresh(group_metadata)
+    session.commit()
+    print(f"Group created: {group_metadata}")
+    return group_metadata
+
+
+@router.post("/{id}/ungroup", response_model=Message)
+def ungroup_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
+    """
+    Ungroup a file group (pair or group), making all child files individual files again.
+    """
+    group_file = session.get(File, id)
+    if not group_file:
+        raise HTTPException(status_code=404, detail="File not found")
+    if group_file.owner_id != current_user.id:
+        raise HTTPException(status_code=400, detail="Not enough permissions")
+    
+    # Check if it's actually a group or pair
+    if group_file.file_type not in [FileTypeEnum.PAIR.value, FileTypeEnum.GROUP.value]:
+        raise HTTPException(status_code=400, detail="File is not a group or pair")
+    
+    if not group_file.children:
+        raise HTTPException(status_code=400, detail="Group has no children to ungroup")
+    
+    # Make all children independent
+    children = list(group_file.children)  # Create a copy to avoid modifying while iterating
+    for child in children:
+        child.parent_id = None
+        session.add(child)
+    
+    # Delete the group file
+    session.delete(group_file)
+    session.commit()
+    
+    return Message(message=f"Successfully ungrouped {len(children)} files")
+
 
 @router.get("/{id}", response_model=FilePublic)
 def read_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:

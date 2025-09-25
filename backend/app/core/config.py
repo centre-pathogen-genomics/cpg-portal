@@ -116,6 +116,8 @@ class Settings(BaseSettings):
     # External services
     GEMINI_API_KEY: str | None = None
 
+    MAX_FILES_IN_GROUP: int = 1000
+
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         if value == "changethis":
             message = (

@@ -96,6 +96,12 @@ import type {
   CreatePairData,
   CreatePairError,
   CreatePairResponse,
+  CreateGroupData,
+  CreateGroupError,
+  CreateGroupResponse,
+  UngroupFileData,
+  UngroupFileError,
+  UngroupFileResponse,
   DeleteFileData,
   DeleteFileError,
   ReadFileData,
@@ -1278,6 +1284,84 @@ export const createPairMutation = (
   > = {
     mutationFn: async (localOptions) => {
       const { data } = await FilesService.createPair({
+        ...options,
+        ...localOptions,
+        throwOnError: true,
+      })
+      return data
+    },
+  }
+  return mutationOptions
+}
+
+export const createGroupQueryKey = (options: Options<CreateGroupData>) => [
+  createQueryKey("createGroup", options),
+]
+
+export const createGroupOptions = (options: Options<CreateGroupData>) => {
+  return queryOptions({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await FilesService.createGroup({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      })
+      return data
+    },
+    queryKey: createGroupQueryKey(options),
+  })
+}
+
+export const createGroupMutation = (
+  options?: Partial<Options<CreateGroupData>>,
+) => {
+  const mutationOptions: UseMutationOptions<
+    CreateGroupResponse,
+    AxiosError<CreateGroupError>,
+    Options<CreateGroupData>
+  > = {
+    mutationFn: async (localOptions) => {
+      const { data } = await FilesService.createGroup({
+        ...options,
+        ...localOptions,
+        throwOnError: true,
+      })
+      return data
+    },
+  }
+  return mutationOptions
+}
+
+export const ungroupFileQueryKey = (options: Options<UngroupFileData>) => [
+  createQueryKey("ungroupFile", options),
+]
+
+export const ungroupFileOptions = (options: Options<UngroupFileData>) => {
+  return queryOptions({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await FilesService.ungroupFile({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      })
+      return data
+    },
+    queryKey: ungroupFileQueryKey(options),
+  })
+}
+
+export const ungroupFileMutation = (
+  options?: Partial<Options<UngroupFileData>>,
+) => {
+  const mutationOptions: UseMutationOptions<
+    UngroupFileResponse,
+    AxiosError<UngroupFileError>,
+    Options<UngroupFileData>
+  > = {
+    mutationFn: async (localOptions) => {
+      const { data } = await FilesService.ungroupFile({
         ...options,
         ...localOptions,
         throwOnError: true,

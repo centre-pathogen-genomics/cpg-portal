@@ -116,6 +116,12 @@ import type {
   CreatePairData,
   CreatePairResponse,
   CreatePairError,
+  CreateGroupData,
+  CreateGroupResponse,
+  CreateGroupError,
+  UngroupFileData,
+  UngroupFileResponse,
+  UngroupFileError,
   DeleteFileData,
   DeleteFileError,
   ReadFileData,
@@ -1071,6 +1077,56 @@ export class FilesService {
         },
       ],
       url: "/api/v1/files/pairs",
+      ...options,
+    })
+  }
+
+  /**
+   * Create Group
+   * Create a group of files of any size.
+   */
+  public static createGroup<ThrowOnError extends boolean = false>(
+    options: Options<CreateGroupData, ThrowOnError>,
+  ) {
+    return (options?.client ?? client).post<
+      CreateGroupResponse,
+      CreateGroupError,
+      ThrowOnError
+    >({
+      security: [
+        {
+          scheme: "bearer",
+          type: "http",
+        },
+      ],
+      url: "/api/v1/files/groups",
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+      },
+    })
+  }
+
+  /**
+   * Ungroup File
+   * Ungroup a file group (pair or group), making all child files individual files again.
+   */
+  public static ungroupFile<ThrowOnError extends boolean = false>(
+    options: Options<UngroupFileData, ThrowOnError>,
+  ) {
+    return (options?.client ?? client).post<
+      UngroupFileResponse,
+      UngroupFileError,
+      ThrowOnError
+    >({
+      security: [
+        {
+          scheme: "bearer",
+          type: "http",
+        },
+      ],
+      url: "/api/v1/files/{id}/ungroup",
       ...options,
     })
   }

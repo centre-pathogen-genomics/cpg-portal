@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import {
   Badge,
   Button,
@@ -23,6 +23,7 @@ import FileUpload from "../../../components/Files/UploadFileButtonWithProgress"
 import DeleteFileButton from "../../../components/Files/DeleteFileButton"
 import DeleteFilesButton from "../../../components/Files/DeleteFilesButton"
 import DownloadFileButton from "../../../components/Files/DownloadFileButton"
+import UngroupButton from "../../../components/Files/UngroupButton"
 import StorageStats from "../../../components/Files/StorageStats"
 import { FilesService } from "../../../client"
 import { humanReadableDate, humanReadableFileSize } from "../../../utils"
@@ -38,19 +39,21 @@ export const Route = createFileRoute("/_layout/files/")({
   })
 })
 
-function FilesTable() {
-  // Set the page size as needed (default 5 in this example)
+interface FilesTableProps {
+  selected: string[]
+  setSelected: React.Dispatch<React.SetStateAction<string[]>>
+}
+
+function FilesTable({ selected, setSelected }: FilesTableProps) {
   const pageSize = 20
   const queryClient = useQueryClient()
 
-  // Remove the files query when the component unmounts, so that on re-entry we start fresh.
   useEffect(() => {
     return () => {
       queryClient.removeQueries({ queryKey: ["files", pageSize] })
     }
   }, [queryClient, pageSize])
 
-  // Use useInfiniteQuery to fetch files
   const {
     data,
     isLoading,
@@ -67,15 +70,23 @@ function FilesTable() {
       })
       return response.data
     },
-    // Start at the first page.
     initialPageParam: 1,
-    // If the returned page has as many items as pageSize, assume there is another page.
     getNextPageParam: (lastPage, pages) =>
       lastPage?.data.length === pageSize ? pages.length + 1 : undefined,
   })
 
-  // Flatten the pages into one list of files.
   const files = data?.pages.filter(file => file !== undefined).flatMap((page) => page?.data) || []
+
+  // Checkbox handlers
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  }
+  const selectAll = () => {
+    setSelected(files.map(f => f.id))
+  }
+  const deselectAll = () => {
+    setSelected([])
+  }
 
   return (
     <>
@@ -83,6 +94,14 @@ function FilesTable() {
         <Table size="sm">
           <Thead>
             <Tr>
+              <Th px={2} width="1%">
+                <input
+                  type="checkbox"
+                  aria-label="Select all"
+                  checked={selected.length === files.length && files.length > 0}
+                  onChange={selected.length === files.length ? deselectAll : selectAll}
+                />
+              </Th>
               <Th>Name</Th>
               <Th>Tags</Th>
               <Th>Type</Th>
@@ -93,9 +112,9 @@ function FilesTable() {
           </Thead>
           <Tbody>
             {isLoading ? (
-              // Show skeleton rows while loading the first page.
               new Array(pageSize).fill(null).map((_, idx) => (
                 <Tr key={idx}>
+                  <Td><SkeletonText noOfLines={1} paddingBlock="16px" /></Td>
                   {new Array(6).fill(null).map((_, i) => (
                     <Td key={i}>
                       <SkeletonText noOfLines={1} paddingBlock="16px" />
@@ -104,19 +123,25 @@ function FilesTable() {
                 </Tr>
               ))
             ) : isError ? (
-              // Display an error message if something went wrong.
               <Tr>
-                <Td colSpan={6}>
+                <Td colSpan={7}>
                   <Text color="red.500">
                     Error: {(error as Error).message}
                   </Text>
                 </Td>
               </Tr>
             ) : (
-              // Render the loaded files.
               files.map((file) => (
                 <Tr key={file.id}>
-                  <Td>{file.name}</Td>
+                  <Td px={2} width="1%">
+                    <input
+                      type="checkbox"
+                      aria-label={`Select file ${file.name}`}
+                      checked={selected.includes(file.id)}
+                      onChange={() => toggleSelect(file.id)}
+                    />
+                  </Td>
+                  <Td>{file.name}{file.children?.length ? ` (Group of ${file.children.length})` : ""}</Td>
                   <Td>
                     {file.tags?.map((tag) => (
                       <Badge key={tag} colorScheme="cyan" mr={1}>
@@ -131,7 +156,8 @@ function FilesTable() {
                   <Td>{humanReadableDate(file.created_at)}</Td>
                   <Td>
                     <ButtonGroup size="sm">
-                      <DownloadFileButton size="sm" file={file}  />
+                      <DownloadFileButton file={file}  />
+                      <UngroupButton file={file} size="sm" />
                       <DeleteFileButton file={file} />
                     </ButtonGroup>
                   </Td>
@@ -142,7 +168,6 @@ function FilesTable() {
         </Table>
       </TableContainer>
 
-      {/* Load More Button */}
       {hasNextPage && (
         <Flex justify="center" py={4}>
           <Button onClick={() => fetchNextPage()} isLoading={isFetchingNextPage}>
@@ -155,6 +180,32 @@ function FilesTable() {
 }
 
 function Files() {
+  const queryClient = useQueryClient()
+  const [selected, setSelected] = useState<string[]>([])
+  const [groupLoading, setGroupLoading] = useState(false)
+  const [groupError, setGroupError] = useState<string | null>(null)
+
+  const deselectAll = () => {
+    setSelected([])
+  }
+
+  // Create group handler
+  const handleCreateGroup = async () => {
+    setGroupLoading(true)
+    setGroupError(null)
+    try {
+      const name = prompt("Enter a name for the group:")
+      if (!name) throw new Error("Group name is required")
+      await FilesService.createGroup({body: selected, query: {name: name}})
+      setSelected([])
+      queryClient.invalidateQueries({ queryKey: ["files"] })
+    } catch (e: any) {
+      setGroupError(e?.message || "Failed to create group")
+    } finally {
+      setGroupLoading(false)
+    }
+  }
+
   return (
     <Container maxW="full" px={{ base: 4, md: 6, lg: 8, xl: 12 }}>
       <Stack spacing={1} mb={2}>
@@ -175,9 +226,24 @@ function Files() {
           <Heading size="md">Saved files</Heading>
           <Text>Files that are associated with your account.</Text>
         </Stack>
-        <DeleteFilesButton />
+        <ButtonGroup>
+          {selected.length > 0 && (
+            <>
+              <Button colorScheme="blue" size="sm" onClick={handleCreateGroup} isLoading={groupLoading}>
+                Create Group ({selected.length})
+              </Button>
+              <Button size="sm" onClick={deselectAll} variant="ghost">Clear</Button>
+            </>
+          )}
+          <DeleteFilesButton />
+        </ButtonGroup>
       </Flex>
-      <FilesTable />
+      {groupError && (
+        <Text color="red.500" mb={2}>
+          {groupError}
+        </Text>
+      )}
+      <FilesTable selected={selected} setSelected={setSelected} />
     </Container>
   )
 }
