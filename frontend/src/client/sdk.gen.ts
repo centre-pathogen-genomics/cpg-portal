@@ -1060,7 +1060,7 @@ export class FilesService {
 
   /**
    * Create Pair
-   * Create a group of paired-end reads.
+   * Create a pair of paired-end reads.
    */
   public static createPair<ThrowOnError extends boolean = false>(
     options: Options<CreatePairData, ThrowOnError>,

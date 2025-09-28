@@ -1,7 +1,7 @@
 import enum
 import uuid
 from datetime import datetime
-from typing import Literal, Optional
+from typing import Optional
 
 from pydantic import EmailStr
 from sqlalchemy.dialects.postgresql import JSONB as JSON
@@ -15,8 +15,6 @@ from sqlmodel import (
     SQLModel,
     String,
 )
-
-from app.core.file_types import file_types
 
 
 # Link tables for many-to-many relationships
@@ -111,7 +109,7 @@ class SetupFile(SQLModel):
     content: str
 
 # This literal type is used in DB to prevent hardcoding file types in the DB
-FileType = Literal[file_types.types]
+FileType = str  # Simplified for now - was: Literal[file_types.types]
 
 class Target(SQLModel):
     path: str
@@ -315,6 +313,7 @@ class FileBase(SQLModel):
     size: int | None = None
     saved: bool = False
     tags: list[str] | None = None
+    is_group: bool = False
 
 
 class File(FileBase, table=True):
@@ -323,6 +322,7 @@ class File(FileBase, table=True):
     size: int | None = Field(default=None, sa_column=Column(BigInteger(), nullable=True))
     location: str | None = None
     tags: list[str] | None = Field(default_factory=list, sa_column=Column(JSON))
+    is_group: bool = False
 
     parent_id: uuid.UUID | None = Field(
         foreign_key='file.id',  # notice the lowercase "n" to refer to the database table name

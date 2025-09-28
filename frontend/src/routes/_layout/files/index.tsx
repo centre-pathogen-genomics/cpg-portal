@@ -6,14 +6,6 @@ import {
   Container,
   Flex,
   Heading,
-  Input,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
   SkeletonText,
   Stack,
   Table,
@@ -24,7 +16,6 @@ import {
   Thead,
   Tr,
   Text,
-  useDisclosure,
 } from "@chakra-ui/react"
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
@@ -33,9 +24,11 @@ import DeleteFileButton from "../../../components/Files/DeleteFileButton"
 import DeleteFilesButton from "../../../components/Files/DeleteFilesButton"
 import DownloadFileButton from "../../../components/Files/DownloadFileButton"
 import UngroupButton from "../../../components/Files/UngroupButton"
+import CreateGroupButton from "../../../components/Files/CreateGroupButton"
 import StorageStats from "../../../components/Files/StorageStats"
 import { FilesService } from "../../../client"
 import { humanReadableDate, humanReadableFileSize } from "../../../utils"
+import { BsFolder, BsFolder2Open } from "react-icons/bs"
 
 export const Route = createFileRoute("/_layout/files/")({
   component: Files,
@@ -86,15 +79,26 @@ function FilesTable({ selected, setSelected }: FilesTableProps) {
 
   const files = data?.pages.filter(file => file !== undefined).flatMap((page) => page?.data) || []
 
+  // Get the file type of the first selected file
+  const firstSelectedFile = selected.length > 0 ? files.find(f => f.id === selected[0]) : null
+  const firstSelectedFileType = firstSelectedFile?.file_type
+
   // Checkbox handlers
   const toggleSelect = (id: string) => {
     setSelected((prev) => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
   }
   const selectAll = () => {
-    setSelected(files.filter(f => f.file_type !== "group").map(f => f.id))
+    setSelected(files.filter(f => canSelectFile(f)).map(f => f.id))
   }
   const deselectAll = () => {
     setSelected([])
+  }
+
+  // Check if a file can be selected based on the first selected file's type
+  const canSelectFile = (file: any) => {
+    if (file.is_group) return false // Groups cannot be selected
+    if (selected.length === 0) return true // First selection, any non-group file can be selected
+    return file.file_type === firstSelectedFileType // Must match first selected file's type
   }
 
   return (
@@ -104,12 +108,7 @@ function FilesTable({ selected, setSelected }: FilesTableProps) {
           <Thead>
             <Tr>
               <Th px={2} width="1%">
-                <input
-                  type="checkbox"
-                  aria-label="Select all"
-                  checked={selected.length === files.filter(f => f.file_type !== "group").length && files.length > 0}
-                  onChange={selected.length === files.filter(f => f.file_type !== "group").length ? deselectAll : selectAll}
-                />
+                
               </Th>
               <Th>Name</Th>
               <Th>Tags</Th>
@@ -143,7 +142,7 @@ function FilesTable({ selected, setSelected }: FilesTableProps) {
               files.map((file) => (
                 <Tr key={file.id}>
                   <Td px={2} width="1%">
-                  {file.file_type !== "group" && (
+                  {canSelectFile(file) && (
                     <input
                       type="checkbox"
                       aria-label={`Select file ${file.name}`}
@@ -151,8 +150,11 @@ function FilesTable({ selected, setSelected }: FilesTableProps) {
                       onChange={() => toggleSelect(file.id)}
                     />
                   )}
+                  {file.is_group && ( <BsFolder />)}
                   </Td>
-                  <Td>{file.name}{file.children?.length ? ` (Group of ${file.children.length})` : ""}</Td>
+                  <Td>
+                    {file.name}
+                  </Td>
                   <Td>
                     {file.tags?.map((tag) => (
                       <Badge key={tag} colorScheme="cyan" mr={1}>
@@ -160,14 +162,16 @@ function FilesTable({ selected, setSelected }: FilesTableProps) {
                       </Badge>
                     ))}
                   </Td>
-                  <Td>{file.file_type}</Td>
+                  <Td>
+                    {file.is_group ? `${file.file_type} (group)` : file.file_type === 'pair' ? 'paired-end reads' : file.file_type}
+                  </Td>
                   <Td>
                     {file.size ? humanReadableFileSize(file.size) : ""}
                   </Td>
                   <Td>{humanReadableDate(file.created_at)}</Td>
                   <Td>
                     <ButtonGroup size="sm">
-                      <DownloadFileButton file={file}  />
+                      <DownloadFileButton file={file} size="sm" />
                       <UngroupButton file={file} size="sm" />
                       <DeleteFileButton file={file} />
                     </ButtonGroup>
@@ -191,35 +195,10 @@ function FilesTable({ selected, setSelected }: FilesTableProps) {
 }
 
 function Files() {
-  const queryClient = useQueryClient()
   const [selected, setSelected] = useState<string[]>([])
-  const [groupLoading, setGroupLoading] = useState(false)
-  const [groupError, setGroupError] = useState<string | null>(null)
-  const [groupName, setGroupName] = useState("")
-  const { isOpen, onOpen, onClose } = useDisclosure()
 
-  // Create group handler
-  const handleCreateGroup = async () => {
-    setGroupLoading(true)
-    setGroupError(null)
-    try {
-      if (!groupName.trim()) throw new Error("Group name is required")
-      await FilesService.createGroup({body: selected, query: {name: groupName.trim()}})
-      setSelected([])
-      setGroupName("")
-      onClose()
-      queryClient.invalidateQueries({ queryKey: ["files"] })
-    } catch (e: any) {
-      setGroupError(e?.message || "Failed to create group")
-    } finally {
-      setGroupLoading(false)
-    }
-  }
-
-  const handleOpenModal = () => {
-    setGroupName("")
-    setGroupError(null)
-    onOpen()
+  const handleGroupCreated = () => {
+    setSelected([])
   }
 
   return (
@@ -243,55 +222,16 @@ function Files() {
           <Text>Files that are associated with your account.</Text>
         </Stack>
         <ButtonGroup>
-          <Button colorScheme="blue" onClick={handleOpenModal} isDisabled={selected.length === 0}>
-            {selected.length ? `Create Group (${selected.length})` : `Select to Group`}
-          </Button>
+          <CreateGroupButton 
+            selectedFileIds={selected}
+            onGroupCreated={handleGroupCreated}
+          />
           <DeleteFilesButton />
         </ButtonGroup>
       </Flex>
       <FilesTable selected={selected} setSelected={setSelected} />
 
-      {/* Create Group Modal */}
-      <Modal isOpen={isOpen} onClose={onClose}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Create File Group</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <Text mb={4}>
-              Enter a name for the group of {selected.length} files:
-            </Text>
-            <Input
-              placeholder="Group name"
-              value={groupName}
-              onChange={(e) => setGroupName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleCreateGroup()
-                }
-              }}
-            />
-            {groupError && (
-              <Text color="red.500" mt={2} fontSize="sm">
-                {groupError}
-              </Text>
-            )}
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onClose}>
-              Cancel
-            </Button>
-            <Button 
-              colorScheme="blue" 
-              onClick={handleCreateGroup} 
-              isLoading={groupLoading}
-              disabled={!groupName.trim()}
-            >
-              Create Group
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+
     </Container>
   )
 }

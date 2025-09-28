@@ -84,10 +84,6 @@ const FileParam = ({
   // Local state to store files for immediate updates
   const [files, setFiles] = useState<{ label: string; value: string, colorScheme?: string }[]>([]);
   const types = param.allowed_file_types ? param.allowed_file_types.map(t => t as FileTypeEnum) : undefined;
-  // if multiple selection is enabled, always add group to the allowed types
-  if (param.allowed_file_types && multiple && !param.allowed_file_types.includes("group")) {
-    types?.push("group");
-  }
 
   const colorSchemeMap: Record<string, string> = {
     "pair": "blue",
@@ -101,7 +97,7 @@ const FileParam = ({
       FilesService.readFiles(
         {query:
           {
-            types: param.allowed_file_types  ? param.allowed_file_types as unknown as FileTypeEnum[] : undefined,
+            types
           }
         }).then(({data: files}) =>{
           if (files?.data === undefined) {
@@ -110,9 +106,9 @@ const FileParam = ({
           const flatFiles = [];
           for (const file of files?.data) {
               flatFiles.push({
-                label: `${file.name} (${file.file_type})`,
+                label: `${file.name} (${file.file_type}${file.is_group ? ', group' : ''})`,
                 value: file.id,
-                colorScheme: file.file_type ? colorSchemeMap[file.file_type] : undefined,
+                colorScheme: file.is_group ? 'green' : colorSchemeMap[file.file_type? file.file_type : ''] || 'gray',
               });
           }
           return flatFiles;

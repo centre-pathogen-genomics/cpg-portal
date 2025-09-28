@@ -145,7 +145,7 @@ def create_pair(
     session: SessionDep, current_user: CurrentUser, name: str, forward: uuid.UUID, reverse: uuid.UUID
 ) -> Any:
     """
-    Create a group of paired-end reads.
+    Create a pair of paired-end reads.
     """
     # Check if all files belong to the user
     forward_file = session.get(File, forward)
@@ -154,10 +154,14 @@ def create_pair(
         raise HTTPException(status_code=404, detail="File not found")
     if forward_file.owner_id != current_user.id or reverse_file.owner_id != current_user.id:
         raise HTTPException(status_code=400, detail="Not enough permissions")
+    
+    # Check that both files have the same type
+    if forward_file.file_type != reverse_file.file_type:
+        raise HTTPException(status_code=400, detail="Both files in a pair must have the same file type")
 
     sum_size = forward_file.size + reverse_file.size
     children = [forward_file, reverse_file]
-    # Create a pair group
+    # Create a pair with PAIR file type - pairs are NOT groups
     pair_metadata = File(
         name=name,
         owner_id=current_user.id,
@@ -165,6 +169,7 @@ def create_pair(
         children=children,
         size=sum_size,
         saved=True,
+        is_group=False,  # Pairs are NOT groups
     )
     session.add(pair_metadata)
     session.commit()
@@ -194,27 +199,41 @@ def create_group(
         raise HTTPException(status_code=400, detail="At least one file must be provided")
     if len(file_ids) > settings.MAX_FILES_IN_GROUP:
         raise HTTPException(status_code=400, detail=f"A maximum of {settings.MAX_FILES_IN_GROUP} files can be grouped together")
+    
     # Fetch all files and check ownership
     files = []
     sum_size = 0
+    file_types_in_group = set()
+    
     for file_id in file_ids:
         file = session.get(File, file_id)
         if not file:
             raise HTTPException(status_code=404, detail=f"File not found: {file_id}")
         if file.owner_id != current_user.id:
             raise HTTPException(status_code=400, detail="Not enough permissions")
-        if file.file_type == FileTypeEnum.GROUP.value:
+        if file.is_group:
             raise HTTPException(status_code=400, detail="Cannot include a group within another group")
         files.append(file)
         sum_size += file.size
+        if file.file_type:
+            file_types_in_group.add(file.file_type)
+    
+    # Ensure all files have the same type
+    if len(file_types_in_group) > 1:
+        raise HTTPException(status_code=400, detail="All files in a group must have the same file type")
+    
+    # Determine the file type for the group (use the type of the children, or 'unknown' if no type)
+    group_file_type = next(iter(file_types_in_group)) if file_types_in_group else "unknown"
+    
     # Create the group
     group_metadata = File(
         name=name,
         owner_id=current_user.id,
-        file_type=FileTypeEnum.GROUP.value,
+        file_type=group_file_type,
         children=files,
         size=sum_size,
         saved=True,
+        is_group=True,
     )
     session.add(group_metadata)
     session.commit()
@@ -227,7 +246,7 @@ def create_group(
 @router.post("/{id}/ungroup", response_model=Message)
 def ungroup_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
     """
-    Ungroup a file group (pair or group), making all child files individual files again.
+    Ungroup a file group, making all child files individual files again.
     """
     group_file = session.get(File, id)
     if not group_file:
@@ -235,9 +254,9 @@ def ungroup_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) 
     if group_file.owner_id != current_user.id:
         raise HTTPException(status_code=400, detail="Not enough permissions")
     
-    # Check if it's actually a group or pair
-    if group_file.file_type not in [FileTypeEnum.PAIR.value, FileTypeEnum.GROUP.value]:
-        raise HTTPException(status_code=400, detail="File is not a group or pair")
+    # Check if it's actually a group
+    if not group_file.is_group:
+        raise HTTPException(status_code=400, detail="File is not a group")
     
     if not group_file.children:
         raise HTTPException(status_code=400, detail="Group has no children to ungroup")
@@ -307,9 +326,9 @@ def copy_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> 
     total_size_to_add = 0
     files_count_to_add = 0
 
-    if source.file_type == FileTypeEnum.PAIR.value:
-        if not source.children or len(source.children) != 2:
-            raise HTTPException(status_code=400, detail="Invalid pair file")
+    if source.is_group or source.file_type == FileTypeEnum.PAIR.value:
+        if not source.children:
+            raise HTTPException(status_code=400, detail="Invalid group or pair file")
         for child in source.children:
             if not child.location:
                 raise HTTPException(status_code=404, detail="File not found")
@@ -366,21 +385,22 @@ def copy_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> 
             session.refresh(copied)
         new_children.append(copied)
 
-    # If original was a pair, create a new pair parent for the user
-    if source.file_type == FileTypeEnum.PAIR.value:
+    # If original was a group or pair, create a new parent for the user
+    if source.is_group or source.file_type == FileTypeEnum.PAIR.value:
         sum_size = sum(c.size for c in new_children)
-        pair_metadata = File(
+        parent_metadata = File(
             name=source.name,
             owner_id=current_user.id,
-            file_type=FileTypeEnum.PAIR.value,
+            file_type=source.file_type,  # Use the same file type as the original (pair or group file type)
             children=new_children,
             size=sum_size,
             saved=True,
+            is_group=source.is_group,  # Preserve whether it's a group or not
         )
-        session.add(pair_metadata)
+        session.add(parent_metadata)
         session.commit()
-        session.refresh(pair_metadata)
-        return pair_metadata
+        session.refresh(parent_metadata)
+        return parent_metadata
 
     # Single file copy
     return new_children[0]
@@ -440,9 +460,10 @@ def download_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID)
         raise HTTPException(status_code=404, detail="File not found")
     if not check_file_access(session, current_user, file_metadata):
         raise HTTPException(status_code=400, detail="Not enough permissions")
-    if file_metadata.file_type == FileTypeEnum.PAIR.value:
+    if file_metadata.is_group or file_metadata.file_type == FileTypeEnum.PAIR.value:
         # TODO: Download zipped files?
-        raise HTTPException(status_code=400, detail="Paired-end reads cannot be downloaded directly. Please download the files separately.")
+        file_type_desc = "Paired files" if file_metadata.file_type == FileTypeEnum.PAIR.value else "Grouped files"
+        raise HTTPException(status_code=400, detail=f"{file_type_desc} cannot be downloaded directly. Please download the files separately.")
     if not file_metadata.location:
         raise HTTPException(status_code=404, detail="File not found")
     return FileResponse(file_metadata.location, filename=file_metadata.name)

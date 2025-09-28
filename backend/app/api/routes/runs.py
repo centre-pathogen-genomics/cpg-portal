@@ -127,23 +127,20 @@ async def create_run(
                     raise HTTPException(
                         status_code=400, detail=f"File type not allowed: {file.file_type}"
                     )
-                if not param.multiple and file.file_type == FileTypeEnum.GROUP.value and len(file.children) > 1:
+                if not param.multiple and file.is_group:
                     raise HTTPException(
-                        status_code=400, detail=f"Parameter {param.name} does not allow multiple files, but a group with multiple files was provided"
+                        status_code=400, detail=f"Parameter {param.name} does not allow multiple files, but a group was provided"
                     )
                 if file.children:
                     # if the file has children, add them all (don't add the parent)
+                    child_names = []
                     for child in file.children:
                         files.append(child)
-                    child_names = [Path(child.location).name for child in file.children]
-                    if param.allowed_file_types:
-                        # if specific file types are allowed, check if pairs or groups are allowed
-                        if FileTypeEnum.PAIR.value in param.allowed_file_types:
-                            # if the parameter allows pairs, add the pair as [pair1, pair2]
-                            file_names.append(child_names)
-                        if FileTypeEnum.GROUP.value in param.allowed_file_types:
-                            # if the parameter allows groups, add the group as a single entry
-                            file_names.append(child_names)
+                        child_names.append(Path(child.location).name)
+
+                    if param.allowed_file_types and FileTypeEnum.PAIR.value in param.allowed_file_types:
+                        # if the parameter allows pairs, add the pair as [pair1, pair2]
+                        file_names.append(child_names)
                     else:
                         # otherwise, add the children as separate files
                         file_names.extend(child_names)

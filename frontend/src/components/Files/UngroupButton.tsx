@@ -23,7 +23,8 @@ export default function UngroupButton({ file, size = "sm", onSuccess }: UngroupB
     }
   })
 
-  const isGroup = file.file_type === "pair" || file.file_type === "group"
+  // Only show ungroup button for actual groups (not pairs)
+  const isGroup = file.is_group 
   const hasChildren = file.children && file.children.length > 0
 
   if (!isGroup || !hasChildren) {

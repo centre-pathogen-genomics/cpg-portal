@@ -437,12 +437,7 @@ class FileTypes:
     # special types
     allowed["pair"] = FileTypeMetadata(
             extensions=[],
-            file_format="group",
-            mime_types=[]
-    )
-    allowed["group"] = FileTypeMetadata(
-            extensions=[],
-            file_format="group",
+            file_format="array",
             mime_types=[]
     )
     allowed["unknown"] = FileTypeMetadata(
