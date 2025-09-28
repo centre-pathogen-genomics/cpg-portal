@@ -28,7 +28,7 @@ import CreateGroupButton from "../../../components/Files/CreateGroupButton"
 import StorageStats from "../../../components/Files/StorageStats"
 import { FilesService } from "../../../client"
 import { humanReadableDate, humanReadableFileSize } from "../../../utils"
-import { BsFolder, BsFolder2Open } from "react-icons/bs"
+import { BsFolder } from "react-icons/bs"
 
 export const Route = createFileRoute("/_layout/files/")({
   component: Files,
@@ -86,12 +86,6 @@ function FilesTable({ selected, setSelected }: FilesTableProps) {
   // Checkbox handlers
   const toggleSelect = (id: string) => {
     setSelected((prev) => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
-  }
-  const selectAll = () => {
-    setSelected(files.filter(f => canSelectFile(f)).map(f => f.id))
-  }
-  const deselectAll = () => {
-    setSelected([])
   }
 
   // Check if a file can be selected based on the first selected file's type
