@@ -100,11 +100,11 @@ async def create_run(
             file_ids = params[param.name]
             if not isinstance(file_ids, list):
                 raise HTTPException(
-                    status_code=400, detail=f"For parameter {param.name}, expected list of file ids, got {file_ids}"
+                    status_code=400, detail=f"For parameter `{param.name}`, expected list of file ids, got {file_ids}"
                 )
             if not param.multiple and len(file_ids) != 1:
                 raise HTTPException(
-                    status_code=400, detail=f"For parameter {param.name}, expected list with a single file, got {len(file_ids)}"
+                    status_code=400, detail=f"For parameter `{param.name}`, expected list with a single file, got {len(file_ids)}"
                 )
             file_names = []
             for file_id in file_ids:
@@ -129,7 +129,7 @@ async def create_run(
                     )
                 if not param.multiple and file.is_group:
                     raise HTTPException(
-                        status_code=400, detail=f"Parameter {param.name} does not allow multiple files, but a group was provided"
+                        status_code=400, detail=f"Parameter `{param.name}` does not allow multiple files, but a group was provided"
                     )
                 if file.children:
                     # if the file has children, add them all (don't add the parent)
@@ -154,31 +154,31 @@ async def create_run(
         elif param.param_type == "bool":
             if not isinstance(params[param.name], bool):
                 raise HTTPException(
-                    status_code=400, detail=f"For parameter {param.name}, expected bool, got {params[param.name]}"
+                    status_code=400, detail=f"For parameter `{param.name}`, expected bool, got {params[param.name]}"
                 )
         elif param.param_type == "int":
             try:
                 params[param.name] = int(params[param.name])
             except ValueError:
                 raise HTTPException(
-                    status_code=400, detail=f"For parameter {param.name}, expected int, got {params[param.name]}"
+                    status_code=400, detail=f"For parameter `{param.name}`, expected int, got {params[param.name]}"
                 )
         elif param.param_type == "float":
             try:
                 params[param.name] = float(params[param.name])
             except ValueError:
                 raise HTTPException(
-                    status_code=400, detail=f"For parameter {param.name}, expected float, got {params[param.name]}"
+                    status_code=400, detail=f"For parameter `{param.name}`, expected float, got {params[param.name]}"
                 )
         elif param.param_type == "str":
             if not isinstance(params[param.name], str):
                 raise HTTPException(
-                    status_code=400, detail=f"For parameter {param.name}, expected str, got {params[param.name]}"
+                    status_code=400, detail=f"For parameter `{param.name}`, expected str, got {params[param.name]}"
                 )
         elif param.param_type == "enum":
             if params[param.name] not in param.options:
                 raise HTTPException(
-                    status_code=400, detail=f"For parameter {param.name}, expected one of {', '.join(param.options)}, got {params[param.name]}"
+                    status_code=400, detail=f"For parameter `{param.name}`, expected one of {', '.join(param.options)}, got {params[param.name]}"
                 )
         else:
             raise HTTPException(
