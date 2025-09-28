@@ -1110,7 +1110,7 @@ export class FilesService {
 
   /**
    * Ungroup File
-   * Ungroup a file group (pair or group), making all child files individual files again.
+   * Ungroup a file group, making all child files individual files again.
    */
   public static ungroupFile<ThrowOnError extends boolean = false>(
     options: Options<UngroupFileData, ThrowOnError>,
