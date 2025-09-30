@@ -28,11 +28,7 @@ class FileTypes:
             file_format="text",
             mime_types=["text/bed"]
         ),
-        "bib": FileTypeMetadata(
-            extensions=[".bib"],
-            file_format="text",
-            mime_types=["text/x-bibtex"]
-        ),
+
         "csv": FileTypeMetadata(
             extensions=[".csv"],
             file_format="text",
