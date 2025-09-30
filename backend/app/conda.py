@@ -32,8 +32,11 @@ class CondaEnvManger:
     def env_yaml_str(self) -> str:
         yaml_str = yaml.dump(self.env_dict, default_flow_style=False)
         if self.version:
-            yaml_str = yaml_str.replace("{{version}}", self.version).replace("{{ version }}", self.version)
+            yaml_str = self.format_with_version(yaml_str)
         return yaml_str
+
+    def format_with_version(self, s: str) -> str:
+        return s.replace("{{version}}", self.version).replace("{{ version }}", self.version)
 
     async def _run_command(self, cmd, cwd=None):
         proc = await asyncio.create_subprocess_shell(
@@ -48,7 +51,7 @@ class CondaEnvManger:
         return proc.returncode, stdout.decode().strip()
 
     async def _run_post_install(self):
-        command = f"{self.activate_command}; {self.post_install_command}"
+        command = f"{self.activate_command}; {self.format_with_version(self.post_install_command)}"
         returncode, stdout = await self._run_command(command, cwd=self.path)
         if returncode != 0:
             raise CondaEnvMangerInstallError(stdout)
