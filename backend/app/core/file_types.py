@@ -13,20 +13,10 @@ class FileTypeMetadata(BaseModel):
 class FileTypes:
     # Class-level dictionary of allowed file types with their metadata.
     allowed: ClassVar[dict[str, FileTypeMetadata]] = {
-        "avi": FileTypeMetadata(
-            extensions=[".avi"],
-            file_format="binary",
-            mime_types=["video/x-msvideo"]
-        ),
         "bam": FileTypeMetadata(
             extensions=[".bam"],
             file_format="binary",
             mime_types=["application/x-bam"]
-        ),
-        "bat": FileTypeMetadata(
-            extensions=[".bat"],
-            file_format="text",
-            mime_types=["text/plain"]
         ),
         "beast": FileTypeMetadata(
             extensions=[".trees"],
@@ -43,26 +33,6 @@ class FileTypes:
             file_format="text",
             mime_types=["text/x-bibtex"]
         ),
-        "bmp": FileTypeMetadata(
-            extensions=[".bmp"],
-            file_format="binary",
-            mime_types=["image/bmp"]
-        ),
-        "c": FileTypeMetadata(
-            extensions=[".c"],
-            file_format="text",
-            mime_types=["text/x-c"]
-        ),
-        "cpp": FileTypeMetadata(
-            extensions=[".cpp"],
-            file_format="text",
-            mime_types=["text/x-c++src"]
-        ),
-        "css": FileTypeMetadata(
-            extensions=[".css"],
-            file_format="text",
-            mime_types=["text/css"]
-        ),
         "csv": FileTypeMetadata(
             extensions=[".csv"],
             file_format="text",
@@ -72,11 +42,6 @@ class FileTypes:
             extensions=[".docx"],
             file_format="binary",
             mime_types=["application/vnd.openxmlformats-officedocument.wordprocessingml.document"]
-        ),
-        "epub": FileTypeMetadata(
-            extensions=[".epub"],
-            file_format="binary",
-            mime_types=["application/epub+zip"]
         ),
         "fasta": FileTypeMetadata(
             extensions=[".fasta", ".fa", ".fna", ".ffn", ".frn", ".faa"],
@@ -93,20 +58,10 @@ class FileTypes:
             file_format="binary",
             mime_types=["application/gzip"]
         ),
-        "flac": FileTypeMetadata(
-            extensions=[".flac"],
-            file_format="binary",
-            mime_types=["audio/flac"]
-        ),
         "geojson": FileTypeMetadata(
             extensions=[".geojson"],
             file_format="json",
             mime_types=["application/geo+json"]
-        ),
-        "gexf": FileTypeMetadata(
-            extensions=[".gexf"],
-            file_format="text",
-            mime_types=["application/xml"]
         ),
         "gff": FileTypeMetadata(
             extensions=[".gff", ".gff3"],
@@ -117,11 +72,6 @@ class FileTypes:
             extensions=[".gb", ".gbk", ".genbank"],
             file_format="text",
             mime_types=["text/x-genbank"]
-        ),
-        "go": FileTypeMetadata(
-            extensions=[".go"],
-            file_format="text",
-            mime_types=["text/plain"]
         ),
         "graphml": FileTypeMetadata(
             extensions=[".graphml"],
@@ -148,50 +98,15 @@ class FileTypes:
             file_format="text",
             mime_types=["text/html"]
         ),
-        "ical": FileTypeMetadata(
-            extensions=[".ical", ".ics", ".ifb", ".icalendar"],
-            file_format="text",
-            mime_types=["text/calendar"]
-        ),
-        "ico": FileTypeMetadata(
-            extensions=[".ico"],
-            file_format="binary",
-            mime_types=["image/x-icon"]
-        ),
-        "ini": FileTypeMetadata(
-            extensions=[".ini"],
-            file_format="text",
-            mime_types=["text/plain"]
-        ),
-        "ipynb": FileTypeMetadata(
-            extensions=[".ipynb"],
-            file_format="json",
-            mime_types=["application/x-ipynb+json"]
-        ),
         "iqtree": FileTypeMetadata(
             extensions=[".iqtree"],
             file_format="text",
             mime_types=["text/plain"]
         ),
-        "java": FileTypeMetadata(
-            extensions=[".java"],
-            file_format="text",
-            mime_types=["text/x-java-source"]
-        ),
         "jpeg": FileTypeMetadata(
             extensions=[".jpeg", ".jpg"],
             file_format="binary",
             mime_types=["image/jpeg"]
-        ),
-        "js": FileTypeMetadata(
-            extensions=[".js", ".mjs"],
-            file_format="text",
-            mime_types=["application/javascript"]
-        ),
-        "jsmap": FileTypeMetadata(
-            extensions=[".map"],
-            file_format="json",
-            mime_types=["application/json"]
         ),
         "json": FileTypeMetadata(
             extensions=[".json"],
@@ -203,40 +118,15 @@ class FileTypes:
             file_format="text",
             mime_types=["application/jsonl"]
         ),
-        "kt": FileTypeMetadata(
-            extensions=[".kt"],
-            file_format="text",
-            mime_types=["text/x-kotlin"]
-        ),
         "log": FileTypeMetadata(
             extensions=[".log"],
             file_format="text",
             mime_types=["text/plain"]
         ),
-        "manifest": FileTypeMetadata(
-            extensions=[".manifest"],
-            file_format="text",
-            mime_types=["text/cache-manifest"]
-        ),
-        "matlab": FileTypeMetadata(
-            extensions=[".m"],
-            file_format="text",
-            mime_types=["text/x-matlab"]
-        ),
         "md": FileTypeMetadata(
             extensions=[".md", ".markdown"],
             file_format="text",
             mime_types=["text/markdown"]
-        ),
-        "mp3": FileTypeMetadata(
-            extensions=[".mp3"],
-            file_format="binary",
-            mime_types=["audio/mpeg"]
-        ),
-        "mp4": FileTypeMetadata(
-            extensions=[".mp4"],
-            file_format="binary",
-            mime_types=["video/mp4"]
         ),
         "newick": FileTypeMetadata(
             extensions=[".nwk", ".newick"],
@@ -248,16 +138,6 @@ class FileTypes:
             file_format="text",
             mime_types=["text/x-nexus"]
         ),
-        "obj": FileTypeMetadata(
-            extensions=[".obj"],
-            file_format="text",
-            mime_types=["text/plain"]
-        ),
-        "otf": FileTypeMetadata(
-            extensions=[".otf"],
-            file_format="binary",
-            mime_types=["font/otf"]
-        ),
         "pdb": FileTypeMetadata(
             extensions=[".pdb"],
             file_format="text",
@@ -268,20 +148,10 @@ class FileTypes:
             file_format="binary",
             mime_types=["application/pdf"]
         ),
-        "php": FileTypeMetadata(
-            extensions=[".php"],
-            file_format="text",
-            mime_types=["application/x-httpd-php"]
-        ),
         "phy": FileTypeMetadata(
             extensions=[".phy"],
             file_format="text",
             mime_types=["text/x-phy"]
-        ),
-        "pl": FileTypeMetadata(
-            extensions=[".pl"],
-            file_format="text",
-            mime_types=["text/x-perl"]
         ),
         "text": FileTypeMetadata(
             extensions=[".txt"],
@@ -293,75 +163,20 @@ class FileTypes:
             file_format="binary",
             mime_types=["image/png"]
         ),
-        "pptx": FileTypeMetadata(
-            extensions=[".pptx"],
-            file_format="binary",
-            mime_types=["application/vnd.openxmlformats-officedocument.presentationml.presentation"]
-        ),
-        "py": FileTypeMetadata(
-            extensions=[".py"],
-            file_format="text",
-            mime_types=["text/x-python", "application/x-python-code"]
-        ),
-        "r": FileTypeMetadata(
-            extensions=[".r"],
-            file_format="text",
-            mime_types=["text/x-r"]
-        ),
-        "rar": FileTypeMetadata(
-            extensions=[".rar"],
-            file_format="binary",
-            mime_types=["application/x-rar-compressed"]
-        ),
-        "rb": FileTypeMetadata(
-            extensions=[".rb"],
-            file_format="text",
-            mime_types=["text/x-ruby"]
-        ),
         "rmd": FileTypeMetadata(
             extensions=[".rmd"],
             file_format="text",
             mime_types=["text/x-rmarkdown"]
-        ),
-        "rs": FileTypeMetadata(
-            extensions=[".rs"],
-            file_format="text",
-            mime_types=["text/x-rustsrc"]
         ),
         "sam": FileTypeMetadata(
             extensions=[".sam"],
             file_format="text",
             mime_types=["text/plain"]
         ),
-        "scala": FileTypeMetadata(
-            extensions=[".scala"],
-            file_format="text",
-            mime_types=["text/x-scala"]
-        ),
-        "sh": FileTypeMetadata(
-            extensions=[".sh"],
-            file_format="text",
-            mime_types=["text/x-shellscript"]
-        ),
-        "sql": FileTypeMetadata(
-            extensions=[".sql"],
-            file_format="text",
-            mime_types=["text/x-sql"]
-        ),
-        "stl": FileTypeMetadata(
-            extensions=[".stl"],
-            file_format="binary",
-            mime_types=["model/stl"]
-        ),
         "svg": FileTypeMetadata(
             extensions=[".svg"],
             file_format="text",
             mime_types=["image/svg+xml"]
-        ),
-        "tex": FileTypeMetadata(
-            extensions=[".tex"],
-            file_format="text",
-            mime_types=["text/x-tex"]
         ),
         "tiff": FileTypeMetadata(
             extensions=[".tiff", ".tif"],
@@ -378,11 +193,6 @@ class FileTypes:
             file_format="text",
             mime_types=["text/tab-separated-values"]
         ),
-        "ttf": FileTypeMetadata(
-            extensions=[".ttf"],
-            file_format="binary",
-            mime_types=["font/ttf"]
-        ),
         "vcf": FileTypeMetadata(
             extensions=[".vcf"],
             file_format="text",
@@ -392,26 +202,6 @@ class FileTypes:
             extensions=[".vcf.gz"],
             file_format="binary",
             mime_types=["application/gzip"]
-        ),
-        "vue": FileTypeMetadata(
-            extensions=[".vue"],
-            file_format="text",
-            mime_types=["text/plain"]
-        ),
-        "wasm": FileTypeMetadata(
-            extensions=[".wasm"],
-            file_format="binary",
-            mime_types=["application/wasm"]
-        ),
-        "wav": FileTypeMetadata(
-            extensions=[".wav"],
-            file_format="binary",
-            mime_types=["audio/wav"]
-        ),
-        "wheel": FileTypeMetadata(
-            extensions=[".whl"],
-            file_format="binary",
-            mime_types=["octet/stream", "application/x-wheel+zip"]
         ),
         "xlsx": FileTypeMetadata(
             extensions=[".xlsx"],
