@@ -13,6 +13,7 @@ from app.core.config import settings
 from app.core.file_types import FileTypeEnum, FileTypeMetadata, file_types
 from app.core.security import create_access_token
 from app.crud import get_file_stats
+from app.crud import rename_file as rename_file_crud
 from app.crud import save_file as save_file_to_filesystem
 from app.models import (
     File,
@@ -482,6 +483,31 @@ def get_download_token(session: SessionDep, current_user: CurrentUser, id: uuid.
     return create_access_token(
             str(file_metadata.id), expires_delta=access_token_expires
         )
+
+@router.patch("/{id}/rename", response_model=FilePublic)
+def rename_file(
+    session: SessionDep,
+    current_user: CurrentUser,
+    id: uuid.UUID,
+    name: str = Query(..., description="New name for the file")
+) -> Any:
+    """
+    Rename a file.
+    """
+    file = session.get(File, id)
+    if not file:
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    if not check_file_access(session, current_user, file):
+        raise HTTPException(status_code=400, detail="Not enough permissions")
+    
+    if not name.strip():
+        raise HTTPException(status_code=400, detail="File name cannot be empty")
+    
+    file_metadata = rename_file_crud(session=session, file=file, new_name=name.strip())
+    if not file_metadata:
+        raise HTTPException(status_code=500, detail="Failed to rename file")
+    return file_metadata
 
 @router.get("/download/{token}")
 def download_file_with_token(file_metadata: FileDep) -> Any:
