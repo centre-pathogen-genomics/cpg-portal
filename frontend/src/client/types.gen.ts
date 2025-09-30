@@ -72,86 +72,43 @@ export type FileStats = {
 }
 
 export type FileTypeEnum =
-  | "avi"
   | "bam"
-  | "bat"
   | "beast"
   | "bed"
-  | "bib"
-  | "bmp"
-  | "c"
-  | "cpp"
-  | "css"
   | "csv"
   | "docx"
-  | "epub"
   | "fasta"
   | "fastq"
   | "fastq.gz"
-  | "flac"
   | "geojson"
-  | "gexf"
   | "gff"
   | "genbank"
-  | "go"
   | "graphml"
   | "gzip"
   | "hdf5"
   | "hs"
   | "html"
-  | "ical"
-  | "ico"
-  | "ini"
-  | "ipynb"
   | "iqtree"
-  | "java"
   | "jpeg"
-  | "js"
-  | "jsmap"
   | "json"
   | "jsonl"
-  | "kt"
   | "log"
-  | "manifest"
-  | "matlab"
   | "md"
-  | "mp3"
-  | "mp4"
   | "newick"
   | "nexus"
-  | "obj"
-  | "otf"
   | "pdb"
   | "pdf"
-  | "php"
   | "phy"
-  | "pl"
   | "text"
   | "png"
-  | "pptx"
-  | "py"
-  | "r"
-  | "rar"
-  | "rb"
   | "rmd"
-  | "rs"
   | "sam"
-  | "scala"
-  | "sh"
-  | "sql"
-  | "stl"
   | "svg"
-  | "tex"
   | "tiff"
   | "toml"
   | "tsv"
-  | "ttf"
   | "vcf"
   | "vcf.gz"
-  | "vue"
-  | "wasm"
-  | "wav"
-  | "wheel"
   | "xlsx"
   | "xml"
   | "yaml"
@@ -1716,6 +1673,38 @@ export type GetDownloadTokenResponses = {
 
 export type GetDownloadTokenResponse =
   GetDownloadTokenResponses[keyof GetDownloadTokenResponses]
+
+export type RenameFileData = {
+  body?: never
+  path: {
+    id: string
+  }
+  query: {
+    /**
+     * New name for the file
+     */
+    name: string
+  }
+  url: "/api/v1/files/{id}/rename"
+}
+
+export type RenameFileErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError
+}
+
+export type RenameFileError = RenameFileErrors[keyof RenameFileErrors]
+
+export type RenameFileResponses = {
+  /**
+   * Successful Response
+   */
+  200: FilePublic
+}
+
+export type RenameFileResponse = RenameFileResponses[keyof RenameFileResponses]
 
 export type DownloadFileWithTokenData = {
   body?: never

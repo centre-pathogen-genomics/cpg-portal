@@ -17,16 +17,18 @@ import {
   Tr,
   Text,
 } from "@chakra-ui/react"
-import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query"
+import { Select } from "chakra-react-select"
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import FileUpload from "../../../components/Files/UploadFileButtonWithProgress"
 import DeleteFileButton from "../../../components/Files/DeleteFileButton"
-import DeleteFilesButton from "../../../components/Files/DeleteFilesButton"
 import DownloadFileButton from "../../../components/Files/DownloadFileButton"
 import UngroupButton from "../../../components/Files/UngroupButton"
 import CreateGroupButton from "../../../components/Files/CreateGroupButton"
+import EditableFileName from "../../../components/Files/EditableFileName"
 import StorageStats from "../../../components/Files/StorageStats"
 import { FilesService } from "../../../client"
+import { getFilesAllowedTypesOptions } from "../../../client/@tanstack/react-query.gen"
 import { humanReadableDate, humanReadableFileSize } from "../../../utils"
 import { BsFolder } from "react-icons/bs"
 
@@ -41,20 +43,22 @@ export const Route = createFileRoute("/_layout/files/")({
   })
 })
 
+
 interface FilesTableProps {
   selected: string[]
   setSelected: React.Dispatch<React.SetStateAction<string[]>>
+  typeFilter?: string
 }
 
-function FilesTable({ selected, setSelected }: FilesTableProps) {
+function FilesTable({ selected, setSelected, typeFilter }: FilesTableProps) {
   const pageSize = 20
   const queryClient = useQueryClient()
 
   useEffect(() => {
     return () => {
-      queryClient.removeQueries({ queryKey: ["files", pageSize] })
+      queryClient.removeQueries({ queryKey: ["files", pageSize, typeFilter] })
     }
-  }, [queryClient, pageSize])
+  }, [queryClient, pageSize, typeFilter])
 
   const {
     data,
@@ -65,10 +69,19 @@ function FilesTable({ selected, setSelected }: FilesTableProps) {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ["files", pageSize],
+    queryKey: ["files", pageSize, typeFilter],
     queryFn: async ({ pageParam = 1 }) => {
+      const queryParams: any = { 
+        skip: (pageParam - 1) * pageSize, 
+        limit: pageSize 
+      }
+      
+      if (typeFilter && typeFilter !== 'all') {
+        queryParams.types = [typeFilter]
+      }
+      
       const response = await FilesService.readFiles({
-        query: { skip: (pageParam - 1) * pageSize, limit: pageSize},
+        query: queryParams,
       })
       return response.data
     },
@@ -147,7 +160,7 @@ function FilesTable({ selected, setSelected }: FilesTableProps) {
                   {file.is_group && ( <BsFolder />)}
                   </Td>
                   <Td>
-                    {file.name}
+                    <EditableFileName file={file} />
                   </Td>
                   <Td>
                     {file.tags?.map((tag) => (
@@ -190,9 +203,21 @@ function FilesTable({ selected, setSelected }: FilesTableProps) {
 
 function Files() {
   const [selected, setSelected] = useState<string[]>([])
+  const [typeFilter, setTypeFilter] = useState<string>('all')
+
+  // Query for available file types
+  const { data: fileTypes } = useQuery({
+    ...getFilesAllowedTypesOptions(),
+  })
 
   const handleGroupCreated = () => {
     setSelected([])
+  }
+
+  // Reset selection when filter changes
+  const handleFilterChange = (newFilter: string) => {
+    setTypeFilter(newFilter)
+    setSelected([]) // Clear selection when filter changes
   }
 
   return (
@@ -211,19 +236,38 @@ function Files() {
       </Stack> 
       <FileUpload dragAndDrop />
       <Flex justify="space-between" align="center" my={4}>
-        <Stack spacing={1}>
-          <Heading size="md">Saved files</Heading>
-          <Text>Files that are associated with your account.</Text>
-        </Stack>
+        <ButtonGroup>
+          <Select
+            value={{ label: typeFilter === 'all' ? 'Types' : typeFilter.toUpperCase(), value: typeFilter }}
+            onChange={(selectedOption) => handleFilterChange(selectedOption?.value || 'all')}
+            options={[
+              { label: '--', value: 'all' },
+              ...(fileTypes ? Object.entries(fileTypes || {}).map(([key, metadata]: [string, any]) => ({
+                label: `${key.toUpperCase()} (${metadata.file_format})`,
+                value: key
+              })) : [])
+            ]}
+            placeholder="Select file type"
+            isClearable={false}
+            isSearchable={true}
+            size="md"
+            chakraStyles={{
+              container: (provided) => ({
+                ...provided,
+                width: '150px'
+              })
+            }}
+          />
+        </ButtonGroup>
         <ButtonGroup>
           <CreateGroupButton 
             selectedFileIds={selected}
             onGroupCreated={handleGroupCreated}
+            size="md"
           />
-          <DeleteFilesButton />
         </ButtonGroup>
       </Flex>
-      <FilesTable selected={selected} setSelected={setSelected} />
+      <FilesTable selected={selected} setSelected={setSelected} typeFilter={typeFilter} />
 
 
     </Container>

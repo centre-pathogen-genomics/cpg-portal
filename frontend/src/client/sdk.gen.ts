@@ -138,6 +138,9 @@ import type {
   GetDownloadTokenData,
   GetDownloadTokenResponse,
   GetDownloadTokenError,
+  RenameFileData,
+  RenameFileResponse,
+  RenameFileError,
   DownloadFileWithTokenData,
   DownloadFileWithTokenError,
   DeleteRunsData,
@@ -1268,6 +1271,29 @@ export class FilesService {
         },
       ],
       url: "/api/v1/files/{id}/token",
+      ...options,
+    })
+  }
+
+  /**
+   * Rename File
+   * Rename a file.
+   */
+  public static renameFile<ThrowOnError extends boolean = false>(
+    options: Options<RenameFileData, ThrowOnError>,
+  ) {
+    return (options?.client ?? client).patch<
+      RenameFileResponse,
+      RenameFileError,
+      ThrowOnError
+    >({
+      security: [
+        {
+          scheme: "bearer",
+          type: "http",
+        },
+      ],
+      url: "/api/v1/files/{id}/rename",
       ...options,
     })
   }

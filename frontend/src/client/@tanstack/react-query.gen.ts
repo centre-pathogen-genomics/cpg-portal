@@ -113,6 +113,9 @@ import type {
   CopyFileResponse,
   DownloadFileData,
   GetDownloadTokenData,
+  RenameFileData,
+  RenameFileError,
+  RenameFileResponse,
   DownloadFileWithTokenData,
   DeleteRunsData,
   DeleteRunsResponse,
@@ -1523,6 +1526,26 @@ export const getDownloadTokenOptions = (
     },
     queryKey: getDownloadTokenQueryKey(options),
   })
+}
+
+export const renameFileMutation = (
+  options?: Partial<Options<RenameFileData>>,
+) => {
+  const mutationOptions: UseMutationOptions<
+    RenameFileResponse,
+    AxiosError<RenameFileError>,
+    Options<RenameFileData>
+  > = {
+    mutationFn: async (localOptions) => {
+      const { data } = await FilesService.renameFile({
+        ...options,
+        ...localOptions,
+        throwOnError: true,
+      })
+      return data
+    },
+  }
+  return mutationOptions
 }
 
 export const downloadFileWithTokenQueryKey = (
