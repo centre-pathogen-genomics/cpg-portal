@@ -1,5 +1,6 @@
 import { Editable, EditableInput, EditablePreview } from "@chakra-ui/react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useState } from "react"
 import { renameFileMutation } from "../../client/@tanstack/react-query.gen"
 import useCustomToast from "../../hooks/useCustomToast"
 
@@ -10,6 +11,7 @@ interface EditableFileNameProps {
 const EditableFileName = ({ file }: EditableFileNameProps) => {
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
+  const [displayName, setDisplayName] = useState(file.name)
 
   const renameFile = useMutation({
     ...renameFileMutation(),
@@ -21,14 +23,17 @@ const EditableFileName = ({ file }: EditableFileNameProps) => {
       console.error("Failed to rename file:", error)
       const errorMessage = error?.response?.data?.detail || "An error occurred while renaming the file."
       showToast("Error", errorMessage, "error")
+      // Revert to original name on error
+      setDisplayName(file.name)
     },
   })
 
   return (
     <Editable
-      defaultValue={file.name}
+      value={displayName}
       isPreviewFocusable={true}
       selectAllOnFocus={true}
+      onChange={(value) => setDisplayName(value)}
       onSubmit={(nextName) => {
         if (nextName !== file.name && nextName.trim() !== "") {
           renameFile.mutate({
@@ -37,6 +42,7 @@ const EditableFileName = ({ file }: EditableFileNameProps) => {
           })
         }
       }}
+      onCancel={() => setDisplayName(file.name)}
     >
       <EditablePreview cursor="text" />
       <EditableInput />
