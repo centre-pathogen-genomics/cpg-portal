@@ -83,7 +83,7 @@ def save_file(*, session: Session, name: str, file: BinaryIO, file_type: FileTyp
         print(f"File saved to {file_storage_location}")
 
     file_metadata = File(
-        name=file_name,
+        name=name,
         owner_id=owner_id,
         location=str(file_storage_location),
         size=file_storage_location.stat().st_size,
@@ -95,3 +95,15 @@ def save_file(*, session: Session, name: str, file: BinaryIO, file_type: FileTyp
     session.commit()
     session.refresh(file_metadata)
     return file_metadata
+
+def rename_file(*, session: Session, file: File, new_name: str) -> File:
+    """Rename a file both in the filesystem and in the database."""
+    new_name_sanitised = sanitise_shell_input(new_name)
+    new_location_sanitised = Path(file.location).parent / f"{file.id}_{new_name_sanitised}"
+    Path(file.location).rename(new_location_sanitised)
+    file.name = new_name
+    file.location = str(new_location_sanitised)
+    session.add(file)
+    session.commit()
+    session.refresh(file)
+    return file
