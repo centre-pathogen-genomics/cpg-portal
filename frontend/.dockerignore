@@ -1,2 +1,14 @@
 node_modules
 dist
+.git
+.gitignore
+*.md
+tests/
+test-results/
+playwright-report/
+blob-report/
+coverage/
+.nyc_output
+*.log
+.DS_Store
+.vscode
