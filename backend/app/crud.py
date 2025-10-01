@@ -99,10 +99,12 @@ def save_file(*, session: Session, name: str, file: BinaryIO, file_type: FileTyp
 def rename_file(*, session: Session, file: File, new_name: str) -> File:
     """Rename a file both in the filesystem and in the database."""
     new_name_sanitised = sanitise_shell_input(new_name)
-    new_location_sanitised = Path(file.location).parent / f"{file.id}_{new_name_sanitised}"
-    Path(file.location).rename(new_location_sanitised)
+    if not file.is_group:
+        # Group files do not have a location
+        new_location_sanitised = Path(file.location).parent / f"{file.id}_{new_name_sanitised}"
+        Path(file.location).rename(new_location_sanitised)
+        file.location = str(new_location_sanitised)
     file.name = new_name
-    file.location = str(new_location_sanitised)
     session.add(file)
     session.commit()
     session.refresh(file)
