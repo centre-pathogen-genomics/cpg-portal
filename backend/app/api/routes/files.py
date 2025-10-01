@@ -155,7 +155,7 @@ def create_pair(
         raise HTTPException(status_code=404, detail="File not found")
     if forward_file.owner_id != current_user.id or reverse_file.owner_id != current_user.id:
         raise HTTPException(status_code=400, detail="Not enough permissions")
-    
+
     # Check that both files have the same type
     if forward_file.file_type != reverse_file.file_type:
         raise HTTPException(status_code=400, detail="Both files in a pair must have the same file type")
@@ -200,12 +200,12 @@ def create_group(
         raise HTTPException(status_code=400, detail="At least one file must be provided")
     if len(file_ids) > settings.MAX_FILES_IN_GROUP:
         raise HTTPException(status_code=400, detail=f"A maximum of {settings.MAX_FILES_IN_GROUP} files can be grouped together")
-    
+
     # Fetch all files and check ownership
     files = []
     sum_size = 0
     file_types_in_group = set()
-    
+
     for file_id in file_ids:
         file = session.get(File, file_id)
         if not file:
@@ -218,14 +218,14 @@ def create_group(
         sum_size += file.size
         if file.file_type:
             file_types_in_group.add(file.file_type)
-    
+
     # Ensure all files have the same type
     if len(file_types_in_group) > 1:
         raise HTTPException(status_code=400, detail="All files in a group must have the same file type")
-    
+
     # Determine the file type for the group (use the type of the children, or 'unknown' if no type)
     group_file_type = next(iter(file_types_in_group)) if file_types_in_group else "unknown"
-    
+
     # Create the group
     group_metadata = File(
         name=name,
@@ -254,24 +254,24 @@ def ungroup_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) 
         raise HTTPException(status_code=404, detail="File not found")
     if group_file.owner_id != current_user.id:
         raise HTTPException(status_code=400, detail="Not enough permissions")
-    
+
     # Check if it's actually a group
     if not group_file.is_group:
         raise HTTPException(status_code=400, detail="File is not a group")
-    
+
     if not group_file.children:
         raise HTTPException(status_code=400, detail="Group has no children to ungroup")
-    
+
     # Make all children independent
     children = list(group_file.children)  # Create a copy to avoid modifying while iterating
     for child in children:
         child.parent_id = None
         session.add(child)
-    
+
     # Delete the group file
     session.delete(group_file)
     session.commit()
-    
+
     return Message(message=f"Successfully ungrouped {len(children)} files")
 
 
@@ -497,13 +497,13 @@ def rename_file(
     file = session.get(File, id)
     if not file:
         raise HTTPException(status_code=404, detail="File not found")
-    
+
     if not check_file_access(session, current_user, file):
         raise HTTPException(status_code=400, detail="Not enough permissions")
-    
+
     if not name.strip():
         raise HTTPException(status_code=400, detail="File name cannot be empty")
-    
+
     file_metadata = rename_file_crud(session=session, file=file, new_name=name.strip())
     if not file_metadata:
         raise HTTPException(status_code=500, detail="Failed to rename file")
