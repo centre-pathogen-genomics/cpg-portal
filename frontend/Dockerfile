@@ -27,14 +27,17 @@ FROM python:3.10-slim AS jupyterlite-build
 
 WORKDIR /app
 
-# Copy all files into /app (again, this includes your jupyterlite folder)
-COPY ./ /app/
+# Copy only the requirements file first for better caching
+COPY ./jupyterlite/requirements.txt /app/jupyterlite/requirements.txt
+
+# Install Python dependencies (this layer will be cached if requirements.txt doesn't change)
+RUN pip install --default-timeout=100 --no-cache-dir -r /app/jupyterlite/requirements.txt
+
+# Copy the rest of the jupyterlite files
+COPY ./jupyterlite/ /app/jupyterlite/
 
 # Change directory to /app/jupyterlite
 WORKDIR /app/jupyterlite
-
-# Install Python dependencies from the JupyterLite requirements file
-RUN pip install --default-timeout=100 -r requirements.txt
 
 # Build JupyterLite.
 # Ensure your jupyterlite/jupyter_lite_config.json has "output_dir": "dist"
