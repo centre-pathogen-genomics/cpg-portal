@@ -46,8 +46,6 @@ services:
     networks:
       - traefik-public
       - default
-    environment:
-      ALLOW_EMPTY_PASSWORD: "yes"
     healthcheck:
       test: redis-cli ping
       interval: 1s
