@@ -1,6 +1,7 @@
 import asyncio
 from pathlib import Path
 from tempfile import NamedTemporaryFile
+from typing import Optional
 
 import yaml
 
@@ -17,7 +18,7 @@ class CondaEnvMangerRemoveError(CondaEnvMangerError):
 class CondaEnvManger:
     """Conda environment"""
 
-    def __init__(self, path: Path, env_dict: dict, post_install_command: str = None, version: str = None):
+    def __init__(self, path: Path, env_dict: dict, post_install_command: str = None, version: str | None = None):
         self.env_dict = env_dict
         self.post_install_command = post_install_command
         self.path = path
@@ -36,6 +37,8 @@ class CondaEnvManger:
         return yaml_str
 
     def format_with_version(self, s: str) -> str:
+        if not self.version:
+            return s
         return s.replace("{{version}}", self.version).replace("{{ version }}", self.version)
 
     async def _run_command(self, cmd, cwd=None):
