@@ -1,0 +1,70 @@
+name: Tool Request
+description: Request a new tool to be added to the main CPG Portal instance
+title: "[Tool Request] "
+labels: ["tool-request", "enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Tool Request 🔧
+        
+        Use this template to request a new bioinformatics tool to be added to the main CPG Portal instance.
+        
+        Please provide as much detail as possible to help us evaluate and implement your request.
+  
+  - type: input
+    id: tool_name
+    attributes:
+      label: Tool Name
+      description: What is the name of the tool you'd like to request?
+      placeholder: "e.g., GATK, BWA, Samtools"
+    validations:
+      required: true
+  
+  - type: input
+    id: tool_version
+    attributes:
+      label: Preferred Version
+      description: Which version of the tool would you like? (leave blank for latest)
+      placeholder: "e.g., 4.2.0, latest"
+  
+  - type: textarea
+    id: tool_description
+    attributes:
+      label: Tool Description
+      description: Provide a brief description of what this tool does
+      placeholder: "Describe the tool's functionality and purpose in bioinformatics workflows"
+    validations:
+      required: true
+  
+  - type: input
+    id: tool_url
+    attributes:
+      label: Tool Homepage/Repository
+      description: Link to the official tool website, GitHub repository, or documentation
+      placeholder: "https://github.com/example/tool or https://tool-website.org"
+  
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority Level
+      description: How urgent is this request?
+      options:
+        - Low - Nice to have
+        - Medium - Would be helpful
+        - High - Needed for current work
+        - Critical - Blocking current work
+    validations:
+      required: true
+  
+  - type: checkboxes
+    id: requirements
+    attributes:
+      label: Requirements
+      description: Please check all that apply
+      options:
+        - label: The tool is actively maintained
+        - label: The tool has clear documentation
+        - label: The tool is commonly used in the bioinformatics community
+        - label: I have verified the tool's license is compatible with our usage
+  
