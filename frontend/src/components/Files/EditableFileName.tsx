@@ -30,7 +30,9 @@ const EditableFileName = ({ file }: EditableFileNameProps) => {
 
   return (
     <Editable
+      key={file.name}
       value={displayName}
+      fontSize={{ base: "2xl", md: "3xl", lg: "4xl" }}
       isPreviewFocusable={true}
       selectAllOnFocus={true}
       onChange={(value) => setDisplayName(value)}
@@ -40,11 +42,14 @@ const EditableFileName = ({ file }: EditableFileNameProps) => {
             path: { id: file.id },
             query: { name: nextName.trim() }
           })
+        } else {
+          setDisplayName(file.name)
         }
       }}
       onCancel={() => setDisplayName(file.name)}
+      w={"full"}
     >
-      <EditablePreview cursor="text" />
+      <EditablePreview w={"auto"}  cursor="text" />
       <EditableInput />
     </Editable>
   )
