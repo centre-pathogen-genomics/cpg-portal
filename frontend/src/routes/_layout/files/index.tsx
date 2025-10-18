@@ -16,16 +16,16 @@ import {
   Thead,
   Tr,
   Text,
+  useColorModeValue,
 } from "@chakra-ui/react"
 import { Select } from "chakra-react-select"
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import FileUpload from "../../../components/Files/UploadFileButtonWithProgress"
 import DeleteFileButton from "../../../components/Files/DeleteFileButton"
 import DownloadFileButton from "../../../components/Files/DownloadFileButton"
 import UngroupButton from "../../../components/Files/UngroupButton"
 import CreateGroupButton from "../../../components/Files/CreateGroupButton"
-import EditableFileName from "../../../components/Files/EditableFileName"
 import StorageStats from "../../../components/Files/StorageStats"
 import { FilesService } from "../../../client"
 import { getFilesAllowedTypesOptions } from "../../../client/@tanstack/react-query.gen"
@@ -53,6 +53,8 @@ interface FilesTableProps {
 function FilesTable({ selected, setSelected, typeFilter }: FilesTableProps) {
   const pageSize = 20
   const queryClient = useQueryClient()
+  const navigate = useNavigate({ from: Route.fullPath })
+  const colourMode = useColorModeValue("gray.50", "gray.700")
 
   useEffect(() => {
     return () => {
@@ -147,8 +149,23 @@ function FilesTable({ selected, setSelected, typeFilter }: FilesTableProps) {
               </Tr>
             ) : (
               files.map((file) => (
-                <Tr key={file.id}>
-                  <Td px={2} width="1%">
+                <Tr key={file.id}
+                  _hover={{ bg: colourMode }}
+                  cursor="pointer"
+                  onClick={() =>
+                    navigate({
+                      to: `/files/${file.id.toString()}`,
+                      params: { fileid: file.id.toString() },
+                      replace: false,
+                      resetScroll: true,
+                    })
+                  }
+                >
+                  <Td px={2} width="1%"
+                  onClick={(e) => {
+                        e.stopPropagation()
+                      }}
+                  >
                   {canSelectFile(file) && (
                     <input
                       type="checkbox"
@@ -160,7 +177,7 @@ function FilesTable({ selected, setSelected, typeFilter }: FilesTableProps) {
                   {file.is_group && ( <BsFolder />)}
                   </Td>
                   <Td>
-                    <EditableFileName file={file} />
+                    {file.name}
                   </Td>
                   <Td>
                     {file.tags?.map((tag) => (
@@ -177,7 +194,10 @@ function FilesTable({ selected, setSelected, typeFilter }: FilesTableProps) {
                   </Td>
                   <Td>{humanReadableDate(file.created_at)}</Td>
                   <Td>
-                    <ButtonGroup size="sm">
+                    <ButtonGroup size="sm"
+                     onClick={(e) => {
+                        e.stopPropagation()
+                      }}>
                       <DownloadFileButton file={file} size="sm" />
                       <UngroupButton file={file} size="sm" />
                       <DeleteFileButton file={file} />

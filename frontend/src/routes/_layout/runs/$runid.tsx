@@ -15,18 +15,14 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Suspense, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
-import { FilePublic } from "../../../client";
 import OutputAccordion from "../../../components/Runs/OutputAccordion";
 import RunMetadata from "../../../components/Runs/RunMetadata";
 import OutputFile from "../../../components/Runs/OutputFile";
-import CsvFileToTable from "../../../components/Render/CsvFileToTable";
-import JsonFile from "../../../components/Render/JsonFile";
-import TextFile from "../../../components/Render/TextFile";
-import ImageFile from "../../../components/Render/Image";
+import FileRenderer from "../../../components/Render/FileRenderer";
 import { readRunOptions } from "../../../client/@tanstack/react-query.gen";
 import CancelRunButton from "../../../components/Runs/CancelRunButton";
 import DeleteRunButton from "../../../components/Runs/DeleteRunButton";
-import EditRunName from "../../../components/Runs/EditRunName";
+import EditRunName from "../../../components/Runs/EditableRunName";
 import AISummaryButton from "../../../components/AI/AISummary";
 import ShareRunButton from "../../../components/Runs/ShareRunButton";
 import ReactMarkdown from "../../../components/Common/Markdown";
@@ -35,25 +31,7 @@ export const Route = createFileRoute("/_layout/runs/$runid")({
   component: Run,
 });
 
-function renderResult(file: FilePublic) {
-  if (file.size && file.size < 500000) {
-    switch (file.file_type) {
-      case "csv":
-        return <CsvFileToTable fileId={file.id} />;
-      case "tsv":
-        return <CsvFileToTable tsv fileId={file.id} />;
-      case "json":
-        return <JsonFile fileId={file.id} />;
-      case "text":
-        return <TextFile fileId={file.id} />;
-      case "png":
-      case "jpeg":
-        return <ImageFile fileId={file.id} />;
-      default:
-        return null;
-    }
-  }
-}
+
 
 function RunDetail() {
   const { runid } = Route.useParams();
@@ -182,7 +160,9 @@ function RunDetail() {
                     </TabPanel>
                   )}
                   {fileTabs.map((file) => (
-                    <TabPanel key={file.id}>{renderResult(file)}</TabPanel>
+                    <TabPanel key={file.id}>
+                      <FileRenderer file={file} showUnsupportedMessage={false} showTooLargeMessage={false} />
+                    </TabPanel>
                   ))}
                 </TabPanels>
               </Tabs>
