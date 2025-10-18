@@ -28,7 +28,7 @@ const extractUUIDAndOtherText = (value: string | string[]): string => {
   if (text.length === 1) {
     return text[0];
   }
-  return `Pair(${text.join(', ')})`; // Groups
+  return `Group(${text.join(', ')})`; // Groups
 };
 
 const ParamTag = ( {param, value}: ParamTagProps) => {
