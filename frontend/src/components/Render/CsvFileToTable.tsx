@@ -1,4 +1,4 @@
-import { useState, Suspense } from 'react';
+import { useState } from 'react';
 import { 
   TableContainer, 
   Table, 
@@ -61,7 +61,7 @@ const CsvFileToTable = ({ fileId, tsv = false }: CsvFileToTableProps) => {
   };
 
   return (
-    <Suspense fallback={<Skeleton height="20px" />}>
+    <>
       <TableContainer>
         <Table variant="simple">
           <Thead>
@@ -94,7 +94,7 @@ const CsvFileToTable = ({ fileId, tsv = false }: CsvFileToTableProps) => {
           onChangePage={handlePageChange}
         />
       </Flex>
-    </Suspense>
+    </>
   );
 };
 

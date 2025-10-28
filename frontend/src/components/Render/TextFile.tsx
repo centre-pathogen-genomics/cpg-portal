@@ -1,5 +1,4 @@
-import { Suspense } from 'react';
-import { Skeleton, Text } from '@chakra-ui/react';
+import { Text } from '@chakra-ui/react';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { downloadFileOptions } from '../../client/@tanstack/react-query.gen';
 
@@ -14,11 +13,9 @@ const TextFile = ({ fileId }: TextFileProps) => {
   });
 
   return (
-    <Suspense fallback={<Skeleton height="20px" />}>
-      <Text whiteSpace="pre-wrap" maxHeight="500px" overflowY="auto">
-        {textContent as string}
-      </Text>
-    </Suspense>
+    <Text whiteSpace="pre-wrap" maxHeight="500px" overflowY="auto">
+      {textContent as string}
+    </Text>
   );
 };
 
