@@ -1,4 +1,4 @@
-import { Text, VStack, Spinner, Mark } from "@chakra-ui/react";
+import { Text, VStack, Spinner } from "@chakra-ui/react";
 import { Suspense } from "react";
 import { FilePublic } from "../../client";
 import CsvFileToTable from "./CsvFileToTable";
@@ -7,6 +7,8 @@ import TextFile from "./TextFile";
 import MarkdownFile from "./MarkdownFile";
 import ImageFile from "./ImageFile";
 import HtmlFile from "./HtmlFile";
+import FastaFile from "./FastaFile";
+import GenbankFile from "./GenbankFile";
 import DownloadFileButton from "../Files/DownloadFileButton";
 import { humanReadableFileSize } from "../../utils";
 
@@ -21,7 +23,7 @@ const FileRenderer = ({
   file, 
   showUnsupportedMessage = true,
   showTooLargeMessage = true,
-  fileSizeLimit = 1049000
+  fileSizeLimit = 8389000
 }: FileRendererProps) => {
   // Don't attempt to render group files
   if (file.is_group) {
@@ -48,6 +50,10 @@ const FileRenderer = ({
             case "png":
             case "jpeg":
               return <ImageFile fileId={file.id} />;
+            case "fasta":
+              return <FastaFile fileId={file.id} />;
+            case "genbank":
+              return <GenbankFile fileId={file.id} />;
             default:
               return showUnsupportedMessage ? (
                 <Text color="gray.500" fontStyle="italic">
