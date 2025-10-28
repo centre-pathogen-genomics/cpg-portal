@@ -157,17 +157,17 @@ function FileDetailContent() {
         <EditableFileName key={file.name} file={file} />
       </Flex>
 
-      <Box my={4}>
+      <Box mb={2} mt={4}>
         <FileMetadata file={file} />
       </Box>
 
       {!file.is_group && (
-        <>
+        <Box mb={2}>
           <Heading size="md" mb={4}>
             Preview
           </Heading>
           <FileRenderer file={file} />
-        </>
+        </Box>
       )}
 
       {file.is_group && (
