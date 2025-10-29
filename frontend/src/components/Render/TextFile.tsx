@@ -12,9 +12,21 @@ const TextFile = ({ fileId }: TextFileProps) => {
     ...downloadFileOptions({ path: { id: fileId } }),
   });
 
+  // Convert content to string based on type
+  const displayContent = (() => {
+    if (typeof textContent === 'string') {
+      return textContent;
+    }
+    if (textContent instanceof ArrayBuffer) {
+      return new TextDecoder().decode(textContent);
+    }
+    // Handle JSON objects and other types
+    return JSON.stringify(textContent, null, 2);
+  })();
+
   return (
     <Text whiteSpace="pre-wrap" maxHeight="500px" overflowY="auto">
-      {textContent as string}
+      {displayContent}
     </Text>
   );
 };
