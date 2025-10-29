@@ -49,7 +49,7 @@ const GenbankFileContent = ({ fileId, height = 500, viewer = "both"  }: GenbankF
 
   // Parse GenBank file - seqparse handles GenBank format directly
   const { data: parsed } = useSuspenseQuery<Seq | Seq[]>({
-    queryKey: ['genbank-parse', fileId, genbank],
+    queryKey: ['genbank-parse', fileId],
     queryFn: async () => {
       const result = await seqparse(genbank, { fileName: 'file.gb' });
       return result;
@@ -75,8 +75,6 @@ const GenbankFileContent = ({ fileId, height = 500, viewer = "both"  }: GenbankF
   }
 
   const { name, seq, annotations } = currentSeq;
-
-  console.log("Current Sequence:", currentSeq);
 
   // Adapt colors for dark/light mode
   const bpColors = colorMode === 'dark' 
