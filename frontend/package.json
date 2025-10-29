@@ -37,9 +37,12 @@
     "react-hook-form": "7.49.3",
     "react-icons": "5.0.1",
     "react-syntax-highlighter": "^15.6.1",
+    "react-vega": "^8.0.0",
     "remark-gfm": "^3.0.1",
     "seqparse": "^0.2.1",
-    "seqviz": "^3.10.10"
+    "seqviz": "^3.10.10",
+    "vega-embed": "^7.1.0",
+    "vega-lite": "^6.4.1"
   },
   "devDependencies": {
     "@biomejs/biome": "1.6.1",
