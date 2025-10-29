@@ -1,7 +1,7 @@
 import { VegaEmbed, VegaEmbedProps } from "react-vega";
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { downloadFileOptions } from '../../client/@tanstack/react-query.gen';
-import { useColorModeValue, VStack, Select, Text } from "@chakra-ui/react";
+import { useColorModeValue, VStack, Select } from "@chakra-ui/react";
 import { useState } from "react";
 
 interface VegaFileProps {
