@@ -11,7 +11,7 @@ interface FastaFileProps {
   height?: number;
 }
 
-const FastaFile = ({ fileId, height = 500  }: FastaFileProps) => {
+const FastaFile = ({ fileId, height = 500 }: FastaFileProps) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const { colorMode } = useColorMode();
 
@@ -50,6 +50,8 @@ const FastaFile = ({ fileId, height = 500  }: FastaFileProps) => {
 
   // All sequences are already in an array
   const sequences = parsed;
+  const MAX_DISPLAYABLE_BP = 200000; // Adjust based on performance testing
+
   const currentSeq = sequences[selectedIndex];
 
   if (!currentSeq) {
@@ -57,6 +59,7 @@ const FastaFile = ({ fileId, height = 500  }: FastaFileProps) => {
   }
 
   const { name, seq, annotations } = currentSeq;
+  const seqLength = seq?.length || 0;
 
   // Adapt colors for dark/light mode
   const bpColors = colorMode === 'dark' 
@@ -91,7 +94,7 @@ const FastaFile = ({ fileId, height = 500  }: FastaFileProps) => {
           seq={seq}
           annotations={annotations}
           name={name}
-          viewer='both'
+          viewer={seqLength > MAX_DISPLAYABLE_BP ? 'circular' : 'linear'}
           style={{ height: `${height}px`, width: '100%'}}
           bpColors={bpColors}
           showComplement={false}
