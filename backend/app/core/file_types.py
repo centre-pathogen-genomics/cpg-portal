@@ -189,6 +189,16 @@ class FileTypes:
             file_format="text",
             mime_types=["text/tab-separated-values"]
         ),
+        "vega": FileTypeMetadata(
+            extensions=[".vg", ".vega", ".vg.json"],
+            file_format="json",
+            mime_types=["application/json"]
+        ),
+        "vega-lite": FileTypeMetadata(
+            extensions=[".vl", ".vega-lite", ".vl.json"],
+            file_format="json",
+            mime_types=["application/json"]
+        ),
         "vcf": FileTypeMetadata(
             extensions=[".vcf"],
             file_format="text",
