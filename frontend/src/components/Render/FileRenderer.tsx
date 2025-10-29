@@ -9,7 +9,6 @@ import ImageFile from "./ImageFile";
 import HtmlFile from "./HtmlFile";
 import FastaFile from "./FastaFile";
 import GenbankFile from "./GenbankFile";
-import DownloadFileButton from "../Files/DownloadFileButton";
 import { humanReadableFileSize } from "../../utils";
 
 interface FileRendererProps {
@@ -19,11 +18,19 @@ interface FileRendererProps {
   fileSizeLimit?: number;
 }
 
+const TooLargeToPreview = ({ limit }: { limit: number }) => (
+  <VStack spacing={4} align="start">
+    <Text color="gray.500" fontStyle="italic">
+      File is too large to preview ({`>${humanReadableFileSize(limit)}`})
+    </Text>
+  </VStack>
+);
+
 const FileRenderer = ({ 
   file, 
   showUnsupportedMessage = true,
   showTooLargeMessage = true,
-  fileSizeLimit = 8389000
+  fileSizeLimit = 10 * 1024 * 1024, // 10 MB default limit
 }: FileRendererProps) => {
   // Don't attempt to render group files
   if (file.is_group) {
@@ -35,25 +42,39 @@ const FileRenderer = ({
       <Suspense fallback={<Spinner size="md" />}>
         {(() => {
           switch (file.file_type) {
-            case "csv":
-              return <CsvFileToTable fileId={file.id} />;
-            case "tsv":
-              return <CsvFileToTable tsv fileId={file.id} />;
             case "json":
+              if (file.size > 1000000) {
+                return TooLargeToPreview({ limit: 1000000 });
+              } else if (file.size > 100000) {
+                // For larger JSON files, use TextFile to avoid performance issues
+                return <TextFile fileId={file.id} />;
+              }
               return <JsonFile fileId={file.id} />;
             case "text":
+              if (file.size > 1000000) {
+                return TooLargeToPreview({ limit: 1000000 });
+              }
               return <TextFile fileId={file.id} />;
             case "md":
+              if (file.size > 1000000) {
+                return TooLargeToPreview({ limit: 1000000 });
+              }
               return <MarkdownFile fileId={file.id} />;
+            case "fasta":
+              // Fasta files can be large; handled within FastaFile component
+              return <FastaFile fileId={file.id} />;
+            case "genbank":
+              return <GenbankFile fileId={file.id} viewer={file.size > 2000000 ? 'circular' : 'both'} />;
+            case "csv":
+            case "tsv":
+              return <CsvFileToTable tsv={file.file_type === 'tsv'} fileId={file.id} />;
             case "html":
               return <HtmlFile fileId={file.id} />;
             case "png":
             case "jpeg":
+            case "svg":
               return <ImageFile fileId={file.id} />;
-            case "fasta":
-              return <FastaFile fileId={file.id} />;
-            case "genbank":
-              return <GenbankFile fileId={file.id} viewer={file.size > 2000000 ? 'circular' : 'both'} />;
+
             default:
               return showUnsupportedMessage ? (
                 <Text color="gray.500" fontStyle="italic">
@@ -66,12 +87,7 @@ const FileRenderer = ({
     );
   } else {
     return showTooLargeMessage ? (
-      <VStack spacing={4} align="start">
-        <Text color="gray.500" fontStyle="italic">
-          File is too large to preview ({`>${humanReadableFileSize(fileSizeLimit)}`})
-        </Text>
-        <DownloadFileButton file={file} />
-      </VStack>
+      <TooLargeToPreview limit={fileSizeLimit} />
     ) : null;
   }
 };
