@@ -1,8 +1,8 @@
 import { VegaEmbed, VegaEmbedProps } from "react-vega";
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { downloadFileOptions } from '../../client/@tanstack/react-query.gen';
-import { useColorModeValue, VStack, Select } from "@chakra-ui/react";
-import { useState } from "react";
+import { useColorModeValue, VStack, Select, Box } from "@chakra-ui/react";
+import { useState, useRef, useEffect } from "react";
 
 interface VegaFileProps {
   fileId: string;
@@ -17,6 +17,24 @@ const VegaFile = ({ fileId, height = 500 }: VegaFileProps) => {
 
   const defaultTheme = useColorModeValue(undefined, 'dark');
   const [selectedTheme, setSelectedTheme] = useState<string | undefined>(defaultTheme);
+  const [width, setWidth] = useState<number>(500);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setWidth(entry.contentRect.width);
+      }
+    });
+
+    resizeObserver.observe(containerRef.current);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
 
   const themes = [
     {value: undefined, label: 'Vega' },
@@ -47,7 +65,9 @@ const VegaFile = ({ fileId, height = 500 }: VegaFileProps) => {
           </option>
         ))}
       </Select>
-      <VegaEmbed spec={vega as object} options={{ height: height, theme: selectedTheme as NonNullable<VegaEmbedProps['options']>['theme'] }} />
+      <Box ref={containerRef} width="100%">
+        <VegaEmbed spec={vega as object} options={{ actions: false, padding: 10, width: width - 50, height: height, theme: selectedTheme as NonNullable<VegaEmbedProps['options']>['theme'] }} />
+      </Box>
     </VStack>
   );
 };
