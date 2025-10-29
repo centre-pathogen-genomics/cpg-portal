@@ -8,6 +8,7 @@ import { VStack, Select, Text, useColorMode, Box } from '@chakra-ui/react';
 
 interface GenbankFileProps {
   fileId: string;
+  viewer?: 'linear' | 'circular' | 'both';
   height?: number;
 }
 
@@ -33,7 +34,7 @@ class GenbankErrorBoundary extends Component<
   }
 }
 
-const GenbankFileContent = ({ fileId, height = 500  }: GenbankFileProps) => {
+const GenbankFileContent = ({ fileId, height = 500, viewer = "both"  }: GenbankFileProps) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const { colorMode } = useColorMode();
 
@@ -110,7 +111,7 @@ const GenbankFileContent = ({ fileId, height = 500  }: GenbankFileProps) => {
           seq={seq}
           annotations={annotations}
           name={name}
-          viewer='both'
+          viewer={viewer}
           style={{ height: `${height}px`, width: '100%'}}
           bpColors={bpColors}
           showComplement={false}
