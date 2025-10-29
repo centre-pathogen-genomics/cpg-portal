@@ -9,6 +9,7 @@ import ImageFile from "./ImageFile";
 import HtmlFile from "./HtmlFile";
 import FastaFile from "./FastaFile";
 import GenbankFile from "./GenbankFile";
+import VegaFile from "./VegaFile";
 import { humanReadableFileSize } from "../../utils";
 
 interface FileRendererProps {
@@ -65,6 +66,9 @@ const FileRenderer = ({
               return <FastaFile fileId={file.id} />;
             case "genbank":
               return <GenbankFile fileId={file.id} viewer={file.size > 2000000 ? 'circular' : 'both'} />;
+            case "vega":
+            case "vega-lite":
+              return <VegaFile fileId={file.id} />;
             case "csv":
             case "tsv":
               return <CsvFileToTable tsv={file.file_type === 'tsv'} fileId={file.id} />;
