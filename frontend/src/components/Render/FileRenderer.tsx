@@ -53,7 +53,7 @@ const FileRenderer = ({
             case "fasta":
               return <FastaFile fileId={file.id} />;
             case "genbank":
-              return <GenbankFile fileId={file.id} />;
+              return <GenbankFile fileId={file.id} viewer={file.size > 2000000 ? 'circular' : 'both'} />;
             default:
               return showUnsupportedMessage ? (
                 <Text color="gray.500" fontStyle="italic">
