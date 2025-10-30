@@ -7,9 +7,10 @@ import { useState, useRef, useEffect } from "react";
 interface VegaFileProps {
   fileId: string;
   height?: number;
+  leftNegativeMargin?: number;
 }
 
-const VegaFile = ({ fileId, height = 500 }: VegaFileProps) => {
+const VegaFile = ({ fileId, height = 500, leftNegativeMargin = 65 }: VegaFileProps) => {
   // Fetch the text file content
   const { data: vega } = useSuspenseQuery({
     ...downloadFileOptions({ path: { id: fileId } }),
@@ -66,7 +67,7 @@ const VegaFile = ({ fileId, height = 500 }: VegaFileProps) => {
         ))}
       </Select>
       <Box ref={containerRef} width="100%">
-        <VegaEmbed spec={vega as object} options={{ actions: false, padding: 10, width: width - 50, height: height, theme: selectedTheme as NonNullable<VegaEmbedProps['options']>['theme'] }} />
+        <VegaEmbed spec={vega as object} options={{ actions: true, padding: 10, width: width - leftNegativeMargin, height: height, theme: selectedTheme as NonNullable<VegaEmbedProps['options']>['theme'] }} />
       </Box>
     </VStack>
   );
