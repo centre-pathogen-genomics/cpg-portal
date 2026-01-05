@@ -67,8 +67,9 @@ const FileRenderer = ({
             case "genbank":
               return <GenbankFile fileId={file.id} viewer={file.size > 2000000 ? 'circular' : 'both'} />;
             case "vega":
-            case "vega-lite":
               return <VegaFile fileId={file.id} />;
+            case "vega-lite":
+              return <VegaFile fileId={file.id} leftNegativeMargin={110}/>;
             case "csv":
             case "tsv":
               return <CsvFileToTable tsv={file.file_type === 'tsv'} fileId={file.id} />;
