@@ -1,9 +1,9 @@
 # apache2 handels https on cpg so we don't have to! 
 services:
   traefik:
-    image: traefik:v2.3
+    image: traefik:v3.6.1
     ports:
-      # Listen on port 80 for HTTP
+      # Port 80 is mapped to local port 5000
       # 127.0.0.1: prevents docker opening 5000 to public which bypasses ufw
       - "127.0.0.1:5000:80"
     restart: always
