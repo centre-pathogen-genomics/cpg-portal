@@ -1,0 +1,112 @@
+---
+
+name: Modify Existing Tool
+description: Request a change to a tool already available in the main CPG Portal instance
+title: "[Tool Modification] "
+labels: ["tool-modification", "enhancement"]
+body:
+
+* type: markdown
+  attributes:
+  value: |
+  ## Modify an Existing Tool 🔧
+
+  ```
+  Use this template to request a change to a bioinformatics tool already available in the main CPG Portal instance.
+
+  Examples include updating a tool version, adding or changing command-line options in the Portal widget, correcting documentation, or fixing typos.
+
+  Please describe the requested change and its expected effect as clearly as possible.
+  ```
+
+* type: input
+  id: tool_name
+  attributes:
+  label: Tool Name
+  description: What existing tool should be changed?
+  placeholder: "e.g., GATK, BWA, Samtools"
+  validations:
+  required: true
+
+* type: dropdown
+  id: change_type
+  attributes:
+  label: Type of Change
+  description: Select the primary type of modification requested.
+  options:
+  - Update tool version
+  - Add a command-line option or Portal widget control
+  - Change an existing command-line option or Portal widget control
+  - Fix documentation, labels, help text, or typos
+  - Update dependencies or container configuration
+  - Change default settings or resource requirements
+  - Other
+  validations:
+  required: true
+
+* type: input
+  id: current_version
+  attributes:
+  label: Current Version
+  description: Which version is currently available, if known?
+  placeholder: "e.g., 4.2.0"
+
+* type: input
+  id: requested_version
+  attributes:
+  label: Requested Version
+  description: Complete this for a version update.
+  placeholder: "e.g., 4.5.0"
+
+* type: textarea
+  id: requested_change
+  attributes:
+  label: Requested Change
+  description: Describe precisely what should change.
+  placeholder: |
+  e.g., Add a dropdown to select --sequencing-type.
+  e.g., Update the container from version 1.8.1 to 2.0.0.
+  e.g., Change “referance genome” to “reference genome”.
+  validations:
+  required: true
+
+* type: textarea
+  id: rationale
+  attributes:
+  label: Rationale and Expected Impact
+  description: Explain why this change is needed and how it will affect existing workflows or outputs.
+  placeholder: |
+  Explain the motivation, expected benefit, compatibility considerations,
+  and whether existing analyses may behave differently.
+  validations:
+  required: true
+
+* type: textarea
+  id: command_line_details
+  attributes:
+  label: Command-Line or Widget Details
+  description: For option or widget changes, provide the flag, allowed values, default value, and example usage.
+  placeholder: |
+  Flag: --example-option
+  Widget type: dropdown / checkbox / text input
+  Allowed values: ...
+  Default: ...
+  Example command: tool --example-option value input_file
+
+* type: input
+  id: references
+  attributes:
+  label: Relevant Documentation, Release Notes, or Pull Requests
+  description: Link to official release notes, documentation, issue trackers, or related discussions.
+  placeholder: "https://..."
+
+* type: checkboxes
+  id: checks
+  attributes:
+  label: Checks
+  description: Please confirm the relevant items.
+  options:
+  - label: I have checked that this tool is already available in the Portal.
+  - label: I have considered whether this change could alter existing results or reproducibility.
+  - label: I have included the requested version or option details where applicable.
+  - label: I have linked supporting documentation or release notes where available.
