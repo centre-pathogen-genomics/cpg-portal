@@ -1,6 +1,9 @@
-import Logo from "/assets/images/cpg-logo.png"
-import Icon from "/assets/images/cpg-logo-icon.png"
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router"
+import { useForm } from "react-hook-form"
+import { FiMenu } from "react-icons/fi"
+import { HiOutlineMoon, HiOutlineSearch, HiOutlineSun } from "react-icons/hi"
 import {
+  Badge,
   Box,
   Drawer,
   DrawerBody,
@@ -18,18 +21,12 @@ import {
   useColorMode,
   useColorModeValue,
   useDisclosure,
-  Badge,
-} from "@chakra-ui/react"
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router"
-import { FiMenu } from "react-icons/fi"
-import { HiOutlineMoon, HiOutlineSun } from "react-icons/hi";
-
+} from "@/components/ui/chakra-compat"
+import Logo from "/assets/images/cpg-logo.png"
+import Icon from "/assets/images/cpg-logo-icon.png"
 import useAuth from "../../hooks/useAuth"
 import SidebarItems from "./SidebarItems"
 import UserMenu from "./UserMenu"
-import { HiOutlineSearch } from "react-icons/hi";
-import { useForm } from "react-hook-form"
-
 
 function DarkModeToggle() {
   const { colorMode, toggleColorMode } = useColorMode()
@@ -39,11 +36,10 @@ function DarkModeToggle() {
       icon={colorMode === "dark" ? <HiOutlineSun /> : <HiOutlineMoon />}
       onClick={toggleColorMode}
       variant="ghost"
-      fontSize='24px'
+      fontSize="24px"
     />
   )
 }
-
 
 function MainMenuBar() {
   const bgColor = useColorModeValue("white", "ui.dark")
@@ -53,24 +49,36 @@ function MainMenuBar() {
   const { user: currentUser } = useAuth()
   const navigate = useNavigate()
 
-   // Use useRouter to get the current pathname.
-   const router = useRouterState()
-   const pathname = router.location.pathname
+  // Use useRouter to get the current pathname.
+  const router = useRouterState()
+  const pathname = router.location.pathname
 
   const signedIn = currentUser !== undefined
-  const userItems = signedIn ? [
-    { title: "Tools", path: "/" },
-    { title: "My Runs", path: "/runs" },
-    { title: "My Files", path: "/files" },
-    { title: "SAE", path: "/wasm/jupyterlite/index.html", isNew: true, newTab: true },
-    { title: "About", path: "/about" },
-  ] : [{ title: "About", path: "/about" }]
+  const userItems = signedIn
+    ? [
+        { title: "Tools", path: "/" },
+        { title: "My Runs", path: "/runs" },
+        { title: "My Files", path: "/files" },
+        {
+          title: "SAE",
+          path: "/wasm/jupyterlite/index.html",
+          isNew: true,
+          newTab: true,
+        },
+        { title: "About", path: "/about" },
+      ]
+    : [{ title: "About", path: "/about" }]
 
   const superUserItems = currentUser?.is_superuser
     ? [...userItems, { title: "Admin", path: "/admin" }]
     : userItems
 
-  const finalItems: { title: string, path: string, isNew?: boolean, newTab?: boolean }[] = [...superUserItems]
+  const finalItems: {
+    title: string
+    path: string
+    isNew?: boolean
+    newTab?: boolean
+  }[] = [...superUserItems]
 
   // Map over the final items and determine if they are active.
   const listItems = finalItems.map(({ title, path, isNew, newTab }) => {
@@ -96,11 +104,12 @@ function MainMenuBar() {
           _hover={{ color: "ui.main" }}
           fontWeight="semibold"
           align="center"
-          whiteSpace={'nowrap'}
+          whiteSpace={"nowrap"}
           target="_blank"
           rel="noopener noreferrer"
         >
-          <Text>{title}</Text>{isNew && (<Badge ml={1}>New</Badge>)}
+          <Text>{title}</Text>
+          {isNew && <Badge ml={1}>New</Badge>}
         </Flex>
       )
     }
@@ -115,102 +124,147 @@ function MainMenuBar() {
         // Apply underline style if active.
         style={isActive ? { textDecoration: "underline" } : {}}
         align="center"
-        whiteSpace={'nowrap'}
+        whiteSpace={"nowrap"}
       >
-        <Text>{title}</Text>{isNew && (<Badge ml={1}>New</Badge>)}
+        <Text>{title}</Text>
+        {isNew && <Badge ml={1}>New</Badge>}
       </Flex>
     )
   })
 
-    const defaultValues = {
-      search: "",
-    }
+  const defaultValues = {
+    search: "",
+  }
 
-    type FormData = {
-      search?: string
-    }
+  type FormData = {
+    search?: string
+  }
 
-    const {
-      register,
-      handleSubmit,
-    } = useForm<FormData>({
-      defaultValues})
+  const { register, handleSubmit } = useForm<FormData>({
+    defaultValues,
+  })
 
-    function onSubmit({ search }: FormData) {
-      if (search === "") {
-        navigate({to:`/`, resetScroll: true})
-        return
-      }
-      navigate({to:`/search/${search}`})
+  function onSubmit({ search }: FormData) {
+    if (search === "") {
+      navigate({ to: `/`, resetScroll: true })
+      return
     }
+    navigate({ to: `/search/${search}` })
+  }
 
   return (
-    <Flex position={'sticky'} top={0}  w={'100%'} bg={bgColor} color={textColor} justify={'space-between'} align={'center'} py={2} pl={4} pr={6} zIndex={1000}>
-        
-        <Flex flexGrow={1} align={'center'} gap={4} mr={4}>
-          {/* Logo */}
-          <Flex as={Link} to="/" >
-            <Image display={{ base: "none", md: "block" }} src={Logo} alt="Logo" py={2} ml={3} maxH={14} />
-            <Image display={{ base: "block", md: "none" }} src={Icon} alt="Logo" py={2}  maxH={14} />
-          </Flex>
-          {/* Search Bar */}
-          <Box flexGrow={1} maxW={"xl"} as="form" onSubmit={handleSubmit(onSubmit)}>
-            <FormControl >
-              <InputGroup>
-                <InputLeftElement pointerEvents='none'>
-                  <HiOutlineSearch color='gray.300' />
-                </InputLeftElement>
-                <Input 
-                {...register("search", {required: false})}
-                id="search" bg={secBgColor} type='search' placeholder='Search the Portal' />
-              </InputGroup>
-            </FormControl>
-          </Box>
-          {/* Navigation Links */}
-          <Flex gap={4} display={{ base: "none", md: "flex" }}>
-            {listItems} 
-          </Flex>
+    <Flex
+      position={"sticky"}
+      top={0}
+      w={"100%"}
+      bg={bgColor}
+      color={textColor}
+      justify={"space-between"}
+      align={"center"}
+      py={2}
+      pl={4}
+      pr={6}
+      zIndex={1000}
+    >
+      <Flex flexGrow={1} align={"center"} gap={4} mr={4}>
+        {/* Logo */}
+        <Flex as={Link} to="/">
+          <Image
+            display={{ base: "none", md: "block" }}
+            src={Logo}
+            alt="Logo"
+            py={2}
+            ml={3}
+            maxH={14}
+          />
+          <Image
+            display={{ base: "block", md: "none" }}
+            src={Icon}
+            alt="Logo"
+            py={2}
+            maxH={14}
+          />
         </Flex>
-        <Box mx={2} display={{ base: "none", md: "block" }}>
-          <DarkModeToggle />
+        {/* Search Bar */}
+        <Box
+          flexGrow={1}
+          maxW={"xl"}
+          as="form"
+          onSubmit={handleSubmit(onSubmit)}
+        >
+          <FormControl>
+            <InputGroup>
+              <InputLeftElement pointerEvents="none">
+                <HiOutlineSearch color="gray.300" />
+              </InputLeftElement>
+              <Input
+                {...register("search", { required: false })}
+                id="search"
+                bg={secBgColor}
+                type="search"
+                placeholder="Search the Portal"
+              />
+            </InputGroup>
+          </FormControl>
         </Box>
-        {currentUser ? (
-          <Flex>
-            <UserMenu />
-          </Flex>) : (
-            // If not signed in, show login/signup links
-            <Flex gap={4} display={{ base: "none", md: "flex" }}>
-              <Link to="/signup">
-                <Text color={textColor} _hover={{ color: "ui.main" }} fontWeight="semibold">Sign Up</Text>
-              </Link>
-              <Link to="/login" search={{redirect: pathname}}>
-                <Text color={textColor} _hover={{ color: "ui.main" }} fontWeight="semibold">Log In</Text>
-              </Link>
+        {/* Navigation Links */}
+        <Flex gap={4} display={{ base: "none", md: "flex" }}>
+          {listItems}
+        </Flex>
+      </Flex>
+      <Box mx={2} display={{ base: "none", md: "block" }}>
+        <DarkModeToggle />
+      </Box>
+      {currentUser ? (
+        <Flex>
+          <UserMenu />
+        </Flex>
+      ) : (
+        // If not signed in, show login/signup links
+        <Flex gap={4} display={{ base: "none", md: "flex" }}>
+          <Link to="/signup">
+            <Text
+              color={textColor}
+              _hover={{ color: "ui.main" }}
+              fontWeight="semibold"
+            >
+              Sign Up
+            </Text>
+          </Link>
+          <Link to="/login" search={{ redirect: pathname }}>
+            <Text
+              color={textColor}
+              _hover={{ color: "ui.main" }}
+              fontWeight="semibold"
+            >
+              Log In
+            </Text>
+          </Link>
+        </Flex>
+      )}
+      <IconButton
+        onClick={onOpen}
+        display={{ base: "flex", md: "none" }}
+        aria-label="Open Menu"
+        fontSize="20px"
+        icon={<FiMenu />}
+      />
+      <Drawer isOpen={isOpen} placement="right" onClose={onClose}>
+        <DrawerOverlay />
+        <DrawerContent maxW="250px">
+          <DrawerCloseButton />
+          <DrawerBody py={0}>
+            <Flex flexDir="column" justify="space-between">
+              <Box>
+                <Image src={Logo} alt="logo" p={4} />
+                <SidebarItems onClose={onClose} />
+              </Box>
             </Flex>
-          )}
-          <IconButton
-              onClick={onOpen}
-              display={{ base: "flex", md: "none" }}
-              aria-label="Open Menu"
-              fontSize="20px"
-              icon={<FiMenu />}
-            />
-          <Drawer isOpen={isOpen} placement="right" onClose={onClose}>
-            <DrawerOverlay />
-            <DrawerContent maxW="250px">
-              <DrawerCloseButton />
-              <DrawerBody py={0}>
-                <Flex flexDir="column" justify="space-between">
-                  <Box>
-                    <Image src={Logo} alt="logo" p={4} />
-                    <SidebarItems onClose={onClose} />
-                  </Box>
-                </Flex>
-              </DrawerBody>
-            </DrawerContent>
-          </Drawer>
+          </DrawerBody>
+        </DrawerContent>
+      </Drawer>
     </Flex>
-  );
+  )
 }
 
-export default MainMenuBar;
+export default MainMenuBar

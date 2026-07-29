@@ -1,4 +1,11 @@
+import {
+  useInfiniteQuery,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useEffect, useState } from "react"
+import { BsFolder } from "react-icons/bs"
 import {
   Badge,
   Button,
@@ -12,25 +19,22 @@ import {
   TableContainer,
   Tbody,
   Td,
+  Text,
   Th,
   Thead,
   Tr,
-  Text,
   useColorModeValue,
-} from "@chakra-ui/react"
-import { Select } from "chakra-react-select"
-import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import FileUpload from "../../../components/Files/UploadFileButtonWithProgress"
-import DeleteFileButton from "../../../components/Files/DeleteFileButton"
-import DownloadFileButton from "../../../components/Files/DownloadFileButton"
-import UngroupButton from "../../../components/Files/UngroupButton"
-import CreateGroupButton from "../../../components/Files/CreateGroupButton"
-import StorageStats from "../../../components/Files/StorageStats"
+} from "@/components/ui/chakra-compat"
+import { Select } from "@/components/ui/select-compat"
 import { FilesService } from "../../../client"
 import { getFilesAllowedTypesOptions } from "../../../client/@tanstack/react-query.gen"
+import CreateGroupButton from "../../../components/Files/CreateGroupButton"
+import DeleteFileButton from "../../../components/Files/DeleteFileButton"
+import DownloadFileButton from "../../../components/Files/DownloadFileButton"
+import StorageStats from "../../../components/Files/StorageStats"
+import UngroupButton from "../../../components/Files/UngroupButton"
+import FileUpload from "../../../components/Files/UploadFileButtonWithProgress"
 import { humanReadableDate, humanReadableFileSize } from "../../../utils"
-import { BsFolder } from "react-icons/bs"
 
 export const Route = createFileRoute("/_layout/files/")({
   component: Files,
@@ -40,9 +44,8 @@ export const Route = createFileRoute("/_layout/files/")({
         title: "My Files | CPG Portal",
       },
     ],
-  })
+  }),
 })
-
 
 interface FilesTableProps {
   selected: string[]
@@ -60,7 +63,7 @@ function FilesTable({ selected, setSelected, typeFilter }: FilesTableProps) {
     return () => {
       queryClient.removeQueries({ queryKey: ["files", pageSize, typeFilter] })
     }
-  }, [queryClient, pageSize, typeFilter])
+  }, [queryClient, typeFilter])
 
   const {
     data,
@@ -73,15 +76,15 @@ function FilesTable({ selected, setSelected, typeFilter }: FilesTableProps) {
   } = useInfiniteQuery({
     queryKey: ["files", pageSize, typeFilter],
     queryFn: async ({ pageParam = 1 }) => {
-      const queryParams: any = { 
-        skip: (pageParam - 1) * pageSize, 
-        limit: pageSize 
+      const queryParams: any = {
+        skip: (pageParam - 1) * pageSize,
+        limit: pageSize,
       }
-      
-      if (typeFilter && typeFilter !== 'all') {
+
+      if (typeFilter && typeFilter !== "all") {
         queryParams.types = [typeFilter]
       }
-      
+
       const response = await FilesService.readFiles({
         query: queryParams,
       })
@@ -92,15 +95,21 @@ function FilesTable({ selected, setSelected, typeFilter }: FilesTableProps) {
       lastPage?.data.length === pageSize ? pages.length + 1 : undefined,
   })
 
-  const files = data?.pages.filter(file => file !== undefined).flatMap((page) => page?.data) || []
+  const files =
+    data?.pages
+      .filter((file) => file !== undefined)
+      .flatMap((page) => page?.data) || []
 
   // Get the file type of the first selected file
-  const firstSelectedFile = selected.length > 0 ? files.find(f => f.id === selected[0]) : null
+  const firstSelectedFile =
+    selected.length > 0 ? files.find((f) => f.id === selected[0]) : null
   const firstSelectedFileType = firstSelectedFile?.file_type
 
   // Checkbox handlers
   const toggleSelect = (id: string) => {
-    setSelected((prev) => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+    setSelected((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    )
   }
 
   // Check if a file can be selected based on the first selected file's type
@@ -116,9 +125,7 @@ function FilesTable({ selected, setSelected, typeFilter }: FilesTableProps) {
         <Table size="sm">
           <Thead>
             <Tr>
-              <Th px={2} width="1%">
-                
-              </Th>
+              <Th px={2} width="1%" />
               <Th>Name</Th>
               <Th>Tags</Th>
               <Th>Type</Th>
@@ -131,7 +138,9 @@ function FilesTable({ selected, setSelected, typeFilter }: FilesTableProps) {
             {isLoading ? (
               new Array(pageSize).fill(null).map((_, idx) => (
                 <Tr key={idx}>
-                  <Td><SkeletonText noOfLines={1} paddingBlock="16px" /></Td>
+                  <Td>
+                    <SkeletonText noOfLines={1} paddingBlock="16px" />
+                  </Td>
                   {new Array(6).fill(null).map((_, i) => (
                     <Td key={i}>
                       <SkeletonText noOfLines={1} paddingBlock="16px" />
@@ -142,14 +151,13 @@ function FilesTable({ selected, setSelected, typeFilter }: FilesTableProps) {
             ) : isError ? (
               <Tr>
                 <Td colSpan={7}>
-                  <Text color="red.500">
-                    Error: {(error as Error).message}
-                  </Text>
+                  <Text color="red.500">Error: {(error as Error).message}</Text>
                 </Td>
               </Tr>
             ) : (
               files.map((file) => (
-                <Tr key={file.id}
+                <Tr
+                  key={file.id}
                   _hover={{ bg: colourMode }}
                   cursor="pointer"
                   onClick={() =>
@@ -161,24 +169,24 @@ function FilesTable({ selected, setSelected, typeFilter }: FilesTableProps) {
                     })
                   }
                 >
-                  <Td px={2} width="1%"
-                  onClick={(e) => {
-                        e.stopPropagation()
-                      }}
+                  <Td
+                    px={2}
+                    width="1%"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                    }}
                   >
-                  {canSelectFile(file) && (
-                    <input
-                      type="checkbox"
-                      aria-label={`Select file ${file.name}`}
-                      checked={selected.includes(file.id)}
-                      onChange={() => toggleSelect(file.id)}
-                    />
-                  )}
-                  {file.is_group && ( <BsFolder />)}
+                    {canSelectFile(file) && (
+                      <input
+                        type="checkbox"
+                        aria-label={`Select file ${file.name}`}
+                        checked={selected.includes(file.id)}
+                        onChange={() => toggleSelect(file.id)}
+                      />
+                    )}
+                    {file.is_group && <BsFolder />}
                   </Td>
-                  <Td>
-                    {file.name}
-                  </Td>
+                  <Td>{file.name}</Td>
                   <Td>
                     {file.tags?.map((tag) => (
                       <Badge key={tag} colorScheme="cyan" mr={1}>
@@ -187,17 +195,21 @@ function FilesTable({ selected, setSelected, typeFilter }: FilesTableProps) {
                     ))}
                   </Td>
                   <Td>
-                    {file.is_group ? `${file.file_type} (group)` : file.file_type === 'pair' ? 'paired-end reads' : file.file_type}
+                    {file.is_group
+                      ? `${file.file_type} (group)`
+                      : file.file_type === "pair"
+                        ? "paired-end reads"
+                        : file.file_type}
                   </Td>
-                  <Td>
-                    {file.size ? humanReadableFileSize(file.size) : ""}
-                  </Td>
+                  <Td>{file.size ? humanReadableFileSize(file.size) : ""}</Td>
                   <Td>{humanReadableDate(file.created_at)}</Td>
                   <Td>
-                    <ButtonGroup size="sm"
-                     onClick={(e) => {
+                    <ButtonGroup
+                      size="sm"
+                      onClick={(e) => {
                         e.stopPropagation()
-                      }}>
+                      }}
+                    >
                       <DownloadFileButton file={file} size="sm" />
                       <UngroupButton file={file} size="sm" />
                       <DeleteFileButton file={file} />
@@ -212,7 +224,10 @@ function FilesTable({ selected, setSelected, typeFilter }: FilesTableProps) {
 
       {hasNextPage && (
         <Flex justify="center" py={4}>
-          <Button onClick={() => fetchNextPage()} isLoading={isFetchingNextPage}>
+          <Button
+            onClick={() => fetchNextPage()}
+            isLoading={isFetchingNextPage}
+          >
             Load more files
           </Button>
         </Flex>
@@ -223,7 +238,7 @@ function FilesTable({ selected, setSelected, typeFilter }: FilesTableProps) {
 
 function Files() {
   const [selected, setSelected] = useState<string[]>([])
-  const [typeFilter, setTypeFilter] = useState<string>('all')
+  const [typeFilter, setTypeFilter] = useState<string>("all")
 
   // Query for available file types
   const { data: fileTypes } = useQuery({
@@ -252,20 +267,29 @@ function Files() {
         </Text>
       </Stack>
       <Stack spacing={1} my={4}>
-        <StorageStats size="md"/>
-      </Stack> 
+        <StorageStats size="md" />
+      </Stack>
       <FileUpload dragAndDrop />
       <Flex justify="space-between" align="center" my={4}>
         <ButtonGroup>
           <Select
-            value={{ label: typeFilter === 'all' ? 'Types' : typeFilter.toUpperCase(), value: typeFilter }}
-            onChange={(selectedOption) => handleFilterChange(selectedOption?.value || 'all')}
+            value={{
+              label: typeFilter === "all" ? "Types" : typeFilter.toUpperCase(),
+              value: typeFilter,
+            }}
+            onChange={(selectedOption) =>
+              handleFilterChange(selectedOption?.value || "all")
+            }
             options={[
-              { label: '--', value: 'all' },
-              ...(fileTypes ? Object.entries(fileTypes || {}).map(([key, metadata]: [string, any]) => ({
-                label: `${key.toUpperCase()} (${metadata.file_format})`,
-                value: key
-              })) : [])
+              { label: "--", value: "all" },
+              ...(fileTypes
+                ? Object.entries(fileTypes || {}).map(
+                    ([key, metadata]: [string, any]) => ({
+                      label: `${key.toUpperCase()} (${metadata.file_format})`,
+                      value: key,
+                    }),
+                  )
+                : []),
             ]}
             placeholder="Select file type"
             isClearable={false}
@@ -274,22 +298,24 @@ function Files() {
             chakraStyles={{
               container: (provided) => ({
                 ...provided,
-                width: '150px'
-              })
+                width: "150px",
+              }),
             }}
           />
         </ButtonGroup>
         <ButtonGroup>
-          <CreateGroupButton 
+          <CreateGroupButton
             selectedFileIds={selected}
             onGroupCreated={handleGroupCreated}
             size="md"
           />
         </ButtonGroup>
       </Flex>
-      <FilesTable selected={selected} setSelected={setSelected} typeFilter={typeFilter} />
-
-
+      <FilesTable
+        selected={selected}
+        setSelected={setSelected}
+        typeFilter={typeFilter}
+      />
     </Container>
   )
 }

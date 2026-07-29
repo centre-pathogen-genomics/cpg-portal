@@ -1,72 +1,79 @@
-import { useState } from 'react';
-import { SeqViz } from "seqviz";
-import seqparse, { Seq } from "seqparse";
-import { useSuspenseQuery } from '@tanstack/react-query';
-import { downloadFileOptions } from '../../client/@tanstack/react-query.gen';
-import { VStack, Select, Text, useColorMode, Box } from '@chakra-ui/react';
-
+import { useSuspenseQuery } from "@tanstack/react-query"
+import { useState } from "react"
+import seqparse, { type Seq } from "seqparse"
+import { SeqViz } from "seqviz"
+import {
+  Box,
+  Select,
+  Text,
+  useColorMode,
+  VStack,
+} from "@/components/ui/chakra-compat"
+import { downloadFileOptions } from "../../client/@tanstack/react-query.gen"
 
 interface FastaFileProps {
-  fileId: string;
-  height?: number;
+  fileId: string
+  height?: number
 }
 
 const FastaFile = ({ fileId, height = 500 }: FastaFileProps) => {
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const { colorMode } = useColorMode();
+  const [selectedIndex, setSelectedIndex] = useState(0)
+  const { colorMode } = useColorMode()
 
   // Fetch the text file content
   const { data: fastaContent } = useSuspenseQuery({
     ...downloadFileOptions({ path: { id: fileId } }),
-  });
+  })
 
-  const fasta = typeof fastaContent === 'string'
-    ? fastaContent
-    : new TextDecoder().decode(fastaContent as ArrayBuffer);
-
-
+  const fasta =
+    typeof fastaContent === "string"
+      ? fastaContent
+      : new TextDecoder().decode(fastaContent as ArrayBuffer)
 
   // Parse each FASTA entry
   const { data: parsed } = useSuspenseQuery<Seq[]>({
-    queryKey: ['fasta-parse', fileId, fasta],
+    queryKey: ["fasta-parse", fileId, fasta],
     queryFn: async () => {
       try {
-          // Split multi-FASTA file into individual sequences
-        const fastaEntries = fasta.split(/(?=^>)/m).filter(entry => entry.trim());
+        // Split multi-FASTA file into individual sequences
+        const fastaEntries = fasta
+          .split(/(?=^>)/m)
+          .filter((entry) => entry.trim())
         const sequences = await Promise.all(
-          fastaEntries.map(entry => seqparse(entry))
-        );
-        return sequences;
+          fastaEntries.map((entry) => seqparse(entry)),
+        )
+        return sequences
       } catch (e) {
-        console.error("Fasta parsing failed:", e);
-        throw e;
+        console.error("Fasta parsing failed:", e)
+        throw e
       }
     },
-  });
+  })
 
   if (!parsed || parsed.length === 0) {
-    return <Text color="gray.500">No sequences found in FASTA file</Text>;
+    return <Text color="gray.500">No sequences found in FASTA file</Text>
   }
 
   // All sequences are already in an array
-  const sequences = parsed;
-  const MAX_DISPLAYABLE_BP = 200000; // Adjust based on performance testing
+  const sequences = parsed
+  const MAX_DISPLAYABLE_BP = 200000 // Adjust based on performance testing
 
-  const currentSeq = sequences[selectedIndex];
+  const currentSeq = sequences[selectedIndex]
 
   if (!currentSeq) {
-    return <Text color="gray.500">No sequences found in FASTA file</Text>;
+    return <Text color="gray.500">No sequences found in FASTA file</Text>
   }
 
-  const { name, seq, annotations } = currentSeq;
-  const seqLength = seq?.length || 0;
+  const { name, seq, annotations } = currentSeq
+  const seqLength = seq?.length || 0
 
   // Adapt colors for dark/light mode
-  const bpColors = colorMode === 'dark' 
-    ? { A: '#42a5f5', T: '#ef5350', C: '#66bb6a', G: '#ffa726' }
-    : { A: '#1976d2', T: '#d32f2f', C: '#388e3c', G: '#f57c00' };
+  const bpColors =
+    colorMode === "dark"
+      ? { A: "#42a5f5", T: "#ef5350", C: "#66bb6a", G: "#ffa726" }
+      : { A: "#1976d2", T: "#d32f2f", C: "#388e3c", G: "#f57c00" }
 
-  const textColor = colorMode === 'dark' ? '#e0e0e0' : '#2a2a2a';
+  const textColor = colorMode === "dark" ? "#e0e0e0" : "#2a2a2a"
 
   return (
     <VStack align="stretch" spacing={3}>
@@ -85,23 +92,23 @@ const FastaFile = ({ fileId, height = 500 }: FastaFileProps) => {
       )}
       <Box
         sx={{
-          '& svg text': {
+          "& svg text": {
             fill: `${textColor} !important`,
-          }
+          },
         }}
       >
         <SeqViz
           seq={seq}
           annotations={annotations}
           name={name}
-          viewer={seqLength > MAX_DISPLAYABLE_BP ? 'circular' : 'linear'}
-          style={{ height: `${height}px`, width: '100%'}}
+          viewer={seqLength > MAX_DISPLAYABLE_BP ? "circular" : "linear"}
+          style={{ height: `${height}px`, width: "100%" }}
           bpColors={bpColors}
           showComplement={false}
         />
       </Box>
     </VStack>
-  );
-};
+  )
+}
 
-export default FastaFile;
+export default FastaFile

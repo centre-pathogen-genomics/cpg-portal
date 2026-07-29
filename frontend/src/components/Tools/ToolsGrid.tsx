@@ -1,85 +1,124 @@
-import {
-    Box,
-    SimpleGrid,
-    Skeleton,
-    Text,
-    Flex,
-    Select,
-    Switch,
-    FormLabel,
-    Heading,
-    Image,
-} from "@chakra-ui/react"
 import { useSuspenseQuery } from "@tanstack/react-query"
+import type React from "react"
 import { Suspense, useState } from "react"
 import { ErrorBoundary } from "react-error-boundary"
-import { type ToolsOrderBy } from "../../client"
+import {
+  Box,
+  Flex,
+  FormLabel,
+  Heading,
+  Image,
+  Select,
+  SimpleGrid,
+  Skeleton,
+  Switch,
+  Text,
+} from "@/components/ui/chakra-compat"
+import ErrorLogo from "/assets/images/500.png"
+import type { ToolsOrderBy } from "../../client"
 import { readToolsOptions } from "../../client/@tanstack/react-query.gen"
 import ToolCard from "../../components/Tools/ToolCard"
-import React from "react"
-import ErrorLogo from "/assets/images/500.png"
-  
-function ToolCards({ orderBy, showFavourites, search }: { orderBy: ToolsOrderBy, showFavourites: boolean, search?: string }) {
-const { data: tools } = useSuspenseQuery({
-    ...readToolsOptions({ query: { order_by: orderBy, show_favourites: showFavourites, search: search } }),
-})
 
-return (
+function ToolCards({
+  orderBy,
+  showFavourites,
+  search,
+}: {
+  orderBy: ToolsOrderBy
+  showFavourites: boolean
+  search?: string
+}) {
+  const { data: tools } = useSuspenseQuery({
+    ...readToolsOptions({
+      query: {
+        order_by: orderBy,
+        show_favourites: showFavourites,
+        search: search,
+      },
+    }),
+  })
+
+  return (
     <>
-    {tools?.data.length === 0 && (
+      {tools?.data.length === 0 && (
         <Flex justify="center" align="center" h="200px">
-            <Heading size={'md'}>No matches found</Heading>
+          <Heading size={"md"}>No matches found</Heading>
         </Flex>
-    )}
-    <SimpleGrid gap={4} mb={8} gridTemplateColumns="repeat(auto-fill, minmax(300px, 1fr))" >
+      )}
+      <SimpleGrid
+        gap={4}
+        mb={8}
+        gridTemplateColumns="repeat(auto-fill, minmax(300px, 1fr))"
+      >
         {tools.data.map((tool) => (
-            <ToolCard key={tool.id} tool={tool} />
+          <ToolCard key={tool.id} tool={tool} />
         ))}
-    </SimpleGrid>
+      </SimpleGrid>
     </>
-)
+  )
 }
 
-function ToolsGrid({ search, hideFilters }: { search?: string, hideFilters?: boolean }) {
-const [orderBy, setOrderBy] = useState<ToolsOrderBy>("run_count") // Default orderBy state
-const [showFavourites, setShowFavourites] = useState(false)
+function ToolsGrid({
+  search,
+  hideFilters,
+}: {
+  search?: string
+  hideFilters?: boolean
+}) {
+  const [orderBy, setOrderBy] = useState<ToolsOrderBy>("run_count") // Default orderBy state
+  const [showFavourites, setShowFavourites] = useState(false)
 
-const handleOrderByChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleOrderByChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setOrderBy(event.target.value as ToolsOrderBy) // Update state when selection changes
-}
+  }
 
-
-return (
+  return (
     <Suspense fallback={<Skeleton height="20px" />}>
-    <ErrorBoundary
+      <ErrorBoundary
         fallbackRender={() => (
-        <Box textAlign="center" mt={8} w={'100%'} justifyContent={'center'} alignItems={'center'} justifyItems={'center'}>
+          <Box
+            textAlign="center"
+            mt={8}
+            w={"100%"}
+            justifyContent={"center"}
+            alignItems={"center"}
+            justifyItems={"center"}
+          >
             <Text>Something went wrong... Please reload the page!</Text>
-            <Image src={ErrorLogo} alt="Error" maxW={80}/>
-        </Box>
+            <Image src={ErrorLogo} alt="Error" maxW={80} />
+          </Box>
         )}
-    >
+      >
         {!hideFilters && (
-            <Flex justify="space-between" align={"end"}   mb={4}>
-                <Select w='200px' value={orderBy} onChange={handleOrderByChange}>
-                    <option value='run_count'>Popular</option>
-                    <option value='created_at'>New & Noteworthy</option>
-                </Select>
-                {/* <Tooltip placement='top' hasArrow label='Show favourites'> */}
-                <Flex align='center'>
-                <FormLabel htmlFor='show-favourites' mb='0' mr={1}>
-                    Favourites
-                </FormLabel>
-                <Switch size='md' id="show-favourites" isChecked={showFavourites} onChange={() => setShowFavourites(!showFavourites)} />
-                {/* </Tooltip> */}
-                </Flex>
+          <Flex justify="space-between" align={"end"} mb={4}>
+            <Select w="200px" value={orderBy} onChange={handleOrderByChange}>
+              <option value="run_count">Popular</option>
+              <option value="created_at">New & Noteworthy</option>
+            </Select>
+            {/* <Tooltip placement='top' hasArrow label='Show favourites'> */}
+            <Flex align="center">
+              <FormLabel htmlFor="show-favourites" mb="0" mr={1}>
+                Favourites
+              </FormLabel>
+              <Switch
+                size="md"
+                id="show-favourites"
+                isChecked={showFavourites}
+                onChange={() => setShowFavourites(!showFavourites)}
+              />
+              {/* </Tooltip> */}
             </Flex>
+          </Flex>
         )}
         {/* Render the ToolCards component with the selected orderBy and showFavourites state */}
-        <ToolCards orderBy={orderBy} showFavourites={showFavourites} search={search} />
-    </ErrorBoundary>
+        <ToolCards
+          orderBy={orderBy}
+          showFavourites={showFavourites}
+          search={search}
+        />
+      </ErrorBoundary>
     </Suspense>
-)
+  )
 }
 
 export default ToolsGrid

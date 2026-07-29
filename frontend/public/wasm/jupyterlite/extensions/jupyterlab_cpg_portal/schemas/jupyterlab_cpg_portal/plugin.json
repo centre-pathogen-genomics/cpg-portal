@@ -1,0 +1,19 @@
+{
+  "jupyter.lab.shortcuts": [],
+  "title": "jupyterlab_cpg_portal",
+  "description": "jupyterlab_cpg_portal settings.",
+  "type": "object",
+  "properties": {
+    "apiToken": {
+      "type": "string",
+      "title": "API Token",
+      "description": "JWT or API key for the portal"
+    },
+    "portalUrl": {
+      "type": "string",
+      "title": "Portal URL",
+      "default": "https://portal.cpg.unimelb.edu.au"
+    }
+  },
+  "additionalProperties": false
+}

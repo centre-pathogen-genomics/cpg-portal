@@ -1,7 +1,22 @@
-import { Box, Flex, Icon, Text, useColorModeValue } from "@chakra-ui/react"
 import { Link } from "@tanstack/react-router"
-import { FiCodesandbox, FiFile, FiHome, FiInfo, FiLogIn, FiLogOut, FiSettings, FiUsers } from "react-icons/fi"
-import { IoGlasses } from "react-icons/io5";
+import {
+  FiCodesandbox,
+  FiFile,
+  FiHome,
+  FiInfo,
+  FiLogIn,
+  FiLogOut,
+  FiSettings,
+  FiUsers,
+} from "react-icons/fi"
+import { IoGlasses } from "react-icons/io5"
+import {
+  Box,
+  Flex,
+  Icon,
+  Text,
+  useColorModeValue,
+} from "@/components/ui/chakra-compat"
 
 import useAuth from "../../hooks/useAuth"
 import StorageStats from "../Files/StorageStats"
@@ -12,21 +27,24 @@ interface SidebarItemsProps {
 
 const SidebarItems = ({ onClose }: SidebarItemsProps) => {
   const textColor = useColorModeValue("ui.main", "ui.light")
+  const hoverBackground = useColorModeValue("ui.light", "ui.dark")
   const { logout, user: currentUser } = useAuth()
 
-  const userItems = currentUser ? [
-    { icon: FiHome, title: "Tools", path: "/" },
-    { icon: FiCodesandbox, title: "My Runs", path: "/runs" },
-    { icon: FiFile, title: "My Files", path: "/files" },
-    { icon: FiInfo, title: "About", path: "/about" },
-    { icon: FiSettings, title: "Settings", path: "/settings" },
-    { icon: IoGlasses, title: "Stream", path: "/stream", external: true },
-  ] : [
-      { icon: FiHome, title: "Tools", path: "/" },
-      { icon: FiInfo, title: "About", path: "/about" },
-      { icon: FiLogIn, title: "Login", path: "/login" },
-      { icon: FiUsers, title: "Sign Up", path: "/signup" },
-    ]
+  const userItems = currentUser
+    ? [
+        { icon: FiHome, title: "Tools", path: "/" },
+        { icon: FiCodesandbox, title: "My Runs", path: "/runs" },
+        { icon: FiFile, title: "My Files", path: "/files" },
+        { icon: FiInfo, title: "About", path: "/about" },
+        { icon: FiSettings, title: "Settings", path: "/settings" },
+        { icon: IoGlasses, title: "Stream", path: "/stream", external: true },
+      ]
+    : [
+        { icon: FiHome, title: "Tools", path: "/" },
+        { icon: FiInfo, title: "About", path: "/about" },
+        { icon: FiLogIn, title: "Login", path: "/login" },
+        { icon: FiUsers, title: "Sign Up", path: "/signup" },
+      ]
 
   const finalItems = currentUser?.is_superuser
     ? [...userItems, { icon: FiUsers, title: "Admin", path: "/admin" }]
@@ -50,9 +68,9 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
       target={external ? "_blank" : undefined}
       _hover={{
         textDecoration: "underline",
-        backgroundColor: useColorModeValue("ui.light", "ui.dark"),
+        backgroundColor: hoverBackground,
         borderRadius: "12px",
-        }}
+      }}
     >
       <Icon as={icon} alignSelf="center" fontSize={18} />
       <Text ml={2}>{title}</Text>
@@ -62,7 +80,6 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
   const handleLogout = async () => {
     logout()
   }
-
 
   return (
     <>
@@ -78,7 +95,7 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
             alignItems="center"
             _hover={{
               textDecoration: "underline",
-              backgroundColor: useColorModeValue("ui.light", "ui.dark"),
+              backgroundColor: hoverBackground,
               borderRadius: "12px",
             }}
             w={"100%"}
@@ -86,10 +103,15 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
             <FiLogOut />
             <Text ml={2}>Log out</Text>
           </Flex>
-          <Box mt={2} mb={2} borderBottom="1px solid" borderColor="ui.secondary" />
+          <Box
+            mt={2}
+            mb={2}
+            borderBottom="1px solid"
+            borderColor="ui.secondary"
+          />
           <StorageStats />
           <Text color={textColor} noOfLines={2} fontSize="sm" mt={2}>
-              {currentUser.email}
+            {currentUser.email}
           </Text>
         </Box>
       )}

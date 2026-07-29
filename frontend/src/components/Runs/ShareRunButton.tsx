@@ -1,58 +1,62 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useRef, useState } from "react"
+import { FiShare2 } from "react-icons/fi"
 import {
-  Button,
-  useDisclosure,
   AlertDialog,
-  AlertDialogOverlay,
-  AlertDialogContent,
-  AlertDialogHeader,
   AlertDialogBody,
+  AlertDialogContent,
   AlertDialogFooter,
-  Switch,
+  AlertDialogHeader,
+  AlertDialogOverlay,
+  Button,
   FormControl,
   FormLabel,
+  Switch,
   Text,
+  useDisclosure,
   VStack,
-} from "@chakra-ui/react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRef, useState } from "react";
-import { FiShare2 } from "react-icons/fi";
+} from "@/components/ui/chakra-compat"
 
-import { type RunPublic } from "../../client";
-import { toggleRunSharingMutation } from "../../client/@tanstack/react-query.gen";
-import useCustomToast from "../../hooks/useCustomToast";
+import type { RunPublic } from "../../client"
+import { toggleRunSharingMutation } from "../../client/@tanstack/react-query.gen"
+import useCustomToast from "../../hooks/useCustomToast"
 
 interface ShareRunButtonProps {
-  run: RunPublic;
+  run: RunPublic
 }
 
 function ShareRunButton({ run }: ShareRunButtonProps) {
-  const queryClient = useQueryClient();
-  const showToast = useCustomToast();
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const [isShared, setIsShared] = useState(run.shared || false);
-  const cancelRef = useRef<HTMLButtonElement>(null);
+  const queryClient = useQueryClient()
+  const showToast = useCustomToast()
+  const { isOpen, onOpen, onClose } = useDisclosure()
+  const [isShared, setIsShared] = useState(run.shared || false)
+  const cancelRef = useRef<HTMLButtonElement>(null)
 
   const mutation = useMutation({
     ...toggleRunSharingMutation(),
     onSuccess: () => {
-      showToast("Success!", `Run sharing ${isShared ? "enabled" : "disabled"} successfully.`, "success");
+      showToast(
+        "Success!",
+        `Run sharing ${isShared ? "enabled" : "disabled"} successfully.`,
+        "success",
+      )
       queryClient.invalidateQueries({
         queryKey: [{ _id: "readRun" }],
-      });
-      onClose();
+      })
+      onClose()
     },
     onError: (err: any) => {
-      const errDetail = (err.body as any)?.detail;
-      showToast("Something went wrong.", `${errDetail}`, "error");
+      const errDetail = (err.body as any)?.detail
+      showToast("Something went wrong.", `${errDetail}`, "error")
     },
-  });
+  })
 
   const onConfirm = async () => {
     mutation.mutate({
       path: { id: run.id },
       query: { shared: isShared },
-    });
-  };
+    })
+  }
 
   return (
     <>
@@ -66,7 +70,11 @@ function ShareRunButton({ run }: ShareRunButtonProps) {
         {run.shared ? "Shared" : "Share"}
       </Button>
 
-      <AlertDialog isOpen={isOpen} leastDestructiveRef={cancelRef} onClose={onClose}>
+      <AlertDialog
+        isOpen={isOpen}
+        leastDestructiveRef={cancelRef}
+        onClose={onClose}
+      >
         <AlertDialogOverlay>
           <AlertDialogContent>
             <AlertDialogHeader fontSize="lg" fontWeight="bold">
@@ -76,9 +84,10 @@ function ShareRunButton({ run }: ShareRunButtonProps) {
             <AlertDialogBody>
               <VStack spacing={4} align="stretch">
                 <Text>
-                  Configure sharing settings for this run. When shared, other users with this url will be able to view the run results.
+                  Configure sharing settings for this run. When shared, other
+                  users with this url will be able to view the run results.
                 </Text>
-                
+
                 <FormControl display="flex" alignItems="center">
                   <FormLabel htmlFor="share-toggle" mb="0">
                     Enable sharing
@@ -93,7 +102,8 @@ function ShareRunButton({ run }: ShareRunButtonProps) {
 
                 {isShared && (
                   <Text fontSize="sm" color="orange.500">
-                    ⚠️ When sharing is enabled, any user with the run link can view the results.
+                    ⚠️ When sharing is enabled, any user with the run link can
+                    view the results.
                   </Text>
                 )}
               </VStack>
@@ -116,7 +126,7 @@ function ShareRunButton({ run }: ShareRunButtonProps) {
         </AlertDialogOverlay>
       </AlertDialog>
     </>
-  );
+  )
 }
 
-export default ShareRunButton;
+export default ShareRunButton

@@ -1,40 +1,38 @@
+import { useNavigate } from "@tanstack/react-router"
+import { HiOutlinePlay } from "react-icons/hi2"
 import {
   ButtonGroup,
-  IconButton,
   Card,
   CardBody,
   CardFooter,
   CardHeader,
-  Heading,
-  Image,
-  Text,
   Flex,
+  Heading,
+  IconButton,
+  Image,
   Tag,
+  Text,
   useColorModeValue,
-} from "@chakra-ui/react";
-import { useDisclosure } from "@chakra-ui/react";
-import { HiOutlinePlay } from "react-icons/hi2";
-import { useNavigate } from "@tanstack/react-router";
+  useDisclosure,
+} from "@/components/ui/chakra-compat"
 
-
-import type { ToolMinimalPublic } from "../../client";
-import RunToolModal from "./RunToolModal"; // Adjust the import path as needed
-import FavouriteButton from "./FavouriteButton";
-import '../../assets/css/App.css';
-import { useState } from "react";
+import type { ToolMinimalPublic } from "../../client"
+import FavouriteButton from "./FavouriteButton"
+import RunToolModal from "./RunToolModal" // Adjust the import path as needed
+import "../../assets/css/App.css"
+import { useState } from "react"
 import useAuth from "../../hooks/useAuth"
 
 interface ToolCardProps {
-  tool: ToolMinimalPublic;
+  tool: ToolMinimalPublic
 }
 
 const ToolCard = ({ tool }: ToolCardProps) => {
-  const runToolModal = useDisclosure();
-  const navigate = useNavigate();
-  const { user: currentUser } = useAuth();
-  const colourMode = useColorModeValue("ui.light","ui.dark");
-  const [isFavourited, setIsFavourited] = useState(tool.favourited ?? false); 
-  
+  const runToolModal = useDisclosure()
+  const navigate = useNavigate()
+  const { user: currentUser } = useAuth()
+  const colourMode = useColorModeValue("ui.light", "ui.dark")
+  const [isFavourited, setIsFavourited] = useState(tool.favourited ?? false)
 
   const navigateToTool = () => {
     navigate({
@@ -42,8 +40,8 @@ const ToolCard = ({ tool }: ToolCardProps) => {
       params: { name: tool.name },
       replace: false,
       resetScroll: true,
-    });
-  };
+    })
+  }
   return (
     <>
       <Card
@@ -61,17 +59,17 @@ const ToolCard = ({ tool }: ToolCardProps) => {
         onClick={navigateToTool}
         className="group"
         borderWidth={1}
-        borderColor={useColorModeValue("gray.200","gray.600")}
+        borderColor={useColorModeValue("gray.200", "gray.600")}
       >
         <Flex
           justify="center"
           align="center"
-          h={{ base: "120px"}}
+          h={{ base: "120px" }}
           overflow="hidden"
           position="relative"
         >
           <Image
-            objectFit='cover'
+            objectFit="cover"
             h={"100%"}
             w={"100%"}
             src={
@@ -83,41 +81,43 @@ const ToolCard = ({ tool }: ToolCardProps) => {
             alt="Caffe Latte"
             _groupHover={{ filter: "brightness(1.2)" }}
           />
-          { currentUser && (
-          <Flex
-            _groupHover={{ display: "block" }}
-            position="absolute"
-            h="100%"
-            w="100%"
-            display="none"
-            p={2}
-          >
-            <ButtonGroup justifyContent={"end"} w="100%">
-              <FavouriteButton tool={tool} isFavourited={isFavourited} setIsFavourited={setIsFavourited} />
-              <IconButton
-                isRound={true}
-                variant="solid"
-                aria-label="Run"
-                title="Run tool"
-                bg={colourMode}
-                mr="2"
-                fontSize="20px"
-                _hover={{ color: "green" }}
-                icon={<HiOutlinePlay />}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  runToolModal.onOpen();
-                }} // Opens the modal
-              ></IconButton>
-            </ButtonGroup>
-          </Flex>
+          {currentUser && (
+            <Flex
+              _groupHover={{ display: "block" }}
+              position="absolute"
+              h="100%"
+              w="100%"
+              display="none"
+              p={2}
+            >
+              <ButtonGroup justifyContent={"end"} w="100%">
+                <FavouriteButton
+                  tool={tool}
+                  isFavourited={isFavourited}
+                  setIsFavourited={setIsFavourited}
+                />
+                <IconButton
+                  isRound={true}
+                  variant="solid"
+                  aria-label="Run"
+                  title="Run tool"
+                  bg={colourMode}
+                  mr="2"
+                  fontSize="20px"
+                  _hover={{ color: "green" }}
+                  icon={<HiOutlinePlay />}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    runToolModal.onOpen()
+                  }} // Opens the modal
+                />
+              </ButtonGroup>
+            </Flex>
           )}
         </Flex>
 
         <CardHeader pb={0}>
-          <Heading  size="lg">
-            {tool.name}
-          </Heading>
+          <Heading size="lg">{tool.name}</Heading>
         </CardHeader>
         <CardBody>
           <Text noOfLines={3}>{tool.description}</Text>
@@ -125,13 +125,25 @@ const ToolCard = ({ tool }: ToolCardProps) => {
         <CardFooter justify="space-between">
           <Flex overflow={"auto"} wrap={"nowrap"} mr={2} className="no-scroll">
             {tool.tags?.map((tag) => (
-              <Tag size="sm" key={tag} mr={1} whiteSpace={"nowrap"} flexShrink={0}>
+              <Tag
+                size="sm"
+                key={tag}
+                mr={1}
+                whiteSpace={"nowrap"}
+                flexShrink={0}
+              >
                 {tag}
               </Tag>
             ))}
           </Flex>
           <Flex color="gray.500">
-            <FavouriteButton tool={tool} isFavourited={isFavourited} setIsFavourited={setIsFavourited} withCount={true} disabled={currentUser == undefined} /> 
+            <FavouriteButton
+              tool={tool}
+              isFavourited={isFavourited}
+              setIsFavourited={setIsFavourited}
+              withCount={true}
+              disabled={currentUser === undefined}
+            />
             <Flex align="center" justify="center" gap="0.5">
               <HiOutlinePlay />
               {tool.run_count ? tool.run_count : 0}
@@ -143,10 +155,10 @@ const ToolCard = ({ tool }: ToolCardProps) => {
         isOpen={runToolModal.isOpen}
         onClose={runToolModal.onClose}
         toolId={tool.id}
-        params={tool.params ? tool.params : []} 
+        params={tool.params ? tool.params : []}
       />
     </>
-  );
-};
+  )
+}
 
-export default ToolCard;
+export default ToolCard

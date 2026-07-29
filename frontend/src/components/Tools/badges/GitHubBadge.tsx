@@ -1,14 +1,18 @@
-import { Image, Link } from "@chakra-ui/react";
+import { Image, Link } from "@/components/ui/chakra-compat"
 
-
-const GitHubBadge = ({type, githubRepo}: {type: string, githubRepo:string}) => {
-    let shield = `https://img.shields.io/github/${type}/${githubRepo}`; 
-    return (
-        <Link href={`https://github.com/${githubRepo}`} isExternal>
-            <Image src={shield} />
-        </Link>
-    );
+const GitHubBadge = ({
+  type,
+  githubRepo,
+}: {
+  type: string
+  githubRepo: string
+}) => {
+  const shield = `https://img.shields.io/github/${type}/${githubRepo}`
+  return (
+    <Link href={`https://github.com/${githubRepo}`} isExternal>
+      <Image src={shield} />
+    </Link>
+  )
 }
-   
 
-export default GitHubBadge;
+export default GitHubBadge

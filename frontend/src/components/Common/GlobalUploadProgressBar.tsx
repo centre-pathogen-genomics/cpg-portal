@@ -1,18 +1,18 @@
 // components/UploadProgress.tsx
-import React from "react";
-import { Progress, Box } from "@chakra-ui/react";
-import { useUpload } from "../../context/UploadContext";
+import type React from "react"
+import { Box, Progress } from "@/components/ui/chakra-compat"
+import { useUpload } from "../../context/UploadContext"
 
 const UploadProgress: React.FC = () => {
-  const { isUploading, progress } = useUpload();
+  const { isUploading, progress } = useUpload()
 
-  if (!isUploading) return null;
+  if (!isUploading) return null
 
   return (
     <Box position="fixed" bottom="0" left="0" width="100%" zIndex="1000">
       <Progress value={progress} colorScheme="blue" />
     </Box>
-  );
-};
+  )
+}
 
-export default UploadProgress;
+export default UploadProgress

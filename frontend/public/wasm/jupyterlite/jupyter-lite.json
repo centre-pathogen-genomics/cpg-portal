@@ -1,0 +1,966 @@
+{
+  "jupyter-config-data": {
+    "appName": "CPG Secure Analysis Environment",
+    "appUrl": "./lab",
+    "appVersion": "0.5.0",
+    "baseUrl": "./",
+    "defaultKernelName": "python",
+    "disabledExtensions": [
+      "@jupyterlab/drawio-extension",
+      "jupyterlab-kernel-spy",
+      "jupyterlab-tour"
+    ],
+    "faviconUrl": "../../../favicon.ico",
+    "federated_extensions": [
+      {
+        "extension": "./extension",
+        "liteExtension": false,
+        "load": "static/remoteEntry.1721422919ae05a29840.js",
+        "name": "@jupyter-notebook/lab-extension",
+        "style": "./style"
+      },
+      {
+        "extension": "./extension",
+        "liteExtension": false,
+        "load": "static/remoteEntry.35b6c65bd99dab37b910.js",
+        "name": "@jupyter-widgets/jupyterlab-manager"
+      },
+      {
+        "liteExtension": false,
+        "load": "static/remoteEntry.b15a25cb741a6c7381f8.js",
+        "mimeExtension": "./mimeExtension",
+        "name": "@jupyterlab/fasta-extension",
+        "style": "./style"
+      },
+      {
+        "liteExtension": false,
+        "load": "static/remoteEntry.6a76d3e37f02d3977b44.js",
+        "mimeExtension": "./mimeExtension",
+        "name": "@jupyterlab/geojson-extension",
+        "style": "./style"
+      },
+      {
+        "extension": "./extension",
+        "liteExtension": true,
+        "load": "static/remoteEntry.6014628263d9ee9ca44a.js",
+        "name": "@jupyterlite/javascript-kernel-extension"
+      },
+      {
+        "extension": "./extension",
+        "liteExtension": true,
+        "load": "static/remoteEntry.9117113815033289c4d5.js",
+        "name": "@jupyterlite/p5-kernel-extension",
+        "style": "./style"
+      },
+      {
+        "extension": "./extension",
+        "liteExtension": true,
+        "load": "static/remoteEntry.3ac7f76fb22d01270496.js",
+        "name": "@jupyterlite/pyodide-kernel-extension"
+      },
+      {
+        "extension": "./extension",
+        "liteExtension": false,
+        "load": "static/remoteEntry.382ac9f028a244bc2d44.js",
+        "name": "@timkpaine/jupyterlab_miami_nights"
+      },
+      {
+        "extension": "./extension",
+        "liteExtension": false,
+        "load": "static/remoteEntry.ac6ba46a96b6912c489d.js",
+        "name": "bqplot"
+      },
+      {
+        "extension": "./extension",
+        "liteExtension": false,
+        "load": "static/remoteEntry.fb45db9d3f32bd4bc57a.js",
+        "name": "ipycanvas"
+      },
+      {
+        "extension": "./extension",
+        "liteExtension": false,
+        "load": "static/remoteEntry.929a2e1ca74d3a1af827.js",
+        "name": "ipyevents"
+      },
+      {
+        "extension": "./extension",
+        "liteExtension": false,
+        "load": "static/remoteEntry.9aa97e6313eff609d36c.js",
+        "name": "jupyter-leaflet"
+      },
+      {
+        "extension": "./extension",
+        "liteExtension": false,
+        "load": "static/remoteEntry.1cd74fa323152bfea195.js",
+        "name": "jupyter-matplotlib"
+      },
+      {
+        "extension": "./extension",
+        "liteExtension": false,
+        "load": "static/remoteEntry.18b3107a2356a7103aea.js",
+        "name": "jupyterlab-night"
+      },
+      {
+        "extension": "./extension",
+        "liteExtension": false,
+        "load": "static/remoteEntry.c6c768d682b3638efd6b.js",
+        "mimeExtension": "./mimeExtension",
+        "name": "jupyterlab-plotly"
+      },
+      {
+        "extension": "./extension",
+        "liteExtension": false,
+        "load": "static/remoteEntry.9f80efadf3093989aa14.js",
+        "name": "jupyterlab_cpg_portal",
+        "style": "./style"
+      },
+      {
+        "extension": "./extension",
+        "liteExtension": false,
+        "load": "static/remoteEntry.5cbb9d2323598fbda535.js",
+        "name": "jupyterlab_pygments",
+        "style": "./style"
+      }
+    ],
+    "fileTypes": {
+      "avi": {
+        "extensions": [
+          ".avi"
+        ],
+        "fileFormat": "base64",
+        "mimeTypes": [
+          "video/x-msvideo"
+        ],
+        "name": "avi"
+      },
+      "bam": {
+        "extensions": [
+          ".bam"
+        ],
+        "fileFormat": "base64",
+        "mimeTypes": [
+          "application/x-bam"
+        ],
+        "name": "bam"
+      },
+      "bat": {
+        "extensions": [
+          ".bat"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/plain"
+        ],
+        "name": "bat"
+      },
+      "beast": {
+        "extensions": [
+          ".trees"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "application/x-beast-trees"
+        ],
+        "name": "beast"
+      },
+      "bed": {
+        "extensions": [
+          ".bed"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/bed"
+        ],
+        "name": "bed"
+      },
+      "bib": {
+        "extensions": [
+          ".bib"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/x-bibtex"
+        ],
+        "name": "bib"
+      },
+      "bmp": {
+        "extensions": [
+          ".bmp"
+        ],
+        "fileFormat": "base64",
+        "mimeTypes": [
+          "image/bmp"
+        ],
+        "name": "bmp"
+      },
+      "c": {
+        "extensions": [
+          ".c"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/x-c"
+        ],
+        "name": "c"
+      },
+      "cpp": {
+        "extensions": [
+          ".cpp"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/x-c++src"
+        ],
+        "name": "cpp"
+      },
+      "css": {
+        "extensions": [
+          ".css"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/css"
+        ],
+        "name": "css"
+      },
+      "csv": {
+        "extensions": [
+          ".csv"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/csv"
+        ],
+        "name": "csv"
+      },
+      "docx": {
+        "extensions": [
+          ".docx"
+        ],
+        "fileFormat": "base64",
+        "mimeTypes": [
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        ],
+        "name": "docx"
+      },
+      "epub": {
+        "extensions": [
+          ".epub"
+        ],
+        "fileFormat": "base64",
+        "mimeTypes": [
+          "application/epub+zip"
+        ],
+        "name": "epub"
+      },
+      "fasta": {
+        "extensions": [
+          ".fasta"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/plain"
+        ],
+        "name": "fasta"
+      },
+      "fastq": {
+        "extensions": [
+          ".fastq",
+          ".fq"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/plain"
+        ],
+        "name": "fastq"
+      },
+      "flac": {
+        "extensions": [
+          ".flac"
+        ],
+        "fileFormat": "base64",
+        "mimeTypes": [
+          "audio/flac"
+        ],
+        "name": "flac"
+      },
+      "geojson": {
+        "extensions": [
+          ".geojson"
+        ],
+        "fileFormat": "json",
+        "mimeTypes": [
+          "application/geo+json"
+        ],
+        "name": "geojson"
+      },
+      "gexf": {
+        "extensions": [
+          ".gexf"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "application/xml"
+        ],
+        "name": "gexf"
+      },
+      "gff": {
+        "extensions": [
+          ".gff",
+          ".gff3"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/gff"
+        ],
+        "name": "gff"
+      },
+      "go": {
+        "extensions": [
+          ".go"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/plain"
+        ],
+        "name": "go"
+      },
+      "graphml": {
+        "extensions": [
+          ".graphml"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "application/graphml+xml"
+        ],
+        "name": "graphml"
+      },
+      "gzip": {
+        "extensions": [
+          ".tgz",
+          ".gz",
+          ".gzip"
+        ],
+        "fileFormat": "base64",
+        "mimeTypes": [
+          "application/gzip"
+        ],
+        "name": "gzip"
+      },
+      "hdf5": {
+        "extensions": [
+          ".h5",
+          ".hdf5"
+        ],
+        "fileFormat": "base64",
+        "mimeTypes": [
+          "application/x-hdf5"
+        ],
+        "name": "hdf5"
+      },
+      "hs": {
+        "extensions": [
+          ".hs"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/x-haskell"
+        ],
+        "name": "hs"
+      },
+      "html": {
+        "extensions": [
+          ".html"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/html"
+        ],
+        "name": "html"
+      },
+      "ical": {
+        "extensions": [
+          ".ical",
+          ".ics",
+          ".ifb",
+          ".icalendar"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/calendar"
+        ],
+        "name": "ical"
+      },
+      "ico": {
+        "extensions": [
+          ".ico"
+        ],
+        "fileFormat": "base64",
+        "mimeTypes": [
+          "image/x-icon"
+        ],
+        "name": "ico"
+      },
+      "ini": {
+        "extensions": [
+          ".ini"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/plain"
+        ],
+        "name": "ini"
+      },
+      "ipynb": {
+        "extensions": [
+          ".ipynb"
+        ],
+        "fileFormat": "json",
+        "mimeTypes": [
+          "application/x-ipynb+json"
+        ],
+        "name": "ipynb"
+      },
+      "iqtree": {
+        "extensions": [
+          ".iqtree"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/plain"
+        ],
+        "name": "iqtree"
+      },
+      "java": {
+        "extensions": [
+          ".java"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/x-java-source"
+        ],
+        "name": "java"
+      },
+      "jpeg": {
+        "extensions": [
+          ".jpeg",
+          ".jpg"
+        ],
+        "fileFormat": "base64",
+        "mimeTypes": [
+          "image/jpeg"
+        ],
+        "name": "jpeg"
+      },
+      "js": {
+        "extensions": [
+          ".js",
+          ".mjs"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "application/javascript"
+        ],
+        "name": "js"
+      },
+      "jsmap": {
+        "extensions": [
+          ".map"
+        ],
+        "fileFormat": "json",
+        "mimeTypes": [
+          "application/json"
+        ],
+        "name": "jsmap"
+      },
+      "json": {
+        "extensions": [
+          ".json"
+        ],
+        "fileFormat": "json",
+        "mimeTypes": [
+          "application/json"
+        ],
+        "name": "json"
+      },
+      "jsonl": {
+        "extensions": [
+          ".jsonl"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "application/jsonl"
+        ],
+        "name": "jsonl"
+      },
+      "kt": {
+        "extensions": [
+          ".kt"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/x-kotlin"
+        ],
+        "name": "kt"
+      },
+      "log": {
+        "extensions": [
+          ".log"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/plain"
+        ],
+        "name": "log"
+      },
+      "manifest": {
+        "extensions": [
+          ".manifest"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/cache-manifest"
+        ],
+        "name": "manifest"
+      },
+      "matlab": {
+        "extensions": [
+          ".m"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/x-matlab"
+        ],
+        "name": "matlab"
+      },
+      "md": {
+        "extensions": [
+          ".md",
+          ".markdown"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/markdown"
+        ],
+        "name": "md"
+      },
+      "mp3": {
+        "extensions": [
+          ".mp3"
+        ],
+        "fileFormat": "base64",
+        "mimeTypes": [
+          "audio/mpeg"
+        ],
+        "name": "mp3"
+      },
+      "mp4": {
+        "extensions": [
+          ".mp4"
+        ],
+        "fileFormat": "base64",
+        "mimeTypes": [
+          "video/mp4"
+        ],
+        "name": "mp4"
+      },
+      "newick": {
+        "extensions": [
+          ".nwk",
+          ".newick"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/x-newick"
+        ],
+        "name": "newick"
+      },
+      "nexus": {
+        "extensions": [
+          ".nex",
+          ".nexus"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/x-nexus"
+        ],
+        "name": "nexus"
+      },
+      "obj": {
+        "extensions": [
+          ".obj"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/plain"
+        ],
+        "name": "obj"
+      },
+      "otf": {
+        "extensions": [
+          ".otf"
+        ],
+        "fileFormat": "base64",
+        "mimeTypes": [
+          "font/otf"
+        ],
+        "name": "otf"
+      },
+      "pdb": {
+        "extensions": [
+          ".pdb"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "chemical/x-pdb"
+        ],
+        "name": "pdb"
+      },
+      "pdf": {
+        "extensions": [
+          ".pdf"
+        ],
+        "fileFormat": "base64",
+        "mimeTypes": [
+          "application/pdf"
+        ],
+        "name": "pdf"
+      },
+      "php": {
+        "extensions": [
+          ".php"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "application/x-httpd-php"
+        ],
+        "name": "php"
+      },
+      "phy": {
+        "extensions": [
+          ".phy"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/x-phy"
+        ],
+        "name": "phy"
+      },
+      "pl": {
+        "extensions": [
+          ".pl"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/x-perl"
+        ],
+        "name": "pl"
+      },
+      "plain": {
+        "extensions": [
+          ".txt"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/plain"
+        ],
+        "name": "plain"
+      },
+      "png": {
+        "extensions": [
+          ".png"
+        ],
+        "fileFormat": "base64",
+        "mimeTypes": [
+          "image/png"
+        ],
+        "name": "png"
+      },
+      "pptx": {
+        "extensions": [
+          ".pptx"
+        ],
+        "fileFormat": "base64",
+        "mimeTypes": [
+          "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+        ],
+        "name": "pptx"
+      },
+      "py": {
+        "extensions": [
+          ".py"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/x-python",
+          "application/x-python-code"
+        ],
+        "name": "py"
+      },
+      "r": {
+        "extensions": [
+          ".r"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/x-r"
+        ],
+        "name": "r"
+      },
+      "rar": {
+        "extensions": [
+          ".rar"
+        ],
+        "fileFormat": "base64",
+        "mimeTypes": [
+          "application/x-rar-compressed"
+        ],
+        "name": "rar"
+      },
+      "rb": {
+        "extensions": [
+          ".rb"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/x-ruby"
+        ],
+        "name": "rb"
+      },
+      "rmd": {
+        "extensions": [
+          ".rmd"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/x-rmarkdown"
+        ],
+        "name": "rmd"
+      },
+      "rs": {
+        "extensions": [
+          ".rs"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/x-rustsrc"
+        ],
+        "name": "rs"
+      },
+      "sam": {
+        "extensions": [
+          ".sam"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/plain"
+        ],
+        "name": "sam"
+      },
+      "scala": {
+        "extensions": [
+          ".scala"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/x-scala"
+        ],
+        "name": "scala"
+      },
+      "sh": {
+        "extensions": [
+          ".sh"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/x-shellscript"
+        ],
+        "name": "sh"
+      },
+      "sql": {
+        "extensions": [
+          ".sql"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/x-sql"
+        ],
+        "name": "sql"
+      },
+      "stl": {
+        "extensions": [
+          ".stl"
+        ],
+        "fileFormat": "base64",
+        "mimeTypes": [
+          "model/stl"
+        ],
+        "name": "stl"
+      },
+      "svg": {
+        "extensions": [
+          ".svg"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "image/svg+xml"
+        ],
+        "name": "svg"
+      },
+      "tex": {
+        "extensions": [
+          ".tex"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/x-tex"
+        ],
+        "name": "tex"
+      },
+      "tiff": {
+        "extensions": [
+          ".tiff",
+          ".tif"
+        ],
+        "fileFormat": "base64",
+        "mimeTypes": [
+          "image/tiff"
+        ],
+        "name": "tiff"
+      },
+      "toml": {
+        "extensions": [
+          ".toml"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "application/toml"
+        ],
+        "name": "toml"
+      },
+      "tsv": {
+        "extensions": [
+          ".tsv"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/tab-separated-values"
+        ],
+        "name": "tsv"
+      },
+      "ttf": {
+        "extensions": [
+          ".ttf"
+        ],
+        "fileFormat": "base64",
+        "mimeTypes": [
+          "font/ttf"
+        ],
+        "name": "ttf"
+      },
+      "vcf": {
+        "extensions": [
+          ".vcf"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/x-vcf"
+        ],
+        "name": "vcf"
+      },
+      "vue": {
+        "extensions": [
+          ".vue"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/plain"
+        ],
+        "name": "vue"
+      },
+      "wasm": {
+        "extensions": [
+          ".wasm"
+        ],
+        "fileFormat": "base64",
+        "mimeTypes": [
+          "application/wasm"
+        ],
+        "name": "wasm"
+      },
+      "wav": {
+        "extensions": [
+          ".wav"
+        ],
+        "fileFormat": "base64",
+        "mimeTypes": [
+          "audio/wav"
+        ],
+        "name": "wav"
+      },
+      "wheel": {
+        "extensions": [
+          ".whl"
+        ],
+        "fileFormat": "base64",
+        "mimeTypes": [
+          "octet/stream",
+          "application/x-wheel+zip"
+        ],
+        "name": "wheel"
+      },
+      "xlsx": {
+        "extensions": [
+          ".xlsx"
+        ],
+        "fileFormat": "base64",
+        "mimeTypes": [
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        ],
+        "name": "xlsx"
+      },
+      "xml": {
+        "extensions": [
+          ".xml"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "application/xml"
+        ],
+        "name": "xml"
+      },
+      "yaml": {
+        "extensions": [
+          ".yaml",
+          ".yml"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "application/x-yaml"
+        ],
+        "name": "yaml"
+      },
+      "zip": {
+        "extensions": [
+          ".zip"
+        ],
+        "fileFormat": "base64",
+        "mimeTypes": [
+          "application/zip"
+        ],
+        "name": "zip"
+      }
+    },
+    "fullLabextensionsUrl": "./extensions",
+    "fullStaticUrl": "./build",
+    "licensesUrl": "./lab/api/licenses",
+    "litePluginSettings": {
+      "@jupyterlite/pyodide-kernel-extension:kernel": {
+        "pipliteUrls": [
+          "./extensions/@jupyterlite/pyodide-kernel-extension/static/pypi/all.json?sha256=8410129b75a5560182e60e67735d1efad22cde00c42736ad5f8841351d33b617"
+        ]
+      }
+    }
+  },
+  "jupyter-lite-schema-version": 0
+}

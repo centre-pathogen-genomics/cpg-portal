@@ -1,11 +1,10 @@
-.vscode
+.vscode/*
+!.vscode/extensions.json
 .DS_Store
-.prod.env
-deploy.cpg.sh
+.venv/
+frontend/jupyterlite/.venv/
 node_modules/
 /test-results/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
-.DS_Store
-.prod.env

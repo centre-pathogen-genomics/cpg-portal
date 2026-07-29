@@ -8,9 +8,9 @@ import {
   ModalHeader,
   ModalOverlay,
   Text,
-} from "@chakra-ui/react"
+} from "@/components/ui/chakra-compat"
+import type { Param } from "../../client"
 import RunToolForm from "./RunToolForm"
-import { Param } from "../../client"
 
 interface RunToolModalProps {
   isOpen: boolean
@@ -23,13 +23,14 @@ const RunToolModal = ({
   onClose,
   toolId,
   params,
-
 }: RunToolModalProps) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose} isCentered>
       <ModalOverlay />
       <ModalContent maxWidth={"2xl"}>
-        <ModalHeader><Text as={'b'}>Configure Tool</Text></ModalHeader>
+        <ModalHeader>
+          <Text as={"b"}>Configure Tool</Text>
+        </ModalHeader>
         <ModalCloseButton />
         <ModalBody pb={6}>
           <RunToolForm toolId={toolId} params={params} onSuccess={onClose} />

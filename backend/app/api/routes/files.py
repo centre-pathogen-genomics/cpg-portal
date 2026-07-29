@@ -50,7 +50,7 @@ def read_files(
     current_user: CurrentUser,
     skip: int = 0,
     limit: int = 100,
-    order_by: str = Query("-created_at", regex=r"^-?[a-zA-Z_]+$"),
+    order_by: str = Query("-created_at", pattern=r"^-?[a-zA-Z_]+$"),
     types: list[FileTypeEnum] = Query(None),
 ) -> Any:
     """

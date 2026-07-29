@@ -1,6 +1,6 @@
-import enum
 import uuid
 from datetime import datetime
+from enum import StrEnum
 from typing import Optional
 
 from pydantic import EmailStr
@@ -65,12 +65,12 @@ class UpdatePassword(SQLModel):
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
-    favourite_tools: list["Tool"] = Relationship(
+    favourite_tools: list[Tool] = Relationship(
         back_populates="favourited_by",
         link_model=UserFavouriteToolsLink
     )
-    files: list["File"] = Relationship(back_populates="owner")
-    runs: list["Run"] = Relationship(back_populates="owner")
+    files: list[File] = Relationship(back_populates="owner")
+    runs: list[Run] = Relationship(back_populates="owner")
 
 
 
@@ -117,7 +117,7 @@ class Target(SQLModel):
     required: bool = True
 
 
-class ParamType(str, enum.Enum):
+class ParamType(StrEnum):
     str = "str"
     int = "int"
     float = "float"
@@ -135,7 +135,7 @@ class Param(SQLModel):
     options: list[str] | None = None
     required: bool = False
 
-class ToolStatus(str, enum.Enum):
+class ToolStatus(StrEnum):
     uninstalled = "uninstalled"
     uninstalling = "uninstalling"
     installed = "installed"
@@ -207,7 +207,7 @@ class Tool(ToolBase, table=True):
     setup_files: list[SetupFile] | None = Field(default_factory=list, sa_column=Column(JSON))
     params: list[Param] | None = Field(default_factory=list, sa_column=Column(JSON))
     targets: list[Target] | None = Field(default_factory=list, sa_column=Column(JSON))
-    runs: list["Run"] = Relationship(
+    runs: list[Run] = Relationship(
         back_populates="tool",
         sa_relationship=RelationshipProperty(
             "Run", cascade="all, delete, delete-orphan"
@@ -248,7 +248,7 @@ class ToolsPublic(SQLModel):
     data: list[ToolMinimalPublic]
     count: int
 
-class RunStatus(str, enum.Enum):
+class RunStatus(StrEnum):
     pending = "pending"
     running = "running"
     completed = "completed"
@@ -275,7 +275,7 @@ class Run(RunBase, table=True):
     tags: list[str] | None = Field(default_factory=list, sa_column=Column(JSON))
     params: dict = Field(default_factory=dict, sa_column=Column(JSON))
     input_file_ids: list[uuid.UUID] | None = Field(default_factory=list, sa_column=Column(JSON))
-    files: list["File"] = Relationship(
+    files: list[File] = Relationship(
         back_populates="run",
         sa_relationship=RelationshipProperty(
             "File", cascade="all, delete, delete-orphan"
@@ -329,13 +329,15 @@ class File(FileBase, table=True):
         default=None,
         nullable=True
     )
-    parent: Optional['File'] = Relationship(
+    # SQLAlchemy resolves this self-reference by name; PEP 604 unions are not
+    # accepted here by its relationship mapper.
+    parent: Optional["File"] = Relationship(  # noqa: UP037, UP045
         back_populates='children',
         sa_relationship_kwargs={
             "remote_side": 'File.id'  # notice the uppercase "F" to refer to this table class
         }
     )
-    children: list['File'] = Relationship(
+    children: list[File] = Relationship(
         back_populates='parent',
         sa_relationship_kwargs={
             "order_by": "File.created_at"  # Orders the children by created_at

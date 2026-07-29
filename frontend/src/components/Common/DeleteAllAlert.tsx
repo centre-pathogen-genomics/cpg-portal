@@ -1,3 +1,6 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import React from "react"
+import { useForm } from "react-hook-form"
 import {
   AlertDialog,
   AlertDialogBody,
@@ -6,12 +9,9 @@ import {
   AlertDialogHeader,
   AlertDialogOverlay,
   Button,
-} from "@chakra-ui/react"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import React from "react"
-import { useForm } from "react-hook-form"
+} from "@/components/ui/chakra-compat"
 
-import { RunsService, FilesService } from "../../client"
+import { FilesService, RunsService } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
 
 interface DeleteAllProps {
@@ -31,10 +31,10 @@ const DeleteAll = ({ type, isOpen, onClose }: DeleteAllProps) => {
 
   const deleteEntities = async (type: string) => {
     if (type === "Runs") {
-      (await RunsService.deleteRuns()).data
+      ;(await RunsService.deleteRuns()).data
     } else if (type === "Files") {
       // Implement the deleteFiles method
-      (await FilesService.deleteFiles()).data
+      ;(await FilesService.deleteFiles()).data
     } else {
       throw new Error(`Unexpected type: ${type}`)
     }
@@ -43,7 +43,11 @@ const DeleteAll = ({ type, isOpen, onClose }: DeleteAllProps) => {
   const mutation = useMutation({
     mutationFn: deleteEntities,
     onSuccess: () => {
-      showToast("Success", `All ${type.toLowerCase()} where deleted successfully.`, "success")
+      showToast(
+        "Success",
+        `All ${type.toLowerCase()} where deleted successfully.`,
+        "success",
+      )
       onClose()
     },
     onError: () => {
@@ -59,7 +63,7 @@ const DeleteAll = ({ type, isOpen, onClose }: DeleteAllProps) => {
       })
       queryClient.invalidateQueries({
         queryKey: [{ _id: "getFilesStats" }],
-      });
+      })
     },
   })
 
@@ -68,36 +72,30 @@ const DeleteAll = ({ type, isOpen, onClose }: DeleteAllProps) => {
   }
 
   return (
-    <>
-      <AlertDialog
-        isOpen={isOpen}
-        onClose={onClose}
-        leastDestructiveRef={ref}
-        size={{ base: "sm", md: "md" }}
-        isCentered
-      >
-        <AlertDialogOverlay>
-          <AlertDialogContent as="form" onSubmit={handleSubmit(onSubmit)}>
-            <AlertDialogHeader>{`Delete All ${type}`}</AlertDialogHeader>
-            <AlertDialogBody>
-              {`Are you sure you want to delete all ${type == "Runs" ? "(non-running) runs and associated files" : "files"}? This action cannot be undone.`}
-            </AlertDialogBody>
-            <AlertDialogFooter gap={3}>
-              <Button variant="danger" type="submit" isLoading={isSubmitting}>
-                Delete All {type}
-              </Button>
-              <Button
-                ref={ref}
-                onClick={onClose}
-                isDisabled={isSubmitting}
-              >
-                Close
-              </Button>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialogOverlay>
-      </AlertDialog>
-    </>
+    <AlertDialog
+      isOpen={isOpen}
+      onClose={onClose}
+      leastDestructiveRef={ref}
+      size={{ base: "sm", md: "md" }}
+      isCentered
+    >
+      <AlertDialogOverlay>
+        <AlertDialogContent as="form" onSubmit={handleSubmit(onSubmit)}>
+          <AlertDialogHeader>{`Delete All ${type}`}</AlertDialogHeader>
+          <AlertDialogBody>
+            {`Are you sure you want to delete all ${type === "Runs" ? "(non-running) runs and associated files" : "files"}? This action cannot be undone.`}
+          </AlertDialogBody>
+          <AlertDialogFooter gap={3}>
+            <Button variant="danger" type="submit" isLoading={isSubmitting}>
+              Delete All {type}
+            </Button>
+            <Button ref={ref} onClick={onClose} isDisabled={isSubmitting}>
+              Close
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialogOverlay>
+    </AlertDialog>
   )
 }
 

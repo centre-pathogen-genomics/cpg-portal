@@ -1,34 +1,41 @@
-import { Editable, EditableInput, EditablePreview } from "@chakra-ui/react";
-import { RunPublicMinimal, RunsService } from "../../client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import useCustomToast from "../../hooks/useCustomToast";
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import {
+  Editable,
+  EditableInput,
+  EditablePreview,
+} from "@/components/ui/chakra-compat"
+import { type RunPublicMinimal, RunsService } from "../../client"
+import useCustomToast from "../../hooks/useCustomToast"
 
 interface EditRunNameProps {
-  run: RunPublicMinimal;
-  editable?: boolean;
+  run: RunPublicMinimal
+  editable?: boolean
 }
 
 const EditRunName = ({ run, editable = true }: EditRunNameProps) => {
-  const queryClient = useQueryClient();
-  const showToast = useCustomToast();
+  const queryClient = useQueryClient()
+  const showToast = useCustomToast()
   const renameRun = async (nextName: string) => {
-    await RunsService.renameRun({ path: { id: run.id }, query: { name: nextName } });
-  };
+    await RunsService.renameRun({
+      path: { id: run.id },
+      query: { name: nextName },
+    })
+  }
   const mutation = useMutation({
     mutationFn: renameRun,
     onError: () => {
       showToast(
         "An error occurred.",
         "An error occurred while renaming the run.",
-        "error"
-      );
+        "error",
+      )
     },
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: [{ _id: "readRun", path: { id: run.id } }],
-      });
+      })
     },
-  });
+  })
 
   return (
     <Editable
@@ -38,9 +45,9 @@ const EditRunName = ({ run, editable = true }: EditRunNameProps) => {
       selectAllOnFocus={editable}
       isDisabled={!editable}
       onSubmit={(nextName) => {
-        if (!editable) return;
+        if (!editable) return
         if (nextName !== run.name && nextName.trim() !== "") {
-          mutation.mutate(nextName);
+          mutation.mutate(nextName)
         }
       }}
       w={"full"}
@@ -50,7 +57,7 @@ const EditRunName = ({ run, editable = true }: EditRunNameProps) => {
       {/* The input inherits Input props */}
       <EditableInput />
     </Editable>
-  );
-};
+  )
+}
 
-export default EditRunName;
+export default EditRunName

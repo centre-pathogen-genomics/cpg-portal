@@ -1,9 +1,9 @@
-import taskiq_fastapi
-from taskiq import InMemoryBroker
+from taskiq import TaskiqEvents, TaskiqState
 from taskiq_nats import NatsBroker
 from taskiq_redis import RedisAsyncResultBackend
 
 from app.core.config import settings
+from app.wsmanager import manager
 
 broker = NatsBroker(
     settings.NATS_URIS.split(","),
@@ -12,10 +12,13 @@ broker = NatsBroker(
     RedisAsyncResultBackend(settings.REDIS_URI),
 )
 
-# Actually, you can remove this line and test agains real
-# broker. Which is more preferable in some cases.
-# if settings.env.lower() == "pytest":
-#     broker = InMemoryBroker()
+async def startup_worker(_state: TaskiqState) -> None:
+    await manager.startup()
 
 
-taskiq_fastapi.init(broker, "app.main:app")
+async def shutdown_worker(_state: TaskiqState) -> None:
+    await manager.shutdown()
+
+
+broker.add_event_handler(TaskiqEvents.WORKER_STARTUP, startup_worker)
+broker.add_event_handler(TaskiqEvents.WORKER_SHUTDOWN, shutdown_worker)

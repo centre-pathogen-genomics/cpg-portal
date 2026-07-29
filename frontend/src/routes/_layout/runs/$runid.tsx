@@ -1,3 +1,7 @@
+import { useSuspenseQuery } from "@tanstack/react-query"
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
+import { Suspense, useState } from "react"
+import { ErrorBoundary } from "react-error-boundary"
 import {
   Box,
   Container,
@@ -10,32 +14,26 @@ import {
   TabPanels,
   Tabs,
   Text,
-} from "@chakra-ui/react";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Suspense, useState } from "react";
-import { ErrorBoundary } from "react-error-boundary";
-import OutputAccordion from "../../../components/Runs/OutputAccordion";
-import RunMetadata from "../../../components/Runs/RunMetadata";
-import OutputFile from "../../../components/Runs/OutputFile";
-import FileRenderer from "../../../components/Render/FileRenderer";
-import { readRunOptions } from "../../../client/@tanstack/react-query.gen";
-import CancelRunButton from "../../../components/Runs/CancelRunButton";
-import DeleteRunButton from "../../../components/Runs/DeleteRunButton";
-import EditRunName from "../../../components/Runs/EditableRunName";
-import AISummaryButton from "../../../components/AI/AISummary";
-import ShareRunButton from "../../../components/Runs/ShareRunButton";
-import ReactMarkdown from "../../../components/Common/Markdown";
+} from "@/components/ui/chakra-compat"
+import { readRunOptions } from "../../../client/@tanstack/react-query.gen"
+import AISummaryButton from "../../../components/AI/AISummary"
+import ReactMarkdown from "../../../components/Common/Markdown"
+import FileRenderer from "../../../components/Render/FileRenderer"
+import CancelRunButton from "../../../components/Runs/CancelRunButton"
+import DeleteRunButton from "../../../components/Runs/DeleteRunButton"
+import EditRunName from "../../../components/Runs/EditableRunName"
+import OutputAccordion from "../../../components/Runs/OutputAccordion"
+import OutputFile from "../../../components/Runs/OutputFile"
+import RunMetadata from "../../../components/Runs/RunMetadata"
+import ShareRunButton from "../../../components/Runs/ShareRunButton"
 
 export const Route = createFileRoute("/_layout/runs/$runid")({
   component: Run,
-});
-
-
+})
 
 function RunDetail() {
-  const { runid } = Route.useParams();
-  const navigate = useNavigate({ from: Route.fullPath });
+  const { runid } = Route.useParams()
+  const navigate = useNavigate({ from: Route.fullPath })
 
   // Using useSuspenseQuery for data fetching
 
@@ -45,49 +43,55 @@ function RunDetail() {
       return (run && run.state.data?.status === "running") ||
         run.state.data?.status === "pending"
         ? 3000
-        : false; // Poll every 3 seconds if run is running or pending
+        : false // Poll every 3 seconds if run is running or pending
     },
     refetchIntervalInBackground: true,
-  });
+  })
 
   const [llmSummary, setLlmSummary] = useState<string | null>(
-    run.llm_summary || null
-  );
+    run.llm_summary || null,
+  )
 
   const fileTabs =
-    run.files?.filter((file) => file.size && file.size < 500000) || [];
+    run.files?.filter((file) => file.size && file.size < 500000) || []
 
-  const command = [];
+  const command: string[] = []
   if (run?.command) {
-    command.push(run.command);
+    command.push(run.command)
   }
 
   return (
-    <Box maxW={"5xl"} justifySelf={"center"} w={"full"} overflowX={"hidden"} px={2}>
-      <Flex align={"center"} justify={'space-between'} gap={2}>
-          <Flex
-            as={Link}
-            to={"/runs"}
-            key={"Runs"}
-            _hover={{ color: "ui.main" }}
-            fontWeight="semibold"
-            align="center"
-            whiteSpace={'nowrap'}
-          >
-            <Text>← Back to My Runs</Text>
-          </Flex>
-          <Flex gap={2} alignItems={"center"}>
-            {!run.owner_name && <ShareRunButton run={run} />}
-            {["running", "pending"].includes(run.status) ? (
-              <CancelRunButton run_id={run.id} />
-            ) : (
-              <DeleteRunButton
-                run_id={run.id}
-                onDelete={() => navigate({ to: "/runs" })}
-              />
-            )}
-          </Flex>
+    <Box
+      maxW={"5xl"}
+      justifySelf={"center"}
+      w={"full"}
+      overflowX={"hidden"}
+      px={2}
+    >
+      <Flex align={"center"} justify={"space-between"} gap={2}>
+        <Flex
+          as={Link}
+          to={"/runs"}
+          key={"Runs"}
+          _hover={{ color: "ui.main" }}
+          fontWeight="semibold"
+          align="center"
+          whiteSpace={"nowrap"}
+        >
+          <Text>← Back to My Runs</Text>
         </Flex>
+        <Flex gap={2} alignItems={"center"}>
+          {!run.owner_name && <ShareRunButton run={run} />}
+          {["running", "pending"].includes(run.status) ? (
+            <CancelRunButton run_id={run.id} />
+          ) : (
+            <DeleteRunButton
+              run_id={run.id}
+              onDelete={() => navigate({ to: "/runs" })}
+            />
+          )}
+        </Flex>
+      </Flex>
       <Flex
         direction="row"
         borderBottomWidth={1}
@@ -108,7 +112,7 @@ function RunDetail() {
           <Flex wrap="nowrap" overflowX={"auto"} mb={4}>
             {run.files.map((file) => (
               <Flex key={file.id} mb={2} mr={2}>
-                <OutputFile file={file} copyFile={run.owner_name ? true : false} />
+                <OutputFile file={file} copyFile={!!run.owner_name} />
               </Flex>
             ))}
           </Flex>
@@ -124,14 +128,16 @@ function RunDetail() {
                 mb={4}
               >
                 <Heading size="md">Results</Heading>
-                {run.tool.llm_summary_enabled && !llmSummary && !run.owner_name && (
-                  <AISummaryButton
-                    runId={run.id}
-                    onGenerated={(summary) => {
-                      setLlmSummary(summary);
-                    }}
-                  />
-                )}
+                {run.tool.llm_summary_enabled &&
+                  !llmSummary &&
+                  !run.owner_name && (
+                    <AISummaryButton
+                      runId={run.id}
+                      onGenerated={(summary) => {
+                        setLlmSummary(summary)
+                      }}
+                    />
+                  )}
               </Flex>
               <Tabs variant="enclosed" overflowY={"auto"}>
                 <TabList>
@@ -161,7 +167,11 @@ function RunDetail() {
                   )}
                   {fileTabs.map((file) => (
                     <TabPanel key={file.id}>
-                      <FileRenderer file={file} showUnsupportedMessage={false} showTooLargeMessage={false} />
+                      <FileRenderer
+                        file={file}
+                        showUnsupportedMessage={false}
+                        showTooLargeMessage={false}
+                      />
                     </TabPanel>
                   ))}
                 </TabPanels>
@@ -172,7 +182,7 @@ function RunDetail() {
       )}
       <OutputAccordion run={run} />
     </Box>
-  );
+  )
 }
 
 function RunSkeleton() {
@@ -180,7 +190,7 @@ function RunSkeleton() {
     <Container maxW="full">
       <Skeleton height="20px" />
     </Container>
-  );
+  )
 }
 
 function Run() {
@@ -190,7 +200,9 @@ function Run() {
         <ErrorBoundary
           fallbackRender={({ error }) => (
             <Box>
-              <Text>Error: {error.message}</Text>
+              <Text>
+                Error: {error instanceof Error ? error.message : String(error)}
+              </Text>
             </Box>
           )}
         >
@@ -198,7 +210,7 @@ function Run() {
         </ErrorBoundary>
       </Suspense>
     </Container>
-  );
+  )
 }
 
-export default Run;
+export default Run

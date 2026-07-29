@@ -1,22 +1,25 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from "react"
+import { CopyToClipboard } from "react-copy-to-clipboard"
+import { IoIosCheckmarkCircleOutline, IoIosCopy } from "react-icons/io"
+import SyntaxHighlighter from "react-syntax-highlighter"
+import {
+  githubGist,
+  vs2015,
+} from "react-syntax-highlighter/dist/cjs/styles/hljs"
 import {
   Box,
-  IconButton,
-  useToast,
-  useColorModeValue,
   Button,
-} from '@chakra-ui/react';
-import { IoIosCopy, IoIosCheckmarkCircleOutline } from 'react-icons/io';
-import SyntaxHighlighter from 'react-syntax-highlighter';
-import { vs2015, githubGist } from 'react-syntax-highlighter/dist/cjs/styles/hljs';
-import { CopyToClipboard } from 'react-copy-to-clipboard';
+  IconButton,
+  useColorModeValue,
+  useToast,
+} from "@/components/ui/chakra-compat"
 
 interface CodeBlockProps {
-  code: string;
-  language: string;
-  lineNumbers?: boolean;
-  maxHeight?: string;
-  follow?: boolean; // If true, enable follow (auto-scroll) behavior.
+  code: string
+  language: string
+  lineNumbers?: boolean
+  maxHeight?: string
+  follow?: boolean // If true, enable follow (auto-scroll) behavior.
 }
 
 const CodeBlock = ({
@@ -27,48 +30,49 @@ const CodeBlock = ({
   follow = false,
 }: CodeBlockProps) => {
   // Copy-to-clipboard logic
-  const [copied, setCopied] = useState(false);
-  const toast = useToast();
-  const style = useColorModeValue(githubGist, vs2015);
+  const [copied, setCopied] = useState(false)
+  const toast = useToast()
+  const style = useColorModeValue(githubGist, vs2015)
 
   const notify = () => {
     toast({
-      description: 'Copied to clipboard!',
-      status: 'success',
+      description: "Copied to clipboard!",
+      status: "success",
       duration: 5000,
       isClosable: true,
-      position: 'bottom-right',
-    });
-    handleCopy();
-  };
+      position: "bottom-right",
+    })
+    handleCopy()
+  }
 
   const handleCopy = () => {
-    setCopied(true);
+    setCopied(true)
     setTimeout(() => {
-      setCopied(false);
-    }, 5000);
-  };
+      setCopied(false)
+    }, 5000)
+  }
 
   // Follow (auto-scroll) logic
-  const [isFollowing, setIsFollowing] = useState(follow);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [isFollowing, setIsFollowing] = useState(follow)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   // Auto-scroll to bottom when new code arrives if follow mode is enabled.
   useEffect(() => {
     if (follow && isFollowing && scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+      scrollContainerRef.current.scrollTop =
+        scrollContainerRef.current.scrollHeight
     }
-  }, [code, isFollowing, follow]);
+  }, [isFollowing, follow])
 
   // Update follow state based on scrolling.
   const handleScroll = () => {
-    if (!scrollContainerRef.current) return;
-    const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
-    const atBottom = scrollHeight - scrollTop - clientHeight < 200;
+    if (!scrollContainerRef.current) return
+    const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current
+    const atBottom = scrollHeight - scrollTop - clientHeight < 200
     if (follow) {
-      setIsFollowing(atBottom);
+      setIsFollowing(atBottom)
     }
-  };
+  }
 
   return (
     <Box position="relative" borderWidth="1px" borderRadius="md">
@@ -86,7 +90,7 @@ const CodeBlock = ({
             aria-label="Copy to clipboard"
             size="sm"
             variant="ghost"
-            colorScheme={copied ? 'green' : 'whiteAlpha'}
+            colorScheme={copied ? "green" : "whiteAlpha"}
           />
         </CopyToClipboard>
       </Box>
@@ -103,7 +107,7 @@ const CodeBlock = ({
           wrapLines={true}
           wrapLongLines={true}
           showLineNumbers={lineNumbers}
-          customStyle={{ padding: '16px', margin: 0 }}
+          customStyle={{ padding: "16px", margin: 0 }}
         >
           {code}
         </SyntaxHighlighter>
@@ -121,7 +125,7 @@ const CodeBlock = ({
         </Button>
       )}
     </Box>
-  );
-};
+  )
+}
 
-export default CodeBlock;
+export default CodeBlock

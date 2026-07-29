@@ -1,11 +1,11 @@
+import { Tooltip } from "@/components/ui/chakra-compat"
 import {
   CheckIcon,
   NotAllowedIcon,
   QuestionOutlineIcon,
   TimeIcon,
   WarningIcon,
-} from "@chakra-ui/icons"
-import { Tooltip } from "@chakra-ui/react"
+} from "@/components/ui/chakra-icons-compat"
 import type { RunStatus } from "../../client"
 
 const StatusIcon = ({ status }: { status: RunStatus }) => {
@@ -47,7 +47,7 @@ const StatusIcon = ({ status }: { status: RunStatus }) => {
   const { icon, label } = getIconDetails(status)
 
   return (
-    <Tooltip placement="top" hasArrow label={label} >
+    <Tooltip placement="top" hasArrow label={label}>
       {icon}
     </Tooltip>
   )

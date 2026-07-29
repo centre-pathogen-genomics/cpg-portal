@@ -1,3 +1,6 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import React from "react"
+import { useForm } from "react-hook-form"
 import {
   AlertDialog,
   AlertDialogBody,
@@ -6,10 +9,7 @@ import {
   AlertDialogHeader,
   AlertDialogOverlay,
   Button,
-} from "@chakra-ui/react"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import React from "react"
-import { useForm } from "react-hook-form"
+} from "@/components/ui/chakra-compat"
 
 import { FilesService, RunsService, UsersService } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
@@ -32,7 +32,6 @@ const Delete = ({ type, id, isOpen, onClose, onDelete }: DeleteProps) => {
   } = useForm()
 
   const deleteEntity = async (id: string) => {
-
     if (type === "User") {
       await UsersService.deleteUser({ path: { user_id: id } })
     } else if (type === "Run") {
@@ -52,7 +51,7 @@ const Delete = ({ type, id, isOpen, onClose, onDelete }: DeleteProps) => {
         `The ${type.toLowerCase()} was deleted successfully.`,
         "success",
       )
-      onDelete && onDelete()
+      onDelete?.()
       onClose()
     },
     onError: () => {
@@ -68,7 +67,7 @@ const Delete = ({ type, id, isOpen, onClose, onDelete }: DeleteProps) => {
       })
       queryClient.invalidateQueries({
         queryKey: [{ _id: "getFilesStats" }],
-      });
+      })
     },
   })
 
@@ -77,46 +76,40 @@ const Delete = ({ type, id, isOpen, onClose, onDelete }: DeleteProps) => {
   }
 
   return (
-    <>
-      <AlertDialog
-        isOpen={isOpen}
-        onClose={onClose}
-        leastDestructiveRef={cancelRef}
-        size={{ base: "sm", md: "md" }}
-        isCentered
-      >
-        <AlertDialogOverlay>
-          <AlertDialogContent as="form" onSubmit={handleSubmit(onSubmit)}>
-            <AlertDialogHeader>
-              Delete {type} ({id})
-            </AlertDialogHeader>
+    <AlertDialog
+      isOpen={isOpen}
+      onClose={onClose}
+      leastDestructiveRef={cancelRef}
+      size={{ base: "sm", md: "md" }}
+      isCentered
+    >
+      <AlertDialogOverlay>
+        <AlertDialogContent as="form" onSubmit={handleSubmit(onSubmit)}>
+          <AlertDialogHeader>
+            Delete {type} ({id})
+          </AlertDialogHeader>
 
-            <AlertDialogBody>
-              {type === "User" && (
-                <span>
-                  All items associated with this user will also be{" "}
-                  <strong>permantly deleted. </strong>
-                </span>
-              )}
-              Are you sure? You will not be able to undo this action.
-            </AlertDialogBody>
+          <AlertDialogBody>
+            {type === "User" && (
+              <span>
+                All items associated with this user will also be{" "}
+                <strong>permantly deleted. </strong>
+              </span>
+            )}
+            Are you sure? You will not be able to undo this action.
+          </AlertDialogBody>
 
-            <AlertDialogFooter gap={3}>
-              <Button variant="danger" type="submit" isLoading={isSubmitting}>
-                Delete
-              </Button>
-              <Button
-                ref={cancelRef}
-                onClick={onClose}
-                isDisabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialogOverlay>
-      </AlertDialog>
-    </>
+          <AlertDialogFooter gap={3}>
+            <Button variant="danger" type="submit" isLoading={isSubmitting}>
+              Delete
+            </Button>
+            <Button ref={cancelRef} onClick={onClose} isDisabled={isSubmitting}>
+              Cancel
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialogOverlay>
+    </AlertDialog>
   )
 }
 

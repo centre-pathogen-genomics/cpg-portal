@@ -1,122 +1,146 @@
-import {
-  Box,
-  Button,
-  Container,
-  FormControl,
-  FormErrorMessage,
-  FormLabel,
-  Heading,
-  Input,
-  useColorModeValue,
-} from "@chakra-ui/react"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation } from "@tanstack/react-query"
-import { type SubmitHandler, useForm } from "react-hook-form"
+import { useForm } from "react-hook-form"
+import { z } from "zod"
 
-import { type UpdatePassword } from "../../client"
-import { updatePasswordMeMutation } from "../../client/@tanstack/react-query.gen"
-import useCustomToast from "../../hooks/useCustomToast"
-import { confirmPasswordRules, handleError, passwordRules } from "../../utils"
+import { type UpdatePassword, UsersService } from "@/client"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
+import { LoadingButton } from "@/components/ui/loading-button"
+import { PasswordInput } from "@/components/ui/password-input"
+import useCustomToast from "@/hooks/useCustomToast"
+import { handleError } from "@/utils"
 
-interface UpdatePasswordForm extends UpdatePassword {
-  confirm_password: string
-}
+const formSchema = z
+  .object({
+    current_password: z
+      .string()
+      .min(1, { message: "Password is required" })
+      .min(8, { message: "Password must be at least 8 characters" }),
+    new_password: z
+      .string()
+      .min(1, { message: "Password is required" })
+      .min(8, { message: "Password must be at least 8 characters" }),
+    confirm_password: z
+      .string()
+      .min(1, { message: "Password confirmation is required" }),
+  })
+  .refine((data) => data.new_password === data.confirm_password, {
+    message: "The passwords don't match",
+    path: ["confirm_password"],
+  })
+
+type FormData = z.infer<typeof formSchema>
 
 const ChangePassword = () => {
-  const color = useColorModeValue("inherit", "ui.light")
-  const showToast = useCustomToast()
-  const {
-    register,
-    handleSubmit,
-    reset,
-    getValues,
-    formState: { errors, isSubmitting },
-  } = useForm<UpdatePasswordForm>({
-    mode: "onBlur",
+  const { showSuccessToast, showErrorToast } = useCustomToast()
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    mode: "onSubmit",
     criteriaMode: "all",
+    defaultValues: {
+      current_password: "",
+      new_password: "",
+      confirm_password: "",
+    },
   })
 
   const mutation = useMutation({
-    ...updatePasswordMeMutation(),
+    mutationFn: (data: UpdatePassword) =>
+      UsersService.updatePasswordMe({ body: data, throwOnError: true }),
     onSuccess: () => {
-      showToast("Success!", "Password updated successfully.", "success")
-      reset()
+      showSuccessToast("Password updated successfully")
+      form.reset()
     },
-    onError: (err) => {
-      handleError(err, showToast)
-    },
+    onError: (error) => handleError(error, showErrorToast),
   })
 
-  const onSubmit: SubmitHandler<UpdatePasswordForm> = async (data) => {
-    mutation.mutate({body:data})
+  const onSubmit = async (data: FormData) => {
+    mutation.mutate(data)
   }
 
   return (
-    <>
-      <Container maxW="full">
-        <Heading size="sm" py={4}>
-          Change Password
-        </Heading>
-        <Box
-          w={{ sm: "full", md: "50%" }}
-          as="form"
-          onSubmit={handleSubmit(onSubmit)}
+    <div className="max-w-md">
+      <h3 className="text-lg font-semibold py-4">Change Password</h3>
+      <Form {...form}>
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="flex flex-col gap-4"
         >
-          <FormControl isRequired isInvalid={!!errors.current_password}>
-            <FormLabel color={color} htmlFor="current_password">
-              Current Password
-            </FormLabel>
-            <Input
-              id="current_password"
-              {...register("current_password")}
-              placeholder="Password"
-              type="password"
-              w="auto"
-            />
-            {errors.current_password && (
-              <FormErrorMessage>
-                {errors.current_password.message}
-              </FormErrorMessage>
+          <FormField
+            control={form.control}
+            name="current_password"
+            render={({ field, fieldState }) => (
+              <FormItem>
+                <FormLabel>Current Password</FormLabel>
+                <FormControl>
+                  <PasswordInput
+                    data-testid="current-password-input"
+                    placeholder="••••••••"
+                    aria-invalid={fieldState.invalid}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
             )}
-          </FormControl>
-          <FormControl mt={4} isRequired isInvalid={!!errors.new_password}>
-            <FormLabel htmlFor="password">Set Password</FormLabel>
-            <Input
-              id="password"
-              {...register("new_password", passwordRules())}
-              placeholder="Password"
-              type="password"
-              w="auto"
-            />
-            {errors.new_password && (
-              <FormErrorMessage>{errors.new_password.message}</FormErrorMessage>
+          />
+
+          <FormField
+            control={form.control}
+            name="new_password"
+            render={({ field, fieldState }) => (
+              <FormItem>
+                <FormLabel>New Password</FormLabel>
+                <FormControl>
+                  <PasswordInput
+                    data-testid="new-password-input"
+                    placeholder="••••••••"
+                    aria-invalid={fieldState.invalid}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
             )}
-          </FormControl>
-          <FormControl mt={4} isRequired isInvalid={!!errors.confirm_password}>
-            <FormLabel htmlFor="confirm_password">Confirm Password</FormLabel>
-            <Input
-              id="confirm_password"
-              {...register("confirm_password", confirmPasswordRules(getValues))}
-              placeholder="Password"
-              type="password"
-              w="auto"
-            />
-            {errors.confirm_password && (
-              <FormErrorMessage>
-                {errors.confirm_password.message}
-              </FormErrorMessage>
+          />
+
+          <FormField
+            control={form.control}
+            name="confirm_password"
+            render={({ field, fieldState }) => (
+              <FormItem>
+                <FormLabel>Confirm Password</FormLabel>
+                <FormControl>
+                  <PasswordInput
+                    data-testid="confirm-password-input"
+                    placeholder="••••••••"
+                    aria-invalid={fieldState.invalid}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
             )}
-          </FormControl>
-          <Button
-            variant="primary"
-            mt={4}
+          />
+
+          <LoadingButton
             type="submit"
-            isLoading={isSubmitting}
+            loading={mutation.isPending}
+            className="self-start"
           >
-            Save
-          </Button>
-        </Box>
-      </Container>
-    </>
+            Update Password
+          </LoadingButton>
+        </form>
+      </Form>
+    </div>
   )
 }
+
 export default ChangePassword

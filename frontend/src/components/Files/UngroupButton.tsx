@@ -1,6 +1,6 @@
-import { Button } from "@chakra-ui/react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { FilesService, type FilePublic } from "../../client"
+import { Button } from "@/components/ui/chakra-compat"
+import { type FilePublic, FilesService } from "../../client"
 
 interface UngroupButtonProps {
   file: FilePublic
@@ -8,7 +8,11 @@ interface UngroupButtonProps {
   onSuccess?: () => void
 }
 
-export default function UngroupButton({ file, size = "sm", onSuccess }: UngroupButtonProps) {
+export default function UngroupButton({
+  file,
+  size = "sm",
+  onSuccess,
+}: UngroupButtonProps) {
   const queryClient = useQueryClient()
 
   const ungroupMutation = useMutation({
@@ -20,11 +24,11 @@ export default function UngroupButton({ file, size = "sm", onSuccess }: UngroupB
     },
     onError: (error) => {
       console.error("Failed to ungroup file:", error)
-    }
+    },
   })
 
   // Only show ungroup button for actual groups (not pairs)
-  const isGroup = file.is_group 
+  const isGroup = file.is_group
   const hasChildren = file.children && file.children.length > 0
 
   if (!isGroup || !hasChildren) {

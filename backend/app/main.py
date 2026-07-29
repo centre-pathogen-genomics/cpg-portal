@@ -5,7 +5,7 @@ from starlette.middleware.cors import CORSMiddleware
 
 from app.api.main import api_router
 from app.core.config import settings
-from app.lifetime import shutdown, startup
+from app.lifetime import lifespan
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
@@ -20,6 +20,7 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     generate_unique_id_function=custom_generate_unique_id,
     redirect_slashes=False,
+    lifespan=lifespan,
 )
 
 # Set all CORS enabled origins
@@ -31,8 +32,5 @@ if settings.all_cors_origins:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-
-app.add_event_handler("startup", startup(app))
-app.add_event_handler("shutdown", shutdown(app))
 
 app.include_router(api_router, prefix=settings.API_V1_STR)

@@ -1,10 +1,14 @@
-import ReactMarkdown from 'react-markdown';
-import ChakraUIRenderer from 'chakra-ui-markdown-renderer';
-import remarkGfm from 'remark-gfm';
-
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 
 function RenderMarkdown({ markdown }: { markdown: string }) {
-  return <ReactMarkdown components={ChakraUIRenderer()} children={markdown} skipHtml remarkPlugins={[remarkGfm]} />
+  return (
+    <div className="prose prose-sm max-w-none dark:prose-invert">
+      <ReactMarkdown remarkPlugins={[remarkGfm]} skipHtml>
+        {markdown}
+      </ReactMarkdown>
+    </div>
+  )
 }
 
-export default RenderMarkdown;
+export default RenderMarkdown

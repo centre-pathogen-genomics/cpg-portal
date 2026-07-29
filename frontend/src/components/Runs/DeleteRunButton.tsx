@@ -1,5 +1,9 @@
-import { IconButton, Tooltip, useDisclosure } from "@chakra-ui/react"
 import { FiTrash2 } from "react-icons/fi"
+import {
+  IconButton,
+  Tooltip,
+  useDisclosure,
+} from "@/components/ui/chakra-compat"
 import Delete from "../Common/DeleteAlert"
 
 interface DeleteButtonProps {
@@ -8,16 +12,16 @@ interface DeleteButtonProps {
   onDelete?: () => void
 }
 
-const DeleteRunButton = ({ run_id, onDelete, variant="outline" }: DeleteButtonProps) => {
+const DeleteRunButton = ({
+  run_id,
+  onDelete,
+  variant = "outline",
+}: DeleteButtonProps) => {
   const { isOpen, onOpen, onClose } = useDisclosure()
 
   return (
     <>
-      <Tooltip
-          placement="top"
-          hasArrow
-          label="Delete"
-      >
+      <Tooltip placement="top" hasArrow label="Delete">
         <IconButton
           onClick={onOpen}
           aria-label="Delete Run"
@@ -26,9 +30,14 @@ const DeleteRunButton = ({ run_id, onDelete, variant="outline" }: DeleteButtonPr
           variant={variant}
           size="sm"
         />
-        </Tooltip>
-        <Delete type="Run" id={run_id} isOpen={isOpen} onClose={onClose} onDelete={onDelete} />
-      
+      </Tooltip>
+      <Delete
+        type="Run"
+        id={run_id}
+        isOpen={isOpen}
+        onClose={onClose}
+        onDelete={onDelete}
+      />
     </>
   )
 }

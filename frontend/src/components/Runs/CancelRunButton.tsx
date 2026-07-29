@@ -1,5 +1,9 @@
-import { IconButton, Tooltip, useDisclosure } from "@chakra-ui/react"
 import { FiX } from "react-icons/fi"
+import {
+  IconButton,
+  Tooltip,
+  useDisclosure,
+} from "@/components/ui/chakra-compat"
 import Cancel from "./CancelAlert"
 
 interface CancelButtonProps {
@@ -7,16 +11,15 @@ interface CancelButtonProps {
   variant?: string
 }
 
-const CancelRunButton = ({ run_id, variant = 'outline' }: CancelButtonProps) => {
+const CancelRunButton = ({
+  run_id,
+  variant = "outline",
+}: CancelButtonProps) => {
   const { isOpen, onOpen, onClose } = useDisclosure()
 
   return (
     <>
-      <Tooltip
-          placement="top"
-          hasArrow
-          label="Cancel"
-      >
+      <Tooltip placement="top" hasArrow label="Cancel">
         <IconButton
           onClick={onOpen}
           aria-label="Cancel Run"

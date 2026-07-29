@@ -1,23 +1,23 @@
 // UploadProgress.tsx
-import React from "react";
+import type React from "react"
+import { FiAlertCircle, FiX } from "react-icons/fi"
 import {
   Box,
   Flex,
-  Text,
-  Progress,
   IconButton,
+  Progress,
+  Text,
   useColorModeValue,
-} from "@chakra-ui/react";
-import { FiX, FiAlertCircle } from "react-icons/fi";
-import { CheckIcon } from "@chakra-ui/icons";
-import { humanReadableFileSize } from "../../utils";
+} from "@/components/ui/chakra-compat"
+import { CheckIcon } from "@/components/ui/chakra-icons-compat"
+import { humanReadableFileSize } from "../../utils"
 
 interface UploadProgressProps {
-  file: File;
-  progress: number;
-  completed?: boolean;
-  error?: boolean;
-  onCancel: () => void;
+  file: File
+  progress: number
+  completed?: boolean
+  error?: boolean
+  onCancel: () => void
 }
 
 const UploadProgress: React.FC<UploadProgressProps> = ({
@@ -27,8 +27,8 @@ const UploadProgress: React.FC<UploadProgressProps> = ({
   error,
   onCancel,
 }) => {
-  const bgColor = useColorModeValue("white", "gray.800");
-  const colorScheme = progress < 100 || !completed ? "blue" : "green";
+  const bgColor = useColorModeValue("white", "gray.800")
+  const colorScheme = progress < 100 || !completed ? "blue" : "green"
 
   return (
     <Flex
@@ -57,7 +57,7 @@ const UploadProgress: React.FC<UploadProgressProps> = ({
           icon={<FiAlertCircle />}
           disabled
         />
-      ) : (!completed && progress === 100) ? (
+      ) : !completed && progress === 100 ? (
         <IconButton
           isLoading={true}
           aria-label="Processing upload"
@@ -81,7 +81,7 @@ const UploadProgress: React.FC<UploadProgressProps> = ({
         <CheckIcon h={8} ml={4} mr={1} color="green.500" />
       )}
     </Flex>
-  );
-};
+  )
+}
 
-export default UploadProgress;
+export default UploadProgress

@@ -1,5 +1,5 @@
 import uuid
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
@@ -44,7 +44,7 @@ def get_file_content_for_prompt(file: File, threshold: int = 10000) -> str:
                 return f.read()
     return "File type not supported, content not included."
 
-class Audience(str, Enum):
+class Audience(StrEnum):
     layman = "layman"
     expert = "expert"
 

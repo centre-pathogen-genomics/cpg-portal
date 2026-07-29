@@ -23,7 +23,7 @@ def read_runs(
     current_user: CurrentUser,
     skip: int = 0,
     limit: int = 100,
-    order_by: str = Query("-created_at", regex=r"^-?[a-zA-Z_]+$")
+    order_by: str = Query("-created_at", pattern=r"^-?[a-zA-Z_]+$")
 ) -> Any:
     """
     Retrieve runs with optional ordering.
@@ -341,12 +341,12 @@ def read_run(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> A
         raise HTTPException(status_code=404, detail="Run not found")
     if run.owner_id != current_user.id and not run.shared:
         raise HTTPException(status_code=400, detail="Not enough permissions")
-    
+
     # Convert to RunPublic and add owner name if shared
     run_data = RunPublic.model_validate(run)
     if run.shared and run.owner_id != current_user.id:
         run_data.owner_name = run.owner.full_name
-    
+
     return run_data
 
 @router.patch("/{id}/cancel", response_model=RunPublic)

@@ -1,27 +1,25 @@
-import { AxiosProgressEvent, type AxiosError } from "axios"
+import type { AxiosError, AxiosProgressEvent } from "axios"
 import type { ValidationError } from "./client"
-import { FilesService } from "./client";
+import { FilesService } from "./client"
 
 export const uploadFileWithProgress = async (
   file: File,
   controller: AbortController,
-  onUploadProgress: (progressEvent: AxiosProgressEvent) => void
+  onUploadProgress: (progressEvent: AxiosProgressEvent) => void,
 ) => {
   try {
-    const response = await FilesService.uploadFile(
-      {
-        body: {file},
-        onUploadProgress: onUploadProgress,
-        throwOnError: true,
-        signal: controller.signal,
-      },
-    );
-    return response;
+    const response = await FilesService.uploadFile({
+      body: { file: file as unknown as string },
+      onUploadProgress: onUploadProgress,
+      throwOnError: true,
+      signal: controller.signal,
+    })
+    return response
   } catch (error) {
-    console.error("Error uploading file:", error);
-    throw error;
+    console.error("Error uploading file:", error)
+    throw error
   }
-};
+}
 
 export const emailPattern = {
   value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
@@ -38,9 +36,7 @@ export const humanReadableFileSize = (bytes: number) => {
     return "0 B"
   }
   const i = Math.floor(Math.log(bytes) / Math.log(1024))
-  return (
-    (bytes / Math.pow(1024, i)).toFixed(0) + " " + ["B", "kB", "MB", "GB", "TB"][i]
-  )
+  return `${(bytes / 1024 ** i).toFixed(0)} ${["B", "kB", "MB", "GB", "TB"][i]}`
 }
 
 export const humanReadableDate = (date: string) => {
@@ -57,15 +53,15 @@ export const humanReadableDateTime = (date: string | undefined) => {
   if (!date) {
     return ""
   }
-  return new Date(date).toLocaleDateString("en-GB", {
+  return `${new Date(date).toLocaleDateString("en-GB", {
     day: "numeric",
     month: "short",
     year: "numeric",
-  }) + ", " + new Date(date).toLocaleTimeString("en-GB", {
+  })}, ${new Date(date).toLocaleTimeString("en-GB", {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
-  })
+  })}`
 }
 
 export const passwordRules = (isRequired = true) => {
@@ -101,15 +97,34 @@ export const confirmPasswordRules = (
   return rules
 }
 
-export const handleError = (err: AxiosError | Error, showToast: any) => {
+export const handleError = (
+  err: AxiosError | Error,
+  showToast?: (...args: any[]) => void,
+) => {
+  const notify = (message: string) => {
+    if (!showToast) return
+    if (showToast.length <= 1) showToast(message)
+    else showToast("Error", message, "error")
+  }
   if (err.message === "Network Error") {
-    showToast("Error", "Network error. Please try again later.", "error")
+    notify("Network error. Please try again later.")
     return
   }
-  const errDetail = (err as any)?.response.data.detail as ValidationError | ValidationError[] | string
+  const errDetail = (err as any)?.response?.data?.detail as
+    | ValidationError
+    | ValidationError[]
+    | string
   let errorMessage = errDetail || "Something went wrong."
   if (Array.isArray(errDetail) && errDetail.length > 0) {
     errorMessage = errDetail[0].msg
   }
-  showToast("Error", errorMessage, "error")
+  notify(String(errorMessage))
 }
+
+export const getInitials = (name: string): string =>
+  name
+    .split(" ")
+    .slice(0, 2)
+    .map((word) => word[0])
+    .join("")
+    .toUpperCase()

@@ -1,211 +1,254 @@
-import {
-  Button,
-  Checkbox,
-  Flex,
-  FormControl,
-  FormErrorMessage,
-  FormLabel,
-  Input,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-} from "@chakra-ui/react"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { type SubmitHandler, useForm } from "react-hook-form"
+import { Pencil } from "lucide-react"
+import { useState } from "react"
+import { useForm } from "react-hook-form"
+import { z } from "zod"
 
+import { type UserPublic, type UsersPublic, UsersService } from "@/client"
+import { readUsersQueryKey } from "@/client/@tanstack/react-query.gen"
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
-  type UserPublic,
-  type UserUpdate,
-  UsersService,
-} from "../../client"
-import useCustomToast from "../../hooks/useCustomToast"
-import { emailPattern, handleError } from "../../utils"
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { LoadingButton } from "@/components/ui/loading-button"
+import useCustomToast from "@/hooks/useCustomToast"
+import { handleError } from "@/utils"
+
+const formSchema = z
+  .object({
+    email: z.email({ message: "Invalid email address" }),
+    full_name: z.string().optional(),
+    password: z
+      .string()
+      .min(8, { message: "Password must be at least 8 characters" })
+      .optional()
+      .or(z.literal("")),
+    confirm_password: z.string().optional(),
+    is_superuser: z.boolean().optional(),
+    is_active: z.boolean().optional(),
+  })
+  .refine((data) => !data.password || data.password === data.confirm_password, {
+    message: "The passwords don't match",
+    path: ["confirm_password"],
+  })
+
+type FormData = z.infer<typeof formSchema>
 
 interface EditUserProps {
   user: UserPublic
-  isOpen: boolean
-  onClose: () => void
+  onSuccess: () => void
 }
 
-interface UserUpdateForm extends UserUpdate {
-  confirm_password: string
-}
-
-const EditUser = ({ user, isOpen, onClose }: EditUserProps) => {
+const EditUser = ({ user, onSuccess }: EditUserProps) => {
+  const [isOpen, setIsOpen] = useState(false)
   const queryClient = useQueryClient()
-  const showToast = useCustomToast()
+  const { showSuccessToast, showErrorToast } = useCustomToast()
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    getValues,
-    formState: { errors, isSubmitting, isDirty },
-  } = useForm<UserUpdateForm>({
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
     mode: "onBlur",
     criteriaMode: "all",
-    defaultValues: user,
+    defaultValues: {
+      email: user.email,
+      full_name: user.full_name ?? undefined,
+      is_superuser: user.is_superuser,
+      is_active: user.is_active,
+    },
   })
 
   const mutation = useMutation({
-    mutationFn: (data: UserUpdateForm) =>
-      UsersService.updateUser({ path: {user_id: user.id}, body: data }),
-    onSuccess: () => {
-      showToast("Success!", "User updated successfully.", "success")
-      onClose()
+    mutationFn: (data: FormData) =>
+      UsersService.updateUser({
+        path: { user_id: user.id },
+        body: data,
+        throwOnError: true,
+      }),
+    onSuccess: (response) => {
+      queryClient.setQueryData<UsersPublic>(
+        readUsersQueryKey({ query: { skip: 0, limit: 1000 } }),
+        (users) =>
+          users
+            ? {
+                ...users,
+                data: users.data.map((existingUser) =>
+                  existingUser.id === response.data.id
+                    ? response.data
+                    : existingUser,
+                ),
+              }
+            : users,
+      )
+      showSuccessToast("User updated successfully")
+      setIsOpen(false)
+      onSuccess()
     },
-    onError: (err) => {
-      handleError(err, showToast)
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] })
-    },
+    onError: (error) => handleError(error, showErrorToast),
   })
 
-  const onSubmit: SubmitHandler<UserUpdateForm> = async (data) => {
-    if (data.password === "") {
-      data.password = undefined
+  const onSubmit = (data: FormData) => {
+    // exclude confirm_password from submission data and remove password if empty
+    const { confirm_password: _, ...submitData } = data
+    if (!submitData.password) {
+      delete submitData.password
     }
-    mutation.mutate(data)
-  }
-
-  const onCancel = () => {
-    reset()
-    onClose()
+    mutation.mutate(submitData)
   }
 
   return (
-    <>
-      <Modal
-        isOpen={isOpen}
-        onClose={onClose}
-        size={{ base: "sm", md: "md" }}
-        isCentered
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DropdownMenuItem
+        onSelect={(e) => e.preventDefault()}
+        onClick={() => setIsOpen(true)}
       >
-        <ModalOverlay />
-        <ModalContent as="form" onSubmit={handleSubmit(onSubmit)}>
-          <ModalHeader>Edit User</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody pb={6}>
-            <FormControl isInvalid={!!errors.email}>
-              <FormLabel htmlFor="email">Email</FormLabel>
-              <Input
-                id="email"
-                {...register("email", {
-                  required: "Email is required",
-                  pattern: emailPattern,
-                })}
-                placeholder="Email"
-                type="email"
+        <Pencil />
+        Edit User
+      </DropdownMenuItem>
+      <DialogContent className="sm:max-w-md">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            <DialogHeader>
+              <DialogTitle>Edit User</DialogTitle>
+              <DialogDescription>
+                Update the user details below.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Email <span className="text-destructive">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Email"
+                        type="email"
+                        {...field}
+                        required
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              {errors.email && (
-                <FormErrorMessage>{errors.email.message}</FormErrorMessage>
-              )}
-            </FormControl>
-            <FormControl mt={4}>
-              <FormLabel htmlFor="name">Full name</FormLabel>
-              <Input id="name" {...register("full_name")} type="text" />
-            </FormControl>
-            <FormControl mt={4} isInvalid={!!errors.password}>
-              <FormLabel htmlFor="password">Set Password</FormLabel>
-              <Input
-                id="password"
-                {...register("password", {
-                  minLength: {
-                    value: 8,
-                    message: "Password must be at least 8 characters",
-                  },
-                })}
-                placeholder="Password"
-                type="password"
-              />
-              {errors.password && (
-                <FormErrorMessage>{errors.password.message}</FormErrorMessage>
-              )}
-            </FormControl>
-            <FormControl mt={4} isInvalid={!!errors.confirm_password}>
-              <FormLabel htmlFor="confirm_password">Confirm Password</FormLabel>
-              <Input
-                id="confirm_password"
-                {...register("confirm_password", {
-                  validate: (value) =>
-                    value === getValues().password ||
-                    "The passwords do not match",
-                })}
-                placeholder="Password"
-                type="password"
-              />
-              {errors.confirm_password && (
-                <FormErrorMessage>
-                  {errors.confirm_password.message}
-                </FormErrorMessage>
-              )}
-            </FormControl>
-            <FormControl mt={4} isRequired>
-              <FormLabel htmlFor="max_runs">Max Concurrent Runs</FormLabel>
-              <Input
-                id="max_runs"
-                {...register("max_runs", {
-                  required: "Max Runs is required",
-                })}
-                placeholder="Max Runs"
-                type="number"
-              />
-            </FormControl>
-            <FormControl mt={4} isRequired>
-              <FormLabel htmlFor="max_storage">Max Storage (in bytes)</FormLabel>
-              <Input
-                id="max_storage"
-                {...register("max_storage", {
-                  required: "Max Storage is required",
-                })}
-                placeholder="Max Storage"
-                type="number"
-              />
-            </FormControl>
-            <FormControl mt={4} isRequired>
-              <FormLabel htmlFor="max_storage_files">Max Storage Files</FormLabel>
-              <Input
-                id="max_storage_files"
-                {...register("max_storage_files", {
-                  required: "Max Storage Files is required",
-                })}
-                placeholder="Max Storage Files"
-                type="number"
-              />
-            </FormControl>
-            <Flex>
-              <FormControl mt={4}>
-                <Checkbox {...register("is_superuser")} colorScheme="teal">
-                  Is superuser?
-                </Checkbox>
-              </FormControl>
-              <FormControl mt={4}>
-                <Checkbox {...register("is_active")} colorScheme="teal">
-                  Is active?
-                </Checkbox>
-              </FormControl>
-            </Flex>
-          </ModalBody>
 
-          <ModalFooter gap={3}>
-            <Button
-              variant="primary"
-              type="submit"
-              isLoading={isSubmitting}
-              isDisabled={!isDirty}
-            >
-              Save
-            </Button>
-            <Button onClick={onCancel}>Cancel</Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    </>
+              <FormField
+                control={form.control}
+                name="full_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Full name" type="text" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Set Password</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Password"
+                        type="password"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="confirm_password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirm Password</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Password"
+                        type="password"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="is_superuser"
+                render={({ field }) => (
+                  <FormItem className="flex items-center gap-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormLabel className="font-normal">Is superuser?</FormLabel>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="is_active"
+                render={({ field }) => (
+                  <FormItem className="flex items-center gap-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormLabel className="font-normal">Is active?</FormLabel>
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="outline" disabled={mutation.isPending}>
+                  Cancel
+                </Button>
+              </DialogClose>
+              <LoadingButton type="submit" loading={mutation.isPending}>
+                Save
+              </LoadingButton>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
   )
 }
 

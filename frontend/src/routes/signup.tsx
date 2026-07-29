@@ -1,26 +1,43 @@
+import { zodResolver } from "@hookform/resolvers/zod"
 import {
-  Button,
-  Container,
-  Flex,
-  FormControl,
-  FormErrorMessage,
-  FormLabel,
-  Image,
-  Input,
-  Link,
-  Text,
-} from "@chakra-ui/react"
-import {
-  Link as RouterLink,
   createFileRoute,
+  Link as RouterLink,
   redirect,
 } from "@tanstack/react-router"
-import { type SubmitHandler, useForm } from "react-hook-form"
+import { useForm } from "react-hook-form"
+import { z } from "zod"
+import { AuthLayout } from "@/components/Common/AuthLayout"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { LoadingButton } from "@/components/ui/loading-button"
+import { PasswordInput } from "@/components/ui/password-input"
+import useAuth, { isLoggedIn } from "@/hooks/useAuth"
 
-import Logo from "/assets/images/cpg-logo.png"
-import type { UserRegister } from "../client"
-import useAuth, { isLoggedIn } from "../hooks/useAuth"
-import { confirmPasswordRules, emailPattern, passwordRules } from "../utils"
+const formSchema = z
+  .object({
+    email: z.email(),
+    full_name: z.string().min(1, { message: "Full Name is required" }),
+    password: z
+      .string()
+      .min(1, { message: "Password is required" })
+      .min(8, { message: "Password must be at least 8 characters" }),
+    confirm_password: z
+      .string()
+      .min(1, { message: "Password confirmation is required" }),
+  })
+  .refine((data) => data.password === data.confirm_password, {
+    message: "The passwords don't match",
+    path: ["confirm_password"],
+  })
+
+type FormData = z.infer<typeof formSchema>
 
 export const Route = createFileRoute("/signup")({
   component: SignUp,
@@ -31,20 +48,19 @@ export const Route = createFileRoute("/signup")({
       })
     }
   },
+  head: () => ({
+    meta: [
+      {
+        title: "Sign Up | CPG Portal",
+      },
+    ],
+  }),
 })
-
-interface UserRegisterForm extends UserRegister {
-  confirm_password: string
-}
 
 function SignUp() {
   const { signUpMutation } = useAuth()
-  const {
-    register,
-    handleSubmit,
-    getValues,
-    formState: { errors, isSubmitting },
-  } = useForm<UserRegisterForm>({
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
     mode: "onBlur",
     criteriaMode: "all",
     defaultValues: {
@@ -55,112 +71,117 @@ function SignUp() {
     },
   })
 
-  const onSubmit: SubmitHandler<UserRegisterForm> = (data) => {
-    signUpMutation.mutate({body:data})
+  const onSubmit = (data: FormData) => {
+    if (signUpMutation.isPending) return
+
+    // exclude confirm_password from submission data
+    const { confirm_password: _confirm_password, ...submitData } = data
+    signUpMutation.mutate(submitData)
   }
 
   return (
-    <>
-      <Flex flexDir={{ base: "column", md: "row" }} justify="center" h="100vh">
-        <Container
-          as="form"
-          onSubmit={handleSubmit(onSubmit)}
-          h="100vh"
-          maxW="sm"
-          alignItems="stretch"
-          justifyContent="center"
-          gap={4}
-          centerContent
+    <AuthLayout>
+      <Form {...form}>
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="flex flex-col gap-6"
         >
-          <Flex as={RouterLink} to="/" justify="center">
-            <Image
-              src={Logo}
-              alt="CPG logo"
-              height="auto"
-              maxW="2xs"
-              alignSelf="center"
-              mb={4}
-            />
-          </Flex>
-          <FormControl id="full_name" isInvalid={!!errors.full_name}>
-            <FormLabel htmlFor="full_name" srOnly>
-              Full Name
-            </FormLabel>
-            <Input
-              id="full_name"
-              minLength={3}
-              {...register("full_name", { required: "Full Name is required" })}
-              placeholder="Full Name"
-              type="text"
-            />
-            {errors.full_name && (
-              <FormErrorMessage>{errors.full_name.message}</FormErrorMessage>
-            )}
-          </FormControl>
-          <FormControl id="email" isInvalid={!!errors.email}>
-            <FormLabel htmlFor="username" srOnly>
-              Email
-            </FormLabel>
-            <Input
-              id="email"
-              {...register("email", {
-                required: "Email is required",
-                pattern: emailPattern,
-              })}
-              placeholder="Email"
-              type="email"
-            />
-            {errors.email && (
-              <FormErrorMessage>{errors.email.message}</FormErrorMessage>
-            )}
-          </FormControl>
-          <FormControl id="password" isInvalid={!!errors.password}>
-            <FormLabel htmlFor="password" srOnly>
-              Password
-            </FormLabel>
-            <Input
-              id="password"
-              {...register("password", passwordRules())}
-              placeholder="Password"
-              type="password"
-            />
-            {errors.password && (
-              <FormErrorMessage>{errors.password.message}</FormErrorMessage>
-            )}
-          </FormControl>
-          <FormControl
-            id="confirm_password"
-            isInvalid={!!errors.confirm_password}
-          >
-            <FormLabel htmlFor="confirm_password" srOnly>
-              Confirm Password
-            </FormLabel>
+          <div className="flex flex-col items-center gap-2 text-center">
+            <h1 className="text-2xl font-bold">Create an account</h1>
+          </div>
 
-            <Input
-              id="confirm_password"
-              {...register("confirm_password", confirmPasswordRules(getValues))}
-              placeholder="Repeat Password"
-              type="password"
+          <div className="grid gap-4">
+            <FormField
+              control={form.control}
+              name="full_name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Full Name</FormLabel>
+                  <FormControl>
+                    <Input
+                      data-testid="full-name-input"
+                      placeholder="User"
+                      type="text"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            {errors.confirm_password && (
-              <FormErrorMessage>
-                {errors.confirm_password.message}
-              </FormErrorMessage>
-            )}
-          </FormControl>
-          <Button variant="primary" type="submit" isLoading={isSubmitting}>
-            Sign Up
-          </Button>
-          <Text>
+
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input
+                      data-testid="email-input"
+                      placeholder="user@example.com"
+                      type="email"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl>
+                    <PasswordInput
+                      data-testid="password-input"
+                      placeholder="Password"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="confirm_password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Confirm Password</FormLabel>
+                  <FormControl>
+                    <PasswordInput
+                      data-testid="confirm-password-input"
+                      placeholder="Confirm Password"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <LoadingButton
+              type="submit"
+              className="w-full"
+              loading={signUpMutation.isPending}
+            >
+              Sign Up
+            </LoadingButton>
+          </div>
+
+          <div className="text-center text-sm">
             Already have an account?{" "}
-            <Link as={RouterLink} to="/login" color="blue.500">
-              Log In
-            </Link>
-          </Text>
-        </Container>
-      </Flex>
-    </>
+            <RouterLink to="/login" className="underline underline-offset-4">
+              Log in
+            </RouterLink>
+          </div>
+        </form>
+      </Form>
+    </AuthLayout>
   )
 }
-
-export default SignUp

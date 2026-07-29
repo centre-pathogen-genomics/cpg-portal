@@ -110,7 +110,10 @@ def update_password_me(
     """
     Update own password.
     """
-    if not verify_password(body.current_password, current_user.hashed_password):
+    password_verified, _ = verify_password(
+        body.current_password, current_user.hashed_password
+    )
+    if not password_verified:
         raise HTTPException(status_code=400, detail="Incorrect password")
     if body.current_password == body.new_password:
         raise HTTPException(
@@ -218,6 +221,8 @@ def read_user_by_id(
             status_code=403,
             detail="The user doesn't have enough privileges",
         )
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
     return user
 
 

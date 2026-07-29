@@ -45,8 +45,14 @@ def authenticate(*, session: Session, email: str, password: str) -> User | None:
     db_user = get_user_by_email(session=session, email=email)
     if not db_user:
         return None
-    if not verify_password(password, db_user.hashed_password):
+    verified, updated_hash = verify_password(password, db_user.hashed_password)
+    if not verified:
         return None
+    if updated_hash:
+        db_user.hashed_password = updated_hash
+        session.add(db_user)
+        session.commit()
+        session.refresh(db_user)
     return db_user
 
 

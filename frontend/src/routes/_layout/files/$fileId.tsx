@@ -1,135 +1,151 @@
+import { useSuspenseQuery } from "@tanstack/react-query"
+import { createFileRoute, Link } from "@tanstack/react-router"
+import { Suspense } from "react"
+import { ErrorBoundary } from "react-error-boundary"
+import { BsFileEarmarkText } from "react-icons/bs"
+import { HiOutlineDocument, HiOutlineFolder } from "react-icons/hi"
+import { HiCalendarDays, HiOutlineTag } from "react-icons/hi2"
 import {
+  Badge,
   Box,
+  ButtonGroup,
   Container,
   Flex,
   Heading,
+  HStack,
+  Icon,
   Skeleton,
   Text,
-  Badge,
   VStack,
-  HStack,
-  ButtonGroup,
-  Icon,
-} from "@chakra-ui/react";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { Link, createFileRoute } from "@tanstack/react-router";
-import { Suspense } from "react";
-import { ErrorBoundary } from "react-error-boundary";
-import { HiOutlineDocument, HiOutlineFolder } from "react-icons/hi";
-import { HiCalendarDays, HiOutlineTag } from "react-icons/hi2";
-import { BsFileEarmarkText } from "react-icons/bs";
-import { FilePublic } from "../../../client";
-import FileRenderer from "../../../components/Render/FileRenderer";
-import { readFileOptions } from "../../../client/@tanstack/react-query.gen";
-import DownloadFileButton from "../../../components/Files/DownloadFileButton";
-import DeleteFileButton from "../../../components/Files/DeleteFileButton";
-import EditableFileName from "../../../components/Files/EditableFileName";
-import { humanReadableDate, humanReadableFileSize } from "../../../utils";
+} from "@/components/ui/chakra-compat"
+import type { FilePublic } from "../../../client"
+import { readFileOptions } from "../../../client/@tanstack/react-query.gen"
+import DeleteFileButton from "../../../components/Files/DeleteFileButton"
+import DownloadFileButton from "../../../components/Files/DownloadFileButton"
+import EditableFileName from "../../../components/Files/EditableFileName"
+import FileRenderer from "../../../components/Render/FileRenderer"
+import { humanReadableDate, humanReadableFileSize } from "../../../utils"
 
 export const Route = createFileRoute("/_layout/files/$fileId")({
   component: FileDetail,
   validateSearch: (search: Record<string, unknown>) => {
     return {
       groupId: (search.groupId as string) || undefined,
-    };
+    }
   },
-});
-
-
+})
 
 function FileMetadata({ file }: { file: FilePublic }) {
   const items = [
-    { 
-      icon: file.is_group ? HiOutlineFolder : HiOutlineDocument, 
-      title: "Type", 
+    {
+      icon: file.is_group ? HiOutlineFolder : HiOutlineDocument,
+      title: "Type",
       value: (
         <Badge colorScheme="blue">
-          {file.is_group ? `${file.file_type} (group)` : 
-           file.file_type === 'pair' ? 'paired-end reads' : 
-           file.file_type || 'Unknown'}
+          {file.is_group
+            ? `${file.file_type} (group)`
+            : file.file_type === "pair"
+              ? "paired-end reads"
+              : file.file_type || "Unknown"}
         </Badge>
-      )
+      ),
     },
-    ...(file.size ? [{ 
-      icon: BsFileEarmarkText, 
-      title: "Size", 
-      value: <Text>{humanReadableFileSize(file.size)}</Text>
-    }] : []),
-    { 
-      icon: HiCalendarDays, 
-      title: "Created", 
-      value: <Text>{humanReadableDate(file.created_at)}</Text>
+    ...(file.size
+      ? [
+          {
+            icon: BsFileEarmarkText,
+            title: "Size",
+            value: <Text>{humanReadableFileSize(file.size)}</Text>,
+          },
+        ]
+      : []),
+    {
+      icon: HiCalendarDays,
+      title: "Created",
+      value: <Text>{humanReadableDate(file.created_at)}</Text>,
     },
-    ...(file.tags && file.tags.length > 0 ? [{ 
-      icon: HiOutlineTag, 
-      title: "Tags", 
-      value: (
-        <Flex wrap="wrap" gap={2}>
-          {file.tags.map((tag) => (
-            <Badge key={tag} colorScheme="cyan" mr={1}>
-              {tag}
-            </Badge>
-          ))}
-        </Flex>
-      )
-    }] : []),
-    ...(file.is_group && file.children && file.children.length > 0 ? [{ 
-      icon: HiOutlineFolder, 
-      title: "Contents", 
-      value: (
-        <VStack align="stretch" spacing={1}>
-          {file.children.map((child) => (
-            <HStack key={child.id} justify="space-between">
-              <Text 
-                fontSize="sm" 
-                as={Link}
-                to={`/files/${child.id}?groupId=${file.id}`}
-                _hover={{ color: "ui.main", textDecoration: "underline" }}
-                cursor="pointer"
-              >
-                {child.name}
-              </Text>
-              <Badge size="sm">{child.file_type}</Badge>
-            </HStack>
-          ))}
-        </VStack>
-      )
-    }] : [])
-  ];
+    ...(file.tags && file.tags.length > 0
+      ? [
+          {
+            icon: HiOutlineTag,
+            title: "Tags",
+            value: (
+              <Flex wrap="wrap" gap={2}>
+                {file.tags.map((tag) => (
+                  <Badge key={tag} colorScheme="cyan" mr={1}>
+                    {tag}
+                  </Badge>
+                ))}
+              </Flex>
+            ),
+          },
+        ]
+      : []),
+    ...(file.is_group && file.children && file.children.length > 0
+      ? [
+          {
+            icon: HiOutlineFolder,
+            title: "Contents",
+            value: (
+              <VStack align="stretch" spacing={1}>
+                {file.children.map((child) => (
+                  <HStack key={child.id} justify="space-between">
+                    <Text
+                      fontSize="sm"
+                      as={Link}
+                      to={`/files/${child.id}?groupId=${file.id}`}
+                      _hover={{ color: "ui.main", textDecoration: "underline" }}
+                      cursor="pointer"
+                    >
+                      {child.name}
+                    </Text>
+                    <Badge size="sm">{child.file_type}</Badge>
+                  </HStack>
+                ))}
+              </VStack>
+            ),
+          },
+        ]
+      : []),
+  ]
 
   return (
-    <Flex direction={'column'}>
+    <Flex direction={"column"}>
       {items.map(({ icon, title, value }) => (
-        <HStack key={title} align={'top'} mb={3}>
-          <Flex w={32} shrink={0} direction={'column'}>
-            <Flex align={'center'}>
+        <HStack key={title} align={"top"} mb={3}>
+          <Flex w={32} shrink={0} direction={"column"}>
+            <Flex align={"center"}>
               <Icon as={icon} />
               <Text ml={2}>{title}</Text>
             </Flex>
           </Flex>
-          <Flex align={'center'}>
-            {value}
-          </Flex>
+          <Flex align={"center"}>{value}</Flex>
         </HStack>
       ))}
     </Flex>
-  );
+  )
 }
 
 function FileDetailContent() {
-  const { fileId } = Route.useParams();
-  const { groupId } = Route.useSearch();
+  const { fileId } = Route.useParams()
+  const { groupId } = Route.useSearch()
 
   const { data: file } = useSuspenseQuery({
     ...readFileOptions({ path: { id: fileId } }),
-  });
+  })
 
-  const backLink = groupId ? `/files/${groupId}` : "/files";
-  const backText = groupId ? "← Back to Group" : "← Back to My Files";
+  const backLink = groupId ? `/files/${groupId}` : "/files"
+  const backText = groupId ? "← Back to Group" : "← Back to My Files"
 
   return (
-    <Box maxW={"5xl"} justifySelf={"center"} w={"full"} overflowX={"hidden"} px={2}>
-      <Flex align={"center"} justify={'space-between'} gap={2}>
+    <Box
+      maxW={"5xl"}
+      justifySelf={"center"}
+      w={"full"}
+      overflowX={"hidden"}
+      px={2}
+    >
+      <Flex align={"center"} justify={"space-between"} gap={2}>
         <Flex
           as={Link}
           to={backLink}
@@ -137,7 +153,7 @@ function FileDetailContent() {
           _hover={{ color: "ui.main" }}
           fontWeight="semibold"
           align="center"
-          whiteSpace={'nowrap'}
+          whiteSpace={"nowrap"}
         >
           <Text>{backText}</Text>
         </Flex>
@@ -146,7 +162,7 @@ function FileDetailContent() {
           <DeleteFileButton file={file} />
         </ButtonGroup>
       </Flex>
-      
+
       <Flex
         direction="row"
         borderBottomWidth={1}
@@ -181,7 +197,7 @@ function FileDetailContent() {
         </>
       )}
     </Box>
-  );
+  )
 }
 
 function FileDetailSkeleton() {
@@ -191,7 +207,7 @@ function FileDetailSkeleton() {
       <Skeleton height="40px" mb={4} />
       <Skeleton height="200px" />
     </Container>
-  );
+  )
 }
 
 function FileDetail() {
@@ -201,7 +217,9 @@ function FileDetail() {
         <ErrorBoundary
           fallbackRender={({ error }) => (
             <Box>
-              <Text color="red.500">Error: {error.message}</Text>
+              <Text color="red.500">
+                Error: {error instanceof Error ? error.message : String(error)}
+              </Text>
             </Box>
           )}
         >
@@ -209,7 +227,7 @@ function FileDetail() {
         </ErrorBoundary>
       </Suspense>
     </Container>
-  );
+  )
 }
 
-export default FileDetail;
+export default FileDetail

@@ -1,3 +1,6 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from sqlmodel import Session, select
 
@@ -49,17 +52,12 @@ async def shutdown_broadcast() -> None:
     await manager.shutdown()
     print("Broadcaster disconnected.")
 
-def startup(app: FastAPI):
-    async def _startup():
-        await startup_taskiq()
-        await startup_broadcast()
-
-    return _startup
-
-
-def shutdown(app: FastAPI):
-    async def _shutdown():
+@asynccontextmanager
+async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    await startup_taskiq()
+    await startup_broadcast()
+    try:
+        yield
+    finally:
         await shutdown_taskiq()
         await shutdown_broadcast()
-
-    return _shutdown

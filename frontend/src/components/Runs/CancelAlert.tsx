@@ -1,3 +1,6 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import React from "react"
+import { useForm } from "react-hook-form"
 import {
   AlertDialog,
   AlertDialogBody,
@@ -6,10 +9,7 @@ import {
   AlertDialogHeader,
   AlertDialogOverlay,
   Button,
-} from "@chakra-ui/react"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import React from "react"
-import { useForm } from "react-hook-form"
+} from "@/components/ui/chakra-compat"
 
 import { RunsService } from "../../client" // Ensure you have the RunsService correctly set up
 import useCustomToast from "../../hooks/useCustomToast"
@@ -30,7 +30,7 @@ const Cancel = ({ id, isOpen, onClose }: CancelProps) => {
   } = useForm()
 
   const cancelRun = async (id: string) => {
-    await RunsService.cancelRun({ path: {id} }) // Use the cancelRun method
+    await RunsService.cancelRun({ path: { id } }) // Use the cancelRun method
   }
 
   const mutation = useMutation({
@@ -58,37 +58,31 @@ const Cancel = ({ id, isOpen, onClose }: CancelProps) => {
   }
 
   return (
-    <>
-      <AlertDialog
-        isOpen={isOpen}
-        onClose={onClose}
-        leastDestructiveRef={cancelRef}
-        size={{ base: "sm", md: "md" }}
-        isCentered
-      >
-        <AlertDialogOverlay>
-          <AlertDialogContent as="form" onSubmit={handleSubmit(onSubmit)}>
-            <AlertDialogHeader>Cancel Run</AlertDialogHeader>
-            <AlertDialogBody>
-              Are you sure you want to cancel this run? This action cannot be
-              undone.
-            </AlertDialogBody>
-            <AlertDialogFooter gap={3}>
-              <Button variant="danger" type="submit" isLoading={isSubmitting}>
-                Cancel Run
-              </Button>
-              <Button
-                ref={cancelRef}
-                onClick={onClose}
-                isDisabled={isSubmitting}
-              >
-                Close
-              </Button>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialogOverlay>
-      </AlertDialog>
-    </>
+    <AlertDialog
+      isOpen={isOpen}
+      onClose={onClose}
+      leastDestructiveRef={cancelRef}
+      size={{ base: "sm", md: "md" }}
+      isCentered
+    >
+      <AlertDialogOverlay>
+        <AlertDialogContent as="form" onSubmit={handleSubmit(onSubmit)}>
+          <AlertDialogHeader>Cancel Run</AlertDialogHeader>
+          <AlertDialogBody>
+            Are you sure you want to cancel this run? This action cannot be
+            undone.
+          </AlertDialogBody>
+          <AlertDialogFooter gap={3}>
+            <Button variant="danger" type="submit" isLoading={isSubmitting}>
+              Cancel Run
+            </Button>
+            <Button ref={cancelRef} onClick={onClose} isDisabled={isSubmitting}>
+              Close
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialogOverlay>
+    </AlertDialog>
   )
 }
 

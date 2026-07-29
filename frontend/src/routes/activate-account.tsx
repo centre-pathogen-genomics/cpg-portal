@@ -1,14 +1,14 @@
+import { useMutation } from "@tanstack/react-query"
+import { createFileRoute, redirect } from "@tanstack/react-router"
+import { useEffect } from "react"
 import {
   Button,
   Container,
   Heading,
-  Text,
   Spinner,
+  Text,
   VStack,
-} from "@chakra-ui/react"
-import { useMutation } from "@tanstack/react-query"
-import { createFileRoute, redirect } from "@tanstack/react-router"
-import { useEffect } from "react"
+} from "@/components/ui/chakra-compat"
 
 import { UsersService } from "../client"
 import { isLoggedIn } from "../hooks/useAuth"
@@ -33,13 +33,21 @@ function ActivateAccount() {
   const mutation = useMutation({
     mutationFn: async () => {
       if (!token) throw new Error("No activation token found.")
-      return UsersService.activateAccount({query: { token }})
+      return UsersService.activateAccount({ query: { token } })
     },
     onSuccess: () => {
-      showToast("Account Activated", "Your account has been successfully activated!", "success")
+      showToast(
+        "Account Activated",
+        "Your account has been successfully activated!",
+        "success",
+      )
     },
     onError: (err) => {
-      showToast("Activation Failed", err instanceof Error ? err.message : "Invalid or expired token", "error")
+      showToast(
+        "Activation Failed",
+        err instanceof Error ? err.message : "Invalid or expired token",
+        "error",
+      )
     },
   })
 
@@ -47,7 +55,7 @@ function ActivateAccount() {
     if (token) {
       mutation.mutate()
     }
-  }, [token])
+  }, [token, mutation.mutate])
 
   return (
     <Container h="100vh" maxW="md" centerContent justifyContent="center">
@@ -63,7 +71,9 @@ function ActivateAccount() {
         )}
         {mutation.isSuccess && (
           <>
-            <Text>Your account has been successfully activated. You can now log in.</Text>
+            <Text>
+              Your account has been successfully activated. You can now log in.
+            </Text>
             <Button as="a" href="/login" colorScheme="teal">
               Go to Login
             </Button>
@@ -71,7 +81,10 @@ function ActivateAccount() {
         )}
         {mutation.isError && (
           <>
-            <Text>There was a problem activating your account. Please request a new activation link.</Text>
+            <Text>
+              There was a problem activating your account. Please request a new
+              activation link.
+            </Text>
             <Button as="a" href="/resend-activation" colorScheme="orange">
               Resend Activation Email
             </Button>

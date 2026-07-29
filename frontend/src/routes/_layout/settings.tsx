@@ -1,58 +1,61 @@
-import {
-  Container,
-  Heading,
-  Tab,
-  TabList,
-  TabPanel,
-  TabPanels,
-  Tabs,
-} from "@chakra-ui/react"
-import { useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 
-import type { UserPublic } from "../../client"
-import Appearance from "../../components/UserSettings/Appearance"
-import ChangePassword from "../../components/UserSettings/ChangePassword"
-import DeleteAccount from "../../components/UserSettings/DeleteAccount"
-import UserInformation from "../../components/UserSettings/UserInformation"
+import ChangePassword from "@/components/UserSettings/ChangePassword"
+import DeleteAccount from "@/components/UserSettings/DeleteAccount"
+import UserInformation from "@/components/UserSettings/UserInformation"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import useAuth from "@/hooks/useAuth"
 
 const tabsConfig = [
-  { title: "My profile", component: UserInformation },
-  { title: "Password", component: ChangePassword },
-  { title: "Appearance", component: Appearance },
-  { title: "Danger zone", component: DeleteAccount },
+  { value: "my-profile", title: "My profile", component: UserInformation },
+  { value: "password", title: "Password", component: ChangePassword },
+  { value: "danger-zone", title: "Danger zone", component: DeleteAccount },
 ]
 
 export const Route = createFileRoute("/_layout/settings")({
   component: UserSettings,
+  head: () => ({
+    meta: [
+      {
+        title: "Settings | CPG Portal",
+      },
+    ],
+  }),
 })
 
 function UserSettings() {
-  const queryClient = useQueryClient()
-  const currentUser = queryClient.getQueryData<UserPublic>(["currentUser"])
+  const { user: currentUser } = useAuth()
   const finalTabs = currentUser?.is_superuser
     ? tabsConfig.slice(0, 3)
     : tabsConfig
 
+  if (!currentUser) {
+    return null
+  }
+
   return (
-    <Container maxW="full">
-      <Heading size="2xl" textAlign={{ base: "center", md: "left" }} py={6}>
-        User Settings
-      </Heading>
-      <Tabs variant="enclosed">
-        <TabList>
-          {finalTabs.map((tab, index) => (
-            <Tab key={index}>{tab.title}</Tab>
+    <div className="flex flex-col gap-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">User Settings</h1>
+        <p className="text-muted-foreground">
+          Manage your account settings and preferences
+        </p>
+      </div>
+
+      <Tabs defaultValue="my-profile">
+        <TabsList>
+          {finalTabs.map((tab) => (
+            <TabsTrigger key={tab.value} value={tab.value}>
+              {tab.title}
+            </TabsTrigger>
           ))}
-        </TabList>
-        <TabPanels>
-          {finalTabs.map((tab, index) => (
-            <TabPanel key={index}>
-              <tab.component />
-            </TabPanel>
-          ))}
-        </TabPanels>
+        </TabsList>
+        {finalTabs.map((tab) => (
+          <TabsContent key={tab.value} value={tab.value}>
+            <tab.component />
+          </TabsContent>
+        ))}
       </Tabs>
-    </Container>
+    </div>
   )
 }

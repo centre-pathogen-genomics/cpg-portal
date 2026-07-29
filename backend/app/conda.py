@@ -1,7 +1,6 @@
 import asyncio
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Optional
 
 import yaml
 

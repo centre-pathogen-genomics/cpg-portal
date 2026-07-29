@@ -1,24 +1,34 @@
-import {
-  Button,
-  Container,
-  FormControl,
-  FormErrorMessage,
-  Heading,
-  Input,
-  Text,
-} from "@chakra-ui/react"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation } from "@tanstack/react-query"
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router"
-import { type SubmitHandler, useForm } from "react-hook-form"
+import {
+  createFileRoute,
+  Link as RouterLink,
+  redirect,
+} from "@tanstack/react-router"
+import { useForm } from "react-hook-form"
+import { z } from "zod"
 
-import { LoginService } from "../client"
-import { isLoggedIn } from "../hooks/useAuth"
-import useCustomToast from "../hooks/useCustomToast"
-import { emailPattern, handleError } from "../utils"
+import { LoginService } from "@/client"
+import { AuthLayout } from "@/components/Common/AuthLayout"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { LoadingButton } from "@/components/ui/loading-button"
+import { isLoggedIn } from "@/hooks/useAuth"
+import useCustomToast from "@/hooks/useCustomToast"
+import { handleError } from "@/utils"
 
-interface FormData {
-  email: string
-}
+const formSchema = z.object({
+  email: z.email(),
+})
+
+type FormData = z.infer<typeof formSchema>
 
 export const Route = createFileRoute("/recover-password")({
   component: RecoverPassword,
@@ -29,78 +39,93 @@ export const Route = createFileRoute("/recover-password")({
       })
     }
   },
+  head: () => ({
+    meta: [
+      {
+        title: "Recover Password | CPG Portal",
+      },
+    ],
+  }),
 })
 
 function RecoverPassword() {
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<FormData>()
-  const showToast = useCustomToast()
-  const navigate = useNavigate()
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: "",
+    },
+  })
+  const { showSuccessToast, showErrorToast } = useCustomToast()
 
   const recoverPassword = async (data: FormData) => {
     await LoginService.recoverPassword({
-      path: {email: data.email},
+      path: { email: data.email },
+      throwOnError: true,
     })
   }
 
   const mutation = useMutation({
     mutationFn: recoverPassword,
     onSuccess: () => {
-      showToast(
-        "Email sent.",
-        "We sent an email with a link to get back into your account.",
-        "success",
-      )
-      reset()
-      navigate({to: "/login"})
+      showSuccessToast("Password recovery email sent successfully")
+      form.reset()
     },
-    onError: (err) => {
-      handleError(err, showToast)
-    },
+    onError: (error) => handleError(error, showErrorToast),
   })
 
-  const onSubmit: SubmitHandler<FormData> = async (data) => {
+  const onSubmit = async (data: FormData) => {
+    if (mutation.isPending) return
     mutation.mutate(data)
   }
 
   return (
-    <Container
-      as="form"
-      onSubmit={handleSubmit(onSubmit)}
-      h="100vh"
-      maxW="sm"
-      alignItems="stretch"
-      justifyContent="center"
-      gap={4}
-      centerContent
-    >
-      <Heading size="xl" color="ui.main" textAlign="center" mb={2}>
-        Password Recovery
-      </Heading>
-      <Text align="center">
-        A password recovery email will be sent to the registered account.
-      </Text>
-      <FormControl isInvalid={!!errors.email}>
-        <Input
-          id="email"
-          {...register("email", {
-            required: "Email is required",
-            pattern: emailPattern,
-          })}
-          placeholder="Email"
-          type="email"
-        />
-        {errors.email && (
-          <FormErrorMessage>{errors.email.message}</FormErrorMessage>
-        )}
-      </FormControl>
-      <Button variant="primary" type="submit" isLoading={isSubmitting}>
-        Continue
-      </Button>
-    </Container>
+    <AuthLayout>
+      <Form {...form}>
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="flex flex-col gap-6"
+        >
+          <div className="flex flex-col items-center gap-2 text-center">
+            <h1 className="text-2xl font-bold">Password Recovery</h1>
+          </div>
+
+          <div className="grid gap-4">
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input
+                      data-testid="email-input"
+                      placeholder="user@example.com"
+                      type="email"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <LoadingButton
+              type="submit"
+              className="w-full"
+              loading={mutation.isPending}
+            >
+              Continue
+            </LoadingButton>
+          </div>
+
+          <div className="text-center text-sm">
+            Remember your password?{" "}
+            <RouterLink to="/login" className="underline underline-offset-4">
+              Log in
+            </RouterLink>
+          </div>
+        </form>
+      </Form>
+    </AuthLayout>
   )
 }

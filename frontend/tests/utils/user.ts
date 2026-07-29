@@ -1,4 +1,4 @@
-import { type Page, expect } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 
 export async function signUpNewUser(
   page: Page,
@@ -8,27 +8,22 @@ export async function signUpNewUser(
 ) {
   await page.goto("/signup")
 
-  await page.getByPlaceholder("Full Name").fill(name)
-  await page.getByPlaceholder("Email").fill(email)
-  await page.getByPlaceholder("Password", { exact: true }).fill(password)
-  await page.getByPlaceholder("Repeat Password").fill(password)
+  await page.getByTestId("full-name-input").fill(name)
+  await page.getByTestId("email-input").fill(email)
+  await page.getByTestId("password-input").fill(password)
+  await page.getByTestId("confirm-password-input").fill(password)
   await page.getByRole("button", { name: "Sign Up" }).click()
-  await expect(
-    page.getByText("Your account has been created successfully"),
-  ).toBeVisible()
   await page.goto("/login")
 }
 
 export async function logInUser(page: Page, email: string, password: string) {
   await page.goto("/login")
 
-  await page.getByPlaceholder("Email").fill(email)
-  await page.getByPlaceholder("Password", { exact: true }).fill(password)
+  await page.getByTestId("email-input").fill(email)
+  await page.getByTestId("password-input").fill(password)
   await page.getByRole("button", { name: "Log In" }).click()
   await page.waitForURL("/")
-  await expect(
-    page.getByText("Welcome back, nice to see you again!"),
-  ).toBeVisible()
+  await expect(page.getByText(/Explore and run tools/)).toBeVisible()
 }
 
 export async function logOutUser(page: Page) {

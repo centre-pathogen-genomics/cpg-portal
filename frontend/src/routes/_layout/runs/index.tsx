@@ -1,3 +1,6 @@
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { useEffect } from "react"
 import {
   Badge,
   Button,
@@ -11,25 +14,21 @@ import {
   TableContainer,
   Tbody,
   Td,
+  Text,
   Th,
   Thead,
   Tr,
   useColorModeValue,
-  Text,
-} from "@chakra-ui/react"
-import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { useEffect } from "react"
+} from "@/components/ui/chakra-compat"
 import { RunsService } from "../../../client"
 import CancelRunButton from "../../../components/Runs/CancelRunButton"
 import CancelRunsButton from "../../../components/Runs/CancelRunsButton"
 import DeleteRunButton from "../../../components/Runs/DeleteRunButton"
 import DeleteRunsButton from "../../../components/Runs/DeleteRunsButton"
-import RunRuntime from "../../../components/Runs/RunTime"
 import ParamTag from "../../../components/Runs/ParamTag"
-import { humanReadableDate } from "../../../utils"
+import RunRuntime from "../../../components/Runs/RunTime"
 import StatusBadge from "../../../components/Runs/StatusBadge"
-
+import { humanReadableDate } from "../../../utils"
 
 export const Route = createFileRoute("/_layout/runs/")({
   component: Runs,
@@ -53,7 +52,7 @@ function RunsTable() {
     return () => {
       queryClient.removeQueries({ queryKey: ["runs", pageSize] })
     }
-  }, [queryClient, pageSize])
+  }, [queryClient])
 
   const {
     data,
@@ -84,7 +83,10 @@ function RunsTable() {
   })
 
   // Flatten the pages into one list of runs.
-  const runs = data?.pages.filter(run => run !== undefined).flatMap((page) => page?.data) || []
+  const runs =
+    data?.pages
+      .filter((run) => run !== undefined)
+      .flatMap((page) => page?.data) || []
 
   return (
     <>
@@ -137,11 +139,9 @@ function RunsTable() {
                   }
                 >
                   <Td>
-                    <StatusBadge status={run.status}/>
+                    <StatusBadge status={run.status} />
                   </Td>
-                  <Td>
-                    {run.name ?? run.id.split("-")[0]}
-                  </Td>
+                  <Td>{run.name ?? run.id.split("-")[0]}</Td>
                   <Td>{run.tool.name}</Td>
                   <Td textAlign="center">
                     <Flex wrap={"wrap"} justify="start">
@@ -154,7 +154,7 @@ function RunsTable() {
                         ))}
                     </Flex>
                   </Td>
-                  
+
                   <Td>
                     {run.tags?.map((tag) => (
                       <Badge key={tag} colorScheme="cyan" mr={1}>
@@ -162,7 +162,7 @@ function RunsTable() {
                       </Badge>
                     ))}
                   </Td>
-                  <Td >
+                  <Td>
                     {run.shared ? (
                       <Badge colorScheme="green" variant="solid">
                         TRUE
@@ -173,7 +173,9 @@ function RunsTable() {
                       </Badge>
                     )}
                   </Td>
-                  <Td>{run.started_at ? humanReadableDate(run.started_at) : ""}</Td>
+                  <Td>
+                    {run.started_at ? humanReadableDate(run.started_at) : ""}
+                  </Td>
                   <Td>
                     <RunRuntime
                       started_at={run.started_at ?? null}
@@ -205,7 +207,10 @@ function RunsTable() {
       {/* Load More Button */}
       {hasNextPage && (
         <Flex justify="center" py={4}>
-          <Button onClick={() => fetchNextPage()} isLoading={isFetchingNextPage}>
+          <Button
+            onClick={() => fetchNextPage()}
+            isLoading={isFetchingNextPage}
+          >
             Load more runs
           </Button>
         </Flex>

@@ -1,23 +1,23 @@
-import { useMemo } from 'react';
-import { Skeleton, Image } from '@chakra-ui/react';
-import { useSuspenseQuery } from '@tanstack/react-query';
-import { downloadFileOptions } from '../../client/@tanstack/react-query.gen';
+import { useSuspenseQuery } from "@tanstack/react-query"
+import { useMemo } from "react"
+import { Image, Skeleton } from "@/components/ui/chakra-compat"
+import { downloadFileOptions } from "../../client/@tanstack/react-query.gen"
 
 interface ImageFileProps {
-  fileId: string;
+  fileId: string
 }
 
 const ImageFile = ({ fileId }: ImageFileProps) => {
   // Fetch binary image data as Blob
   const { data: blob } = useSuspenseQuery({
-    ...downloadFileOptions({ path: { id: fileId } , responseType: 'blob' }),
-  });
+    ...downloadFileOptions({ path: { id: fileId }, responseType: "blob" }),
+  })
 
   // Convert blob to URL (memoized)
   const imageUrl = useMemo(() => {
-    if (!blob) return '';
-    return URL.createObjectURL(blob as Blob);
-  }, [blob]);
+    if (!blob) return ""
+    return URL.createObjectURL(blob as Blob)
+  }, [blob])
 
   return (
     <Image
@@ -27,7 +27,7 @@ const ImageFile = ({ fileId }: ImageFileProps) => {
       objectFit="contain"
       maxH="500px"
     />
-  );
-};
+  )
+}
 
-export default ImageFile;
+export default ImageFile

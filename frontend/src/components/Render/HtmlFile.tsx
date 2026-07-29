@@ -1,21 +1,22 @@
-import { Box } from '@chakra-ui/react';
-import { useSuspenseQuery } from '@tanstack/react-query';
-import { downloadFileOptions } from '../../client/@tanstack/react-query.gen';
+import { useSuspenseQuery } from "@tanstack/react-query"
+import { Box } from "@/components/ui/chakra-compat"
+import { downloadFileOptions } from "../../client/@tanstack/react-query.gen"
 
 interface HtmlFileProps {
-  fileId: string;
-  height?: string | number;
+  fileId: string
+  height?: string | number
 }
 
 const HtmlFile = ({ fileId, height = 500 }: HtmlFileProps) => {
   const { data: htmlContent } = useSuspenseQuery({
     ...downloadFileOptions({ path: { id: fileId } }),
-  });
+  })
 
   // Ensure string (server might return ArrayBuffer/Uint8Array)
-  const html = typeof htmlContent === 'string'
-    ? htmlContent
-    : new TextDecoder().decode(htmlContent as ArrayBuffer);
+  const html =
+    typeof htmlContent === "string"
+      ? htmlContent
+      : new TextDecoder().decode(htmlContent as ArrayBuffer)
 
   return (
     <Box
@@ -38,7 +39,7 @@ const HtmlFile = ({ fileId, height = 500 }: HtmlFileProps) => {
       borderColor="gray.200"
       borderRadius="md"
     />
-  );
-};
+  )
+}
 
-export default HtmlFile;
+export default HtmlFile

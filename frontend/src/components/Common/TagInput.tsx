@@ -1,61 +1,70 @@
-import React, { useState, useRef } from "react";
-import { Flex, Tag, TagCloseButton, Input } from "@chakra-ui/react";
+import type React from "react"
+import { useRef, useState } from "react"
+import { Flex, Input, Tag, TagCloseButton } from "@/components/ui/chakra-compat"
 
 interface InputTagProps {
-  tags: string[];
-  setTags: React.Dispatch<React.SetStateAction<string[]>>;
-  isDisabled?: boolean; // Optional prop to disable input
+  tags: string[]
+  setTags: React.Dispatch<React.SetStateAction<string[]>>
+  isDisabled?: boolean // Optional prop to disable input
 }
 
-export default function InputTag({ tags, setTags, isDisabled = false }: InputTagProps) {
-  const [sizeInput, setSizeInput] = useState<number>(1);
-  const refInput = useRef<HTMLInputElement>(null);
+export default function InputTag({
+  tags,
+  setTags,
+  isDisabled = false,
+}: InputTagProps) {
+  const [sizeInput, setSizeInput] = useState<number>(1)
+  const refInput = useRef<HTMLInputElement>(null)
 
   // Function to add a new tag from the input field
   const addTag = () => {
-    if (!refInput.current) return;
+    if (!refInput.current) return
 
-    const newText = refInput.current.value.trim().replace(",", "");
+    const newText = refInput.current.value.trim().replace(",", "")
     if (newText.length > 0) {
-      setTags((prev) => [...prev, newText]);
-      refInput.current.value = ""; // Reset input field
-      setSizeInput(1);
+      setTags((prev) => [...prev, newText])
+      refInput.current.value = "" // Reset input field
+      setSizeInput(1)
     }
-  };
+  }
 
   // Handle input changes and dynamically adjust input width
   const handleChangeInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    e.preventDefault();
-    const value = e.target.value;
-    setSizeInput(value.length > 0 ? value.length : 1);
-  };
+    e.preventDefault()
+    const value = e.target.value
+    setSizeInput(value.length > 0 ? value.length : 1)
+  }
 
   // Handle key events for adding/removing tags
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!refInput.current) return;
+    if (!refInput.current) return
 
     // Prevent Enter from submitting form
     if (event.key === "Enter") {
-      event.preventDefault();
+      event.preventDefault()
     }
 
     // Handle comma, space, or Enter to add a new tag
     if (event.key === "," || event.key === "Enter") {
-      event.preventDefault();
-      addTag();
+      event.preventDefault()
+      addTag()
     }
 
     // Handle Backspace to remove last tag when input is empty
-    else if (event.key === "Backspace" && refInput.current.value.trim().length === 0 && tags.length > 0) {
-      event.preventDefault();
-      setTags((prev) => prev.slice(0, -1));
+    else if (
+      event.key === "Backspace" &&
+      refInput.current.value.trim().length === 0 &&
+      tags.length > 0
+    ) {
+      event.preventDefault()
+      setTags((prev) => prev.slice(0, -1))
     }
-  };
+  }
 
   // Remove a tag at a given index
   const handleDelItem = (index: number) => {
-    setTags((prev) => prev.filter((_, i) => i !== index));
-  };
+    setTags((prev) => prev.filter((_, i) => i !== index))
+  }
 
   return (
     <Flex
@@ -82,5 +91,5 @@ export default function InputTag({ tags, setTags, isDisabled = false }: InputTag
         disabled={isDisabled} // Disable input if prop is true
       />
     </Flex>
-  );
+  )
 }

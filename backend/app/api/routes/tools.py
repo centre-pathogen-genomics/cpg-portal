@@ -1,5 +1,5 @@
 import uuid
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -28,7 +28,7 @@ from app.tasks import uninstall_tool as uninstall_tool_task
 router = APIRouter()
 
 
-class ToolsOrderBy(str, Enum):
+class ToolsOrderBy(StrEnum):
     created_at = "created_at"
     run_count = "run_count"
 
@@ -413,4 +413,3 @@ def delete_tool(
     session.delete(tool)
     session.commit()
     return Message(message="Tool deleted successfully")
-

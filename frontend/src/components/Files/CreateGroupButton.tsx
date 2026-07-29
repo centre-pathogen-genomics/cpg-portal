@@ -1,3 +1,4 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import {
   Button,
@@ -11,8 +12,7 @@ import {
   ModalOverlay,
   Text,
   useDisclosure,
-} from "@chakra-ui/react"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+} from "@/components/ui/chakra-compat"
 import { createGroupMutation } from "../../client/@tanstack/react-query.gen"
 import useCustomToast from "../../hooks/useCustomToast"
 
@@ -48,11 +48,12 @@ export default function CreateGroupButton({
       onGroupCreated?.()
     },
     onError: (error: any) => {
-        console.error("Failed to create group:", error)
-        const errorMessage = error?.response.data.detail || "An error occurred while creating the group."
-        setGroupError(errorMessage)
-        showToast("Error", errorMessage, "error")
-
+      console.error("Failed to create group:", error)
+      const errorMessage =
+        error?.response.data.detail ||
+        "An error occurred while creating the group."
+      setGroupError(errorMessage)
+      showToast("Error", errorMessage, "error")
     },
   })
 
@@ -64,7 +65,7 @@ export default function CreateGroupButton({
     }
     createGroup.mutate({
       body: selectedFileIds,
-      query: { name: groupName.trim() }
+      query: { name: groupName.trim() },
     })
   }
 
@@ -83,7 +84,9 @@ export default function CreateGroupButton({
         onClick={handleOpenModal}
         isDisabled={selectedFileIds.length === 0}
       >
-        {selectedFileIds.length ? `Create Group (${selectedFileIds.length})` : "Select to Group"}
+        {selectedFileIds.length
+          ? `Create Group (${selectedFileIds.length})`
+          : "Select to Group"}
       </Button>
 
       {/* Create Group Modal */}
@@ -101,7 +104,7 @@ export default function CreateGroupButton({
               value={groupName}
               onChange={(e) => setGroupName(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') {
+                if (e.key === "Enter") {
                   handleCreateGroup()
                 }
               }}
@@ -116,9 +119,9 @@ export default function CreateGroupButton({
             <Button variant="ghost" mr={3} onClick={onClose}>
               Cancel
             </Button>
-            <Button 
-              colorScheme="blue" 
-              onClick={handleCreateGroup} 
+            <Button
+              colorScheme="blue"
+              onClick={handleCreateGroup}
               isLoading={createGroup.isPending}
               disabled={!groupName.trim()}
             >

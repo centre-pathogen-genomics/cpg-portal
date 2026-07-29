@@ -1,23 +1,23 @@
-import { Flex } from '@chakra-ui/react';
-import { useSuspenseQuery } from '@tanstack/react-query';
-import { downloadFileOptions } from '../../client/@tanstack/react-query.gen';
-import Markdown from '../Common/Markdown';
+import { useSuspenseQuery } from "@tanstack/react-query"
+import { Flex } from "@/components/ui/chakra-compat"
+import { downloadFileOptions } from "../../client/@tanstack/react-query.gen"
+import Markdown from "../Common/Markdown"
 
 interface MarkdownFileProps {
-  fileId: string;
+  fileId: string
 }
 
 const MarkdownFile = ({ fileId }: MarkdownFileProps) => {
   // Fetch the text file content
   const { data: markdown } = useSuspenseQuery({
     ...downloadFileOptions({ path: { id: fileId } }),
-  });
+  })
 
   return (
     <Flex whiteSpace="pre-wrap" maxHeight="500px" overflowY="auto">
-       <Markdown markdown={markdown as string} />
+      <Markdown markdown={markdown as string} />
     </Flex>
-  );
-};
+  )
+}
 
-export default MarkdownFile;
+export default MarkdownFile
