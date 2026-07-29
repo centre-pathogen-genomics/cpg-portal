@@ -53,6 +53,7 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
   const listItems = finalItems.map(({ icon, title, path, external }) => (
     <Flex
       as={Link}
+      role="menuitem"
       to={path}
       w="100%"
       p={2}
@@ -88,6 +89,7 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
         <Box>
           <Flex
             as="button"
+            role="menuitem"
             onClick={handleLogout}
             p={2}
             color="ui.danger"

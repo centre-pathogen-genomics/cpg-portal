@@ -1,7 +1,8 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router"
 import { useForm } from "react-hook-form"
 import { FiMenu } from "react-icons/fi"
-import { HiOutlineMoon, HiOutlineSearch, HiOutlineSun } from "react-icons/hi"
+import { HiOutlineSearch } from "react-icons/hi"
+import { Appearance } from "@/components/Common/Appearance"
 import {
   Badge,
   Box,
@@ -18,7 +19,6 @@ import {
   InputGroup,
   InputLeftElement,
   Text,
-  useColorMode,
   useColorModeValue,
   useDisclosure,
 } from "@/components/ui/chakra-compat"
@@ -27,19 +27,6 @@ import Icon from "/assets/images/cpg-logo-icon.png"
 import useAuth from "../../hooks/useAuth"
 import SidebarItems from "./SidebarItems"
 import UserMenu from "./UserMenu"
-
-function DarkModeToggle() {
-  const { colorMode, toggleColorMode } = useColorMode()
-  return (
-    <IconButton
-      aria-label="Toggle dark mode"
-      icon={colorMode === "dark" ? <HiOutlineSun /> : <HiOutlineMoon />}
-      onClick={toggleColorMode}
-      variant="ghost"
-      fontSize="24px"
-    />
-  )
-}
 
 function MainMenuBar() {
   const bgColor = useColorModeValue("white", "ui.dark")
@@ -213,7 +200,7 @@ function MainMenuBar() {
         </Flex>
       </Flex>
       <Box mx={2} display={{ base: "none", md: "block" }}>
-        <DarkModeToggle />
+        <Appearance />
       </Box>
       {currentUser ? (
         <Flex>

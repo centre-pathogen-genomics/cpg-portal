@@ -1,7 +1,7 @@
 import * as React from "react"
 import { Moon, Sun } from "lucide-react"
-import { useTheme } from "next-themes"
 import { toast } from "sonner"
+import { useTheme } from "@/components/theme-provider"
 
 type Props = Record<string, any> & { children?: React.ReactNode }
 
@@ -17,11 +17,157 @@ const spacing: Record<string, string> = {
   "8": "2rem",
   "10": "2.5rem",
   "12": "3rem",
+  "14": "3.5rem",
+  "16": "4rem",
+  "20": "5rem",
+  "24": "6rem",
+  "32": "8rem",
+  "40": "10rem",
+  "48": "12rem",
+  "64": "16rem",
+  "80": "20rem",
+}
+
+const sizes: Record<string, string> = {
+  full: "100%",
+  min: "min-content",
+  max: "max-content",
+  fit: "fit-content",
+  xs: "20rem",
+  sm: "24rem",
+  md: "28rem",
+  lg: "32rem",
+  xl: "36rem",
+  "2xl": "42rem",
+  "3xl": "48rem",
+  "4xl": "56rem",
+  "5xl": "64rem",
+  "6xl": "72rem",
+  "7xl": "80rem",
+}
+
+const fontSizes: Record<string, string> = {
+  xs: "0.75rem",
+  sm: "0.875rem",
+  md: "1rem",
+  lg: "1.125rem",
+  xl: "1.25rem",
+  "2xl": "1.5rem",
+  "3xl": "1.875rem",
+  "4xl": "2.25rem",
+  "5xl": "3rem",
+  "6xl": "3.75rem",
+}
+
+const radii: Record<string, string> = {
+  none: "0",
+  sm: "0.125rem",
+  base: "0.25rem",
+  md: "0.375rem",
+  lg: "0.5rem",
+  xl: "0.75rem",
+  "2xl": "1rem",
+  full: "9999px",
+}
+
+const colors: Record<string, string> = {
+  "ui.main": "#319795",
+  "ui.secondary": "#edf2f7",
+  "ui.dark": "#1a202c",
+  "ui.light": "#f7fafc",
+  "ui.darkSlate": "#2d3748",
+  "ui.dim": "#718096",
+  "ui.success": "#38a169",
+  "ui.danger": "#e53e3e",
+  "gray.50": "#f7fafc",
+  "gray.100": "#edf2f7",
+  "gray.200": "#e2e8f0",
+  "gray.300": "#cbd5e0",
+  "gray.400": "#a0aec0",
+  "gray.500": "#718096",
+  "gray.600": "#4a5568",
+  "gray.700": "#2d3748",
+  "gray.800": "#1a202c",
+  "gray.900": "#171923",
+  "blue.500": "#3182ce",
+  "green.500": "#38a169",
+  "purple.500": "#805ad5",
+  "orange.500": "#dd6b20",
+  "red.500": "#e53e3e",
 }
 
 function cssSize(value: unknown) {
   if (value === undefined) return undefined
-  return spacing[String(value)] ?? (typeof value === "number" ? `${value}px` : value)
+  return (
+    spacing[String(value)] ??
+    sizes[String(value)] ??
+    (typeof value === "number" ? `${value}px` : value)
+  )
+}
+
+function cssColor(value: unknown) {
+  if (value === undefined) return undefined
+  return colors[String(value)] ?? value
+}
+
+function cssFontSize(value: unknown) {
+  if (value === undefined) return undefined
+  return fontSizes[String(value)] ?? cssSize(value)
+}
+
+function cssRadius(value: unknown) {
+  if (value === undefined) return undefined
+  return radii[String(value)] ?? cssSize(value)
+}
+
+const breakpoints = [
+  ["base", 0],
+  ["sm", 480],
+  ["md", 768],
+  ["lg", 992],
+  ["xl", 1280],
+  ["2xl", 1536],
+] as const
+
+function subscribeToViewport(callback: () => void) {
+  window.addEventListener("resize", callback)
+  return () => window.removeEventListener("resize", callback)
+}
+
+function getViewportWidth() {
+  return window.innerWidth
+}
+
+function resolveResponsiveValue(value: unknown, viewportWidth: number) {
+  if (
+    !value ||
+    typeof value !== "object" ||
+    !breakpoints.some(([key]) => key in value)
+  ) {
+    return value
+  }
+
+  let resolved: unknown
+  for (const [key, minWidth] of breakpoints) {
+    if (viewportWidth >= minWidth && key in value) {
+      resolved = (value as Record<string, unknown>)[key]
+    }
+  }
+  return resolved
+}
+
+function useResponsiveProps(props: Props): Props {
+  const viewportWidth = React.useSyncExternalStore(
+    subscribeToViewport,
+    getViewportWidth,
+    () => 1280,
+  )
+  return Object.fromEntries(
+    Object.entries(props).map(([key, value]) => [
+      key,
+      resolveResponsiveValue(value, viewportWidth),
+    ]),
+  ) as Props
 }
 
 function cleanProps(props: Props) {
@@ -29,21 +175,37 @@ function cleanProps(props: Props) {
     as,
     align,
     alignItems,
+    alignSelf,
     bg,
+    backgroundColor,
+    borderBottom,
+    borderBottomWidth,
     borderColor,
     borderRadius,
+    borderStyle,
     borderWidth,
+    boxShadow,
+    boxSize,
     bottom,
+    columns,
+    color,
     colorScheme,
+    cursor,
     direction,
     display,
     flex,
+    flexBasis,
     flexDirection,
     flexGrow,
+    flexShrink,
     fontFamily,
     fontSize,
     fontWeight,
     gap,
+    gridColumn,
+    gridRow,
+    gridTemplateColumns,
+    gridTemplateRows,
     height,
     h,
     justify,
@@ -63,11 +225,13 @@ function cleanProps(props: Props) {
     minH,
     minW,
     objectFit,
+    opacity,
     overflow,
     overflowX,
     overflowY,
     p,
     padding,
+    paddingBlock,
     pb,
     pl,
     position,
@@ -83,13 +247,17 @@ function cleanProps(props: Props) {
     textAlign,
     textColor,
     top,
+    transform,
+    transition,
     variant,
     verticalAlign,
+    whiteSpace,
     w,
     width,
     wrap,
     zIndex,
     isDisabled,
+    isChecked,
     isInvalid,
     isLoading,
     isTruncated,
@@ -98,27 +266,42 @@ function cleanProps(props: Props) {
     _focus,
     _active,
     _dark,
+    _groupHover,
     ...rest
   } = props
 
   const style: React.CSSProperties = {
     alignItems: alignItems ?? align,
-    background: bg,
-    borderColor,
-    borderRadius: cssSize(borderRadius ?? rounded),
+    alignSelf,
+    background: cssColor(backgroundColor ?? bg),
+    borderBottom,
+    borderBottomWidth: cssSize(borderBottomWidth),
+    borderColor: cssColor(borderColor),
+    borderRadius: cssRadius(borderRadius ?? rounded),
+    borderStyle,
     borderWidth: cssSize(borderWidth),
     bottom: cssSize(bottom),
-    color: textColor,
+    boxShadow: boxShadow ?? shadow,
+    color: cssColor(textColor ?? color),
+    cursor,
     display,
     flex: flex as React.CSSProperties["flex"],
+    flexBasis: cssSize(flexBasis),
     flexDirection: (flexDirection ?? direction) as React.CSSProperties["flexDirection"],
     flexGrow,
+    flexShrink,
     flexWrap: wrap,
     fontFamily,
-    fontSize: cssSize(fontSize),
+    fontSize: cssFontSize(fontSize),
     fontWeight,
     gap: cssSize(gap ?? _spacing),
-    height: cssSize(height ?? h ?? size),
+    gridColumn,
+    gridRow,
+    gridTemplateColumns:
+      gridTemplateColumns ??
+      (columns ? `repeat(${columns}, minmax(0, 1fr))` : undefined),
+    gridTemplateRows,
+    height: cssSize(height ?? h ?? boxSize),
     justifyContent: justifyContent ?? justify,
     left: cssSize(left),
     lineHeight,
@@ -132,10 +315,12 @@ function cleanProps(props: Props) {
     minHeight: cssSize(minH),
     minWidth: cssSize(minW),
     objectFit,
+    opacity,
     overflow,
     overflowX,
     overflowY,
     padding: cssSize(padding ?? p),
+    paddingBlock: cssSize(paddingBlock),
     paddingBottom: cssSize(pb ?? py),
     paddingLeft: cssSize(pl ?? px),
     paddingRight: cssSize(pr ?? px),
@@ -144,8 +329,11 @@ function cleanProps(props: Props) {
     right: cssSize(right),
     textAlign,
     top: cssSize(top),
+    transform,
+    transition,
     verticalAlign,
-    width: cssSize(width ?? w ?? size),
+    whiteSpace,
+    width: cssSize(width ?? w ?? boxSize),
     zIndex,
     ...(props.style ?? {}),
   }
@@ -162,6 +350,10 @@ function cleanProps(props: Props) {
     } else {
       style.whiteSpace = "nowrap"
     }
+  }
+
+  if (isChecked !== undefined) {
+    rest.checked = isChecked
   }
 
   return {
@@ -182,9 +374,10 @@ function primitive(
   defaultProps: Record<string, unknown> = {},
 ) {
   return React.forwardRef<any, Props>(function CompatPrimitive(props, ref) {
+    const responsiveProps = useResponsiveProps(props)
     const { as, isDisabled, isInvalid, isLoading, rest, style } = cleanProps({
       ...defaultProps,
-      ...props,
+      ...responsiveProps,
     })
     const Component = as ?? tag
     return (
@@ -209,17 +402,93 @@ export const VStack = primitive("div", "flex flex-col")
 export const Stack = primitive("div", "flex flex-col")
 export const SimpleGrid = primitive("div", "grid")
 export const ButtonGroup = primitive("div", "inline-flex items-center")
-export const Text = primitive("p", "text-sm")
-export const Heading = primitive("h2", "font-semibold tracking-normal")
+export const Text = primitive("p")
+export const Heading = React.forwardRef<any, Props>(function CompatHeading(
+  props,
+  ref,
+) {
+  const headingSizes: Record<string, string> = {
+    xs: "0.75rem",
+    sm: "0.875rem",
+    md: "1.125rem",
+    lg: "1.5rem",
+    xl: "1.875rem",
+    "2xl": "2.25rem",
+  }
+  return (
+    <Box
+      {...props}
+      ref={ref}
+      as={props.as ?? "h2"}
+      fontSize={props.fontSize ?? headingSizes[String(props.size)]}
+      fontWeight={props.fontWeight ?? 700}
+    />
+  )
+})
 export const Link = primitive("a", "text-primary underline-offset-4 hover:underline")
 export const List = primitive("ul", "space-y-1")
 export const ListItem = primitive("li", "flex items-start gap-2")
 export const ListIcon = primitive("span", "mt-0.5 inline-flex")
-export const Card = primitive("section", "rounded-lg border bg-card text-card-foreground shadow-sm")
+export const Card = primitive("section", "rounded-md border bg-card text-card-foreground shadow-sm")
 export const CardHeader = primitive("header", "space-y-1.5 p-5")
 export const CardBody = primitive("div", "p-5 pt-0")
 export const CardFooter = primitive("footer", "flex items-center p-5 pt-0")
-export const Badge = primitive("span", "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium")
+const badgeSchemes: Record<string, Record<string, string>> = {
+  gray: {
+    outline: "border-slate-400 text-slate-600",
+    solid: "border-transparent bg-slate-500 text-white",
+    subtle: "border-transparent bg-slate-100 text-slate-700",
+  },
+  green: {
+    outline: "border-emerald-500 text-emerald-600",
+    solid: "border-transparent bg-emerald-500 text-white",
+    subtle: "border-transparent bg-emerald-100 text-emerald-800",
+  },
+  red: {
+    outline: "border-red-500 text-red-500",
+    solid: "border-transparent bg-red-500 text-white",
+    subtle: "border-transparent bg-red-100 text-red-700",
+  },
+  cyan: {
+    outline: "border-teal-500 text-teal-600",
+    solid: "border-transparent bg-teal-500 text-white",
+    subtle: "border-transparent bg-teal-50 text-teal-600",
+  },
+  teal: {
+    outline: "border-teal-500 text-teal-600",
+    solid: "border-transparent bg-teal-500 text-white",
+    subtle: "border-transparent bg-teal-50 text-teal-600",
+  },
+  blue: {
+    outline: "border-blue-500 text-blue-600",
+    solid: "border-transparent bg-blue-500 text-white",
+    subtle: "border-transparent bg-blue-100 text-blue-700",
+  },
+  orange: {
+    outline: "border-orange-500 text-orange-600",
+    solid: "border-transparent bg-orange-500 text-white",
+    subtle: "border-transparent bg-orange-100 text-orange-700",
+  },
+}
+
+export const Badge = React.forwardRef<any, Props>(function CompatBadge(
+  props,
+  ref,
+) {
+  const responsiveProps = useResponsiveProps(props)
+  const { colorScheme, rest, style, variant } = cleanProps(responsiveProps)
+  const scheme = badgeSchemes[String(colorScheme ?? "gray")]
+  const schemeClass =
+    scheme?.[String(variant ?? "subtle")] ?? scheme?.subtle ?? ""
+  return (
+    <span
+      {...rest}
+      ref={ref}
+      className={`inline-flex items-center rounded border px-1.5 py-0.5 text-xs font-medium leading-none ${schemeClass} ${props.className ?? ""}`}
+      style={style}
+    />
+  )
+})
 export const Tag = primitive("span", "inline-flex items-center gap-1 rounded-md border bg-muted px-2 py-1 text-xs")
 export const TagLabel = primitive("span")
 export const TagLeftIcon = primitive("span", "inline-flex")
@@ -234,9 +503,9 @@ export const Select = primitive("select", "flex h-9 w-full rounded-md border bor
 export const Checkbox = primitive("input", "h-4 w-4 rounded border-input accent-primary", { type: "checkbox" })
 export const Switch = primitive("input", "h-4 w-8 accent-primary", { type: "checkbox", role: "switch" })
 export const Radio = primitive("input", "h-4 w-4 accent-primary", { type: "radio" })
-export const TableContainer = primitive("div", "w-full overflow-x-auto rounded-md border")
+export const TableContainer = primitive("div", "w-full overflow-x-auto")
 export const Table = primitive("table", "w-full caption-bottom text-sm")
-export const Thead = primitive("thead", "border-b bg-muted/50")
+export const Thead = primitive("thead", "border-b")
 export const Tbody = primitive("tbody", "divide-y")
 export const Tr = primitive("tr", "transition-colors hover:bg-muted/40")
 export const Th = primitive("th", "h-10 px-3 text-left align-middle text-xs font-medium text-muted-foreground")
@@ -246,26 +515,139 @@ export const SkeletonText = primitive("div", "h-4 animate-pulse rounded bg-muted
 export const Fade = primitive("div", "animate-in fade-in")
 export const Image = primitive("img", "block max-w-full")
 
-export const Button = primitive(
-  "button",
-  "inline-flex min-h-9 items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50",
-  { type: "button" },
-)
-export const IconButton = primitive(
-  "button",
-  "inline-flex size-9 items-center justify-center rounded-md border bg-background text-foreground shadow-sm hover:bg-accent disabled:opacity-50",
-  { type: "button" },
+const solidButtonSchemes: Record<string, string> = {
+  blue: "bg-blue-500 text-white hover:bg-blue-600",
+  cyan: "bg-teal-500 text-white hover:bg-teal-600",
+  green: "bg-emerald-500 text-white hover:bg-emerald-600",
+  orange: "bg-orange-500 text-white hover:bg-orange-600",
+  red: "bg-red-500 text-white hover:bg-red-600",
+  teal: "bg-teal-500 text-white hover:bg-teal-600",
+}
+
+const outlineButtonSchemes: Record<string, string> = {
+  blue: "border-blue-500 text-blue-600 hover:bg-blue-50",
+  cyan: "border-teal-500 text-teal-600 hover:bg-teal-50",
+  green: "border-emerald-500 text-emerald-600 hover:bg-emerald-50",
+  orange: "border-orange-500 text-orange-600 hover:bg-orange-50",
+  red: "border-red-500 text-red-500 hover:bg-red-50",
+  teal: "border-teal-500 text-teal-600 hover:bg-teal-50",
+}
+
+export const Button = React.forwardRef<any, Props>(function CompatButton(
+  props,
+  ref,
+) {
+  const {
+    as,
+    colorScheme,
+    leftIcon,
+    rightIcon,
+    children,
+    className,
+    variant,
+    ...buttonProps
+  } = useResponsiveProps(props)
+  const scheme = String(colorScheme ?? "")
+  const variantClass =
+    variant === "ghost"
+      ? "bg-transparent text-foreground shadow-none hover:bg-accent"
+      : variant === "outline"
+        ? `border bg-background shadow-sm ${
+            outlineButtonSchemes[scheme] ??
+            "text-foreground hover:bg-accent"
+          }`
+        : variant === "link"
+          ? "bg-transparent p-0 text-primary shadow-none hover:underline"
+          : (solidButtonSchemes[scheme] ??
+            "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90")
+  const {
+    isDisabled,
+    isLoading,
+    rest,
+    style,
+  } = cleanProps(buttonProps)
+  const Component = as ?? "button"
+  const isButton = Component === "button"
+  return (
+    <Component
+      {...rest}
+      ref={ref}
+      type={isButton ? (rest.type ?? "button") : undefined}
+      disabled={
+        isButton ? isDisabled || isLoading || rest.disabled : undefined
+      }
+      aria-disabled={
+        !isButton && (isDisabled || isLoading) ? true : undefined
+      }
+      className={`inline-flex min-h-9 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 ${variantClass} ${className ?? ""}`}
+      style={style}
+    >
+      {leftIcon}
+      {children}
+      {rightIcon}
+    </Component>
+  )
+})
+export const IconButton = React.forwardRef<any, Props>(
+  function CompatIconButton(props, ref) {
+    const {
+      icon,
+      children,
+      className,
+      isRound,
+      variant,
+      ...buttonProps
+    } = useResponsiveProps(props)
+    const variantClass =
+      variant === "ghost"
+        ? "border-transparent bg-transparent shadow-none hover:bg-accent"
+        : "border bg-background shadow-sm hover:bg-accent"
+    const {
+      isDisabled,
+      isLoading,
+      rest,
+      style,
+    } = cleanProps(buttonProps)
+    return (
+      <button
+        {...rest}
+        ref={ref}
+        type={rest.type ?? "button"}
+        disabled={isDisabled || isLoading || rest.disabled}
+        className={`inline-flex size-9 items-center justify-center text-foreground disabled:opacity-50 ${isRound ? "rounded-full" : "rounded-md"} ${variantClass} ${className ?? ""}`}
+        style={style}
+      >
+        {icon ?? children}
+      </button>
+    )
+  },
 )
 export const Icon = React.forwardRef<any, Props>(function CompatIcon({ as: Component, ...props }, ref) {
   if (!Component) return null
   return <Component ref={ref} {...cleanProps(props).rest} style={cleanProps(props).style} />
 })
 
-export function Progress({ value = 0, max = 100, ...props }: Props) {
+export function Progress({
+  value = 0,
+  max = 100,
+  colorScheme,
+  ...props
+}: Props) {
   const percent = Math.max(0, Math.min(100, (Number(value) / Number(max)) * 100))
+  const barClass =
+    colorScheme === "blue"
+      ? "bg-blue-500"
+      : colorScheme === "green"
+        ? "bg-emerald-500"
+        : colorScheme === "red"
+          ? "bg-red-500"
+          : "bg-primary"
   return (
     <div className="h-2 w-full overflow-hidden rounded-full bg-muted" {...cleanProps(props).rest}>
-      <div className="h-full bg-primary transition-[width]" style={{ width: `${percent}%` }} />
+      <div
+        className={`h-full transition-[width] ${barClass}`}
+        style={{ width: `${percent}%` }}
+      />
     </div>
   )
 }

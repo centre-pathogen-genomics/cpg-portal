@@ -48,7 +48,7 @@ function ToolCards({
       <SimpleGrid
         gap={4}
         mb={8}
-        gridTemplateColumns="repeat(auto-fill, minmax(300px, 1fr))"
+        gridTemplateColumns="repeat(auto-fill, minmax(280px, 1fr))"
       >
         {tools.data.map((tool) => (
           <ToolCard key={tool.id} tool={tool} />
