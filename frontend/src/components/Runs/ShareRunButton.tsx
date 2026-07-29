@@ -18,7 +18,10 @@ import { useRef, useState } from "react"
 import { FiShare2 } from "react-icons/fi"
 
 import type { RunPublic } from "../../client"
-import { toggleRunSharingMutation } from "../../client/@tanstack/react-query.gen"
+import {
+  readRunQueryKey,
+  toggleRunSharingMutation,
+} from "../../client/@tanstack/react-query.gen"
 import useCustomToast from "../../hooks/useCustomToast"
 
 interface ShareRunButtonProps {
@@ -34,14 +37,18 @@ function ShareRunButton({ run }: ShareRunButtonProps) {
 
   const mutation = useMutation({
     ...toggleRunSharingMutation(),
-    onSuccess: () => {
+    onSuccess: (updatedRun) => {
+      queryClient.setQueryData(
+        readRunQueryKey({ path: { id: run.id } }),
+        updatedRun,
+      )
       showToast(
         "Success!",
-        `Run sharing ${isShared ? "enabled" : "disabled"} successfully.`,
+        `Run sharing ${updatedRun.shared ? "enabled" : "disabled"} successfully.`,
         "success",
       )
       queryClient.invalidateQueries({
-        queryKey: [{ _id: "readRun" }],
+        queryKey: [{ _id: "runsReadRuns" }],
       })
       onClose()
     },
@@ -58,6 +65,11 @@ function ShareRunButton({ run }: ShareRunButtonProps) {
     })
   }
 
+  const openDialog = () => {
+    setIsShared(run.shared || false)
+    onOpen()
+  }
+
   return (
     <>
       <Button
@@ -65,7 +77,7 @@ function ShareRunButton({ run }: ShareRunButtonProps) {
         size="sm"
         leftIcon={<FiShare2 />}
         colorScheme={run.shared ? "green" : "gray"}
-        onClick={onOpen}
+        onClick={openDialog}
       >
         {run.shared ? "Shared" : "Share"}
       </Button>
