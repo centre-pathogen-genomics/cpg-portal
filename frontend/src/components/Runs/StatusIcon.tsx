@@ -1,54 +1,42 @@
+import { Ban, Check, CircleHelp, Clock, TriangleAlert } from "lucide-react"
 import {
-  CheckIcon,
-  NotAllowedIcon,
-  QuestionOutlineIcon,
-  TimeIcon,
-  WarningIcon,
-} from "@chakra-ui/icons"
-import { Tooltip } from "@chakra-ui/react"
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import type { RunStatus } from "../../client"
 
+const details: Record<RunStatus, { icon: React.ReactNode; label: string }> = {
+  completed: {
+    icon: <Check className="size-5 text-green-500" />,
+    label: "Completed",
+  },
+  running: {
+    icon: <Clock className="size-5 text-orange-400" />,
+    label: "Running",
+  },
+  pending: {
+    icon: <CircleHelp className="size-5 text-blue-500" />,
+    label: "Pending",
+  },
+  failed: {
+    icon: <TriangleAlert className="size-5 text-red-500" />,
+    label: "Failed",
+  },
+  cancelled: {
+    icon: <Ban className="size-5 text-gray-500" />,
+    label: "Cancelled",
+  },
+}
+
 const StatusIcon = ({ status }: { status: RunStatus }) => {
-  const getIconDetails = (status: RunStatus) => {
-    switch (status) {
-      case "completed":
-        return {
-          icon: <CheckIcon boxSize={5} color="green.500" />,
-          label: "Completed",
-        }
-      case "running":
-        return {
-          icon: <TimeIcon boxSize={5} color="orange.400" />,
-          label: "Running",
-        }
-      case "pending":
-        return {
-          icon: <QuestionOutlineIcon boxSize={5} color="blue.500" />,
-          label: "Pending",
-        }
-      case "failed":
-        return {
-          icon: <WarningIcon boxSize={5} color="red.500" />,
-          label: "Failed",
-        }
-      case "cancelled":
-        return {
-          icon: <NotAllowedIcon boxSize={5} color="gray.500" />,
-          label: "Cancelled",
-        }
-      default:
-        return {
-          icon: <QuestionOutlineIcon boxSize={5} color="gray.300" />,
-          label: "Unknown",
-        } // Fallback for unknown statuses
-    }
-  }
-
-  const { icon, label } = getIconDetails(status)
-
+  const { icon, label } = details[status]
   return (
-    <Tooltip placement="top" hasArrow label={label}>
-      {icon}
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span>{icon}</span>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
     </Tooltip>
   )
 }

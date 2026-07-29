@@ -1,20 +1,11 @@
 // FileUpload.tsx
 
-import {
-  Box,
-  Button,
-  Fade,
-  Flex,
-  Icon,
-  Input,
-  Text,
-  useColorModeValue,
-} from "@chakra-ui/react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import axios from "axios"
 import type React from "react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { HiDocumentArrowUp } from "react-icons/hi2"
+import { Button } from "@/components/ui/button"
 import type { FilePublic } from "../../client"
 import { createPairMutation } from "../../client/@tanstack/react-query.gen"
 import { useUpload } from "../../context/UploadContext"
@@ -55,10 +46,6 @@ const FileUpload = ({
   const showToast = useCustomToast()
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const dropBorderColor = useColorModeValue("gray.300", "gray.600")
-  const dropBackground = useColorModeValue("gray.100", "gray.700")
-  const dropForeground = useColorModeValue("gray.600", "gray.400")
-  const dropMutedForeground = useColorModeValue("gray.500", "gray.500")
 
   // Global state to track if a drag event is active
   const [isDragging, setIsDragging] = useState(false)
@@ -317,65 +304,39 @@ const FileUpload = ({
   }
   if (dragAndDrop) {
     return (
-      <Flex direction="column" align="center" width="100%">
-        <Flex
-          direction="column"
-          align="center"
-          justify="center"
-          p={4}
-          borderWidth={2}
-          borderRadius="md"
-          borderStyle="dashed"
-          borderColor={isDragging ? "blue.400" : dropBorderColor}
-          bg={dropBackground}
-          _hover={{ borderColor: "blue.400" }}
-          onDrop={handleButtonDrop}
-          onDragOver={handleButtonDragOver}
-          textAlign="center"
-          position="relative"
-          cursor="pointer"
-          width="100%"
-          height="150px"
+      <div className="flex w-full flex-col items-center">
+        <div
+          className={`relative flex h-[150px] w-full cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed bg-secondary p-4 text-center hover:border-blue-400 ${isDragging ? "border-blue-400" : "border-gray-300 dark:border-gray-600"}`}
         >
-          <Icon
-            as={HiDocumentArrowUp}
-            w={10}
-            h={10}
-            mb={2}
-            color={dropForeground}
-          />
-          <Flex color={dropForeground} mb={0}>
+          <HiDocumentArrowUp className="mb-2 size-10 text-muted-foreground" />
+          <div className="text-muted-foreground">
             {isDragging ? (
-              <Text as="b">Drop here to upload!</Text>
+              <b>Drop here to upload!</b>
             ) : (
-              <Text>
-                <Text as="b">Upload a file</Text> or drag and drop
-              </Text>
+              <span>
+                <b>Upload a file</b> or drag and drop
+              </span>
             )}
-          </Flex>
-          <Text fontSize="sm" color={dropMutedForeground}>
+          </div>
+          <p className="text-sm text-muted-foreground">
             Max file size {humanReadableFileSize(MAX_FILE_UPLOAD_SIZE)}
-          </Text>
-          <Input
+          </p>
+          <input
             type="file"
-            position="absolute"
-            top="0"
-            left="0"
-            width="100%"
-            height="100%"
-            opacity="0"
+            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
             onChange={handleFileChange}
-            cursor="pointer"
+            onDrop={handleButtonDrop}
+            onDragOver={handleButtonDragOver}
             multiple
             required={false}
             accept={accept?.join(",") ?? undefined} // how will the front end know the ext? 1. api 2. load on build 3. remove types just use exts and let the tool decide explicitly
           />
-        </Flex>
+        </div>
 
-        <Box width="100%">
+        <div className="w-full">
           {uploadingFiles.map(
             ({ file, progress, cancel, completed, error }) => (
-              <Fade in={true} key={file.name}>
+              <div key={file.name} className="animate-in fade-in">
                 <UploadProgress
                   file={file}
                   progress={progress}
@@ -383,42 +344,33 @@ const FileUpload = ({
                   error={error}
                   onCancel={cancel}
                 />
-              </Fade>
+              </div>
             ),
           )}
-        </Box>
-      </Flex>
+        </div>
+      </div>
     )
   }
   return (
-    <Box w="100%">
+    <div className="w-full">
       {/* Button to trigger file selection and act as a drop target */}
       <Button
-        leftIcon={<Icon fontSize="22px" as={HiDocumentArrowUp} />}
         onClick={handleButtonClick}
         onDrop={handleButtonDrop}
         onDragOver={handleButtonDragOver}
-        variant={isDragging ? "outline" : "solid"}
-        cursor={isDragging ? "copy" : "pointer"}
-        w="100%"
-        h={isDragging ? "100px" : "40px"}
-        mb={1}
-        color={dropForeground}
-        borderStyle={isDragging ? "dashed" : "solid"}
-        borderWidth={isDragging ? "2px" : "0px"}
-        borderColor={isDragging ? "blue.400" : dropBorderColor}
-        size="md"
+        variant={isDragging ? "outline" : "default"}
+        className={`mb-1 w-full text-muted-foreground ${isDragging ? "h-[100px] cursor-copy border-2 border-dashed border-blue-400" : "h-10"}`}
         disabled={uploadingFiles.length > 0}
-        isLoading={uploadingFiles.filter((f) => f.progress < 100).length > 0}
       >
+        <HiDocumentArrowUp className="size-[22px]" />
         {isDragging ? "Drop here to upload!" : "Upload a File or Drag and Drop"}
       </Button>
 
       {/* Hidden file input */}
-      <Input
+      <input
         type="file"
         ref={fileInputRef}
-        display="none"
+        className="hidden"
         onChange={handleFileChange}
         multiple
         required={false}
@@ -426,10 +378,10 @@ const FileUpload = ({
       />
 
       {/* Display upload progress for each file */}
-      <Flex direction="column" w="100%">
+      <div className="flex w-full flex-col">
         {uploadingFiles.map(
           ({ file, progress, cancel, completed, error }, index) => (
-            <Fade in={true} key={index}>
+            <div className="animate-in fade-in" key={index}>
               <UploadProgress
                 file={file}
                 progress={progress}
@@ -437,11 +389,11 @@ const FileUpload = ({
                 error={error}
                 onCancel={cancel}
               />
-            </Fade>
+            </div>
           ),
         )}
-      </Flex>
-    </Box>
+      </div>
+    </div>
   )
 }
 

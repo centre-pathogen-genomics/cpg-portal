@@ -1,18 +1,17 @@
-import { Flex, Icon, Text } from "@chakra-ui/react"
 import { HiOutlineCommandLine } from "react-icons/hi2"
 import CodeBlock from "../Common/CodeBlock"
 
 function Command({ command }: { command: string }) {
   return (
-    <Flex direction={"column"} mb={4}>
-      <Flex w={32} direction={"column"} mb={2}>
-        <Flex align={"center"}>
-          <Icon as={HiOutlineCommandLine} />
-          <Text ml={2}>Command</Text>
-        </Flex>
-      </Flex>
+    <div className="mb-4 flex flex-col">
+      <div className="mb-2 flex w-32 flex-col">
+        <div className="flex items-center">
+          <HiOutlineCommandLine />
+          <span className="ml-2">Command</span>
+        </div>
+      </div>
       <CodeBlock code={command} language="bash" />
-    </Flex>
+    </div>
   )
 }
 

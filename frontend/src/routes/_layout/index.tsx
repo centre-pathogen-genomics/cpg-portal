@@ -1,54 +1,41 @@
-import { Button, Container, Flex, Image, Text } from "@chakra-ui/react"
 import { createFileRoute, Link } from "@tanstack/react-router"
+import { Button } from "@/components/ui/button"
 import Logo from "/assets/images/cpg-logo.png"
 import ToolsGrid from "../../components/Tools/ToolsGrid"
 import useAuth from "../../hooks/useAuth"
 
 export const Route = createFileRoute("/_layout/")({
   component: Tools,
-  head: () => ({
-    meta: [
-      {
-        title: "Tools | CPG Portal",
-      },
-    ],
-  }),
+  head: () => ({ meta: [{ title: "Tools | CPG Portal" }] }),
 })
 
 function Tools() {
   const { user: currentUser } = useAuth()
 
   return (
-    <Container maxW="full" px={{ base: 4, md: 6, lg: 8, xl: 12 }}>
-      <Flex direction="column" align="center" my={8} py={2}>
-        <Image
+    <div className="w-full px-4 md:px-6 lg:px-8 xl:px-12">
+      <div className="my-8 flex flex-col items-center py-2">
+        <img
           src={Logo}
           alt="CPG logo"
-          height="auto"
-          maxW={{ base: "xs", md: "md" }}
-          alignSelf="center"
-          mb={4}
+          className="mb-4 h-auto w-full max-w-xs self-center md:max-w-md"
         />
-        <Text
-          align="center"
-          maxW={{ base: "100%", md: "3xl" }}
-          fontSize={{ base: "lg", md: "2xl" }}
-        >
+        <p className="max-w-full text-center text-lg md:max-w-3xl md:text-2xl">
           Explore and run tools from the most talented and accomplished
           scientists ready to take on your next project
-        </Text>
+        </p>
         {!currentUser && (
-          <Flex mt={4} justify="center" gap={4}>
-            <Button as={Link} to="/signup" colorScheme="teal" variant="solid">
-              Sign Up
+          <div className="mt-4 flex justify-center gap-4">
+            <Button asChild>
+              <Link to="/signup">Sign Up</Link>
             </Button>
-            <Button as={Link} to="/about" variant="link">
-              Learn More
+            <Button asChild variant="link">
+              <Link to="/about">Learn More</Link>
             </Button>
-          </Flex>
+          </div>
         )}
-      </Flex>
+      </div>
       <ToolsGrid hideFilters={currentUser === undefined} />
-    </Container>
+    </div>
   )
 }

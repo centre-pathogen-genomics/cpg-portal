@@ -1,5 +1,3 @@
-import { Image, Link } from "@chakra-ui/react"
-
 interface ToolBadgeProps {
   label: string
   value: string
@@ -13,12 +11,12 @@ const Badge = ({ label, value, url, color = "green" }: ToolBadgeProps) => {
     shield += `-${color}`
   }
   if (!url) {
-    return <Image src={shield} />
+    return <img src={shield} alt={`${label}: ${value}`} />
   }
   return (
-    <Link href={url} isExternal>
-      <Image src={shield} />
-    </Link>
+    <a href={url} target="_blank" rel="noreferrer">
+      <img src={shield} alt={`${label}: ${value}`} />
+    </a>
   )
 }
 

@@ -1,14 +1,11 @@
+import { Button } from "@/components/ui/button"
 import {
-  Button,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Text,
-} from "@chakra-ui/react"
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import type { Param } from "../../client"
 import RunToolForm from "./RunToolForm"
 
@@ -18,31 +15,26 @@ interface RunToolModalProps {
   toolId: string
   params: Param[]
 }
+
 const RunToolModal = ({
   isOpen,
   onClose,
   toolId,
   params,
-}: RunToolModalProps) => {
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} isCentered>
-      <ModalOverlay />
-      <ModalContent maxWidth={"2xl"}>
-        <ModalHeader>
-          <Text as={"b"}>Configure Tool</Text>
-        </ModalHeader>
-        <ModalCloseButton />
-        <ModalBody pb={6}>
-          <RunToolForm toolId={toolId} params={params} onSuccess={onClose} />
-        </ModalBody>
-        <ModalFooter gap={3}>
-          <Button onClick={onClose} variant="outline">
-            Cancel
-          </Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
-  )
-}
+}: RunToolModalProps) => (
+  <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <DialogHeader>
+        <DialogTitle>Configure Tool</DialogTitle>
+      </DialogHeader>
+      <RunToolForm toolId={toolId} params={params} onSuccess={onClose} />
+      <DialogFooter>
+        <Button onClick={onClose} variant="outline">
+          Cancel
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
+)
 
 export default RunToolModal

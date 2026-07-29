@@ -1,5 +1,3 @@
-import { Image, Link } from "@chakra-ui/react"
-
 const GitHubBadge = ({
   type,
   githubRepo,
@@ -9,9 +7,13 @@ const GitHubBadge = ({
 }) => {
   const shield = `https://img.shields.io/github/${type}/${githubRepo}`
   return (
-    <Link href={`https://github.com/${githubRepo}`} isExternal>
-      <Image src={shield} />
-    </Link>
+    <a
+      href={`https://github.com/${githubRepo}`}
+      target="_blank"
+      rel="noreferrer"
+    >
+      <img src={shield} alt={`GitHub ${type}`} />
+    </a>
   )
 }
 

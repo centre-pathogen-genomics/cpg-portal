@@ -1,30 +1,22 @@
-import {
-  Accordion,
-  AccordionButton,
-  AccordionIcon,
-  AccordionItem,
-  AccordionPanel,
-  Box,
-  Button,
-  Flex,
-  FormLabel,
-  Heading,
-  HStack,
-  Image,
-  Link,
-  Skeleton,
-  SkeletonText,
-  Switch,
-  Text,
-  Badge as VersionBadge,
-} from "@chakra-ui/react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   createFileRoute,
   Link as RouterLink,
   useNavigate,
 } from "@tanstack/react-router"
+import { LoaderCircle } from "lucide-react"
 import { useEffect, useState } from "react"
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
+import { Badge as VersionBadge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Switch } from "@/components/ui/switch"
 import type { ToolPublic, UserPublic } from "../../../client"
 import {
   disableLlmSummaryMutation,
@@ -45,182 +37,107 @@ import useCustomToast from "../../../hooks/useCustomToast"
 
 export const Route = createFileRoute("/_layout/tools/$name")({
   component: Tool,
-  head: (ctx) => ({
+  head: (context) => ({
     meta: [
       {
         name: "description",
-        content: `Run and configure ${(ctx.params as { name: string }).name} in the CPG Portal`,
+        content: `Run and configure ${(context.params as { name: string }).name} in the CPG Portal`,
       },
-      {
-        title: `${(ctx.params as { name: string }).name} | CPG Portal`,
-      },
+      { title: `${(context.params as { name: string }).name} | CPG Portal` },
     ],
   }),
 })
 
-function EnableToolButton({ tool }: { tool: ToolPublic }) {
+function ToolToggle({
+  tool,
+  kind,
+}: {
+  tool: ToolPublic
+  kind: "tool" | "summary"
+}) {
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
-  const [isEnabled, setIsEnabled] = useState(tool.enabled)
-
-  const enableTool = useMutation({
-    ...enableToolMutation(),
-    onError: () => {
-      showToast("Error", "Could not enable tool", "error")
-    },
+  const initial = kind === "tool" ? tool.enabled : tool.llm_summary_enabled
+  const [enabled, setEnabled] = useState(initial)
+  const enable = useMutation({
+    ...(kind === "tool" ? enableToolMutation() : enableLlmSummaryMutation()),
+    onError: () =>
+      showToast(
+        "Error",
+        `Could not enable ${kind === "tool" ? "tool" : "AI Summary"}`,
+        "error",
+      ),
     onSuccess: () => {
-      setIsEnabled(true)
-      // queryClient.invalidateQueries({queryKey: [{_id: 'readToolByName'}]});
-      const queryKey = readToolByNameQueryKey({
-        path: { tool_name: tool.name },
+      setEnabled(true)
+      queryClient.invalidateQueries({
+        queryKey: readToolByNameQueryKey({ path: { tool_name: tool.name } }),
       })
-      queryClient.invalidateQueries({ queryKey })
     },
   })
-
-  const unenableTool = useMutation({
-    ...disableToolMutation(),
-    onError: () => {
-      showToast("Error", "Could not disable tool", "error")
-    },
+  const disable = useMutation({
+    ...(kind === "tool" ? disableToolMutation() : disableLlmSummaryMutation()),
+    onError: () =>
+      showToast(
+        "Error",
+        `Could not disable ${kind === "tool" ? "tool" : "AI Summary"}`,
+        "error",
+      ),
     onSuccess: () => {
-      setIsEnabled(false)
-      const queryKey = readToolByNameQueryKey({
-        path: { tool_name: tool.name },
+      setEnabled(false)
+      queryClient.invalidateQueries({
+        queryKey: readToolByNameQueryKey({ path: { tool_name: tool.name } }),
       })
-      queryClient.invalidateQueries({ queryKey })
     },
   })
-
+  const id = `enable-${kind}`
   return (
-    <HStack alignItems="center">
+    <div className="flex items-center gap-2">
       <Switch
-        size={"lg"}
-        id="enable"
-        isChecked={isEnabled}
-        onChange={(e) => {
-          if (e.target.checked) {
-            enableTool.mutate({ path: { tool_id: tool.id } })
-          } else {
-            unenableTool.mutate({ path: { tool_id: tool.id } })
-          }
-        }}
+        id={id}
+        checked={enabled}
+        onCheckedChange={(checked) =>
+          (checked ? enable : disable).mutate({ path: { tool_id: tool.id } })
+        }
       />
-      <FormLabel htmlFor="enable" mb="0" mr={1}>
-        {isEnabled ? "Tool Enabled" : "Tool Disabled"}
-      </FormLabel>
-    </HStack>
+      <Label htmlFor={id}>
+        {kind === "tool"
+          ? `Tool ${enabled ? "Enabled" : "Disabled"}`
+          : `AI Summary ${enabled ? "Enabled" : "Disabled"}`}
+      </Label>
+    </div>
   )
 }
 
-function EnableAISummaryButton({ tool }: { tool: ToolPublic }) {
+function InstallToolButton({ tool }: { tool: ToolPublic }) {
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
-  const [isEnabled, setIsEnabled] = useState(tool.llm_summary_enabled)
-
-  const enableTool = useMutation({
-    ...enableLlmSummaryMutation(),
-    onError: () => {
-      showToast("Error", "Could not enable AI Summary", "error")
-    },
-    onSuccess: () => {
-      setIsEnabled(true)
-      const queryKey = readToolByNameQueryKey({
-        path: { tool_name: tool.name },
-      })
-      queryClient.invalidateQueries({ queryKey })
-    },
-  })
-
-  const unenableTool = useMutation({
-    ...disableLlmSummaryMutation(),
-    onError: () => {
-      showToast("Error", "Could not disable AI Summary", "error")
-    },
-    onSuccess: () => {
-      setIsEnabled(false)
-      const queryKey = readToolByNameQueryKey({
-        path: { tool_name: tool.name },
-      })
-      queryClient.invalidateQueries({ queryKey })
-    },
-  })
-
-  return (
-    <HStack alignItems="center">
-      <Switch
-        size={"lg"}
-        id="enable"
-        isChecked={isEnabled}
-        onChange={(e) => {
-          if (e.target.checked) {
-            enableTool.mutate({ path: { tool_id: tool.id } })
-          } else {
-            unenableTool.mutate({ path: { tool_id: tool.id } })
-          }
-        }}
-      />
-      <FormLabel htmlFor="enable" mb="0" mr={1}>
-        {isEnabled ? "AI Summary Enabled" : "AI Summary Disabled"}
-      </FormLabel>
-    </HStack>
-  )
-}
-
-function useInstallTool(tool: ToolPublic) {
-  const queryClient = useQueryClient()
-  const showToast = useCustomToast()
-
-  return useMutation({
+  const mutation = useMutation({
     ...installToolMutation(),
-    onError: ({ message }) => {
-      showToast("Error", message || "Could not install tool", "error")
-    },
+    onError: ({ message }) =>
+      showToast("Error", message || "Could not install tool", "error"),
     onSuccess: ({ message }) => {
       showToast("Success", message || "Installation started", "success")
-
       const queryKey = readToolByNameQueryKey({
         path: { tool_name: tool.name },
       })
-
-      // Initial invalidation
       queryClient.invalidateQueries({ queryKey })
-
-      // Set up an interval to revalidate periodically
-      const interval = setInterval(async () => {
-        // Fetch the latest tool status
-        const updatedTool = queryClient.getQueryData(queryKey) as ToolPublic
-
-        // If the tool is no longer installing, clear the interval
-        if (updatedTool?.status !== "installing") {
-          clearInterval(interval)
-        } else {
-          queryClient.invalidateQueries({ queryKey })
-        }
+      const interval = setInterval(() => {
+        const updated = queryClient.getQueryData(queryKey) as ToolPublic
+        if (updated?.status !== "installing") clearInterval(interval)
+        else queryClient.invalidateQueries({ queryKey })
       }, 5000)
     },
   })
-}
-
-// Component Implementation
-function InstallToolButton({ tool }: { tool: ToolPublic }) {
-  const installTool = useInstallTool(tool)
-
-  const handleInstallClick = () => {
-    installTool.mutate({ path: { tool_id: tool.id } })
-  }
-
   return (
-    <Box>
-      <Button
-        isLoading={tool.status === "installing"}
-        onClick={handleInstallClick}
-        aria-label="Install Tool"
-        isDisabled={tool.status === "installed"}
-      >
-        Install
-      </Button>
-    </Box>
+    <Button
+      disabled={tool.status === "installed" || tool.status === "installing"}
+      onClick={() => mutation.mutate({ path: { tool_id: tool.id } })}
+    >
+      {tool.status === "installing" && (
+        <LoaderCircle className="animate-spin" />
+      )}
+      Install
+    </Button>
   )
 }
 
@@ -228,113 +145,74 @@ function Tool() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const currentUser = queryClient.getQueryData<UserPublic>(readUserMeQueryKey())
-  const anonymousUser = currentUser === undefined
   const { name } = Route.useParams()
   const {
     isError,
     data: tool,
     isPending,
-  } = useQuery({
-    ...readToolByNameOptions({ path: { tool_name: name } }),
-  })
-
+  } = useQuery({ ...readToolByNameOptions({ path: { tool_name: name } }) })
+  const [favourited, setFavourited] = useState(false)
   useEffect(() => {
-    if (tool) {
-      setIsFavourited(tool.favourited ?? false)
-    }
+    if (tool) setFavourited(tool.favourited ?? false)
   }, [tool])
 
-  const [isFavourited, setIsFavourited] = useState(false)
-
-  if (isError) {
+  if (isError)
     return (
-      <Box maxW="2xl" width="100%" mx={4} pt={12} pb={8}>
-        <Heading>Tool Not Found</Heading>
-        <Text>
+      <div className="w-full max-w-2xl px-4 pt-12 pb-8">
+        <h1 className="text-3xl font-bold">Tool Not Found</h1>
+        <p>
           The requested tool could not be found. Please check the ID and try
           again.
-        </Text>
-      </Box>
+        </p>
+      </div>
     )
-  }
-  if (isPending) {
+  if (isPending)
     return (
-      <Flex justify="center">
-        <Box maxW="5xl" width="100%" mx={4} pt={6} pb={8}>
-          <Flex mb={2} pb={2} borderBottomWidth={1}>
-            <Heading size="2xl">{name}</Heading>
-          </Flex>
-          <SkeletonText />
-          <Heading size="lg" mb={4}>
-            Configure Tool
-          </Heading>
-          <Skeleton height="200px" />
-        </Box>
-      </Flex>
+      <div className="flex justify-center">
+        <div className="w-full max-w-5xl px-4 pt-6 pb-8">
+          <h1 className="mb-2 border-b pb-2 text-4xl font-bold">{name}</h1>
+          <Skeleton className="mb-4 h-5" />
+          <h2 className="mb-4 text-2xl font-semibold">Configure Tool</h2>
+          <Skeleton className="h-[200px]" />
+        </div>
+      </div>
     )
-  }
-
+  const anonymous = !currentUser
   return (
-    <Flex justify="center">
-      <Box maxW="5xl" width="100%" px={4} pt={6} pb={8}>
-        <Flex
-          align={"center"}
-          justify={"space-between"}
-          direction={"row"}
-          mb={2}
-          pb={2}
-          borderBottomWidth={1}
-        >
-          <Flex
-            whiteSpace={"nowrap"}
-            textOverflow={"ellipsis"}
-            overflow={"hidden"}
-          >
-            <Box
-              rounded={"md"}
-              overflow={"hidden"}
-              mr={2}
-              maxW={{ base: 10, md: 12 }}
-              maxH={{ base: 10, md: 12 }}
-              minW={10}
-              minH={10}
-              borderWidth={2}
-              borderColor={"gray.200"}
-            >
-              <Image
+    <div className="flex justify-center">
+      <div className="w-full max-w-5xl px-4 pt-6 pb-8">
+        <div className="mb-2 flex items-center justify-between border-b pb-2">
+          <div className="flex min-w-0 items-center">
+            <div className="mr-2 size-10 shrink-0 overflow-hidden rounded-md border-2 md:size-12">
+              <img
                 src={
-                  tool.image ??
-                  "https://images.unsplash.com/photo-1543145499-8193615267de?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxlZGl0b3JpYWwtZmVlZHw5fHx8ZW58MHx8fHw%3D&auto=format&fit=crop&w=800&q=60"
+                  tool.image ||
+                  "https://images.unsplash.com/photo-1543145499-8193615267de?auto=format&fit=crop&w=800&q=60"
                 }
-                alt={tool?.name}
-                objectFit="cover"
-                h={"100%"}
-                w={"100%"}
+                alt={tool.name}
+                className="h-full w-full object-cover"
               />
-            </Box>
-            <Heading size="2xl">{tool?.name}</Heading>
+            </div>
+            <h1 className="truncate text-4xl font-bold">{tool.name}</h1>
             {tool.version && (
-              <Flex direction={"column"}>
-                <VersionBadge ml="1" variant="solid" colorScheme="green">
-                  v{tool.version}
-                </VersionBadge>
-              </Flex>
+              <VersionBadge className="ml-1 bg-green-500">
+                v{tool.version}
+              </VersionBadge>
             )}
-          </Flex>
+          </div>
           {currentUser && (
             <FavouriteButton
               tool={tool}
-              isFavourited={isFavourited}
-              setIsFavourited={setIsFavourited}
+              isFavourited={favourited}
+              setIsFavourited={setFavourited}
             />
           )}
-        </Flex>
-        {/* {tool?.image && (<Image maxH={200} src={tool?.image} alt={tool?.name} mb={4} />)} */}
-        <Flex gap={1} wrap={"wrap"} mb={2}>
-          {tool?.url && (
+        </div>
+        <div className="mb-2 flex flex-wrap gap-1">
+          {tool.url && (
             <Badge url={tool.url} value={tool.url} label="home" color="blue" />
           )}
-          {tool?.docs_url && (
+          {tool.docs_url && (
             <Badge
               url={tool.docs_url}
               value={tool.docs_url}
@@ -342,7 +220,7 @@ function Tool() {
               color="purple"
             />
           )}
-          {tool?.paper_doi && (
+          {tool.paper_doi && (
             <Badge
               url={`https://doi.org/${tool.paper_doi}`}
               value={tool.paper_doi}
@@ -350,94 +228,87 @@ function Tool() {
               color="red"
             />
           )}
-          {tool?.license && (
+          {tool.license && (
             <Badge value={tool.license} label="license" color="blue" />
           )}
-          {tool?.github_repo && (
-            <GitHubBadge type="last-commit" githubRepo={tool.github_repo} />
+          {tool.github_repo && (
+            <>
+              <GitHubBadge type="last-commit" githubRepo={tool.github_repo} />
+              <GitHubBadge type="stars" githubRepo={tool.github_repo} />
+            </>
           )}
-          {tool?.github_repo && (
-            <GitHubBadge type="stars" githubRepo={tool.github_repo} />
-          )}
-          {tool?.badges?.map(
+          {tool.badges?.map(
             (badge) =>
               badge.badge && (
-                <Link
+                <a
                   key={badge.badge}
-                  href={badge.url ? badge.url : undefined}
-                  isExternal
+                  href={badge.url || undefined}
+                  target="_blank"
+                  rel="noreferrer"
                 >
-                  <Image src={badge.badge} />
-                </Link>
+                  <img src={badge.badge} alt="" />
+                </a>
               ),
           )}
-          {tool?.tags?.map((tag) => (
+          {tool.tags?.map((tag) => (
             <RouterLink to="/search/$query" params={{ query: tag }} key={tag}>
-              <Badge key={tag} label={"%23"} value={tag} />
+              <Badge label="#" value={tag} />
             </RouterLink>
           ))}
-        </Flex>
-        <Text mb={4}>{tool.description}</Text>
-        <Heading size="lg" mb={4}>
-          Configure Tool
-        </Heading>
-        {anonymousUser && (
-          <Text color="red.600" mb={4}>
+        </div>
+        <p className="mb-4">{tool.description}</p>
+        <h2 className="mb-4 text-2xl font-semibold">Configure Tool</h2>
+        {anonymous && (
+          <p className="mb-4 text-red-600">
             You must be{" "}
             <RouterLink
               to="/login"
-              style={{ color: "blue.500", textDecoration: "underline" }}
+              className="text-blue-500 underline"
               search={{ redirect: `/tools/${tool.name}` }}
             >
               logged in
             </RouterLink>{" "}
             to run this tool
-          </Text>
+          </p>
         )}
         <RunToolForm
           toolId={tool.id}
-          params={tool.params ? tool.params : []}
-          isDisabled={anonymousUser}
-          onSuccess={(run) => {
+          params={tool.params || []}
+          isDisabled={anonymous}
+          onSuccess={(run) =>
             navigate({
-              to: `/runs/${run.id}`,
+              to: "/runs/$runid",
               params: { runid: run.id },
-              replace: false,
               resetScroll: true,
             })
-          }}
+          }
         />
         {currentUser?.is_superuser && (
-          <Accordion allowToggle mt={8}>
-            <AccordionItem>
-              <AccordionButton>
-                <Box as="span" flex="1" textAlign="left">
-                  Admin
-                </Box>
-                <AccordionIcon />
-              </AccordionButton>
-              <AccordionPanel pb={4}>
-                <Box>
-                  <HStack justify={"space-between"} mb={4}>
-                    <InstallToolButton tool={tool} />
-                    <HStack>
-                      <EnableAISummaryButton tool={tool} />
-                      <EnableToolButton tool={tool} />
-                    </HStack>
-                  </HStack>
-                  <Heading size="sm">Installation Log ({tool.status})</Heading>
-                  <CodeBlock
-                    code={tool.installation_log ? tool.installation_log : "\n"}
-                    language="bash"
-                    lineNumbers
-                  />
-                </Box>
-              </AccordionPanel>
+          <Accordion type="single" collapsible className="mt-8">
+            <AccordionItem value="admin">
+              <AccordionTrigger>Admin</AccordionTrigger>
+              <AccordionContent>
+                <div className="mb-4 flex items-center justify-between">
+                  <InstallToolButton tool={tool} />
+                  <div className="flex gap-4">
+                    <ToolToggle tool={tool} kind="summary" />
+                    <ToolToggle tool={tool} kind="tool" />
+                  </div>
+                </div>
+                <h3 className="text-sm font-semibold">
+                  Installation Log ({tool.status})
+                </h3>
+                <CodeBlock
+                  code={tool.installation_log || "\n"}
+                  language="bash"
+                  lineNumbers
+                />
+              </AccordionContent>
             </AccordionItem>
           </Accordion>
         )}
-      </Box>
-    </Flex>
+      </div>
+    </div>
   )
 }
 

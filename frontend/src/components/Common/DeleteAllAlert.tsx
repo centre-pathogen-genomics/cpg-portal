@@ -1,18 +1,8 @@
-import {
-  AlertDialog,
-  AlertDialogBody,
-  AlertDialogContent,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogOverlay,
-  Button,
-} from "@chakra-ui/react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import React from "react"
-import { useForm } from "react-hook-form"
 
 import { FilesService, RunsService } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
+import { ConfirmationDialog } from "./ConfirmationDialog"
 
 interface DeleteAllProps {
   type: "Runs" | "Files"
@@ -23,11 +13,6 @@ interface DeleteAllProps {
 const DeleteAll = ({ type, isOpen, onClose }: DeleteAllProps) => {
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
-  const ref = React.useRef<HTMLButtonElement>(null!)
-  const {
-    handleSubmit,
-    formState: { isSubmitting },
-  } = useForm()
 
   const deleteEntities = async (type: string) => {
     if (type === "Runs") {
@@ -67,35 +52,16 @@ const DeleteAll = ({ type, isOpen, onClose }: DeleteAllProps) => {
     },
   })
 
-  const onSubmit = async () => {
-    mutation.mutate(type)
-  }
-
   return (
-    <AlertDialog
-      isOpen={isOpen}
-      onClose={onClose}
-      leastDestructiveRef={ref}
-      size={{ base: "sm", md: "md" }}
-      isCentered
-    >
-      <AlertDialogOverlay>
-        <AlertDialogContent as="form" onSubmit={handleSubmit(onSubmit)}>
-          <AlertDialogHeader>{`Delete All ${type}`}</AlertDialogHeader>
-          <AlertDialogBody>
-            {`Are you sure you want to delete all ${type === "Runs" ? "(non-running) runs and associated files" : "files"}? This action cannot be undone.`}
-          </AlertDialogBody>
-          <AlertDialogFooter gap={3}>
-            <Button variant="danger" type="submit" isLoading={isSubmitting}>
-              Delete All {type}
-            </Button>
-            <Button ref={ref} onClick={onClose} isDisabled={isSubmitting}>
-              Close
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialogOverlay>
-    </AlertDialog>
+    <ConfirmationDialog
+      open={isOpen}
+      onOpenChange={(open) => !open && onClose()}
+      title={`Delete All ${type}`}
+      description={`Are you sure you want to delete all ${type === "Runs" ? "(non-running) runs and associated files" : "files"}? This action cannot be undone.`}
+      confirmLabel={`Delete All ${type}`}
+      pending={mutation.isPending}
+      onConfirm={() => mutation.mutate(type)}
+    />
   )
 }
 

@@ -1,25 +1,18 @@
-import {
-  Badge,
-  Button,
-  ButtonGroup,
-  Container,
-  Flex,
-  Heading,
-  SkeletonText,
-  Stack,
-  Table,
-  TableContainer,
-  Tbody,
-  Td,
-  Text,
-  Th,
-  Thead,
-  Tr,
-  useColorModeValue,
-} from "@chakra-ui/react"
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { LoaderCircle } from "lucide-react"
 import { useEffect } from "react"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { RunsService } from "../../../client"
 import CancelRunButton from "../../../components/Runs/CancelRunButton"
 import CancelRunsButton from "../../../components/Runs/CancelRunsButton"
@@ -32,28 +25,17 @@ import { humanReadableDate } from "../../../utils"
 
 export const Route = createFileRoute("/_layout/runs/")({
   component: Runs,
-  head: () => ({
-    meta: [
-      {
-        title: "My Runs | CPG Portal",
-      },
-    ],
-  }),
+  head: () => ({ meta: [{ title: "My Runs | CPG Portal" }] }),
 })
 
 function RunsTable() {
   const pageSize = 20
   const navigate = useNavigate({ from: Route.fullPath })
-  const colourMode = useColorModeValue("gray.50", "gray.700")
   const queryClient = useQueryClient()
-
-  // Remove the runs query when component unmounts so that only the first page is fetched next time.
-  useEffect(() => {
-    return () => {
-      queryClient.removeQueries({ queryKey: ["runs", pageSize] })
-    }
-  }, [queryClient])
-
+  useEffect(
+    () => () => queryClient.removeQueries({ queryKey: ["runs", pageSize] }),
+    [queryClient],
+  )
   const {
     data,
     isLoading,
@@ -64,184 +46,154 @@ function RunsTable() {
     isFetchingNextPage,
   } = useInfiniteQuery({
     queryKey: ["runs", pageSize],
-    queryFn: async ({ pageParam = 1 }) => {
-      const response = await RunsService.readRuns({
-        query: { skip: (pageParam - 1) * pageSize, limit: pageSize },
-        timeout: 10000,
-      })
-      return response.data
-    },
-    // Set the initial page parameter explicitly.
+    queryFn: async ({ pageParam = 1 }) =>
+      (
+        await RunsService.readRuns({
+          query: { skip: (pageParam - 1) * pageSize, limit: pageSize },
+          timeout: 10000,
+        })
+      ).data,
     initialPageParam: 1,
-    getNextPageParam: (lastPage, pages) => {
-      if (lastPage?.data.length === pageSize) {
-        return pages.length + 1 // next page number
-      }
-      return undefined
-    },
+    getNextPageParam: (lastPage, pages) =>
+      lastPage?.data.length === pageSize ? pages.length + 1 : undefined,
     refetchInterval: 5000,
   })
-
-  // Flatten the pages into one list of runs.
-  const runs =
-    data?.pages
-      .filter((run) => run !== undefined)
-      .flatMap((page) => page?.data) || []
-
+  const runs = data?.pages.flatMap((page) => page?.data ?? []) || []
   return (
     <>
-      <TableContainer>
-        <Table size={{ base: "sm" }}>
-          <Thead>
-            <Tr>
-              <Th>Status</Th>
-              <Th>Name</Th>
-              <Th>Tool</Th>
-              <Th>Params</Th>
-              <Th>Tags</Th>
-              <Th>Shared</Th>
-              <Th>Date</Th>
-              <Th>Runtime</Th>
-              <Th>Actions</Th>
-            </Tr>
-          </Thead>
-          <Tbody>
+      <div className="w-full overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {[
+                "Status",
+                "Name",
+                "Tool",
+                "Params",
+                "Tags",
+                "Shared",
+                "Date",
+                "Runtime",
+                "Actions",
+              ].map((heading) => (
+                <TableHead key={heading}>{heading}</TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {isLoading ? (
-              // Show skeletons while loading the first page.
-              <Tr>
-                {new Array(6).fill(null).map((_, index) => (
-                  <Td key={index}>
-                    <SkeletonText noOfLines={1} paddingBlock="16px" />
-                  </Td>
+              <TableRow>
+                {new Array(9).fill(null).map((_, index) => (
+                  <TableCell key={index}>
+                    <Skeleton className="h-5" />
+                  </TableCell>
                 ))}
-              </Tr>
+              </TableRow>
             ) : isError ? (
-              // Display error message if something went wrong.
-              <Tr>
-                <Td colSpan={9}>
-                  <Text color="red.500">Error: {(error as Error).message}</Text>
-                </Td>
-              </Tr>
+              <TableRow>
+                <TableCell colSpan={9} className="text-destructive">
+                  Error: {(error as Error).message}
+                </TableCell>
+              </TableRow>
             ) : (
-              // Render the loaded runs.
               runs.map((run) => (
-                <Tr
+                <TableRow
                   key={run.id}
-                  _hover={{ bg: colourMode }}
-                  cursor="pointer"
-                  onClick={() =>
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={(event) => {
+                    if ((event.target as Element).closest("button, a, input"))
+                      return
                     navigate({
-                      to: `/runs/${run.id.toString()}`,
-                      params: { runid: run.id.toString() },
-                      replace: false,
+                      to: "/runs/$runid",
+                      params: { runid: run.id },
                       resetScroll: true,
                     })
-                  }
+                  }}
                 >
-                  <Td>
+                  <TableCell>
                     <StatusBadge status={run.status} />
-                  </Td>
-                  <Td>{run.name ?? run.id.split("-")[0]}</Td>
-                  <Td>{run.tool.name}</Td>
-                  <Td textAlign="center">
-                    <Flex wrap={"wrap"} justify="start">
+                  </TableCell>
+                  <TableCell>{run.name ?? run.id.split("-")[0]}</TableCell>
+                  <TableCell>{run.tool.name}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap">
                       {Object.keys(run.params)
                         .filter((key) => run.params[key] !== null)
                         .map((key) => (
-                          <Flex key={key} m={0.5}>
+                          <div key={key} className="m-0.5">
                             <ParamTag param={key} value={run.params[key]} />
-                          </Flex>
+                          </div>
                         ))}
-                    </Flex>
-                  </Td>
-
-                  <Td>
+                    </div>
+                  </TableCell>
+                  <TableCell>
                     {run.tags?.map((tag) => (
-                      <Badge key={tag} colorScheme="cyan" mr={1}>
+                      <Badge
+                        key={tag}
+                        className="mr-1 bg-cyan-100 text-cyan-800 hover:bg-cyan-100"
+                      >
                         {tag}
                       </Badge>
                     ))}
-                  </Td>
-                  <Td>
-                    {run.shared ? (
-                      <Badge colorScheme="green" variant="solid">
-                        TRUE
-                      </Badge>
-                    ) : (
-                      <Badge colorScheme="gray" variant="solid">
-                        FALSE
-                      </Badge>
-                    )}
-                  </Td>
-                  <Td>
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={run.shared ? "default" : "secondary"}
+                      className={run.shared ? "bg-green-500" : undefined}
+                    >
+                      {run.shared ? "TRUE" : "FALSE"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
                     {run.started_at ? humanReadableDate(run.started_at) : ""}
-                  </Td>
-                  <Td>
+                  </TableCell>
+                  <TableCell>
                     <RunRuntime
                       started_at={run.started_at ?? null}
                       finished_at={run.finished_at ?? null}
                       status={run.status}
                     />
-                  </Td>
-                  <Td textAlign="center">
-                    <ButtonGroup
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                      }}
-                    >
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex justify-center">
                       {["running", "pending"].includes(run.status) ? (
                         <CancelRunButton run_id={run.id} />
                       ) : (
                         <DeleteRunButton run_id={run.id} />
                       )}
-                    </ButtonGroup>
-                  </Td>
-                </Tr>
+                    </div>
+                  </TableCell>
+                </TableRow>
               ))
             )}
-          </Tbody>
+          </TableBody>
         </Table>
-      </TableContainer>
-
-      {/* Load More Button */}
+      </div>
       {hasNextPage && (
-        <Flex justify="center" py={4}>
-          <Button
-            onClick={() => fetchNextPage()}
-            isLoading={isFetchingNextPage}
-          >
+        <div className="flex justify-center py-4">
+          <Button onClick={() => fetchNextPage()} disabled={isFetchingNextPage}>
+            {isFetchingNextPage && <LoaderCircle className="animate-spin" />}
             Load more runs
           </Button>
-        </Flex>
+        </div>
       )}
     </>
   )
 }
 
-function Actions() {
-  return (
-    <Flex gap={4} mb={4} justify={"end"}>
-      <CancelRunsButton />
-      <DeleteRunsButton />
-    </Flex>
-  )
-}
-
-// The Runs component now wraps the table in a scrollable container.
-// The header (heading and descriptive text) and actions remain fixed at the top.
 function Runs() {
   return (
-    <Container maxW={"full"} px={{ base: 4, md: 6, lg: 8, xl: 12 }}>
-      <Stack spacing={1} mb={2}>
-        <Heading size="2xl" pt={6}>
-          My Runs
-        </Heading>
-        <Text>Click on a run to view more details and results.</Text>
-      </Stack>
-      <Actions />
+    <div className="w-full px-4 md:px-6 lg:px-8 xl:px-12">
+      <div className="mb-2 space-y-1">
+        <h1 className="pt-6 text-4xl font-bold">My Runs</h1>
+        <p>Click on a run to view more details and results.</p>
+      </div>
+      <div className="mb-4 flex justify-end gap-4">
+        <CancelRunsButton />
+        <DeleteRunsButton />
+      </div>
       <RunsTable />
-    </Container>
+    </div>
   )
 }
 

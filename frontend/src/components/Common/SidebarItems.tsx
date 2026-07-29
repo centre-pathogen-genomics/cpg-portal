@@ -1,4 +1,3 @@
-import { Box, Flex, Icon, Text, useColorModeValue } from "@chakra-ui/react"
 import { Link } from "@tanstack/react-router"
 import {
   FiCodesandbox,
@@ -20,10 +19,7 @@ interface SidebarItemsProps {
 }
 
 const SidebarItems = ({ onClose }: SidebarItemsProps) => {
-  const textColor = useColorModeValue("ui.main", "ui.light")
-  const hoverBackground = useColorModeValue("ui.light", "ui.dark")
   const { logout, user: currentUser } = useAuth()
-
   const userItems = currentUser
     ? [
         { icon: FiHome, title: "Tools", path: "/" },
@@ -40,76 +36,45 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
         { icon: FiUsers, title: "Sign Up", path: "/signup" },
       ]
 
-  const finalItems = currentUser?.is_superuser
+  const items = currentUser?.is_superuser
     ? [...userItems, { icon: FiUsers, title: "Admin", path: "/admin" }]
     : userItems
 
-  const listItems = finalItems.map(({ icon, title, path, external }) => (
-    <Flex
-      as={Link}
-      role="menuitem"
-      to={path}
-      w="100%"
-      p={2}
-      key={title}
-      activeProps={{
-        style: {
-          textDecoration: "underline",
-          borderRadius: "12px",
-        },
-      }}
-      color={textColor}
-      onClick={onClose}
-      target={external ? "_blank" : undefined}
-      _hover={{
-        textDecoration: "underline",
-        backgroundColor: hoverBackground,
-        borderRadius: "12px",
-      }}
-    >
-      <Icon as={icon} alignSelf="center" fontSize={18} />
-      <Text ml={2}>{title}</Text>
-    </Flex>
-  ))
-
-  const handleLogout = async () => {
-    logout()
-  }
-
   return (
     <>
-      <Box>{listItems}</Box>
-      {currentUser && (
-        <Box>
-          <Flex
-            as="button"
+      <nav>
+        {items.map(({ icon: ItemIcon, title, path, external }) => (
+          <Link
             role="menuitem"
-            onClick={handleLogout}
-            p={2}
-            color="ui.danger"
-            fontWeight="bold"
-            alignItems="center"
-            _hover={{
-              textDecoration: "underline",
-              backgroundColor: hoverBackground,
-              borderRadius: "12px",
-            }}
-            w={"100%"}
+            to={path}
+            key={title}
+            activeProps={{ className: "underline bg-accent" }}
+            className="flex w-full items-center rounded-md p-2 text-primary hover:bg-accent hover:underline dark:text-foreground"
+            onClick={onClose}
+            target={external ? "_blank" : undefined}
+          >
+            <ItemIcon className="size-[18px]" />
+            <span className="ml-2">{title}</span>
+          </Link>
+        ))}
+      </nav>
+      {currentUser && (
+        <div>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={logout}
+            className="flex w-full items-center rounded-md p-2 font-bold text-destructive hover:bg-accent hover:underline"
           >
             <FiLogOut />
-            <Text ml={2}>Log out</Text>
-          </Flex>
-          <Box
-            mt={2}
-            mb={2}
-            borderBottom="1px solid"
-            borderColor="ui.secondary"
-          />
+            <span className="ml-2">Log out</span>
+          </button>
+          <div className="my-2 border-b" />
           <StorageStats />
-          <Text color={textColor} noOfLines={2} fontSize="sm" mt={2}>
+          <p className="mt-2 line-clamp-2 text-sm text-primary dark:text-foreground">
             {currentUser.email}
-          </Text>
-        </Box>
+          </p>
+        </div>
       )}
     </>
   )

@@ -1,23 +1,14 @@
-import {
-  Box,
-  Flex,
-  FormLabel,
-  Heading,
-  Image,
-  Select,
-  SimpleGrid,
-  Skeleton,
-  Switch,
-  Text,
-} from "@chakra-ui/react"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import type React from "react"
 import { Suspense, useState } from "react"
 import { ErrorBoundary } from "react-error-boundary"
+import { Label } from "@/components/ui/label"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Switch } from "@/components/ui/switch"
 import ErrorLogo from "/assets/images/500.png"
 import type { ToolsOrderBy } from "../../client"
 import { readToolsOptions } from "../../client/@tanstack/react-query.gen"
-import ToolCard from "../../components/Tools/ToolCard"
+import ToolCard from "./ToolCard"
 
 function ToolCards({
   orderBy,
@@ -30,30 +21,21 @@ function ToolCards({
 }) {
   const { data: tools } = useSuspenseQuery({
     ...readToolsOptions({
-      query: {
-        order_by: orderBy,
-        show_favourites: showFavourites,
-        search: search,
-      },
+      query: { order_by: orderBy, show_favourites: showFavourites, search },
     }),
   })
-
   return (
     <>
-      {tools?.data.length === 0 && (
-        <Flex justify="center" align="center" h="200px">
-          <Heading size={"md"}>No matches found</Heading>
-        </Flex>
+      {!tools.data.length && (
+        <div className="flex h-[200px] items-center justify-center">
+          <h2 className="text-lg font-semibold">No matches found</h2>
+        </div>
       )}
-      <SimpleGrid
-        gap={4}
-        mb={8}
-        gridTemplateColumns="repeat(auto-fill, minmax(300px, 1fr))"
-      >
+      <div className="mb-8 grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
         {tools.data.map((tool) => (
           <ToolCard key={tool.id} tool={tool} />
         ))}
-      </SimpleGrid>
+      </div>
     </>
   )
 }
@@ -65,52 +47,40 @@ function ToolsGrid({
   search?: string
   hideFilters?: boolean
 }) {
-  const [orderBy, setOrderBy] = useState<ToolsOrderBy>("run_count") // Default orderBy state
+  const [orderBy, setOrderBy] = useState<ToolsOrderBy>("run_count")
   const [showFavourites, setShowFavourites] = useState(false)
-
-  const handleOrderByChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setOrderBy(event.target.value as ToolsOrderBy) // Update state when selection changes
-  }
-
   return (
-    <Suspense fallback={<Skeleton height="20px" />}>
+    <Suspense fallback={<Skeleton className="h-5" />}>
       <ErrorBoundary
         fallbackRender={() => (
-          <Box
-            textAlign="center"
-            mt={8}
-            w={"100%"}
-            justifyContent={"center"}
-            alignItems={"center"}
-            justifyItems={"center"}
-          >
-            <Text>Something went wrong... Please reload the page!</Text>
-            <Image src={ErrorLogo} alt="Error" maxW={80} />
-          </Box>
+          <div className="mt-8 flex w-full flex-col items-center text-center">
+            <p>Something went wrong... Please reload the page!</p>
+            <img src={ErrorLogo} alt="Error" className="max-w-80" />
+          </div>
         )}
       >
         {!hideFilters && (
-          <Flex justify="space-between" align={"end"} mb={4}>
-            <Select w="200px" value={orderBy} onChange={handleOrderByChange}>
+          <div className="mb-4 flex items-end justify-between">
+            <select
+              className="h-10 w-[200px] rounded-md border bg-background px-3"
+              value={orderBy}
+              onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
+                setOrderBy(event.target.value as ToolsOrderBy)
+              }
+            >
               <option value="run_count">Popular</option>
-              <option value="created_at">New & Noteworthy</option>
-            </Select>
-            {/* <Tooltip placement='top' hasArrow label='Show favourites'> */}
-            <Flex align="center">
-              <FormLabel htmlFor="show-favourites" mb="0" mr={1}>
-                Favourites
-              </FormLabel>
+              <option value="created_at">New &amp; Noteworthy</option>
+            </select>
+            <div className="flex items-center gap-1">
+              <Label htmlFor="show-favourites">Favourites</Label>
               <Switch
-                size="md"
                 id="show-favourites"
-                isChecked={showFavourites}
-                onChange={() => setShowFavourites(!showFavourites)}
+                checked={showFavourites}
+                onCheckedChange={setShowFavourites}
               />
-              {/* </Tooltip> */}
-            </Flex>
-          </Flex>
+            </div>
+          </div>
         )}
-        {/* Render the ToolCards component with the selected orderBy and showFavourites state */}
         <ToolCards
           orderBy={orderBy}
           showFavourites={showFavourites}

@@ -1,20 +1,21 @@
-import { Button, useDisclosure } from "@chakra-ui/react"
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
 import DeleteAll from "../Common/DeleteAllAlert"
 
 const DeleteRunsButton = () => {
-  const { isOpen, onOpen, onClose } = useDisclosure()
+  const [isOpen, setIsOpen] = useState(false)
 
   return (
     <>
       <Button
-        onClick={onOpen}
+        onClick={() => setIsOpen(true)}
         aria-label="Delete Runs"
-        color="ui.danger"
         variant="outline"
+        className="text-destructive hover:text-destructive"
       >
         Delete All
       </Button>
-      <DeleteAll type="Runs" isOpen={isOpen} onClose={onClose} />
+      <DeleteAll type="Runs" isOpen={isOpen} onClose={() => setIsOpen(false)} />
     </>
   )
 }

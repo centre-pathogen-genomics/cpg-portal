@@ -1,84 +1,32 @@
-import {
-  Badge,
-  Box,
-  Drawer,
-  DrawerBody,
-  DrawerCloseButton,
-  DrawerContent,
-  DrawerOverlay,
-  Flex,
-  FormControl,
-  IconButton,
-  Image,
-  Input,
-  InputGroup,
-  InputLeftElement,
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuList,
-  Text,
-  useColorMode,
-  useColorModeValue,
-  useDisclosure,
-} from "@chakra-ui/react"
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router"
+import { Menu, Search } from "lucide-react"
+import { useState } from "react"
 import { useForm } from "react-hook-form"
-import { FiMenu } from "react-icons/fi"
-import { HiOutlineMoon, HiOutlineSearch, HiOutlineSun } from "react-icons/hi"
+import { Appearance } from "@/components/Common/Appearance"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
+import { cn } from "@/lib/utils"
 import Logo from "/assets/images/cpg-logo.png"
 import Icon from "/assets/images/cpg-logo-icon.png"
 import useAuth from "../../hooks/useAuth"
 import SidebarItems from "./SidebarItems"
 import UserMenu from "./UserMenu"
 
-function DarkModeToggle() {
-  const { colorMode, setColorMode } = useColorMode()
-  const setSystemMode = () => {
-    setColorMode(
-      window.matchMedia("(prefers-color-scheme: dark)").matches
-        ? "dark"
-        : "light",
-    )
-  }
-
-  return (
-    <Menu>
-      <MenuButton
-        as={IconButton}
-        aria-label="Toggle dark mode"
-        data-testid="theme-button"
-        icon={colorMode === "dark" ? <HiOutlineSun /> : <HiOutlineMoon />}
-        variant="ghost"
-        fontSize="24px"
-      />
-      <MenuList minW="130px">
-        <MenuItem
-          data-testid="light-mode"
-          onClick={() => setColorMode("light")}
-        >
-          Light
-        </MenuItem>
-        <MenuItem data-testid="dark-mode" onClick={() => setColorMode("dark")}>
-          Dark
-        </MenuItem>
-        <MenuItem onClick={setSystemMode}>System</MenuItem>
-      </MenuList>
-    </Menu>
-  )
-}
-
 function MainMenuBar() {
-  const bgColor = useColorModeValue("white", "ui.dark")
-  const secBgColor = useColorModeValue("ui.secondary", "ui.darkSlate")
-  const textColor = useColorModeValue("ui.dark", "ui.light")
-  const { isOpen, onOpen, onClose } = useDisclosure()
+  const [mobileOpen, setMobileOpen] = useState(false)
   const { user: currentUser } = useAuth()
   const navigate = useNavigate()
-
-  // Use useRouter to get the current pathname.
-  const router = useRouterState()
-  const pathname = router.location.pathname
+  const pathname = useRouterState().location.pathname
+  const { register, handleSubmit } = useForm<{ search?: string }>({
+    defaultValues: { search: "" },
+  })
 
   const signedIn = currentUser !== undefined
   const userItems = signedIn
@@ -96,201 +44,115 @@ function MainMenuBar() {
       ]
     : [{ title: "About", path: "/about" }]
 
-  const superUserItems = currentUser?.is_superuser
+  const items = currentUser?.is_superuser
     ? [...userItems, { title: "Admin", path: "/admin" }]
     : userItems
 
-  const finalItems: {
-    title: string
-    path: string
-    isNew?: boolean
-    newTab?: boolean
-  }[] = [...superUserItems]
-
-  // Map over the final items and determine if they are active.
-  const listItems = finalItems.map(({ title, path, isNew, newTab }) => {
-    let isActive = false
-
-    if (title === "Tools") {
-      // For the Tools item, we want it active if the pathname is exactly "/"
-      // or if it starts with "/tools". (This is a special case since every pathname starts with "/"!)
-      isActive = pathname === "/" || pathname.startsWith("/tools")
-    } else {
-      // For other items, check if the current pathname starts with the item path.
-      // This ensures subpaths (like "/runs/123") will also be underlined.
-      isActive = pathname.startsWith(path)
-    }
-
-    if (newTab) {
-      return (
-        <Flex
-          as="a"
-          href={path}
-          key={title}
-          color={textColor}
-          _hover={{ color: "ui.main" }}
-          fontWeight="semibold"
-          align="center"
-          whiteSpace={"nowrap"}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Text>{title}</Text>
-          {isNew && <Badge ml={1}>New</Badge>}
-        </Flex>
-      )
-    }
-    return (
-      <Flex
-        as={Link}
-        to={path}
-        key={title}
-        color={textColor}
-        _hover={{ color: "ui.main" }}
-        fontWeight="semibold"
-        // Apply underline style if active.
-        style={isActive ? { textDecoration: "underline" } : {}}
-        align="center"
-        whiteSpace={"nowrap"}
-      >
-        <Text>{title}</Text>
-        {isNew && <Badge ml={1}>New</Badge>}
-      </Flex>
-    )
-  })
-
-  const defaultValues = {
-    search: "",
-  }
-
-  type FormData = {
-    search?: string
-  }
-
-  const { register, handleSubmit } = useForm<FormData>({
-    defaultValues,
-  })
-
-  function onSubmit({ search }: FormData) {
-    if (search === "") {
-      navigate({ to: `/`, resetScroll: true })
+  const onSubmit = ({ search }: { search?: string }) => {
+    const query = search?.trim()
+    if (!query) {
+      navigate({ to: "/", resetScroll: true })
       return
     }
-    navigate({ to: `/search/${search}` })
+    navigate({ to: "/search/$query", params: { query } })
   }
 
   return (
-    <Flex
-      position={"sticky"}
-      top={0}
-      w={"100%"}
-      bg={bgColor}
-      color={textColor}
-      justify={"space-between"}
-      align={"center"}
-      py={2}
-      pl={4}
-      pr={6}
-      zIndex={1000}
-    >
-      <Flex flexGrow={1} align={"center"} gap={4} mr={4}>
-        {/* Logo */}
-        <Flex as={Link} to="/">
-          <Image
-            display={{ base: "none", md: "block" }}
+    <header className="sticky top-0 z-[1000] flex w-full items-center justify-between bg-background py-2 pr-6 pl-4 text-foreground">
+      <div className="mr-4 flex flex-1 items-center gap-4">
+        <Link to="/" aria-label="CPG Portal home">
+          <img
             src={Logo}
-            alt="Logo"
-            py={2}
-            ml={3}
-            maxH={14}
+            alt="Centre for Pathogen Genomics"
+            className="ml-3 hidden max-h-14 py-2 md:block"
           />
-          <Image
-            display={{ base: "block", md: "none" }}
+          <img
             src={Icon}
-            alt="Logo"
-            py={2}
-            maxH={14}
+            alt="Centre for Pathogen Genomics"
+            className="block max-h-14 py-2 md:hidden"
           />
-        </Flex>
-        {/* Search Bar */}
-        <Box
-          flexGrow={1}
-          maxW={"xl"}
-          as="form"
+        </Link>
+        <form
+          className="relative max-w-xl flex-1"
           onSubmit={handleSubmit(onSubmit)}
         >
-          <FormControl>
-            <InputGroup>
-              <InputLeftElement pointerEvents="none">
-                <HiOutlineSearch color="gray.300" />
-              </InputLeftElement>
-              <Input
-                {...register("search", { required: false })}
-                id="search"
-                bg={secBgColor}
-                type="search"
-                placeholder="Search the Portal"
-              />
-            </InputGroup>
-          </FormControl>
-        </Box>
-        {/* Navigation Links */}
-        <Flex gap={4} display={{ base: "none", md: "flex" }}>
-          {listItems}
-        </Flex>
-      </Flex>
-      <Box mx={2} display={{ base: "none", md: "block" }}>
-        <DarkModeToggle />
-      </Box>
+          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            {...register("search")}
+            id="search"
+            type="search"
+            placeholder="Search the Portal"
+            className="h-10 bg-secondary pl-9 text-base"
+          />
+        </form>
+        <nav className="hidden items-center gap-4 md:flex">
+          {items.map(({ title, path, isNew, newTab }) => {
+            const active =
+              title === "Tools"
+                ? pathname === "/" || pathname.startsWith("/tools")
+                : pathname.startsWith(path)
+            const className = cn(
+              "flex items-center whitespace-nowrap font-semibold text-foreground hover:text-primary",
+              active && !newTab && "underline",
+            )
+            return newTab ? (
+              <a
+                href={path}
+                key={title}
+                className={className}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {title}
+                {isNew && <Badge className="ml-1">New</Badge>}
+              </a>
+            ) : (
+              <Link to={path} key={title} className={className}>
+                {title}
+                {isNew && <Badge className="ml-1">New</Badge>}
+              </Link>
+            )
+          })}
+        </nav>
+      </div>
+      <div className="mx-2 hidden md:block">
+        <Appearance />
+      </div>
       {currentUser ? (
-        <Flex>
-          <UserMenu />
-        </Flex>
+        <UserMenu />
       ) : (
-        // If not signed in, show login/signup links
-        <Flex gap={4} display={{ base: "none", md: "flex" }}>
-          <Link to="/signup">
-            <Text
-              color={textColor}
-              _hover={{ color: "ui.main" }}
-              fontWeight="semibold"
-            >
-              Sign Up
-            </Text>
+        <div className="hidden gap-4 font-semibold md:flex">
+          <Link to="/signup" className="hover:text-primary">
+            Sign Up
           </Link>
-          <Link to="/login" search={{ redirect: pathname }}>
-            <Text
-              color={textColor}
-              _hover={{ color: "ui.main" }}
-              fontWeight="semibold"
-            >
-              Log In
-            </Text>
+          <Link
+            to="/login"
+            search={{ redirect: pathname }}
+            className="hover:text-primary"
+          >
+            Log In
           </Link>
-        </Flex>
+        </div>
       )}
-      <IconButton
-        onClick={onOpen}
-        display={{ base: "flex", md: "none" }}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="md:hidden"
         aria-label="Open Menu"
-        fontSize="20px"
-        icon={<FiMenu />}
-      />
-      <Drawer isOpen={isOpen} placement="right" onClose={onClose}>
-        <DrawerOverlay />
-        <DrawerContent maxW="250px">
-          <DrawerCloseButton />
-          <DrawerBody py={0}>
-            <Flex flexDir="column" justify="space-between">
-              <Box>
-                <Image src={Logo} alt="logo" p={4} />
-                <SidebarItems onClose={onClose} />
-              </Box>
-            </Flex>
-          </DrawerBody>
-        </DrawerContent>
-      </Drawer>
-    </Flex>
+        onClick={() => setMobileOpen(true)}
+      >
+        <Menu className="size-5" />
+      </Button>
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <SheetContent className="w-[250px] p-4" side="right">
+          <SheetHeader>
+            <SheetTitle className="sr-only">Navigation</SheetTitle>
+          </SheetHeader>
+          <img src={Logo} alt="Centre for Pathogen Genomics" className="p-4" />
+          <SidebarItems onClose={() => setMobileOpen(false)} />
+        </SheetContent>
+      </Sheet>
+    </header>
   )
 }
 

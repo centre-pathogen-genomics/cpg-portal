@@ -1,5 +1,6 @@
-import { IconButton, useDisclosure } from "@chakra-ui/react"
+import { useState } from "react"
 import { FiTrash2 } from "react-icons/fi"
+import { Button } from "@/components/ui/button"
 import type { FilePublic } from "../../client"
 import Delete from "../Common/DeleteAlert"
 
@@ -8,19 +9,25 @@ interface DeleteButtonProps {
 }
 
 const DeleteFileButton = ({ file }: DeleteButtonProps) => {
-  const { isOpen, onOpen, onClose } = useDisclosure()
+  const [isOpen, setIsOpen] = useState(false)
 
   return (
     <>
-      <IconButton
-        onClick={onOpen}
-        aria-label="Delete Run"
-        icon={<FiTrash2 fontSize="16px" />}
-        _hover={{ color: "ui.danger" }}
+      <Button
+        onClick={() => setIsOpen(true)}
+        aria-label="Delete File"
         variant="outline"
-        size="sm"
+        size="icon-sm"
+        className="hover:text-destructive"
+      >
+        <FiTrash2 className="size-4" />
+      </Button>
+      <Delete
+        type="File"
+        id={file.id}
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
       />
-      <Delete type="File" id={file.id} isOpen={isOpen} onClose={onClose} />
     </>
   )
 }

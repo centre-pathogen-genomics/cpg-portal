@@ -1,4 +1,3 @@
-import { Editable, EditableInput, EditablePreview } from "@chakra-ui/react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { renameFileMutation } from "../../client/@tanstack/react-query.gen"
@@ -12,7 +11,7 @@ const EditableFileName = ({ file }: EditableFileNameProps) => {
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
   const [displayName, setDisplayName] = useState(file.name)
-
+  const [editing, setEditing] = useState(false)
   const renameFile = useMutation({
     ...renameFileMutation(),
     onSuccess: () => {
@@ -20,40 +19,46 @@ const EditableFileName = ({ file }: EditableFileNameProps) => {
       queryClient.invalidateQueries({ queryKey: ["files"] })
     },
     onError: (error: any) => {
-      console.error("Failed to rename file:", error)
-      const errorMessage =
+      showToast(
+        "Error",
         error?.response?.data?.detail ||
-        "An error occurred while renaming the file."
-      showToast("Error", errorMessage, "error")
-      // Revert to original name on error
+          "An error occurred while renaming the file.",
+        "error",
+      )
       setDisplayName(file.name)
     },
   })
 
-  return (
-    <Editable
-      key={file.name}
+  const submit = () => {
+    setEditing(false)
+    const name = displayName.trim()
+    if (name && name !== file.name) {
+      renameFile.mutate({ path: { id: file.id }, query: { name } })
+    } else setDisplayName(file.name)
+  }
+
+  return editing ? (
+    <input
       value={displayName}
-      fontSize={{ base: "2xl", md: "3xl", lg: "4xl" }}
-      isPreviewFocusable={true}
-      selectAllOnFocus={true}
-      onChange={(value) => setDisplayName(value)}
-      onSubmit={(nextName) => {
-        if (nextName !== file.name && nextName.trim() !== "") {
-          renameFile.mutate({
-            path: { id: file.id },
-            query: { name: nextName.trim() },
-          })
-        } else {
+      onChange={(event) => setDisplayName(event.target.value)}
+      onBlur={submit}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") submit()
+        if (event.key === "Escape") {
           setDisplayName(file.name)
+          setEditing(false)
         }
       }}
-      onCancel={() => setDisplayName(file.name)}
-      w={"full"}
+      className="w-full bg-transparent text-2xl outline-none md:text-3xl lg:text-4xl"
+    />
+  ) : (
+    <button
+      type="button"
+      className="w-auto text-left text-2xl md:text-3xl lg:text-4xl"
+      onClick={() => setEditing(true)}
     >
-      <EditablePreview w={"auto"} cursor="text" />
-      <EditableInput />
-    </Editable>
+      {displayName}
+    </button>
   )
 }
 

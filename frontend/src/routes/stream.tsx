@@ -1,9 +1,9 @@
-import { Box, Icon, IconButton, Image, Text } from "@chakra-ui/react"
 import { createFileRoute } from "@tanstack/react-router"
 import { useEffect, useRef, useState } from "react"
 import { ErrorBoundary } from "react-error-boundary"
 import { HiOutlineStatusOffline } from "react-icons/hi"
 import { MdFullscreen, MdFullscreenExit } from "react-icons/md"
+import { Button } from "@/components/ui/button"
 import ErrorLogo from "/assets/images/500.png"
 import IconLogo from "/assets/images/cpg-logo-icon.png"
 import IconLogoTransparent from "/assets/images/cpg-logo-icon-transparent.png"
@@ -104,41 +104,27 @@ function Stream() {
   return (
     <ErrorBoundary
       fallbackRender={() => (
-        <Box
-          textAlign="center"
-          mt={8}
-          w="100%"
-          justifyContent="center"
-          alignItems="center"
-        >
-          <Text>Something went wrong... Please reload the page!</Text>
-          <Image src={ErrorLogo} alt="Error" />
-        </Box>
+        <div className="mt-8 flex w-full flex-col items-center justify-center text-center">
+          <p>Something went wrong... Please reload the page!</p>
+          <img src={ErrorLogo} alt="Error" />
+        </div>
       )}
     >
-      <Box
+      <div
         id="frame"
         ref={containerRef}
-        width="100%"
-        height="100%"
-        overflow="hidden"
-        sx={{ display: "block" }}
-        margin={0}
-        position="relative"
+        className="relative m-0 block h-full w-full overflow-hidden"
       >
         {/* Fullscreen Icon Button positioned at the top-right */}
-        <IconButton
+        <Button
           aria-label="Enter Fullscreen"
-          icon={
-            document.fullscreenElement ? <MdFullscreenExit /> : <MdFullscreen />
-          }
-          position="absolute"
-          top="1rem"
-          right="1rem"
+          className="absolute top-4 right-4 z-[1]"
+          size="icon"
           onClick={handleFullscreen}
-          zIndex={1}
           variant="ghost"
-        />
+        >
+          {document.fullscreenElement ? <MdFullscreenExit /> : <MdFullscreen />}
+        </Button>
 
         <EventStreamVisualizationPixi
           ref={eventStreamRef}
@@ -147,22 +133,15 @@ function Stream() {
         />
         {/* When disconnected, show an icon that allows manual reconnection if desired */}
         {!isConnected && (
-          <Icon
-            as={HiOutlineStatusOffline}
-            position="absolute"
-            bottom={0}
-            right={0}
-            m={2}
-            boxSize={8}
-            color="red.500"
+          <HiOutlineStatusOffline
+            className="absolute right-0 bottom-0 m-2 size-8 cursor-pointer text-red-500"
             onClick={() => {
               reconnect()
             }}
-            cursor="pointer"
             title="Click to reconnect"
           />
         )}
-      </Box>
+      </div>
     </ErrorBoundary>
   )
 }

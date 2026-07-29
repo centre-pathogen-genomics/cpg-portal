@@ -1,18 +1,8 @@
-import {
-  AlertDialog,
-  AlertDialogBody,
-  AlertDialogContent,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogOverlay,
-  Button,
-} from "@chakra-ui/react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import React from "react"
-import { useForm } from "react-hook-form"
 
 import { RunsService } from "../../client" // Ensure you have the RunsService correctly set up
 import useCustomToast from "../../hooks/useCustomToast"
+import { ConfirmationDialog } from "../Common/ConfirmationDialog"
 
 interface CancelProps {
   id: string
@@ -23,11 +13,6 @@ interface CancelProps {
 const Cancel = ({ id, isOpen, onClose }: CancelProps) => {
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
-  const cancelRef = React.useRef<HTMLButtonElement>(null!)
-  const {
-    handleSubmit,
-    formState: { isSubmitting },
-  } = useForm()
 
   const cancelRun = async (id: string) => {
     await RunsService.cancelRun({ path: { id } }) // Use the cancelRun method
@@ -53,36 +38,16 @@ const Cancel = ({ id, isOpen, onClose }: CancelProps) => {
     },
   })
 
-  const onSubmit = async () => {
-    mutation.mutate(id)
-  }
-
   return (
-    <AlertDialog
-      isOpen={isOpen}
-      onClose={onClose}
-      leastDestructiveRef={cancelRef}
-      size={{ base: "sm", md: "md" }}
-      isCentered
-    >
-      <AlertDialogOverlay>
-        <AlertDialogContent as="form" onSubmit={handleSubmit(onSubmit)}>
-          <AlertDialogHeader>Cancel Run</AlertDialogHeader>
-          <AlertDialogBody>
-            Are you sure you want to cancel this run? This action cannot be
-            undone.
-          </AlertDialogBody>
-          <AlertDialogFooter gap={3}>
-            <Button variant="danger" type="submit" isLoading={isSubmitting}>
-              Cancel Run
-            </Button>
-            <Button ref={cancelRef} onClick={onClose} isDisabled={isSubmitting}>
-              Close
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialogOverlay>
-    </AlertDialog>
+    <ConfirmationDialog
+      open={isOpen}
+      onOpenChange={(open) => !open && onClose()}
+      title="Cancel Run"
+      description="Are you sure you want to cancel this run? This action cannot be undone."
+      confirmLabel="Cancel Run"
+      pending={mutation.isPending}
+      onConfirm={() => mutation.mutate(id)}
+    />
   )
 }
 

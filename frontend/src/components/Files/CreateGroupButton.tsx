@@ -1,18 +1,15 @@
-import {
-  Button,
-  Input,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Text,
-  useDisclosure,
-} from "@chakra-ui/react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { LoaderCircle } from "lucide-react"
 import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
 import { createGroupMutation } from "../../client/@tanstack/react-query.gen"
 import useCustomToast from "../../hooks/useCustomToast"
 
@@ -28,108 +25,82 @@ export default function CreateGroupButton({
   selectedFileIds,
   onGroupCreated,
   size = "md",
-  variant = "solid",
-  colorScheme = "blue",
 }: CreateGroupButtonProps) {
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
-  const [groupError, setGroupError] = useState<string | null>(null)
-  const [groupName, setGroupName] = useState("")
-  const { isOpen, onOpen, onClose } = useDisclosure()
-
+  const [error, setError] = useState<string | null>(null)
+  const [name, setName] = useState("")
+  const [open, setOpen] = useState(false)
   const createGroup = useMutation({
     ...createGroupMutation(),
     onSuccess: () => {
       showToast("Success", "Group created successfully.", "success")
-      setGroupName("")
-      setGroupError(null)
-      onClose()
+      setName("")
+      setError(null)
+      setOpen(false)
       queryClient.invalidateQueries({ queryKey: ["files"] })
       onGroupCreated?.()
     },
-    onError: (error: any) => {
-      console.error("Failed to create group:", error)
-      const errorMessage =
-        error?.response.data.detail ||
+    onError: (requestError: any) => {
+      const message =
+        requestError?.response?.data?.detail ||
         "An error occurred while creating the group."
-      setGroupError(errorMessage)
-      showToast("Error", errorMessage, "error")
+      setError(message)
+      showToast("Error", message, "error")
     },
   })
-
-  const handleCreateGroup = () => {
-    setGroupError(null)
-    if (!groupName.trim()) {
-      setGroupError("Group name is required")
+  const create = () => {
+    if (!name.trim()) {
+      setError("Group name is required")
       return
     }
-    createGroup.mutate({
-      body: selectedFileIds,
-      query: { name: groupName.trim() },
-    })
+    createGroup.mutate({ body: selectedFileIds, query: { name: name.trim() } })
   }
-
-  const handleOpenModal = () => {
-    setGroupName("")
-    setGroupError(null)
-    onOpen()
+  const show = () => {
+    setName("")
+    setError(null)
+    setOpen(true)
   }
-
   return (
     <>
       <Button
-        size={size}
-        variant={variant}
-        colorScheme={colorScheme}
-        onClick={handleOpenModal}
-        isDisabled={selectedFileIds.length === 0}
+        size={size === "md" ? "default" : size === "xs" ? "sm" : size}
+        onClick={show}
+        disabled={!selectedFileIds.length}
       >
         {selectedFileIds.length
           ? `Create Group (${selectedFileIds.length})`
           : "Select to Group"}
       </Button>
-
-      {/* Create Group Modal */}
-      <Modal isOpen={isOpen} onClose={onClose}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Create File Group</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <Text mb={4}>
-              Enter a name for the group of {selectedFileIds.length} files:
-            </Text>
-            <Input
-              placeholder="Group name"
-              value={groupName}
-              onChange={(e) => setGroupName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  handleCreateGroup()
-                }
-              }}
-            />
-            {groupError && (
-              <Text color="red.500" mt={2} fontSize="sm">
-                {groupError}
-              </Text>
-            )}
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onClose}>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create File Group</DialogTitle>
+          </DialogHeader>
+          <p>Enter a name for the group of {selectedFileIds.length} files:</p>
+          <Input
+            placeholder="Group name"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            onKeyDown={(event) => event.key === "Enter" && create()}
+          />
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setOpen(false)}>
               Cancel
             </Button>
             <Button
-              colorScheme="blue"
-              onClick={handleCreateGroup}
-              isLoading={createGroup.isPending}
-              disabled={!groupName.trim()}
+              onClick={create}
+              disabled={!name.trim() || createGroup.isPending}
             >
+              {createGroup.isPending && (
+                <LoaderCircle className="animate-spin" />
+              )}
               Create Group
             </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

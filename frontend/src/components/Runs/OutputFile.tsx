@@ -1,4 +1,3 @@
-import { Flex, Heading, HStack, Icon, VStack } from "@chakra-ui/react"
 import { HiOutlineDocument } from "react-icons/hi2"
 import type { FilePublic } from "../../client"
 import { humanReadableFileSize } from "../../utils"
@@ -13,14 +12,14 @@ interface OutputFileProps {
 
 function OutputFile({ file, copyFile }: OutputFileProps) {
   return (
-    <Flex borderWidth="1px" borderRadius="lg" overflow="hidden" p={2}>
-      <HStack spacing={2}>
-        <Icon boxSize={8} as={HiOutlineDocument} />
-        <VStack direction={"column"} justify={"start"} align={"start"}>
-          <HStack spacing={2}>
-            <Heading size={"sm"}>{file.name}</Heading>
-          </HStack>
-          <HStack spacing={2} minW={"300px"}>
+    <div className="overflow-hidden rounded-lg border p-2">
+      <div className="flex items-center gap-2">
+        <HiOutlineDocument className="size-8" />
+        <div className="flex flex-col items-start justify-start">
+          <div className="flex gap-2">
+            <h3 className="text-sm font-semibold">{file.name}</h3>
+          </div>
+          <div className="flex min-w-[300px] gap-2">
             <DownloadFileButton
               size="xs"
               file={file}
@@ -37,10 +36,10 @@ function OutputFile({ file, copyFile }: OutputFileProps) {
                 saved={file.saved ? file.saved : false}
               />
             )}
-          </HStack>
-        </VStack>
-      </HStack>
-    </Flex>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
 

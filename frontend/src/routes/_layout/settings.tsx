@@ -1,18 +1,9 @@
-import {
-  Container,
-  Heading,
-  Tab,
-  TabList,
-  TabPanel,
-  TabPanels,
-  Tabs,
-} from "@chakra-ui/react"
 import { createFileRoute } from "@tanstack/react-router"
-
 import Appearance from "@/components/UserSettings/Appearance"
 import ChangePassword from "@/components/UserSettings/ChangePassword"
 import DeleteAccount from "@/components/UserSettings/DeleteAccount"
 import UserInformation from "@/components/UserSettings/UserInformation"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import useAuth from "@/hooks/useAuth"
 
 const tabsConfig = [
@@ -24,41 +15,36 @@ const tabsConfig = [
 
 export const Route = createFileRoute("/_layout/settings")({
   component: UserSettings,
-  head: () => ({
-    meta: [
-      {
-        title: "Settings | CPG Portal",
-      },
-    ],
-  }),
+  head: () => ({ meta: [{ title: "Settings | CPG Portal" }] }),
 })
 
 function UserSettings() {
   const { user: currentUser } = useAuth()
-
-  if (!currentUser) {
-    return null
-  }
+  if (!currentUser) return null
 
   return (
-    <Container maxW="full">
-      <Heading size="2xl" textAlign={{ base: "center", md: "left" }} py={6}>
+    <div className="w-full px-4 md:px-6">
+      <h1 className="py-6 text-center text-4xl font-bold md:text-left">
         User Settings
-      </Heading>
-      <Tabs variant="enclosed">
-        <TabList>
-          {tabsConfig.map((tab) => (
-            <Tab key={tab.title}>{tab.title}</Tab>
+      </h1>
+      <Tabs defaultValue={tabsConfig[0].title}>
+        <TabsList className="no-scroll h-auto w-full justify-start overflow-x-auto rounded-none border-b bg-transparent p-0">
+          {tabsConfig.map(({ title }) => (
+            <TabsTrigger
+              value={title}
+              key={title}
+              className="rounded-t-md rounded-b-none border border-transparent px-4 py-2 data-[state=active]:border-border data-[state=active]:border-b-background data-[state=active]:shadow-none"
+            >
+              {title}
+            </TabsTrigger>
           ))}
-        </TabList>
-        <TabPanels>
-          {tabsConfig.map((tab) => (
-            <TabPanel key={tab.title}>
-              <tab.component />
-            </TabPanel>
-          ))}
-        </TabPanels>
+        </TabsList>
+        {tabsConfig.map(({ title, component: Component }) => (
+          <TabsContent value={title} key={title} className="p-4">
+            <Component />
+          </TabsContent>
+        ))}
       </Tabs>
-    </Container>
+    </div>
   )
 }

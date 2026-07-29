@@ -1,15 +1,20 @@
-import { Button, useDisclosure } from "@chakra-ui/react"
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
 import CancelAll from "./CancelAllAlert"
 
 const CancelRunButton = () => {
-  const { isOpen, onOpen, onClose } = useDisclosure()
+  const [isOpen, setIsOpen] = useState(false)
 
   return (
     <>
-      <Button onClick={onOpen} aria-label="Cancel Run" color="ui.dim">
+      <Button
+        onClick={() => setIsOpen(true)}
+        aria-label="Cancel Runs"
+        variant="secondary"
+      >
         Cancel All
       </Button>
-      <CancelAll isOpen={isOpen} onClose={onClose} />
+      <CancelAll isOpen={isOpen} onClose={() => setIsOpen(false)} />
     </>
   )
 }

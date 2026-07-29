@@ -1,13 +1,3 @@
-import {
-  Badge,
-  Flex,
-  HStack,
-  Icon,
-  IconButton,
-  Link,
-  Text,
-  useToast,
-} from "@chakra-ui/react"
 import { useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
 import { CopyToClipboard } from "react-copy-to-clipboard"
@@ -20,85 +10,79 @@ import {
 } from "react-icons/hi"
 import { HiCalendarDays, HiOutlineClock, HiOutlineUser } from "react-icons/hi2"
 import { IoIosCheckmarkCircleOutline, IoIosCopy } from "react-icons/io"
+import { toast } from "sonner"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import type { RunPublic } from "../../client"
 import { humanReadableDateTime } from "../../utils"
 import ParamTag from "./ParamTag"
 import RunRuntime from "./RunTime"
 import StatusBadge from "./StatusBadge"
 
-interface RunMetadataProps {
-  run: RunPublic
-}
-
 function Parameters({ params }: { params: Record<string, any> }) {
   return (
-    <Flex wrap={"wrap"}>
+    <div className="flex flex-wrap">
       {Object.keys(params)
         .filter((key) => params[key] !== null)
         .map((key) => (
-          <Flex key={key} mr={1} my={1}>
+          <div key={key} className="my-1 mr-1">
             <ParamTag param={key} value={params[key]} />
-          </Flex>
+          </div>
         ))}
-    </Flex>
+    </div>
   )
 }
 
-function RunMetadata({ run }: RunMetadataProps) {
+function RunMetadata({ run }: { run: RunPublic }) {
   const navigate = useNavigate()
-  const toast = useToast()
   const [copied, setCopied] = useState(false)
-
-  const handleCopyRunUrl = () => {
-    toast({
-      description: "Run URL copied to clipboard!",
-      status: "success",
-      duration: 3000,
-      isClosable: true,
-      position: "bottom-right",
-    })
+  const copy = () => {
+    toast.success("Run URL copied to clipboard!")
     setCopied(true)
-    setTimeout(() => {
-      setCopied(false)
-    }, 3000)
+    setTimeout(() => setCopied(false), 3000)
   }
 
-  const items = [
+  const items: Array<{
+    icon: React.ReactNode
+    title: string
+    value: React.ReactNode
+  }> = [
     {
-      icon: HiOutlineStatusOnline,
+      icon: <HiOutlineStatusOnline />,
       title: "Status",
-      value: StatusBadge({ status: run.status }),
+      value: <StatusBadge status={run.status} />,
     },
     {
-      icon: HiOutlineLightningBolt,
+      icon: <HiOutlineLightningBolt />,
       title: "Tool",
       value: (
-        <Link
-          onClick={(e) => {
-            e.stopPropagation()
+        <button
+          type="button"
+          className="hover:underline"
+          onClick={() =>
             navigate({
-              to: `/tools/${run.tool.name}`,
-              replace: false,
+              to: "/tools/$name",
+              params: { name: run.tool.name },
               resetScroll: true,
             })
-          }}
+          }
         >
           {run.tool.name}
-        </Link>
+        </button>
       ),
     },
     {
-      icon: HiOutlineTag,
+      icon: <HiOutlineTag />,
       title: "Parameters",
-      value: Parameters({ params: run.params }),
+      value: <Parameters params={run.params} />,
     },
     {
-      icon: HiCalendarDays,
+      icon: <HiCalendarDays />,
       title: "Started",
-      value: humanReadableDateTime(run.started_at ? run.started_at : ""),
+      value: humanReadableDateTime(run.started_at || ""),
     },
     {
-      icon: HiOutlineClock,
+      icon: <HiOutlineClock />,
       title: "Runtime",
       value: (
         <RunRuntime
@@ -110,74 +94,69 @@ function RunMetadata({ run }: RunMetadataProps) {
     },
   ]
 
-  if (run.shared) {
+  if (run.shared)
     items.push({
-      icon: FiShare2,
+      icon: <FiShare2 />,
       title: "Shared",
       value: (
-        <Flex align="center">
-          <Badge colorScheme="green">Anyone</Badge>
-          <CopyToClipboard
-            text={window.location.href}
-            onCopy={handleCopyRunUrl}
-          >
-            <IconButton
-              icon={
-                copied ? (
-                  <IoIosCheckmarkCircleOutline color="green" />
-                ) : (
-                  <IoIosCopy color="grey" />
-                )
-              }
+        <div className="flex items-center">
+          <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
+            Anyone
+          </Badge>
+          <CopyToClipboard text={window.location.href} onCopy={copy}>
+            <Button
               aria-label="Copy run URL to clipboard"
-              size="xs"
+              size="icon-sm"
               variant="ghost"
-              colorScheme={copied ? "green" : "gray"}
-            />
+            >
+              {copied ? (
+                <IoIosCheckmarkCircleOutline className="text-green-600" />
+              ) : (
+                <IoIosCopy className="text-gray-500" />
+              )}
+            </Button>
           </CopyToClipboard>
-        </Flex>
+        </div>
       ),
     })
-  }
-
-  // Show owner name if this is a shared run viewed by someone else
-  if (run.shared && run.owner_name) {
+  if (run.shared && run.owner_name)
     items.push({
-      icon: HiOutlineUser,
+      icon: <HiOutlineUser />,
       title: "Owner",
-      value: <Text>{run.owner_name}</Text>,
+      value: <span>{run.owner_name}</span>,
     })
-  }
-
-  if (run.tags && run.tags.length > 0) {
+  if (run.tags?.length)
     items.push({
-      icon: HiHashtag,
+      icon: <HiHashtag />,
       title: "Tags",
       value: (
         <>
-          {run.tags?.map((tag) => (
-            <Badge key={tag} colorScheme="cyan" mr={1}>
+          {run.tags.map((tag) => (
+            <Badge
+              key={tag}
+              className="mr-1 bg-cyan-100 text-cyan-800 hover:bg-cyan-100"
+            >
               {tag}
             </Badge>
           ))}
         </>
       ),
     })
-  }
+
   return (
-    <Flex direction={"column"}>
+    <div className="flex flex-col">
       {items.map(({ icon, title, value }) => (
-        <HStack key={title} align={"top"} mb={3}>
-          <Flex w={32} shrink={0} direction={"column"}>
-            <Flex align={"center"}>
-              <Icon as={icon} />
-              <Text ml={2}>{title}</Text>
-            </Flex>
-          </Flex>
-          <Flex align={"center"}>{value}</Flex>
-        </HStack>
+        <div key={title} className="mb-3 flex items-start">
+          <div className="w-32 shrink-0">
+            <div className="flex items-center">
+              {icon}
+              <span className="ml-2">{title}</span>
+            </div>
+          </div>
+          <div className="flex items-center">{value}</div>
+        </div>
       ))}
-    </Flex>
+    </div>
   )
 }
 

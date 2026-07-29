@@ -1,5 +1,5 @@
-import { Box, Heading, HStack, Progress, Stack, Text } from "@chakra-ui/react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { Progress } from "@/components/ui/progress"
 import type { UserPublic } from "../../client"
 import {
   getFilesStatsOptions,
@@ -25,25 +25,27 @@ const StorageStats = ({ size = "sm" }: StorageStatsProps) => {
     percentageUsed = Math.round(percentageUsed)
   }
   return (
-    <Box>
-      <Stack spacing="2">
-        <HStack spacing="1">
-          <Heading size={size}>Storage</Heading>
-        </HStack>
-        <Stack spacing="1">
-          <Progress
-            value={percentageUsed}
-            size={size}
-            backgroundColor={"gray.200"}
-          />
-          <Text fontSize="sm" colorScheme="gray">
+    <div>
+      <div className="flex flex-col gap-2">
+        <div className="flex gap-1">
+          <h2
+            className={
+              size === "sm" ? "text-sm font-semibold" : "font-semibold"
+            }
+          >
+            Storage
+          </h2>
+        </div>
+        <div className="flex flex-col gap-1">
+          <Progress value={percentageUsed} className="bg-gray-200" />
+          <p className="text-sm text-muted-foreground">
             {data ? `${humanReadableFileSize(data.total_size)}` : "0b"} used (
             {data ? data.count : 0}/
             {currentUser ? currentUser.max_storage_files : 1000} files)
-          </Text>
-        </Stack>
-      </Stack>
-    </Box>
+          </p>
+        </div>
+      </div>
+    </div>
   )
 }
 

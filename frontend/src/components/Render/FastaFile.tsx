@@ -1,8 +1,8 @@
-import { Box, Select, Text, useColorMode, VStack } from "@chakra-ui/react"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { useState } from "react"
 import seqparse, { type Seq } from "seqparse"
 import { SeqViz } from "seqviz"
+import { useTheme } from "@/components/theme-provider"
 import { downloadFileOptions } from "../../client/@tanstack/react-query.gen"
 
 interface FastaFileProps {
@@ -12,7 +12,7 @@ interface FastaFileProps {
 
 const FastaFile = ({ fileId, height = 500 }: FastaFileProps) => {
   const [selectedIndex, setSelectedIndex] = useState(0)
-  const { colorMode } = useColorMode()
+  const { resolvedTheme: colorMode } = useTheme()
 
   // Fetch the text file content
   const { data: fastaContent } = useSuspenseQuery({
@@ -45,7 +45,7 @@ const FastaFile = ({ fileId, height = 500 }: FastaFileProps) => {
   })
 
   if (!parsed || parsed.length === 0) {
-    return <Text color="gray.500">No sequences found in FASTA file</Text>
+    return <p className="text-gray-500">No sequences found in FASTA file</p>
   }
 
   // All sequences are already in an array
@@ -55,7 +55,7 @@ const FastaFile = ({ fileId, height = 500 }: FastaFileProps) => {
   const currentSeq = sequences[selectedIndex]
 
   if (!currentSeq) {
-    return <Text color="gray.500">No sequences found in FASTA file</Text>
+    return <p className="text-gray-500">No sequences found in FASTA file</p>
   }
 
   const { name, seq, annotations } = currentSeq
@@ -70,26 +70,23 @@ const FastaFile = ({ fileId, height = 500 }: FastaFileProps) => {
   const textColor = colorMode === "dark" ? "#e0e0e0" : "#2a2a2a"
 
   return (
-    <VStack align="stretch" spacing={3}>
+    <div className="flex flex-col items-stretch gap-3">
       {sequences.length > 1 && (
-        <Select
+        <select
           value={selectedIndex}
           onChange={(e) => setSelectedIndex(Number(e.target.value))}
-          maxW="400px"
+          className="h-9 max-w-[400px] rounded-md border bg-background px-3"
         >
           {sequences.map((s, idx) => (
             <option key={idx} value={idx}>
               {s.name || `Sequence ${idx + 1}`} ({s.seq?.length || 0} bp)
             </option>
           ))}
-        </Select>
+        </select>
       )}
-      <Box
-        sx={{
-          "& svg text": {
-            fill: `${textColor} !important`,
-          },
-        }}
+      <div
+        style={{ "--sequence-text": textColor } as React.CSSProperties}
+        className="[&_svg_text]:!fill-[var(--sequence-text)]"
       >
         <SeqViz
           seq={seq}
@@ -100,8 +97,8 @@ const FastaFile = ({ fileId, height = 500 }: FastaFileProps) => {
           bpColors={bpColors}
           showComplement={false}
         />
-      </Box>
-    </VStack>
+      </div>
+    </div>
   )
 }
 

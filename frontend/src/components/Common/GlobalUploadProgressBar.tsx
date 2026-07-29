@@ -1,7 +1,7 @@
 // components/UploadProgress.tsx
 
-import { Box, Progress } from "@chakra-ui/react"
 import type React from "react"
+import { Progress } from "@/components/ui/progress"
 import { useUpload } from "../../context/UploadContext"
 
 const UploadProgress: React.FC = () => {
@@ -10,9 +10,9 @@ const UploadProgress: React.FC = () => {
   if (!isUploading) return null
 
   return (
-    <Box position="fixed" bottom="0" left="0" width="100%" zIndex="1000">
-      <Progress value={progress} colorScheme="blue" />
-    </Box>
+    <div className="fixed inset-x-0 bottom-0 z-[1000]">
+      <Progress value={progress} />
+    </div>
   )
 }
 

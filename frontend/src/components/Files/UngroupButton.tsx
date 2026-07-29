@@ -1,5 +1,6 @@
-import { Button } from "@chakra-ui/react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { LoaderCircle } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { type FilePublic, FilesService } from "../../client"
 
 interface UngroupButtonProps {
@@ -37,12 +38,13 @@ export default function UngroupButton({
 
   return (
     <Button
-      size={size}
-      colorScheme="orange"
+      size={size === "xs" ? "sm" : size === "md" ? "default" : size}
       variant="outline"
+      className="border-orange-500 text-orange-600 hover:text-orange-700"
       onClick={() => ungroupMutation.mutate()}
-      isLoading={ungroupMutation.isPending}
+      disabled={ungroupMutation.isPending}
     >
+      {ungroupMutation.isPending && <LoaderCircle className="animate-spin" />}
       Ungroup
     </Button>
   )

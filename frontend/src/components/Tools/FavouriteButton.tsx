@@ -1,6 +1,7 @@
-import { Flex, IconButton, useColorModeValue } from "@chakra-ui/react"
 import { useMutation } from "@tanstack/react-query"
 import { HiHeart, HiOutlineHeart } from "react-icons/hi"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import type { ToolMinimalPublic } from "../../client"
 import {
   favouriteToolMutation,
@@ -10,7 +11,7 @@ import {
 interface FavouriteButtonProps {
   tool: ToolMinimalPublic
   isFavourited: boolean
-  setIsFavourited: (isFavourited: boolean) => void
+  setIsFavourited: (value: boolean) => void
   withCount?: boolean
   disabled?: boolean
 }
@@ -22,75 +23,59 @@ function FavouriteButton({
   withCount,
   disabled,
 }: FavouriteButtonProps) {
-  const colourMode = useColorModeValue("ui.light", "ui.dark")
-  const favouriteTool = useMutation({
+  const favourite = useMutation({
     ...favouriteToolMutation(),
-    onError: () => {
-      setIsFavourited(true)
-    },
+    onError: () => setIsFavourited(false),
     onSuccess: () => {
       setIsFavourited(true)
       tool.favourited = true
-      if (tool.favourited_count !== undefined) {
-        tool.favourited_count = tool.favourited_count + 1
-      }
+      if (tool.favourited_count !== undefined) tool.favourited_count += 1
     },
   })
-
-  const unfavouriteTool = useMutation({
+  const unfavourite = useMutation({
     ...unfavouriteToolMutation(),
-    onError: () => {
-      setIsFavourited(false)
-    },
+    onError: () => setIsFavourited(true),
     onSuccess: () => {
       setIsFavourited(false)
       tool.favourited = false
-      if (tool.favourited_count !== undefined) {
-        tool.favourited_count = tool.favourited_count - 1
-      }
+      if (tool.favourited_count !== undefined) tool.favourited_count -= 1
     },
   })
-
+  const toggle = (event: React.MouseEvent) => {
+    event.stopPropagation()
+    if (disabled) return
+    const options = { path: { tool_id: tool.id } }
+    isFavourited ? unfavourite.mutate(options) : favourite.mutate(options)
+  }
+  const icon = isFavourited ? <HiHeart /> : <HiOutlineHeart />
   return withCount ? (
-    <Flex
-      align="center"
-      mr={2}
-      _hover={{ color: "red.500" }}
-      gap="0.5"
-      color={isFavourited ? "red.500" : undefined}
-      onClick={(e) => {
-        e.stopPropagation()
-        if (disabled) return // Prevent action if disabled
-        if (isFavourited) {
-          unfavouriteTool.mutate({ path: { tool_id: tool.id } })
-        } else {
-          favouriteTool.mutate({ path: { tool_id: tool.id } })
-        }
-      }}
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={toggle}
+      className={cn(
+        "mr-2 flex items-center gap-0.5 hover:text-red-500",
+        isFavourited && "text-red-500",
+      )}
     >
-      {isFavourited ? <HiHeart /> : <HiOutlineHeart />}
-      {tool.favourited_count ? tool.favourited_count : 0}
-    </Flex>
+      {icon}
+      {tool.favourited_count || 0}
+    </button>
   ) : (
-    <IconButton
-      isRound={true}
+    <Button
+      type="button"
+      size="icon"
+      variant="secondary"
       aria-label="Add to favorites"
       title="Add to favorites"
-      bg={colourMode}
-      fontSize="20px"
-      _hover={{ color: "red" }}
-      color={isFavourited ? "red.500" : undefined}
-      icon={isFavourited ? <HiHeart /> : <HiOutlineHeart />}
-      onClick={(e) => {
-        e.stopPropagation()
-        if (disabled) return // Prevent action if disabled
-        if (isFavourited) {
-          unfavouriteTool.mutate({ path: { tool_id: tool.id } })
-        } else {
-          favouriteTool.mutate({ path: { tool_id: tool.id } })
-        }
-      }} // Opens the modal
-    />
+      onClick={toggle}
+      className={cn(
+        "rounded-full text-xl hover:text-red-500",
+        isFavourited && "text-red-500",
+      )}
+    >
+      {icon}
+    </Button>
   )
 }
 

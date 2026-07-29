@@ -1,32 +1,27 @@
-import {
-  Container,
-  Heading,
-  Radio,
-  RadioGroup,
-  Stack,
-  useColorMode,
-} from "@chakra-ui/react"
+import { useTheme } from "@/components/theme-provider"
+import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 const Appearance = () => {
-  const { colorMode, toggleColorMode } = useColorMode()
+  const { theme, setTheme } = useTheme()
 
   return (
-    <Container maxW="full">
-      <Heading size="sm" py={4}>
-        Appearance
-      </Heading>
-      <RadioGroup onChange={toggleColorMode} value={colorMode}>
-        <Stack>
-          {/* TODO: Add system default option */}
-          <Radio value="light" colorScheme="teal">
-            Light Mode
-          </Radio>
-          <Radio value="dark" colorScheme="teal">
-            Dark Mode
-          </Radio>
-        </Stack>
+    <section className="w-full">
+      <h2 className="py-4 text-sm font-semibold">Appearance</h2>
+      <RadioGroup value={theme} onValueChange={setTheme} className="gap-3">
+        {[
+          ["light", "Light Mode"],
+          ["dark", "Dark Mode"],
+          ["system", "System Default"],
+        ].map(([value, label]) => (
+          <div className="flex items-center gap-2" key={value}>
+            <RadioGroupItem value={value} id={`appearance-${value}`} />
+            <Label htmlFor={`appearance-${value}`}>{label}</Label>
+          </div>
+        ))}
       </RadioGroup>
-    </Container>
+    </section>
   )
 }
+
 export default Appearance

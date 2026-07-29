@@ -1,6 +1,7 @@
-import { Flex, Input, Tag, TagCloseButton } from "@chakra-ui/react"
+import { X } from "lucide-react"
 import type React from "react"
 import { useRef, useState } from "react"
+import { Input } from "@/components/ui/input"
 
 interface InputTagProps {
   tags: string[]
@@ -67,29 +68,34 @@ export default function InputTag({
   }
 
   return (
-    <Flex
-      w="100%"
-      justify="end"
-      onClick={() => refInput.current?.focus()} // Click wrapper to focus input
-    >
-      <Flex mr={0}>
+    <div className="flex w-full justify-end">
+      <div className="flex">
         {tags.map((text, i) => (
-          <Tag key={`${i}_${text}`} colorScheme="cyan" mr="4px" my={1}>
+          <span
+            key={`${i}_${text}`}
+            className="my-1 mr-1 inline-flex items-center rounded-md bg-cyan-100 px-2 py-1 text-sm text-cyan-800"
+          >
             {text}
-            <TagCloseButton onClick={() => handleDelItem(i)} />
-          </Tag>
+            <button
+              type="button"
+              aria-label={`Remove ${text}`}
+              onClick={() => handleDelItem(i)}
+            >
+              <X className="ml-1 size-3" />
+            </button>
+          </span>
         ))}
-      </Flex>
+      </div>
       <Input
-        maxW={{ base: "100%", md: "200px" }}
+        className="max-w-full md:max-w-[200px]"
         ref={refInput}
         placeholder="Add tags to run"
-        htmlSize={sizeInput}
+        size={sizeInput}
         onChange={handleChangeInput}
         onKeyDown={handleKeyDown} // Attach key event handler here
         onBlur={addTag} // Add remaining input text as a tag on blur
         disabled={isDisabled} // Disable input if prop is true
       />
-    </Flex>
+    </div>
   )
 }

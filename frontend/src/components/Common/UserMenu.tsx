@@ -1,65 +1,56 @@
-import {
-  Avatar,
-  Box,
-  Menu,
-  MenuButton,
-  MenuList,
-  useColorModeValue,
-  useDisclosure,
-} from "@chakra-ui/react"
 import { useEffect, useState } from "react"
-
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import useAuth from "../../hooks/useAuth"
 import SidebarItems from "./SidebarItems"
 
 async function sha256(message: string) {
-  const msgBuffer = new TextEncoder().encode(message)
-  const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer)
-  const hashArray = Array.from(new Uint8Array(hashBuffer))
-  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("")
+  const bytes = new TextEncoder().encode(message)
+  const hash = await crypto.subtle.digest("SHA-256", bytes)
+  return Array.from(new Uint8Array(hash))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("")
 }
 
 const generateGravatarUrl = async (email?: string) => {
   if (!email) return "/assets/images/user.png"
-  const hash = await sha256(email.trim().toLowerCase())
-  return `https://www.gravatar.com/avatar/${hash}?d=mp`
+  return `https://www.gravatar.com/avatar/${await sha256(email.trim().toLowerCase())}?d=mp`
 }
 
 const UserMenu = () => {
   const { user } = useAuth()
   const [gravatarUrl, setGravatarUrl] = useState("/assets/images/user.png")
-  const outlineColor = useColorModeValue("ui.main", "ui.light")
-  const { isOpen, onOpen, onClose } = useDisclosure()
 
   useEffect(() => {
-    const fetchGravatarUrl = async () => {
-      const url = await generateGravatarUrl(user?.email)
-      setGravatarUrl(url)
-    }
-    fetchGravatarUrl()
+    generateGravatarUrl(user?.email).then(setGravatarUrl)
   }, [user?.email])
 
   return (
-    <Box display={{ base: "none", md: "block" }}>
-      <Menu isOpen={isOpen} onClose={onClose}>
-        <MenuButton
-          as={Avatar}
-          src={gravatarUrl}
-          name={user?.full_name || user?.email}
-          size="md"
-          data-testid="user-menu"
-          borderWidth={2.5}
-          borderColor="ui.main"
-          cursor="pointer"
-          bg="gray.300"
-          onClick={onOpen}
-          _hover={{ outline: `2px solid ${outlineColor}` }}
-        />
-        <MenuList p={2} maxW="80px">
-          <SidebarItems onClose={onClose} />
-        </MenuList>
-      </Menu>
-    </Box>
+    <div className="hidden md:block">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            data-testid="user-menu"
+            className="rounded-full outline-none hover:ring-2 hover:ring-primary focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            <Avatar className="size-12 border-[2.5px] border-primary bg-gray-300">
+              <AvatarImage src={gravatarUrl} alt={user?.full_name || "User"} />
+              <AvatarFallback>
+                {(user?.full_name || user?.email || "U").slice(0, 1)}
+              </AvatarFallback>
+            </Avatar>
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-64 p-2">
+          <SidebarItems />
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   )
 }
 

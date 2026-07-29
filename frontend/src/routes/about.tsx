@@ -1,211 +1,177 @@
-import { CheckCircleIcon } from "@chakra-ui/icons"
-import {
-  Box,
-  Container,
-  Flex,
-  Heading,
-  Image,
-  Link,
-  List,
-  ListIcon,
-  ListItem,
-  Stack,
-  Table,
-  Tbody,
-  Td,
-  Text,
-  Th,
-  Thead,
-  Tr,
-} from "@chakra-ui/react"
 import { createFileRoute, Link as RouterLink } from "@tanstack/react-router"
+import { CheckCircle } from "lucide-react"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import Logo from "/assets/images/cpg-logo.png"
 import MainMenuBar from "../components/Common/MainMenuBar"
 
 export const Route = createFileRoute("/about")({
   component: About,
-  head: () => ({
-    meta: [
-      {
-        title: "About | CPG Portal",
-      },
-    ],
-  }),
+  head: () => ({ meta: [{ title: "About | CPG Portal" }] }),
 })
 
+const ExternalLink = ({
+  href,
+  children,
+}: {
+  href: string
+  children: React.ReactNode
+}) => (
+  <a
+    href={href}
+    target="_blank"
+    rel="noreferrer"
+    className="text-primary hover:underline"
+  >
+    {children}
+  </a>
+)
+
 function About() {
+  const features = [
+    [
+      "Browser-based “drag-and-drop” uploads",
+      "Eliminates installation hurdles for new users",
+    ],
+    [
+      "Automated, version-pinned workflows",
+      "Ensures reproducibility and audit trails",
+    ],
+    [
+      "Lightweight Docker deployment",
+      "Runs on anything from a laptop to a cluster",
+    ],
+    ["Modular task registry", "Add new assays in minutes—no front-end coding"],
+    [
+      "Completely open source",
+      "Encourages local ownership and regional collaboration",
+    ],
+  ]
+  const differences = [
+    [
+      "Built for real-world labs.",
+      " Run QC, consensus building, variant calling and phylogenetics through your browser; the platform handles the software and provenance under the hood.",
+    ],
+    [
+      "Open & sustainable.",
+      " The entire code base is MIT-licensed on GitHub—free to audit, extend or fork.",
+    ],
+    [
+      "Local or hosted—your choice.",
+      " Use our University of Melbourne instance or deploy on-prem with one Docker command.",
+    ],
+    [
+      "Ease of use.",
+      " Upload FASTQ files with a simple drag-and-drop interface, and run analyses with a click. The Portal handles the complexity of bioinformatics pipelines, so you can focus on results.",
+    ],
+  ]
   return (
-    <Box>
+    <div>
       <MainMenuBar />
-      <Container maxW="4xl" py={10}>
-        <Stack spacing={8}>
-          {/* Header */}
-          <Flex as={RouterLink} to="/" justify="center" mb={4}>
-            <Image
-              src={Logo}
-              alt="CPG logo"
-              height="auto"
-              maxW={{ base: "xs", md: "md" }}
-              alignSelf="center"
-              mb={4}
-            />
-          </Flex>
-          <Box>
-            <Heading as="h1" size="xl" mb={2}>
-              Bioinformatics Analysis Portal (The Portal)
-            </Heading>
-            <Heading as="h2" size="md" fontWeight="normal">
-              Centre for Pathogen Genomics
-            </Heading>
-          </Box>
-
-          {/* Introduction */}
-          <Text>
-            The Portal is a bioinformatics job running platform developed by the
-            <Link href="https://cpg.unimelb.edu.au" isExternal color="teal.500">
-              {" "}
-              Centre for Pathogen Genomics
-            </Link>{" "}
-            at the University of Melbourne. It is designed to help laboratories
-            and public-health teams analyse pathogen genomics data with ease.
-            The Portal turns complex genomics pipelines into a{" "}
-            <strong>point-and-click web experience</strong>, so laboratorians
-            and public-health teams can move from raw reads to actionable
-            insight—without touching the command line. Whether you are
-            investigating an outbreak in a provincial hospital or curating
-            national surveillance data, The Portal lets you focus on science and
-            response, not servers.
-          </Text>
-
-          {/* What makes The Portal different */}
-          <Heading as="h3" size="md">
-            What makes The Portal different
-          </Heading>
-          <List spacing={3} pl={4}>
-            <ListItem>
-              <ListIcon as={CheckCircleIcon} color="green.500" />
-              <strong>Built for real-world labs.</strong> Run QC, consensus
-              building, variant calling and phylogenetics through your browser;
-              the platform handles the software and provenance under the hood.
-            </ListItem>
-            <ListItem>
-              <ListIcon as={CheckCircleIcon} color="green.500" />
-              <strong>Open & sustainable.</strong> The entire code base is
-              MIT-licensed on GitHub—free to audit, extend or fork.
-            </ListItem>
-            <ListItem>
-              <ListIcon as={CheckCircleIcon} color="green.500" />
-              <strong>Local or hosted—your choice.</strong> Use our University
-              of Melbourne instance or deploy on-prem with one Docker command.
-            </ListItem>
-            <ListItem>
-              <ListIcon as={CheckCircleIcon} color="green.500" />
-              <strong>Ease of use.</strong> Upload FASTQ files with a simple
-              drag-and-drop interface, and run analyses with a click. The Portal
-              handles the complexity of bioinformatics pipelines, so you can
-              focus on results.
-            </ListItem>
-          </List>
-
-          {/* Who should use it? */}
-          <Heading as="h3" size="md">
-            Who should use it?
-          </Heading>
-          <Text>
-            The Portal is designed for wet-lab scientists, pathogen-genomics
-            specialists, and public-health laboratories.
-          </Text>
-
-          {/* Feature table */}
-          <Table variant="simple">
-            <Thead>
-              <Tr>
-                <Th>The Portal delivers</Th>
-                <Th>Why it matters</Th>
-              </Tr>
-            </Thead>
-            <Tbody>
-              <Tr>
-                <Td>Browser-based “drag-and-drop” uploads</Td>
-                <Td>Eliminates installation hurdles for new users</Td>
-              </Tr>
-              <Tr>
-                <Td>Automated, version-pinned workflows</Td>
-                <Td>Ensures reproducibility and audit trails</Td>
-              </Tr>
-              <Tr>
-                <Td>Lightweight Docker deployment</Td>
-                <Td>Runs on anything from a laptop to a cluster</Td>
-              </Tr>
-              <Tr>
-                <Td>Modular task registry</Td>
-                <Td>Add new assays in minutes—no front-end coding</Td>
-              </Tr>
-              <Tr>
-                <Td>Completely open source</Td>
-                <Td>Encourages local ownership and regional collaboration</Td>
-              </Tr>
-            </Tbody>
-          </Table>
-          {/* Who is behind it? */}
-          <Heading as="h3" size="md">
-            CGP Portal Team
-          </Heading>
-          <Text>
-            The Portal is developed with ❤️ by{" "}
-            <Link
-              href="https://findanexpert.unimelb.edu.au/profile/888836-wytamma-wirth"
-              isExternal
-              color="teal.500"
-            >
-              Wytamma Wirth
-            </Link>
-            , in collaboration with{" "}
-            <Link
-              href="https://www.doherty.edu.au/people/associate-professor-torsten-seemann"
-              isExternal
-              color="teal.500"
-            >
-              Torsten Seemann
-            </Link>
-            , with the support of a team of talented reachers, scientists,
-            bioinformaticians at the Centre for Pathogen Genomics.
-          </Text>
-
-          {/* Get started */}
-          <Heading as="h3" size="md">
-            Get started
-          </Heading>
-          <Text>
-            <strong>Try the hosted portal</strong> –{" "}
-            <Link
-              href="https://portal.cpg.unimelb.edu.au"
-              isExternal
-              color="teal.500"
-            >
-              https://portal.cpg.unimelb.edu.au
-            </Link>{" "}
-            lets you explore The Portal without installing anything.
-          </Text>
-          <Text>
-            <strong>Deploy your own</strong> – Clone{" "}
-            <Link
-              href="https://github.com/centre-pathogen-genomics/cpg-portal"
-              isExternal
-              color="teal.500"
-            >
-              the repository on GitHub
-            </Link>{" "}
-            and spin up the full stack with <code>docker compose up -d</code>.
-          </Text>
-
-          <Text>
-            Together, we can <strong>democratise pathogen-genomics</strong> and
-            strengthen outbreak preparedness across the region.
-          </Text>
-        </Stack>
-      </Container>
-    </Box>
+      <main className="mx-auto max-w-4xl space-y-8 px-4 py-10">
+        <RouterLink to="/" className="mb-4 flex justify-center">
+          <img
+            src={Logo}
+            alt="CPG logo"
+            className="mb-4 h-auto w-full max-w-xs md:max-w-md"
+          />
+        </RouterLink>
+        <section>
+          <h1 className="mb-2 text-3xl font-bold">
+            Bioinformatics Analysis Portal (The Portal)
+          </h1>
+          <h2 className="text-lg">Centre for Pathogen Genomics</h2>
+        </section>
+        <p>
+          The Portal is a bioinformatics job running platform developed by the{" "}
+          <ExternalLink href="https://cpg.unimelb.edu.au">
+            Centre for Pathogen Genomics
+          </ExternalLink>{" "}
+          at the University of Melbourne. It is designed to help laboratories
+          and public-health teams analyse pathogen genomics data with ease. The
+          Portal turns complex genomics pipelines into a{" "}
+          <strong>point-and-click web experience</strong>, so laboratorians and
+          public-health teams can move from raw reads to actionable
+          insight—without touching the command line. Whether you are
+          investigating an outbreak in a provincial hospital or curating
+          national surveillance data, The Portal lets you focus on science and
+          response, not servers.
+        </p>
+        <h3 className="text-lg font-semibold">
+          What makes The Portal different
+        </h3>
+        <ul className="space-y-3 pl-4">
+          {differences.map(([title, text], index) => (
+            <li className="flex gap-2" key={index}>
+              <CheckCircle className="mt-0.5 size-5 shrink-0 text-green-500" />
+              <span>
+                <strong>{title}</strong>
+                {text}
+              </span>
+            </li>
+          ))}
+        </ul>
+        <h3 className="text-lg font-semibold">Who should use it?</h3>
+        <p>
+          The Portal is designed for wet-lab scientists, pathogen-genomics
+          specialists, and public-health laboratories.
+        </p>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>The Portal delivers</TableHead>
+              <TableHead>Why it matters</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {features.map(([feature, reason]) => (
+              <TableRow key={feature}>
+                <TableCell>{feature}</TableCell>
+                <TableCell>{reason}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        <h3 className="text-lg font-semibold">CPG Portal Team</h3>
+        <p>
+          The Portal is developed by{" "}
+          <ExternalLink href="https://findanexpert.unimelb.edu.au/profile/888836-wytamma-wirth">
+            Wytamma Wirth
+          </ExternalLink>
+          , in collaboration with{" "}
+          <ExternalLink href="https://www.doherty.edu.au/people/associate-professor-torsten-seemann">
+            Torsten Seemann
+          </ExternalLink>
+          , with the support of researchers, scientists, and bioinformaticians
+          at the Centre for Pathogen Genomics.
+        </p>
+        <h3 className="text-lg font-semibold">Get started</h3>
+        <p>
+          <strong>Try the hosted portal</strong> –{" "}
+          <ExternalLink href="https://portal.cpg.unimelb.edu.au">
+            https://portal.cpg.unimelb.edu.au
+          </ExternalLink>{" "}
+          lets you explore The Portal without installing anything.
+        </p>
+        <p>
+          <strong>Deploy your own</strong> – Clone{" "}
+          <ExternalLink href="https://github.com/centre-pathogen-genomics/cpg-portal">
+            the repository on GitHub
+          </ExternalLink>{" "}
+          and spin up the full stack with <code>docker compose up -d</code>.
+        </p>
+        <p>
+          Together, we can <strong>democratise pathogen-genomics</strong> and
+          strengthen outbreak preparedness across the region.
+        </p>
+      </main>
+    </div>
   )
 }
 

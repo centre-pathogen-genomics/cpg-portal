@@ -1,4 +1,3 @@
-import { Text } from "@chakra-ui/react"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { downloadFileOptions } from "../../client/@tanstack/react-query.gen"
 
@@ -25,9 +24,9 @@ const TextFile = ({ fileId }: TextFileProps) => {
   })()
 
   return (
-    <Text whiteSpace="pre-wrap" maxHeight="500px" overflowY="auto">
+    <pre className="max-h-[500px] overflow-y-auto whitespace-pre-wrap font-sans">
       {displayContent}
-    </Text>
+    </pre>
   )
 }
 

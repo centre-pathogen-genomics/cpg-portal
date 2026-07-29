@@ -1,4 +1,4 @@
-import { Spinner, Text, VStack } from "@chakra-ui/react"
+import { LoaderCircle } from "lucide-react"
 import { Suspense } from "react"
 import type { FilePublic } from "../../client"
 import { humanReadableFileSize } from "../../utils"
@@ -20,11 +20,11 @@ interface FileRendererProps {
 }
 
 const TooLargeToPreview = ({ limit }: { limit: number }) => (
-  <VStack spacing={4} align="start">
-    <Text color="gray.500" fontStyle="italic">
+  <div className="flex flex-col items-start gap-4">
+    <p className="italic text-gray-500">
       File is too large to preview ({`>${humanReadableFileSize(limit)}`})
-    </Text>
-  </VStack>
+    </p>
+  </div>
 )
 
 const FileRenderer = ({
@@ -40,7 +40,7 @@ const FileRenderer = ({
 
   if (file.size && file.size < fileSizeLimit) {
     return (
-      <Suspense fallback={<Spinner size="md" />}>
+      <Suspense fallback={<LoaderCircle className="size-5 animate-spin" />}>
         {(() => {
           switch (file.file_type) {
             case "json":
@@ -93,9 +93,9 @@ const FileRenderer = ({
 
             default:
               return showUnsupportedMessage ? (
-                <Text color="gray.500" fontStyle="italic">
+                <p className="italic text-gray-500">
                   Preview not available for this file type
-                </Text>
+                </p>
               ) : null
           }
         })()}

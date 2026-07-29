@@ -1,4 +1,3 @@
-import { Image, Skeleton } from "@chakra-ui/react"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { useMemo } from "react"
 import { downloadFileOptions } from "../../client/@tanstack/react-query.gen"
@@ -19,14 +18,14 @@ const ImageFile = ({ fileId }: ImageFileProps) => {
     return URL.createObjectURL(blob as Blob)
   }, [blob])
 
-  return (
-    <Image
+  return imageUrl ? (
+    <img
       src={imageUrl}
-      alt="Image"
-      fallback={<Skeleton height="200px" />}
-      objectFit="contain"
-      maxH="500px"
+      alt="Rendered file"
+      className="max-h-[500px] object-contain"
     />
+  ) : (
+    <div className="h-[200px] animate-pulse bg-muted" />
   )
 }
 

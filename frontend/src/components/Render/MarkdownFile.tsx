@@ -1,4 +1,3 @@
-import { Flex } from "@chakra-ui/react"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { downloadFileOptions } from "../../client/@tanstack/react-query.gen"
 import Markdown from "../Common/Markdown"
@@ -14,9 +13,9 @@ const MarkdownFile = ({ fileId }: MarkdownFileProps) => {
   })
 
   return (
-    <Flex whiteSpace="pre-wrap" maxHeight="500px" overflowY="auto">
+    <div className="max-h-[500px] overflow-y-auto whitespace-pre-wrap">
       <Markdown markdown={markdown as string} />
-    </Flex>
+    </div>
   )
 }
 

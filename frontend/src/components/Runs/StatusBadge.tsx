@@ -1,35 +1,37 @@
-import { Badge, Icon, Spinner } from "@chakra-ui/react"
+import { LoaderCircle } from "lucide-react"
 import { HiCheckCircle, HiXCircle } from "react-icons/hi"
 import { MdCancel, MdSchedule } from "react-icons/md"
+import { cn } from "@/lib/utils"
 import type { RunStatus } from "../../client"
 
+const styles: Record<RunStatus, string> = {
+  running: "border-blue-500 text-blue-600",
+  failed: "border-red-500 text-red-500",
+  completed: "border-green-500 text-green-600",
+  pending: "border-purple-500 text-purple-600",
+  cancelled: "border-gray-500 text-gray-500",
+}
+
+const icons: Record<RunStatus, React.ReactNode> = {
+  running: <LoaderCircle className="size-[0.9em] animate-spin" />,
+  failed: <HiXCircle className="size-[0.95em]" />,
+  completed: <HiCheckCircle className="size-[0.95em]" />,
+  pending: <MdSchedule className="size-[0.95em]" />,
+  cancelled: <MdCancel className="size-[0.95em]" />,
+}
+
 function StatusBadge({ status }: { status: RunStatus }) {
-  const colorScheme = {
-    running: "blue",
-    failed: "red",
-    completed: "green",
-    pending: "purple",
-    cancelled: "gray",
-  }
-  const iconForStatus = {
-    running: <Spinner boxSize="0.9em" />,
-    failed: <Icon as={HiXCircle} boxSize="0.95em" />,
-    completed: <Icon as={HiCheckCircle} boxSize="0.95em" />,
-    pending: <Icon as={MdSchedule} boxSize="0.95em" />,
-    cancelled: <Icon as={MdCancel} boxSize="0.95em" />,
-  } as const
   return (
-    <Badge
-      variant="outline"
-      px={1}
-      colorScheme={colorScheme[status] || "teal"}
-      display="inline-flex"
-      alignItems="center"
-      gap={1}
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 border px-1 text-xs font-bold uppercase",
+        styles[status],
+      )}
     >
-      {iconForStatus[status]}
+      {icons[status]}
       {status}
-    </Badge>
+    </span>
   )
 }
+
 export default StatusBadge

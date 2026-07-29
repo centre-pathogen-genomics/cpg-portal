@@ -1,10 +1,3 @@
-import {
-  Box,
-  Button,
-  IconButton,
-  useColorModeValue,
-  useToast,
-} from "@chakra-ui/react"
 import { useEffect, useRef, useState } from "react"
 import { CopyToClipboard } from "react-copy-to-clipboard"
 import { IoIosCheckmarkCircleOutline, IoIosCopy } from "react-icons/io"
@@ -13,6 +6,9 @@ import {
   githubGist,
   vs2015,
 } from "react-syntax-highlighter/dist/cjs/styles/hljs"
+import { toast } from "sonner"
+import { useTheme } from "@/components/theme-provider"
+import { Button } from "@/components/ui/button"
 
 interface CodeBlockProps {
   code: string
@@ -31,17 +27,11 @@ const CodeBlock = ({
 }: CodeBlockProps) => {
   // Copy-to-clipboard logic
   const [copied, setCopied] = useState(false)
-  const toast = useToast()
-  const style = useColorModeValue(githubGist, vs2015)
+  const { resolvedTheme } = useTheme()
+  const style = resolvedTheme === "dark" ? vs2015 : githubGist
 
   const notify = () => {
-    toast({
-      description: "Copied to clipboard!",
-      status: "success",
-      duration: 5000,
-      isClosable: true,
-      position: "bottom-right",
-    })
+    toast.success("Copied to clipboard!")
     handleCopy()
   }
 
@@ -75,31 +65,25 @@ const CodeBlock = ({
   }
 
   return (
-    <Box position="relative" borderWidth="1px" borderRadius="md">
+    <div className="relative rounded-md border">
       {/* Floating copy button in the top right */}
-      <Box position="absolute" top="6px" right="6px" zIndex="3">
+      <div className="absolute top-[6px] right-[6px] z-[3]">
         <CopyToClipboard text={code} onCopy={notify}>
-          <IconButton
-            icon={
-              copied ? (
-                <IoIosCheckmarkCircleOutline color="green" />
-              ) : (
-                <IoIosCopy color="grey" />
-              )
-            }
-            aria-label="Copy to clipboard"
-            size="sm"
-            variant="ghost"
-            colorScheme={copied ? "green" : "whiteAlpha"}
-          />
+          <Button aria-label="Copy to clipboard" size="icon-sm" variant="ghost">
+            {copied ? (
+              <IoIosCheckmarkCircleOutline className="text-green-600" />
+            ) : (
+              <IoIosCopy className="text-gray-500" />
+            )}
+          </Button>
         </CopyToClipboard>
-      </Box>
+      </div>
       {/* Scrollable container for the code */}
-      <Box
+      <div
         ref={scrollContainerRef}
         onScroll={follow ? handleScroll : undefined}
-        maxHeight={maxHeight}
-        overflowY="auto"
+        style={{ maxHeight }}
+        className="overflow-y-auto"
       >
         <SyntaxHighlighter
           language={language}
@@ -111,20 +95,17 @@ const CodeBlock = ({
         >
           {code}
         </SyntaxHighlighter>
-      </Box>
+      </div>
       {/* "Follow" button only appears if the follow prop is enabled */}
       {follow && !isFollowing && (
         <Button
-          position="absolute"
-          bottom="16px"
-          right="16px"
+          className="absolute right-4 bottom-4"
           onClick={() => setIsFollowing(true)}
-          colorScheme="blue"
         >
           Follow
         </Button>
       )}
-    </Box>
+    </div>
   )
 }
 

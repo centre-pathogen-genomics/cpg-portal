@@ -79,6 +79,7 @@ test("Sign up with existing email", async ({ page }) => {
 
   await fillForm(page, fullName, email, password, password)
   await page.getByRole("button", { name: "Sign Up" }).click()
+  await expect(page).toHaveURL(/\/login$/)
 
   await page.goto("/signup")
 

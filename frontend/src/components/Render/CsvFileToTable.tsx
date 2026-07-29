@@ -1,17 +1,15 @@
-import {
-  Flex,
-  Skeleton,
-  Table,
-  TableContainer,
-  Tbody,
-  Td,
-  Th,
-  Thead,
-  Tr,
-} from "@chakra-ui/react"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import Papa from "papaparse" // CSV parsing library
 import { useState } from "react"
+import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { downloadFileOptions } from "../../client/@tanstack/react-query.gen"
 import { PaginationFooter } from "../../components/Common/PaginationFooter"
 
@@ -36,7 +34,7 @@ const CsvFileToTable = ({ fileId, tsv = false }: CsvFileToTableProps) => {
       delimiter: tsv ? "\t" : ",",
     })
   } catch (_error) {
-    return <Skeleton height="20px" />
+    return <Skeleton className="h-5" />
   }
   const headers = Object.keys(parsedData.data[0] || {}) // Extract headers
   const tableData = (parsedData.data as { [key: string]: any }[]).filter(
@@ -64,44 +62,52 @@ const CsvFileToTable = ({ fileId, tsv = false }: CsvFileToTableProps) => {
 
   return (
     <>
-      <TableContainer>
-        <Table variant="simple">
-          <Thead>
-            <Tr>
+      <div className="w-full overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
               {headers.map((header, idx) => (
-                <Th
+                <TableHead
                   key={idx}
-                  isNumeric={header.toLowerCase().includes("multiply")}
+                  className={
+                    header.toLowerCase().includes("multiply")
+                      ? "text-right"
+                      : undefined
+                  }
                 >
                   {header}
-                </Th>
+                </TableHead>
               ))}
-            </Tr>
-          </Thead>
-          <Tbody>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {paginatedData.map((row, rowIndex) => (
-              <Tr key={rowIndex}>
+              <TableRow key={rowIndex}>
                 {headers.map((header, colIndex) => (
-                  <Td
+                  <TableCell
                     key={colIndex}
-                    isNumeric={header.toLowerCase().includes("multiply")}
+                    className={
+                      header.toLowerCase().includes("multiply")
+                        ? "text-right"
+                        : undefined
+                    }
                   >
                     {row[header]}
-                  </Td>
+                  </TableCell>
                 ))}
-              </Tr>
+              </TableRow>
             ))}
-          </Tbody>
+          </TableBody>
         </Table>
-      </TableContainer>
-      <Flex justify="start" mt={4}>
+      </div>
+      <div className="mt-4 flex justify-start">
         <PaginationFooter
           page={currentPage} // 1-based
           hasNextPage={hasNextPage}
           hasPreviousPage={hasPreviousPage}
           onChangePage={handlePageChange}
         />
-      </Flex>
+      </div>
     </>
   )
 }

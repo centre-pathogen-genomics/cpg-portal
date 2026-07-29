@@ -1,15 +1,8 @@
-import {
-  Button,
-  Container,
-  Heading,
-  Spinner,
-  Text,
-  VStack,
-} from "@chakra-ui/react"
 import { useMutation } from "@tanstack/react-query"
 import { createFileRoute, redirect } from "@tanstack/react-router"
+import { LoaderCircle } from "lucide-react"
 import { useEffect } from "react"
-
+import { Button } from "@/components/ui/button"
 import { UsersService } from "../client"
 import { isLoggedIn } from "../hooks/useAuth"
 import useCustomToast from "../hooks/useCustomToast"
@@ -17,80 +10,67 @@ import useCustomToast from "../hooks/useCustomToast"
 export const Route = createFileRoute("/activate-account")({
   component: ActivateAccount,
   beforeLoad: async () => {
-    if (isLoggedIn()) {
-      throw redirect({
-        to: "/",
-      })
-    }
+    if (isLoggedIn()) throw redirect({ to: "/" })
   },
 })
 
 function ActivateAccount() {
   const showToast = useCustomToast()
-
   const token = new URLSearchParams(window.location.search).get("token")
-
   const mutation = useMutation({
     mutationFn: async () => {
       if (!token) throw new Error("No activation token found.")
       return UsersService.activateAccount({ query: { token } })
     },
-    onSuccess: () => {
+    onSuccess: () =>
       showToast(
         "Account Activated",
         "Your account has been successfully activated!",
         "success",
-      )
-    },
-    onError: (err) => {
+      ),
+    onError: (error) =>
       showToast(
         "Activation Failed",
-        err instanceof Error ? err.message : "Invalid or expired token",
+        error instanceof Error ? error.message : "Invalid or expired token",
         "error",
-      )
-    },
+      ),
   })
-
   useEffect(() => {
-    if (token) {
-      mutation.mutate()
-    }
+    if (token) mutation.mutate()
   }, [token, mutation.mutate])
 
   return (
-    <Container h="100vh" maxW="md" centerContent justifyContent="center">
-      <VStack spacing={6} textAlign="center" mt={8}>
-        <Heading size="lg" color="ui.main">
-          Account Activation
-        </Heading>
+    <div className="flex h-screen w-full items-center justify-center">
+      <div className="mt-8 flex max-w-md flex-col items-center gap-6 text-center">
+        <h1 className="text-2xl font-bold text-primary">Account Activation</h1>
         {mutation.isPending && (
           <>
-            <Text>Activating your account, please wait...</Text>
-            <Spinner size="lg" />
+            <p>Activating your account, please wait...</p>
+            <LoaderCircle className="size-8 animate-spin" />
           </>
         )}
         {mutation.isSuccess && (
           <>
-            <Text>
+            <p>
               Your account has been successfully activated. You can now log in.
-            </Text>
-            <Button as="a" href="/login" colorScheme="teal">
-              Go to Login
+            </p>
+            <Button asChild>
+              <a href="/login">Go to Login</a>
             </Button>
           </>
         )}
         {mutation.isError && (
           <>
-            <Text>
+            <p>
               There was a problem activating your account. Please request a new
               activation link.
-            </Text>
-            <Button as="a" href="/resend-activation" colorScheme="orange">
-              Resend Activation Email
+            </p>
+            <Button asChild className="bg-orange-500 hover:bg-orange-600">
+              <a href="/resend-activation">Resend Activation Email</a>
             </Button>
           </>
         )}
-      </VStack>
-    </Container>
+      </div>
+    </div>
   )
 }

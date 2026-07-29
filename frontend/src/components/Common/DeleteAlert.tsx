@@ -1,18 +1,8 @@
-import {
-  AlertDialog,
-  AlertDialogBody,
-  AlertDialogContent,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogOverlay,
-  Button,
-} from "@chakra-ui/react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import React from "react"
-import { useForm } from "react-hook-form"
 
 import { FilesService, RunsService, UsersService } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
+import { ConfirmationDialog } from "./ConfirmationDialog"
 
 interface DeleteProps {
   type: string
@@ -25,11 +15,6 @@ interface DeleteProps {
 const Delete = ({ type, id, isOpen, onClose, onDelete }: DeleteProps) => {
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
-  const cancelRef = React.useRef<HTMLButtonElement>(null!)
-  const {
-    handleSubmit,
-    formState: { isSubmitting },
-  } = useForm()
 
   const deleteEntity = async (id: string) => {
     if (type === "User") {
@@ -71,45 +56,26 @@ const Delete = ({ type, id, isOpen, onClose, onDelete }: DeleteProps) => {
     },
   })
 
-  const onSubmit = async () => {
-    mutation.mutate(id)
-  }
-
   return (
-    <AlertDialog
-      isOpen={isOpen}
-      onClose={onClose}
-      leastDestructiveRef={cancelRef}
-      size={{ base: "sm", md: "md" }}
-      isCentered
-    >
-      <AlertDialogOverlay>
-        <AlertDialogContent as="form" onSubmit={handleSubmit(onSubmit)}>
-          <AlertDialogHeader>
-            Delete {type} ({id})
-          </AlertDialogHeader>
-
-          <AlertDialogBody>
-            {type === "User" && (
-              <span>
-                All items associated with this user will also be{" "}
-                <strong>permantly deleted. </strong>
-              </span>
-            )}
-            Are you sure? You will not be able to undo this action.
-          </AlertDialogBody>
-
-          <AlertDialogFooter gap={3}>
-            <Button variant="danger" type="submit" isLoading={isSubmitting}>
-              Delete
-            </Button>
-            <Button ref={cancelRef} onClick={onClose} isDisabled={isSubmitting}>
-              Cancel
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialogOverlay>
-    </AlertDialog>
+    <ConfirmationDialog
+      open={isOpen}
+      onOpenChange={(open) => !open && onClose()}
+      title={`Delete ${type} (${id})`}
+      description={
+        <>
+          {type === "User" && (
+            <span>
+              All items associated with this user will also be{" "}
+              <strong>permanently deleted. </strong>
+            </span>
+          )}
+          Are you sure? You will not be able to undo this action.
+        </>
+      }
+      confirmLabel="Delete"
+      pending={mutation.isPending}
+      onConfirm={() => mutation.mutate(id)}
+    />
   )
 }
 

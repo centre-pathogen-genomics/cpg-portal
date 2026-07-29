@@ -1,5 +1,5 @@
-import { DownloadIcon } from "@chakra-ui/icons"
-import { Button } from "@chakra-ui/react"
+import { Download } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { type FilePublic, FilesService } from "../../client"
 
 interface DownloadFileButtonProps {
@@ -30,13 +30,11 @@ const DownloadFileButton = ({
   }
   return (
     <Button
-      color="ui.main"
-      variant="solid"
-      size={size}
-      leftIcon={<DownloadIcon />}
+      size={size === "xs" ? "sm" : size === "md" ? "default" : size}
+      className={size === "xs" ? "h-6 px-2 text-xs" : undefined}
       onClick={() => fileIds.forEach(handleDownload)}
     >
-      Download{fileSize ? ` (${fileSize})` : ""}
+      <Download /> Download{fileSize ? ` (${fileSize})` : ""}
     </Button>
   )
 }

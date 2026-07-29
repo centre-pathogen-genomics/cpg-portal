@@ -1,4 +1,3 @@
-import { Box } from "@chakra-ui/react"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { downloadFileOptions } from "../../client/@tanstack/react-query.gen"
 
@@ -19,8 +18,7 @@ const HtmlFile = ({ fileId, height = 500 }: HtmlFileProps) => {
       : new TextDecoder().decode(htmlContent as ArrayBuffer)
 
   return (
-    <Box
-      as="iframe"
+    <iframe
       title="Untrusted HTML"
       // DO NOT include allow-same-origin
       sandbox="allow-scripts allow-forms allow-modals allow-popups-by-user-activation"
@@ -33,11 +31,8 @@ const HtmlFile = ({ fileId, height = 500 }: HtmlFileProps) => {
       "
       // Feed the user HTML directly; no same-origin blob URL
       srcDoc={html}
-      width="100%"
       height={height}
-      border="1px solid"
-      borderColor="gray.200"
-      borderRadius="md"
+      className="w-full rounded-md border"
     />
   )
 }

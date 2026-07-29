@@ -1,4 +1,4 @@
-import { Button, Flex } from "@chakra-ui/react"
+import { Button } from "@/components/ui/button"
 
 type PaginationFooterProps = {
   hasNextPage?: boolean
@@ -14,17 +14,17 @@ export function PaginationFooter({
   page,
 }: PaginationFooterProps) {
   return (
-    <Flex gap={4} alignItems="center" direction="row" justifyContent="flex-end">
+    <div className="flex flex-row items-center justify-end gap-4">
       <Button
         onClick={() => onChangePage(page - 1)}
-        isDisabled={!hasPreviousPage || page <= 1}
+        disabled={!hasPreviousPage || page <= 1}
       >
         Previous
       </Button>
       <span>Page {page}</span>
-      <Button isDisabled={!hasNextPage} onClick={() => onChangePage(page + 1)}>
+      <Button disabled={!hasNextPage} onClick={() => onChangePage(page + 1)}>
         Next
       </Button>
-    </Flex>
+    </div>
   )
 }
