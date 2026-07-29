@@ -1,5 +1,5 @@
+import { Flex } from "@chakra-ui/react"
 import { useSuspenseQuery } from "@tanstack/react-query"
-import { Flex } from "@/components/ui/chakra-compat"
 import { downloadFileOptions } from "../../client/@tanstack/react-query.gen"
 import Markdown from "../Common/Markdown"
 

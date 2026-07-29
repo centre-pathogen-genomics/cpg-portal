@@ -1,6 +1,3 @@
-import { useMutation } from "@tanstack/react-query"
-import { createFileRoute, redirect } from "@tanstack/react-router"
-import { useEffect } from "react"
 import {
   Button,
   Container,
@@ -8,7 +5,10 @@ import {
   Spinner,
   Text,
   VStack,
-} from "@/components/ui/chakra-compat"
+} from "@chakra-ui/react"
+import { useMutation } from "@tanstack/react-query"
+import { createFileRoute, redirect } from "@tanstack/react-router"
+import { useEffect } from "react"
 
 import { UsersService } from "../client"
 import { isLoggedIn } from "../hooks/useAuth"

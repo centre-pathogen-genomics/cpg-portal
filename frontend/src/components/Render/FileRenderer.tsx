@@ -1,5 +1,5 @@
+import { Spinner, Text, VStack } from "@chakra-ui/react"
 import { Suspense } from "react"
-import { Spinner, Text, VStack } from "@/components/ui/chakra-compat"
 import type { FilePublic } from "../../client"
 import { humanReadableFileSize } from "../../utils"
 import CsvFileToTable from "./CsvFileToTable"

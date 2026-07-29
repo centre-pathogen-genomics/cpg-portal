@@ -1,7 +1,3 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import React, { useState } from "react"
-import { useForm } from "react-hook-form"
-import { RiRobot2Line } from "react-icons/ri"
 import {
   AlertDialog,
   AlertDialogBody,
@@ -13,7 +9,11 @@ import {
   Select,
   Text,
   useDisclosure,
-} from "@/components/ui/chakra-compat"
+} from "@chakra-ui/react"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import React, { useState } from "react"
+import { useForm } from "react-hook-form"
+import { RiRobot2Line } from "react-icons/ri"
 import type { Audience } from "../../client"
 import { generateRunSummaryMutation } from "../../client/@tanstack/react-query.gen"
 import useCustomToast from "../../hooks/useCustomToast"
@@ -37,7 +37,7 @@ const GenerateSummaryDialog = ({
 }: GenerateSummaryDialogProps) => {
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
-  const cancelRef = React.useRef<HTMLButtonElement | null>(null)
+  const cancelRef = React.useRef<HTMLButtonElement>(null!)
   const [audience, setAudience] = useState<Audience>("expert")
 
   // Setup react-hook-form

@@ -1,9 +1,4 @@
-import {
-  Flex,
-  Text,
-  Tooltip,
-  useColorModeValue,
-} from "@/components/ui/chakra-compat"
+import { Flex, Text, Tooltip, useColorModeValue } from "@chakra-ui/react"
 
 interface ParamTagProps {
   param: string

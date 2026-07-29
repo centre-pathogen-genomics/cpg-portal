@@ -1,6 +1,3 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import React from "react"
-import { useForm } from "react-hook-form"
 import {
   AlertDialog,
   AlertDialogBody,
@@ -9,7 +6,10 @@ import {
   AlertDialogHeader,
   AlertDialogOverlay,
   Button,
-} from "@/components/ui/chakra-compat"
+} from "@chakra-ui/react"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import React from "react"
+import { useForm } from "react-hook-form"
 
 import { FilesService, RunsService } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
@@ -23,7 +23,7 @@ interface DeleteAllProps {
 const DeleteAll = ({ type, isOpen, onClose }: DeleteAllProps) => {
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
-  const ref = React.useRef<HTMLButtonElement | null>(null)
+  const ref = React.useRef<HTMLButtonElement>(null!)
   const {
     handleSubmit,
     formState: { isSubmitting },

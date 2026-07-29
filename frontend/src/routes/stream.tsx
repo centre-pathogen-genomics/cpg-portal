@@ -1,15 +1,9 @@
+import { Box, Icon, IconButton, Image, Text } from "@chakra-ui/react"
 import { createFileRoute } from "@tanstack/react-router"
 import { useEffect, useRef, useState } from "react"
 import { ErrorBoundary } from "react-error-boundary"
 import { HiOutlineStatusOffline } from "react-icons/hi"
 import { MdFullscreen, MdFullscreenExit } from "react-icons/md"
-import {
-  Box,
-  Icon,
-  IconButton,
-  Image,
-  Text,
-} from "@/components/ui/chakra-compat"
 import ErrorLogo from "/assets/images/500.png"
 import IconLogo from "/assets/images/cpg-logo-icon.png"
 import IconLogoTransparent from "/assets/images/cpg-logo-icon-transparent.png"

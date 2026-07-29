@@ -1,6 +1,3 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import React from "react"
-import { useForm } from "react-hook-form"
 import {
   AlertDialog,
   AlertDialogBody,
@@ -9,7 +6,10 @@ import {
   AlertDialogHeader,
   AlertDialogOverlay,
   Button,
-} from "@/components/ui/chakra-compat"
+} from "@chakra-ui/react"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import React from "react"
+import { useForm } from "react-hook-form"
 
 import { RunsService } from "../../client" // Ensure you have the RunsService correctly set up
 import useCustomToast from "../../hooks/useCustomToast"
@@ -23,7 +23,7 @@ interface CancelProps {
 const Cancel = ({ id, isOpen, onClose }: CancelProps) => {
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
-  const cancelRef = React.useRef<HTMLButtonElement | null>(null)
+  const cancelRef = React.useRef<HTMLButtonElement>(null!)
   const {
     handleSubmit,
     formState: { isSubmitting },

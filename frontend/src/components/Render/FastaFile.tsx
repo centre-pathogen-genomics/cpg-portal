@@ -1,14 +1,8 @@
+import { Box, Select, Text, useColorMode, VStack } from "@chakra-ui/react"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { useState } from "react"
 import seqparse, { type Seq } from "seqparse"
 import { SeqViz } from "seqviz"
-import {
-  Box,
-  Select,
-  Text,
-  useColorMode,
-  VStack,
-} from "@/components/ui/chakra-compat"
 import { downloadFileOptions } from "../../client/@tanstack/react-query.gen"
 
 interface FastaFileProps {

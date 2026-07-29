@@ -1,6 +1,3 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { useRef, useState } from "react"
-import { FiShare2 } from "react-icons/fi"
 import {
   AlertDialog,
   AlertDialogBody,
@@ -15,7 +12,10 @@ import {
   Text,
   useDisclosure,
   VStack,
-} from "@/components/ui/chakra-compat"
+} from "@chakra-ui/react"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useRef, useState } from "react"
+import { FiShare2 } from "react-icons/fi"
 
 import type { RunPublic } from "../../client"
 import { toggleRunSharingMutation } from "../../client/@tanstack/react-query.gen"
@@ -30,7 +30,7 @@ function ShareRunButton({ run }: ShareRunButtonProps) {
   const showToast = useCustomToast()
   const { isOpen, onOpen, onClose } = useDisclosure()
   const [isShared, setIsShared] = useState(run.shared || false)
-  const cancelRef = useRef<HTMLButtonElement>(null)
+  const cancelRef = useRef<HTMLButtonElement>(null!)
 
   const mutation = useMutation({
     ...toggleRunSharingMutation(),

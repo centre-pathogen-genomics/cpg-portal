@@ -1,5 +1,3 @@
-import { useNavigate } from "@tanstack/react-router"
-import { HiOutlinePlay } from "react-icons/hi2"
 import {
   ButtonGroup,
   Card,
@@ -14,7 +12,9 @@ import {
   Text,
   useColorModeValue,
   useDisclosure,
-} from "@/components/ui/chakra-compat"
+} from "@chakra-ui/react"
+import { useNavigate } from "@tanstack/react-router"
+import { HiOutlinePlay } from "react-icons/hi2"
 
 import type { ToolMinimalPublic } from "../../client"
 import FavouriteButton from "./FavouriteButton"

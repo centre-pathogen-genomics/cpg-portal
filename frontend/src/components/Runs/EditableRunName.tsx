@@ -1,9 +1,5 @@
+import { Editable, EditableInput, EditablePreview } from "@chakra-ui/react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import {
-  Editable,
-  EditableInput,
-  EditablePreview,
-} from "@/components/ui/chakra-compat"
 import { type RunPublicMinimal, RunsService } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
 

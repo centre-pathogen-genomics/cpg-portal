@@ -8,7 +8,7 @@ import {
   ModalHeader,
   ModalOverlay,
   Text,
-} from "@/components/ui/chakra-compat"
+} from "@chakra-ui/react"
 import type { Param } from "../../client"
 import RunToolForm from "./RunToolForm"
 

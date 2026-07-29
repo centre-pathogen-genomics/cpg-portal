@@ -1,8 +1,3 @@
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router"
-import { useForm } from "react-hook-form"
-import { FiMenu } from "react-icons/fi"
-import { HiOutlineSearch } from "react-icons/hi"
-import { Appearance } from "@/components/Common/Appearance"
 import {
   Badge,
   Box,
@@ -18,15 +13,60 @@ import {
   Input,
   InputGroup,
   InputLeftElement,
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuList,
   Text,
+  useColorMode,
   useColorModeValue,
   useDisclosure,
-} from "@/components/ui/chakra-compat"
+} from "@chakra-ui/react"
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router"
+import { useForm } from "react-hook-form"
+import { FiMenu } from "react-icons/fi"
+import { HiOutlineMoon, HiOutlineSearch, HiOutlineSun } from "react-icons/hi"
 import Logo from "/assets/images/cpg-logo.png"
 import Icon from "/assets/images/cpg-logo-icon.png"
 import useAuth from "../../hooks/useAuth"
 import SidebarItems from "./SidebarItems"
 import UserMenu from "./UserMenu"
+
+function DarkModeToggle() {
+  const { colorMode, setColorMode } = useColorMode()
+  const setSystemMode = () => {
+    setColorMode(
+      window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light",
+    )
+  }
+
+  return (
+    <Menu>
+      <MenuButton
+        as={IconButton}
+        aria-label="Toggle dark mode"
+        data-testid="theme-button"
+        icon={colorMode === "dark" ? <HiOutlineSun /> : <HiOutlineMoon />}
+        variant="ghost"
+        fontSize="24px"
+      />
+      <MenuList minW="130px">
+        <MenuItem
+          data-testid="light-mode"
+          onClick={() => setColorMode("light")}
+        >
+          Light
+        </MenuItem>
+        <MenuItem data-testid="dark-mode" onClick={() => setColorMode("dark")}>
+          Dark
+        </MenuItem>
+        <MenuItem onClick={setSystemMode}>System</MenuItem>
+      </MenuList>
+    </Menu>
+  )
+}
 
 function MainMenuBar() {
   const bgColor = useColorModeValue("white", "ui.dark")
@@ -200,7 +240,7 @@ function MainMenuBar() {
         </Flex>
       </Flex>
       <Box mx={2} display={{ base: "none", md: "block" }}>
-        <Appearance />
+        <DarkModeToggle />
       </Box>
       {currentUser ? (
         <Flex>

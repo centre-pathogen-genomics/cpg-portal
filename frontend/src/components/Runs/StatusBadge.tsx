@@ -1,6 +1,6 @@
+import { Badge, Icon, Spinner } from "@chakra-ui/react"
 import { HiCheckCircle, HiXCircle } from "react-icons/hi"
 import { MdCancel, MdSchedule } from "react-icons/md"
-import { Badge, Icon, Spinner } from "@/components/ui/chakra-compat"
 import type { RunStatus } from "../../client"
 
 function StatusBadge({ status }: { status: RunStatus }) {

@@ -1,6 +1,6 @@
+import { Image, Skeleton } from "@chakra-ui/react"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { useMemo } from "react"
-import { Image, Skeleton } from "@/components/ui/chakra-compat"
 import { downloadFileOptions } from "../../client/@tanstack/react-query.gen"
 
 interface ImageFileProps {

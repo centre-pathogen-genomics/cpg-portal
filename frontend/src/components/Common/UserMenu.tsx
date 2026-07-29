@@ -1,10 +1,13 @@
-import { useEffect, useState } from "react"
-import { Box } from "@/components/ui/chakra-compat"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+  Avatar,
+  Box,
+  Menu,
+  MenuButton,
+  MenuList,
+  useColorModeValue,
+  useDisclosure,
+} from "@chakra-ui/react"
+import { useEffect, useState } from "react"
 
 import useAuth from "../../hooks/useAuth"
 import SidebarItems from "./SidebarItems"
@@ -25,6 +28,8 @@ const generateGravatarUrl = async (email?: string) => {
 const UserMenu = () => {
   const { user } = useAuth()
   const [gravatarUrl, setGravatarUrl] = useState("/assets/images/user.png")
+  const outlineColor = useColorModeValue("ui.main", "ui.light")
+  const { isOpen, onOpen, onClose } = useDisclosure()
 
   useEffect(() => {
     const fetchGravatarUrl = async () => {
@@ -36,24 +41,24 @@ const UserMenu = () => {
 
   return (
     <Box display={{ base: "none", md: "block" }}>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            data-testid="user-menu"
-            className="size-11 overflow-hidden rounded-full border-2 border-teal-600 bg-muted outline-none hover:ring-2 hover:ring-teal-500/40"
-          >
-            <img
-              src={gravatarUrl}
-              alt={user?.full_name || user?.email || "User menu"}
-              className="size-full object-cover"
-            />
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-64 p-2">
-          <SidebarItems />
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <Menu isOpen={isOpen} onClose={onClose}>
+        <MenuButton
+          as={Avatar}
+          src={gravatarUrl}
+          name={user?.full_name || user?.email}
+          size="md"
+          data-testid="user-menu"
+          borderWidth={2.5}
+          borderColor="ui.main"
+          cursor="pointer"
+          bg="gray.300"
+          onClick={onOpen}
+          _hover={{ outline: `2px solid ${outlineColor}` }}
+        />
+        <MenuList p={2} maxW="80px">
+          <SidebarItems onClose={onClose} />
+        </MenuList>
+      </Menu>
     </Box>
   )
 }

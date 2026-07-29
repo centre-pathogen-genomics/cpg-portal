@@ -1,12 +1,7 @@
+import { Box, Select, useColorModeValue, VStack } from "@chakra-ui/react"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { useEffect, useRef, useState } from "react"
 import { VegaEmbed, type VegaEmbedProps } from "react-vega"
-import {
-  Box,
-  Select,
-  useColorModeValue,
-  VStack,
-} from "@/components/ui/chakra-compat"
 import { downloadFileOptions } from "../../client/@tanstack/react-query.gen"
 
 interface VegaFileProps {

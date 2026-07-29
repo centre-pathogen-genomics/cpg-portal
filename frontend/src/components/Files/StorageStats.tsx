@@ -1,12 +1,5 @@
+import { Box, Heading, HStack, Progress, Stack, Text } from "@chakra-ui/react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import {
-  Box,
-  Heading,
-  HStack,
-  Progress,
-  Stack,
-  Text,
-} from "@/components/ui/chakra-compat"
 import type { UserPublic } from "../../client"
 import {
   getFilesStatsOptions,

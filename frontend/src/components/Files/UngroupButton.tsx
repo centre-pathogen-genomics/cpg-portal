@@ -1,5 +1,5 @@
+import { Button } from "@chakra-ui/react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { Button } from "@/components/ui/chakra-compat"
 import { type FilePublic, FilesService } from "../../client"
 
 interface UngroupButtonProps {

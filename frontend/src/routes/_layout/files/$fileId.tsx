@@ -1,10 +1,3 @@
-import { useSuspenseQuery } from "@tanstack/react-query"
-import { createFileRoute, Link } from "@tanstack/react-router"
-import { Suspense } from "react"
-import { ErrorBoundary } from "react-error-boundary"
-import { BsFileEarmarkText } from "react-icons/bs"
-import { HiOutlineDocument, HiOutlineFolder } from "react-icons/hi"
-import { HiCalendarDays, HiOutlineTag } from "react-icons/hi2"
 import {
   Badge,
   Box,
@@ -17,7 +10,14 @@ import {
   Skeleton,
   Text,
   VStack,
-} from "@/components/ui/chakra-compat"
+} from "@chakra-ui/react"
+import { useSuspenseQuery } from "@tanstack/react-query"
+import { createFileRoute, Link } from "@tanstack/react-router"
+import { Suspense } from "react"
+import { ErrorBoundary } from "react-error-boundary"
+import { BsFileEarmarkText } from "react-icons/bs"
+import { HiOutlineDocument, HiOutlineFolder } from "react-icons/hi"
+import { HiCalendarDays, HiOutlineTag } from "react-icons/hi2"
 import type { FilePublic } from "../../../client"
 import { readFileOptions } from "../../../client/@tanstack/react-query.gen"
 import DeleteFileButton from "../../../components/Files/DeleteFileButton"

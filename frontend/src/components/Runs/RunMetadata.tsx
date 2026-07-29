@@ -1,3 +1,13 @@
+import {
+  Badge,
+  Flex,
+  HStack,
+  Icon,
+  IconButton,
+  Link,
+  Text,
+  useToast,
+} from "@chakra-ui/react"
 import { useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
 import { CopyToClipboard } from "react-copy-to-clipboard"
@@ -10,16 +20,6 @@ import {
 } from "react-icons/hi"
 import { HiCalendarDays, HiOutlineClock, HiOutlineUser } from "react-icons/hi2"
 import { IoIosCheckmarkCircleOutline, IoIosCopy } from "react-icons/io"
-import {
-  Badge,
-  Flex,
-  HStack,
-  Icon,
-  IconButton,
-  Link,
-  Text,
-  useToast,
-} from "@/components/ui/chakra-compat"
 import type { RunPublic } from "../../client"
 import { humanReadableDateTime } from "../../utils"
 import ParamTag from "./ParamTag"

@@ -1,5 +1,5 @@
+import { Box } from "@chakra-ui/react"
 import { useSuspenseQuery } from "@tanstack/react-query"
-import { Box } from "@/components/ui/chakra-compat"
 import { downloadFileOptions } from "../../client/@tanstack/react-query.gen"
 
 interface HtmlFileProps {

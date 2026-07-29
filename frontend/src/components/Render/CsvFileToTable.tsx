@@ -1,6 +1,3 @@
-import { useSuspenseQuery } from "@tanstack/react-query"
-import Papa from "papaparse" // CSV parsing library
-import { useState } from "react"
 import {
   Flex,
   Skeleton,
@@ -11,7 +8,10 @@ import {
   Th,
   Thead,
   Tr,
-} from "@/components/ui/chakra-compat"
+} from "@chakra-ui/react"
+import { useSuspenseQuery } from "@tanstack/react-query"
+import Papa from "papaparse" // CSV parsing library
+import { useState } from "react"
 import { downloadFileOptions } from "../../client/@tanstack/react-query.gen"
 import { PaginationFooter } from "../../components/Common/PaginationFooter"
 

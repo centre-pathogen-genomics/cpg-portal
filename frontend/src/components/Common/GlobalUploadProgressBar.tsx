@@ -1,6 +1,7 @@
 // components/UploadProgress.tsx
+
+import { Box, Progress } from "@chakra-ui/react"
 import type React from "react"
-import { Box, Progress } from "@/components/ui/chakra-compat"
 import { useUpload } from "../../context/UploadContext"
 
 const UploadProgress: React.FC = () => {

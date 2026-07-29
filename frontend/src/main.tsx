@@ -1,3 +1,4 @@
+import { ChakraProvider, useColorMode } from "@chakra-ui/react"
 import {
   MutationCache,
   QueryCache,
@@ -6,14 +7,14 @@ import {
 } from "@tanstack/react-query"
 import { createRouter, RouterProvider } from "@tanstack/react-router"
 import { AxiosError } from "axios"
-import { StrictMode } from "react"
+import { StrictMode, useEffect } from "react"
 import ReactDOM from "react-dom/client"
 import { client } from "./client/client.gen"
-import { ThemeProvider } from "./components/theme-provider"
 import { Toaster } from "./components/ui/sonner"
 import "./index.css"
 import { UploadProvider } from "./context/UploadContext"
 import { routeTree } from "./routeTree.gen"
+import theme from "./theme"
 
 client.setConfig({
   baseURL: import.meta.env.VITE_API_URL,
@@ -55,15 +56,27 @@ declare module "@tanstack/react-router" {
   }
 }
 
+function ColorModeBridge() {
+  const { colorMode } = useColorMode()
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", colorMode === "dark")
+    document.documentElement.classList.toggle("light", colorMode === "light")
+  }, [colorMode])
+
+  return null
+}
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+    <ChakraProvider resetCSS={false} theme={theme}>
+      <ColorModeBridge />
       <QueryClientProvider client={queryClient}>
         <UploadProvider>
           <RouterProvider router={router} />
           <Toaster richColors closeButton />
         </UploadProvider>
       </QueryClientProvider>
-    </ThemeProvider>
+    </ChakraProvider>
   </StrictMode>,
 )

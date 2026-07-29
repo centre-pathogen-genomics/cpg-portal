@@ -1,4 +1,4 @@
-import { Button, useDisclosure } from "@/components/ui/chakra-compat"
+import { Button, useDisclosure } from "@chakra-ui/react"
 import DeleteAll from "../Common/DeleteAllAlert"
 
 const DeleteRunsButton = () => {

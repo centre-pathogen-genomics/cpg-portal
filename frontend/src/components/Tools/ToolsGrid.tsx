@@ -1,7 +1,3 @@
-import { useSuspenseQuery } from "@tanstack/react-query"
-import type React from "react"
-import { Suspense, useState } from "react"
-import { ErrorBoundary } from "react-error-boundary"
 import {
   Box,
   Flex,
@@ -13,7 +9,11 @@ import {
   Skeleton,
   Switch,
   Text,
-} from "@/components/ui/chakra-compat"
+} from "@chakra-ui/react"
+import { useSuspenseQuery } from "@tanstack/react-query"
+import type React from "react"
+import { Suspense, useState } from "react"
+import { ErrorBoundary } from "react-error-boundary"
 import ErrorLogo from "/assets/images/500.png"
 import type { ToolsOrderBy } from "../../client"
 import { readToolsOptions } from "../../client/@tanstack/react-query.gen"
@@ -48,7 +48,7 @@ function ToolCards({
       <SimpleGrid
         gap={4}
         mb={8}
-        gridTemplateColumns="repeat(auto-fill, minmax(280px, 1fr))"
+        gridTemplateColumns="repeat(auto-fill, minmax(300px, 1fr))"
       >
         {tools.data.map((tool) => (
           <ToolCard key={tool.id} tool={tool} />

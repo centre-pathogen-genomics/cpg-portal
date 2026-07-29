@@ -1,6 +1,6 @@
 // UploadProgress.tsx
-import type React from "react"
-import { FiAlertCircle, FiX } from "react-icons/fi"
+
+import { CheckIcon } from "@chakra-ui/icons"
 import {
   Box,
   Flex,
@@ -8,8 +8,9 @@ import {
   Progress,
   Text,
   useColorModeValue,
-} from "@/components/ui/chakra-compat"
-import { CheckIcon } from "@/components/ui/chakra-icons-compat"
+} from "@chakra-ui/react"
+import type React from "react"
+import { FiAlertCircle, FiX } from "react-icons/fi"
 import { humanReadableFileSize } from "../../utils"
 
 interface UploadProgressProps {

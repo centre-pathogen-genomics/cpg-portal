@@ -1,5 +1,5 @@
-import { Button } from "@/components/ui/chakra-compat"
-import { DownloadIcon } from "@/components/ui/chakra-icons-compat"
+import { DownloadIcon } from "@chakra-ui/icons"
+import { Button } from "@chakra-ui/react"
 import { type FilePublic, FilesService } from "../../client"
 
 interface DownloadFileButtonProps {

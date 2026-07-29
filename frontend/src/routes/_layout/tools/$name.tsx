@@ -1,10 +1,3 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import {
-  createFileRoute,
-  Link as RouterLink,
-  useNavigate,
-} from "@tanstack/react-router"
-import { useEffect, useState } from "react"
 import {
   Accordion,
   AccordionButton,
@@ -24,7 +17,14 @@ import {
   Switch,
   Text,
   Badge as VersionBadge,
-} from "@/components/ui/chakra-compat"
+} from "@chakra-ui/react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  createFileRoute,
+  Link as RouterLink,
+  useNavigate,
+} from "@tanstack/react-router"
+import { useEffect, useState } from "react"
 import type { ToolPublic, UserPublic } from "../../../client"
 import {
   disableLlmSummaryMutation,

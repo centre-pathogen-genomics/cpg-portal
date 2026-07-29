@@ -1,3 +1,10 @@
+import {
+  Box,
+  Button,
+  IconButton,
+  useColorModeValue,
+  useToast,
+} from "@chakra-ui/react"
 import { useEffect, useRef, useState } from "react"
 import { CopyToClipboard } from "react-copy-to-clipboard"
 import { IoIosCheckmarkCircleOutline, IoIosCopy } from "react-icons/io"
@@ -6,13 +13,6 @@ import {
   githubGist,
   vs2015,
 } from "react-syntax-highlighter/dist/cjs/styles/hljs"
-import {
-  Box,
-  Button,
-  IconButton,
-  useColorModeValue,
-  useToast,
-} from "@/components/ui/chakra-compat"
 
 interface CodeBlockProps {
   code: string

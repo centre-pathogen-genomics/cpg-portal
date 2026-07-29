@@ -1,7 +1,3 @@
-import { useState } from "react"
-import { HiOutlineDocumentText, HiQuestionMarkCircle } from "react-icons/hi"
-import { HiOutlineCommandLine } from "react-icons/hi2"
-import { SiAnaconda } from "react-icons/si"
 import {
   Accordion,
   AccordionButton,
@@ -13,7 +9,11 @@ import {
   Icon,
   Spinner,
   Text,
-} from "@/components/ui/chakra-compat"
+} from "@chakra-ui/react"
+import { useState } from "react"
+import { HiOutlineDocumentText, HiQuestionMarkCircle } from "react-icons/hi"
+import { HiOutlineCommandLine } from "react-icons/hi2"
+import { SiAnaconda } from "react-icons/si"
 import type { RunPublic } from "../../client"
 import useWebSocket from "../../hooks/useWebsocket"
 import CodeBlock from "../Common/CodeBlock"

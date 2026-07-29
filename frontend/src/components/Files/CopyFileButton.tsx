@@ -1,8 +1,3 @@
-import { useMutation } from "@tanstack/react-query"
-import { useNavigate } from "@tanstack/react-router"
-import { useState } from "react"
-import { FaRegCopy } from "react-icons/fa"
-import { HiCheckCircle } from "react-icons/hi"
 import {
   Button,
   Link,
@@ -10,7 +5,12 @@ import {
   Tag,
   TagLabel,
   TagLeftIcon,
-} from "@/components/ui/chakra-compat"
+} from "@chakra-ui/react"
+import { useMutation } from "@tanstack/react-query"
+import { useNavigate } from "@tanstack/react-router"
+import { useState } from "react"
+import { FaRegCopy } from "react-icons/fa"
+import { HiCheckCircle } from "react-icons/hi"
 import { copyFileMutation } from "../../client/@tanstack/react-query.gen"
 import useCustomToast from "../../hooks/useCustomToast"
 

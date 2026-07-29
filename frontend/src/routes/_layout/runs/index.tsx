@@ -1,6 +1,3 @@
-import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { useEffect } from "react"
 import {
   Badge,
   Button,
@@ -19,7 +16,10 @@ import {
   Thead,
   Tr,
   useColorModeValue,
-} from "@/components/ui/chakra-compat"
+} from "@chakra-ui/react"
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { useEffect } from "react"
 import { RunsService } from "../../../client"
 import CancelRunButton from "../../../components/Runs/CancelRunButton"
 import CancelRunsButton from "../../../components/Runs/CancelRunsButton"

@@ -1,4 +1,4 @@
-import { Button, Flex } from "@/components/ui/chakra-compat"
+import { Button, Flex } from "@chakra-ui/react"
 
 type PaginationFooterProps = {
   hasNextPage?: boolean

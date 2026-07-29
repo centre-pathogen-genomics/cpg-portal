@@ -1,11 +1,11 @@
-import { Tooltip } from "@/components/ui/chakra-compat"
 import {
   CheckIcon,
   NotAllowedIcon,
   QuestionOutlineIcon,
   TimeIcon,
   WarningIcon,
-} from "@/components/ui/chakra-icons-compat"
+} from "@chakra-ui/icons"
+import { Tooltip } from "@chakra-ui/react"
 import type { RunStatus } from "../../client"
 
 const StatusIcon = ({ status }: { status: RunStatus }) => {

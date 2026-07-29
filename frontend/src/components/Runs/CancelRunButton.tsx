@@ -1,9 +1,5 @@
+import { IconButton, Tooltip, useDisclosure } from "@chakra-ui/react"
 import { FiX } from "react-icons/fi"
-import {
-  IconButton,
-  Tooltip,
-  useDisclosure,
-} from "@/components/ui/chakra-compat"
 import Cancel from "./CancelAlert"
 
 interface CancelButtonProps {

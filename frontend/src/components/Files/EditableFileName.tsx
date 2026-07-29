@@ -1,10 +1,6 @@
+import { Editable, EditableInput, EditablePreview } from "@chakra-ui/react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
-import {
-  Editable,
-  EditableInput,
-  EditablePreview,
-} from "@/components/ui/chakra-compat"
 import { renameFileMutation } from "../../client/@tanstack/react-query.gen"
 import useCustomToast from "../../hooks/useCustomToast"
 

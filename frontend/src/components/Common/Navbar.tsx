@@ -1,11 +1,6 @@
+import { Button, Flex, Icon, useDisclosure } from "@chakra-ui/react"
 import type { ComponentType } from "react"
 import { FaPlus } from "react-icons/fa"
-import {
-  Button,
-  Flex,
-  Icon,
-  useDisclosure,
-} from "@/components/ui/chakra-compat"
 
 interface NavbarProps {
   type: string

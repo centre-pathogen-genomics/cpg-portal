@@ -1,3 +1,4 @@
+import { Box, Flex, Icon, Text, useColorModeValue } from "@chakra-ui/react"
 import { Link } from "@tanstack/react-router"
 import {
   FiCodesandbox,
@@ -10,13 +11,6 @@ import {
   FiUsers,
 } from "react-icons/fi"
 import { IoGlasses } from "react-icons/io5"
-import {
-  Box,
-  Flex,
-  Icon,
-  Text,
-  useColorModeValue,
-} from "@/components/ui/chakra-compat"
 
 import useAuth from "../../hooks/useAuth"
 import StorageStats from "../Files/StorageStats"

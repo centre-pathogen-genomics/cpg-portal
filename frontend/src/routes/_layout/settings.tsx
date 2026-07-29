@@ -1,17 +1,25 @@
+import {
+  Container,
+  Heading,
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
+} from "@chakra-ui/react"
 import { createFileRoute } from "@tanstack/react-router"
 
-import { Appearance } from "@/components/Common/Appearance"
+import Appearance from "@/components/UserSettings/Appearance"
 import ChangePassword from "@/components/UserSettings/ChangePassword"
 import DeleteAccount from "@/components/UserSettings/DeleteAccount"
 import UserInformation from "@/components/UserSettings/UserInformation"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import useAuth from "@/hooks/useAuth"
 
 const tabsConfig = [
-  { value: "my-profile", title: "My profile", component: UserInformation },
-  { value: "password", title: "Password", component: ChangePassword },
-  { value: "appearance", title: "Appearance", component: Appearance },
-  { value: "danger-zone", title: "Danger zone", component: DeleteAccount },
+  { title: "My profile", component: UserInformation },
+  { title: "Password", component: ChangePassword },
+  { title: "Appearance", component: Appearance },
+  { title: "Danger zone", component: DeleteAccount },
 ]
 
 export const Route = createFileRoute("/_layout/settings")({
@@ -33,28 +41,24 @@ function UserSettings() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">User Settings</h1>
-        <p className="text-muted-foreground">
-          Manage your account settings and preferences
-        </p>
-      </div>
-
-      <Tabs defaultValue="my-profile">
-        <TabsList>
+    <Container maxW="full">
+      <Heading size="2xl" textAlign={{ base: "center", md: "left" }} py={6}>
+        User Settings
+      </Heading>
+      <Tabs variant="enclosed">
+        <TabList>
           {tabsConfig.map((tab) => (
-            <TabsTrigger key={tab.value} value={tab.value}>
-              {tab.title}
-            </TabsTrigger>
+            <Tab key={tab.title}>{tab.title}</Tab>
           ))}
-        </TabsList>
-        {tabsConfig.map((tab) => (
-          <TabsContent key={tab.value} value={tab.value}>
-            <tab.component />
-          </TabsContent>
-        ))}
+        </TabList>
+        <TabPanels>
+          {tabsConfig.map((tab) => (
+            <TabPanel key={tab.title}>
+              <tab.component />
+            </TabPanel>
+          ))}
+        </TabPanels>
       </Tabs>
-    </div>
+    </Container>
   )
 }

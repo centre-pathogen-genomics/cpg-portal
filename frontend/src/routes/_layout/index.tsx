@@ -1,11 +1,5 @@
+import { Button, Container, Flex, Image, Text } from "@chakra-ui/react"
 import { createFileRoute, Link } from "@tanstack/react-router"
-import {
-  Button,
-  Container,
-  Flex,
-  Image,
-  Text,
-} from "@/components/ui/chakra-compat"
 import Logo from "/assets/images/cpg-logo.png"
 import ToolsGrid from "../../components/Tools/ToolsGrid"
 import useAuth from "../../hooks/useAuth"

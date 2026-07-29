@@ -1,15 +1,9 @@
+import { Button, Link, Tag, TagLabel, TagLeftIcon } from "@chakra-ui/react"
 import { useMutation } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
 import { FaRegSave } from "react-icons/fa"
 import { HiCheckCircle } from "react-icons/hi"
-import {
-  Button,
-  Link,
-  Tag,
-  TagLabel,
-  TagLeftIcon,
-} from "@/components/ui/chakra-compat"
 import { saveFileMutation } from "../../client/@tanstack/react-query.gen"
 import useCustomToast from "../../hooks/useCustomToast"
 

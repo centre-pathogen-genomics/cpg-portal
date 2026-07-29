@@ -1,5 +1,5 @@
+import { Flex, Icon, Text } from "@chakra-ui/react"
 import { HiOutlineCommandLine } from "react-icons/hi2"
-import { Flex, Icon, Text } from "@/components/ui/chakra-compat"
 import CodeBlock from "../Common/CodeBlock"
 
 function Command({ command }: { command: string }) {

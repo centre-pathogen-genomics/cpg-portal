@@ -1,4 +1,4 @@
-import { createFileRoute, Link as RouterLink } from "@tanstack/react-router"
+import { CheckCircleIcon } from "@chakra-ui/icons"
 import {
   Box,
   Container,
@@ -17,8 +17,8 @@ import {
   Th,
   Thead,
   Tr,
-} from "@/components/ui/chakra-compat"
-import { CheckCircleIcon } from "@/components/ui/chakra-icons-compat"
+} from "@chakra-ui/react"
+import { createFileRoute, Link as RouterLink } from "@tanstack/react-router"
 import Logo from "/assets/images/cpg-logo.png"
 import MainMenuBar from "../components/Common/MainMenuBar"
 

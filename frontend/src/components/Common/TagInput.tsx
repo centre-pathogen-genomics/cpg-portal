@@ -1,6 +1,6 @@
+import { Flex, Input, Tag, TagCloseButton } from "@chakra-ui/react"
 import type React from "react"
 import { useRef, useState } from "react"
-import { Flex, Input, Tag, TagCloseButton } from "@/components/ui/chakra-compat"
 
 interface InputTagProps {
   tags: string[]

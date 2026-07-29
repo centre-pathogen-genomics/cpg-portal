@@ -1,5 +1,5 @@
+import { Container, Flex, Heading } from "@chakra-ui/react"
 import { createFileRoute } from "@tanstack/react-router"
-import { Container, Flex, Heading } from "@/components/ui/chakra-compat"
 import ToolsGrid from "../../../components/Tools/ToolsGrid"
 
 export const Route = createFileRoute("/_layout/search/$query")({

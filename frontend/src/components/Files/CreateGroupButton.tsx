@@ -1,5 +1,3 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { useState } from "react"
 import {
   Button,
   Input,
@@ -12,7 +10,9 @@ import {
   ModalOverlay,
   Text,
   useDisclosure,
-} from "@/components/ui/chakra-compat"
+} from "@chakra-ui/react"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useState } from "react"
 import { createGroupMutation } from "../../client/@tanstack/react-query.gen"
 import useCustomToast from "../../hooks/useCustomToast"
 

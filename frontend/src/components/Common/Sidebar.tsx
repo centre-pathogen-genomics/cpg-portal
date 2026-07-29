@@ -1,4 +1,4 @@
-import { Box, Flex, useColorModeValue } from "@/components/ui/chakra-compat"
+import { Box, Flex, useColorModeValue } from "@chakra-ui/react"
 
 import StorageStats from "../Files/StorageStats"
 import SidebarItems from "./SidebarItems"

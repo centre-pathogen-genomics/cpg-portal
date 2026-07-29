@@ -1,10 +1,5 @@
 // FileUpload.tsx
 
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import axios from "axios"
-import type React from "react"
-import { useCallback, useEffect, useRef, useState } from "react"
-import { HiDocumentArrowUp } from "react-icons/hi2"
 import {
   Box,
   Button,
@@ -14,7 +9,12 @@ import {
   Input,
   Text,
   useColorModeValue,
-} from "@/components/ui/chakra-compat"
+} from "@chakra-ui/react"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import axios from "axios"
+import type React from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { HiDocumentArrowUp } from "react-icons/hi2"
 import type { FilePublic } from "../../client"
 import { createPairMutation } from "../../client/@tanstack/react-query.gen"
 import { useUpload } from "../../context/UploadContext"

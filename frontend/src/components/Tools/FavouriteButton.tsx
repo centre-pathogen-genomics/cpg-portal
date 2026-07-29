@@ -1,10 +1,6 @@
+import { Flex, IconButton, useColorModeValue } from "@chakra-ui/react"
 import { useMutation } from "@tanstack/react-query"
 import { HiHeart, HiOutlineHeart } from "react-icons/hi"
-import {
-  Flex,
-  IconButton,
-  useColorModeValue,
-} from "@/components/ui/chakra-compat"
 import type { ToolMinimalPublic } from "../../client"
 import {
   favouriteToolMutation,

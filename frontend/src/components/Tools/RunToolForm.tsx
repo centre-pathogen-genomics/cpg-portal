@@ -1,7 +1,3 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import type React from "react"
-import { useEffect, useMemo, useState } from "react"
-import { type SubmitHandler, useForm } from "react-hook-form"
 import {
   Box,
   Button,
@@ -14,8 +10,12 @@ import {
   Heading,
   Input,
   Text,
-} from "@/components/ui/chakra-compat"
-import { Select } from "@/components/ui/select-compat"
+} from "@chakra-ui/react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { Select } from "chakra-react-select"
+import type React from "react"
+import { useEffect, useMemo, useState } from "react"
+import { type SubmitHandler, useForm } from "react-hook-form"
 import {
   FilesService,
   type FileTypeEnum,

@@ -1,5 +1,5 @@
+import { Text } from "@chakra-ui/react"
 import { useSuspenseQuery } from "@tanstack/react-query"
-import { Text } from "@/components/ui/chakra-compat"
 import { downloadFileOptions } from "../../client/@tanstack/react-query.gen"
 
 interface TextFileProps {

@@ -1,12 +1,4 @@
 import {
-  useInfiniteQuery,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { useEffect, useState } from "react"
-import { BsFolder } from "react-icons/bs"
-import {
   Badge,
   Button,
   ButtonGroup,
@@ -24,8 +16,16 @@ import {
   Thead,
   Tr,
   useColorModeValue,
-} from "@/components/ui/chakra-compat"
-import { Select } from "@/components/ui/select-compat"
+} from "@chakra-ui/react"
+import {
+  useInfiniteQuery,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { Select } from "chakra-react-select"
+import { useEffect, useState } from "react"
+import { BsFolder } from "react-icons/bs"
 import { FilesService } from "../../../client"
 import { getFilesAllowedTypesOptions } from "../../../client/@tanstack/react-query.gen"
 import CreateGroupButton from "../../../components/Files/CreateGroupButton"

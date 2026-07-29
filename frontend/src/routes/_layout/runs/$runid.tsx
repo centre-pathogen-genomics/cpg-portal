@@ -1,7 +1,3 @@
-import { useSuspenseQuery } from "@tanstack/react-query"
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
-import { Suspense, useState } from "react"
-import { ErrorBoundary } from "react-error-boundary"
 import {
   Box,
   Container,
@@ -14,7 +10,11 @@ import {
   TabPanels,
   Tabs,
   Text,
-} from "@/components/ui/chakra-compat"
+} from "@chakra-ui/react"
+import { useSuspenseQuery } from "@tanstack/react-query"
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
+import { Suspense, useState } from "react"
+import { ErrorBoundary } from "react-error-boundary"
 import { readRunOptions } from "../../../client/@tanstack/react-query.gen"
 import AISummaryButton from "../../../components/AI/AISummary"
 import ReactMarkdown from "../../../components/Common/Markdown"

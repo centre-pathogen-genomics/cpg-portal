@@ -1,11 +1,5 @@
+import { Flex, Heading, HStack, Icon, VStack } from "@chakra-ui/react"
 import { HiOutlineDocument } from "react-icons/hi2"
-import {
-  Flex,
-  Heading,
-  HStack,
-  Icon,
-  VStack,
-} from "@/components/ui/chakra-compat"
 import type { FilePublic } from "../../client"
 import { humanReadableFileSize } from "../../utils"
 import CopyFileButton from "../Files/CopyFileButton"

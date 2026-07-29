@@ -1,4 +1,4 @@
-import { Image, Link } from "@/components/ui/chakra-compat"
+import { Image, Link } from "@chakra-ui/react"
 
 interface ToolBadgeProps {
   label: string

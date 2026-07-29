@@ -1,4 +1,4 @@
-import { Checkbox } from "@/components/ui/chakra-compat"
+import { Checkbox } from "@chakra-ui/react"
 
 interface EmailOnFinishedProps {
   emailOnFinished: boolean
