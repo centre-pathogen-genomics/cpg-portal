@@ -42,6 +42,18 @@ const formSchema = z
       .optional()
       .or(z.literal("")),
     confirm_password: z.string().optional(),
+    max_runs: z
+      .number()
+      .int()
+      .min(1, { message: "Max concurrent runs must be at least 1" }),
+    max_storage: z
+      .number()
+      .int()
+      .min(1, { message: "Max storage must be at least 1 byte" }),
+    max_storage_files: z
+      .number()
+      .int()
+      .min(1, { message: "Max storage files must be at least 1" }),
     is_superuser: z.boolean().optional(),
     is_active: z.boolean().optional(),
   })
@@ -69,6 +81,9 @@ const EditUser = ({ user, onSuccess }: EditUserProps) => {
     defaultValues: {
       email: user.email,
       full_name: user.full_name ?? undefined,
+      max_runs: user.max_runs ?? 10,
+      max_storage: user.max_storage ?? 25 * 1024 * 1024 * 1024,
+      max_storage_files: user.max_storage_files ?? 300,
       is_superuser: user.is_superuser,
       is_active: user.is_active,
     },
@@ -121,7 +136,7 @@ const EditUser = ({ user, onSuccess }: EditUserProps) => {
         <Pencil />
         Edit User
       </DropdownMenuItem>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-md">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <DialogHeader>
@@ -195,6 +210,75 @@ const EditUser = ({ user, onSuccess }: EditUserProps) => {
                         placeholder="Password"
                         type="password"
                         {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="max_runs"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Max Concurrent Runs</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min={1}
+                        step={1}
+                        {...field}
+                        onChange={(event) =>
+                          field.onChange(event.target.valueAsNumber)
+                        }
+                        required
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="max_storage"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Max Storage (bytes)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min={1}
+                        step={1}
+                        {...field}
+                        onChange={(event) =>
+                          field.onChange(event.target.valueAsNumber)
+                        }
+                        required
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="max_storage_files"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Max Storage Files</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min={1}
+                        step={1}
+                        {...field}
+                        onChange={(event) =>
+                          field.onChange(event.target.valueAsNumber)
+                        }
+                        required
                       />
                     </FormControl>
                     <FormMessage />

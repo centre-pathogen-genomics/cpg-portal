@@ -392,7 +392,7 @@ function AdminDashboard() {
           </div>
           <AddUser />
         </div>
-        <Card className="rounded border-border shadow-sm">
+        <Card className="gap-0 rounded border-border py-0 shadow-sm">
           <CardContent className="p-0">
             <UsersTable />
           </CardContent>

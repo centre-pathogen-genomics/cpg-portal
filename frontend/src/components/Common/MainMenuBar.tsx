@@ -58,7 +58,7 @@ function MainMenuBar() {
   }
 
   return (
-    <header className="sticky top-0 z-[1000] flex w-full items-center justify-between bg-background py-2 pr-6 pl-4 text-foreground">
+    <header className="sticky top-0 z-40 flex w-full items-center justify-between bg-background py-2 pr-6 pl-4 text-foreground">
       <div className="mr-4 flex flex-1 items-center gap-4">
         <Link to="/" aria-label="CPG Portal home">
           <img

@@ -89,11 +89,34 @@ test.describe("Admin user management", () => {
 
     await page.getByRole("menuitem", { name: "Edit User" }).click()
 
+    const navbarZIndex = await page
+      .locator("header")
+      .evaluate((element) =>
+        Number.parseInt(getComputedStyle(element).zIndex, 10),
+      )
+    const overlayZIndex = await page
+      .locator('[data-slot="dialog-overlay"]')
+      .evaluate((element) =>
+        Number.parseInt(getComputedStyle(element).zIndex, 10),
+      )
+    expect(overlayZIndex).toBeGreaterThan(navbarZIndex)
+
     await page.getByPlaceholder("Full name").fill(updatedName)
+    await page.getByLabel("Max Concurrent Runs").fill("12")
+    await page.getByLabel("Max Storage (bytes)").fill("53687091200")
+    await page.getByLabel("Max Storage Files").fill("750")
     await page.getByRole("button", { name: "Save" }).click()
 
     await expect(page.getByText("User updated successfully")).toBeVisible()
     await expect(page.getByText(updatedName)).toBeVisible()
+
+    await userRow.getByRole("button").click()
+    await page.getByRole("menuitem", { name: "Edit User" }).click()
+    await expect(page.getByLabel("Max Concurrent Runs")).toHaveValue("12")
+    await expect(page.getByLabel("Max Storage (bytes)")).toHaveValue(
+      "53687091200",
+    )
+    await expect(page.getByLabel("Max Storage Files")).toHaveValue("750")
   })
 
   test("Delete a user successfully", async ({ page }) => {
