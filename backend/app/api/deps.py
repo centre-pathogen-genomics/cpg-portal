@@ -43,7 +43,10 @@ def get_current_user(session: SessionDep, token: TokenDep) -> User:
         )
     user = session.get(User, token_data.sub)
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+        )
     if not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
     return user
@@ -59,8 +62,11 @@ def get_current_user_or_anonymous(
         # valid bearer token → real user
         return get_current_user(session, token)
     except HTTPException as e:
-        # invalid token → treat as anonymous
-        if e.status_code == status.HTTP_403_FORBIDDEN:
+        # Invalid or stale credentials do not block public routes.
+        if e.status_code in {
+            status.HTTP_401_UNAUTHORIZED,
+            status.HTTP_403_FORBIDDEN,
+        }:
             return None
         # other errors (404, 400) bubble up
         raise

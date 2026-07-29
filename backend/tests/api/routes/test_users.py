@@ -1,4 +1,5 @@
 import uuid
+from datetime import timedelta
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
@@ -6,7 +7,7 @@ from sqlmodel import Session, select
 
 from app import crud
 from app.core.config import settings
-from app.core.security import verify_password
+from app.core.security import create_access_token, verify_password
 from app.models import User, UserCreate
 from tests.utils.user import create_random_user
 from tests.utils.utils import random_email, random_lower_string
@@ -32,6 +33,23 @@ def test_get_users_normal_user_me(
     assert current_user["is_active"] is True
     assert current_user["is_superuser"] is False
     assert current_user["email"] == settings.EMAIL_TEST_USER
+
+
+def test_stale_user_token_is_rejected_but_allows_anonymous_routes(
+    client: TestClient,
+) -> None:
+    token = create_access_token(subject=uuid.uuid4(), expires_delta=timedelta(minutes=5))
+    headers = {"Authorization": f"Bearer {token}"}
+
+    current_user = client.get(
+        f"{settings.API_V1_STR}/users/me",
+        headers=headers,
+    )
+    assert current_user.status_code == 401
+    assert current_user.json() == {"detail": "Could not validate credentials"}
+
+    tools = client.get(f"{settings.API_V1_STR}/tools/", headers=headers)
+    assert tools.status_code == 200
 
 
 def test_create_user_new_email(
