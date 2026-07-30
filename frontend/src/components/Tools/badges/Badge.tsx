@@ -6,7 +6,9 @@ interface ToolBadgeProps {
 }
 
 const Badge = ({ label, value, url, color = "green" }: ToolBadgeProps) => {
-  let shield = `https://img.shields.io/badge/${label}-${encodeURIComponent(value.replace(/-/g, "--"))}`
+  const shieldLabel = encodeURIComponent(label.replace(/-/g, "--"))
+  const shieldValue = encodeURIComponent(value.replace(/-/g, "--"))
+  let shield = `https://img.shields.io/badge/${shieldLabel}-${shieldValue}`
   if (color) {
     shield += `-${color}`
   }

@@ -355,11 +355,12 @@ const FileUpload = ({
     <div className="w-full">
       {/* Button to trigger file selection and act as a drop target */}
       <Button
+        type="button"
         onClick={handleButtonClick}
         onDrop={handleButtonDrop}
         onDragOver={handleButtonDragOver}
         variant={isDragging ? "outline" : "default"}
-        className={`mb-1 w-full text-muted-foreground ${isDragging ? "h-[100px] cursor-copy border-2 border-dashed border-blue-400" : "h-10"}`}
+        className={`mb-1 w-full ${isDragging ? "h-[100px] cursor-copy border-2 border-dashed border-blue-400" : "h-10"}`}
         disabled={uploadingFiles.length > 0}
       >
         <HiDocumentArrowUp className="size-[22px]" />

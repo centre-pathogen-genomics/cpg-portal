@@ -12,7 +12,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { Badge as VersionBadge } from "@/components/ui/badge"
+import { Badge as UiBadge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -195,9 +195,9 @@ function Tool() {
             </div>
             <h1 className="truncate text-4xl font-bold">{tool.name}</h1>
             {tool.version && (
-              <VersionBadge className="ml-1 bg-green-500">
+              <UiBadge className="ml-1 bg-green-500">
                 v{tool.version}
-              </VersionBadge>
+              </UiBadge>
             )}
           </div>
           {currentUser && (
@@ -251,8 +251,18 @@ function Tool() {
               ),
           )}
           {tool.tags?.map((tag) => (
-            <RouterLink to="/search/$query" params={{ query: tag }} key={tag}>
-              <Badge label="#" value={tag} />
+            <RouterLink
+              to="/search/$query"
+              params={{ query: tag }}
+              key={tag}
+              aria-label={`Search for tools tagged ${tag}`}
+            >
+              <UiBadge
+                variant="secondary"
+                className="rounded-sm hover:bg-accent"
+              >
+                #{tag}
+              </UiBadge>
             </RouterLink>
           ))}
         </div>
