@@ -1,7 +1,7 @@
 # Apache handles TLS for the CPG deployment, so this stack only serves HTTP.
 services:
   db:
-    image: postgres:12
+    image: postgres:18
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
@@ -20,7 +20,7 @@ services:
       - POSTGRES_DB=${POSTGRES_DB?Variable not set}
 
   nats:
-    image: nats:2.11-alpine
+    image: nats:2.14-alpine
     hostname: nats
     restart: always
     command: ["-js", "--store_dir", "/data", "-m", "8222"]
