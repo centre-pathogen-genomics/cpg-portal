@@ -1,17 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { ChevronDown, LoaderCircle } from "lucide-react"
+import { LoaderCircle } from "lucide-react"
 import { useMemo, useState } from "react"
 import { type SubmitHandler, useForm } from "react-hook-form"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { MultiSelect } from "@/components/ui/multi-select"
 import {
   FilesService,
   type FileTypeEnum,
@@ -53,59 +48,24 @@ const FileParam = ({
   const fileLabel = (file: (typeof data)[number]) =>
     `${file.name} (${file.file_type}${file.is_group ? ", group" : ""})`
 
-  const selectedFile = data.find((file) => file.id === values[0])
-  const selectionLabel =
-    values.length === 0
-      ? "Choose multiple files"
-      : values.length === 1
-        ? selectedFile
-          ? fileLabel(selectedFile)
-          : "1 file selected"
-        : `${values.length} files selected`
-
-  const toggleValue = (value: string, checked: boolean) => {
-    if (checked) {
-      setValues(Array.from(new Set([...values, value])))
-      return
-    }
-    setValues(values.filter((selectedValue) => selectedValue !== value))
-  }
-
   return (
     <div className="flex flex-col gap-2">
       {param.multiple ? (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              id={param.name}
-              type="button"
-              variant="outline"
-              disabled={disabled || isLoading}
-              aria-label={`Select files for ${param.name}`}
-              className="w-full justify-between font-normal"
-            >
-              <span className="truncate">{selectionLabel}</span>
-              <ChevronDown className="text-muted-foreground" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="start"
-            className="max-h-64 w-[var(--radix-dropdown-menu-trigger-width)]"
-          >
-            {data.map((file) => (
-              <DropdownMenuCheckboxItem
-                key={file.id}
-                checked={values.includes(file.id)}
-                onCheckedChange={(checked) =>
-                  toggleValue(file.id, checked === true)
-                }
-                onSelect={(event) => event.preventDefault()}
-              >
-                <span className="truncate">{fileLabel(file)}</span>
-              </DropdownMenuCheckboxItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <MultiSelect
+          id={param.name}
+          options={data.map((file) => ({
+            label: fileLabel(file),
+            value: file.id,
+          }))}
+          value={values}
+          onValueChange={setValues}
+          placeholder="Choose multiple files"
+          searchPlaceholder="Search files..."
+          emptyMessage="No matching files found."
+          disabled={disabled}
+          loading={isLoading}
+          aria-label={`Select files for ${param.name}`}
+        />
       ) : (
         <select
           id={param.name}
