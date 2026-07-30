@@ -1,9 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { LoaderCircle } from "lucide-react"
+import { ChevronDown, LoaderCircle } from "lucide-react"
 import { useMemo, useState } from "react"
 import { type SubmitHandler, useForm } from "react-hook-form"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -43,32 +49,89 @@ const FileParam = ({
         ({ data }) => data?.data || [],
       ),
   })
+
+  const fileLabel = (file: (typeof data)[number]) =>
+    `${file.name} (${file.file_type}${file.is_group ? ", group" : ""})`
+
+  const selectedFile = data.find((file) => file.id === values[0])
+  const selectionLabel =
+    values.length === 0
+      ? "Choose multiple files"
+      : values.length === 1
+        ? selectedFile
+          ? fileLabel(selectedFile)
+          : "1 file selected"
+        : `${values.length} files selected`
+
+  const toggleValue = (value: string, checked: boolean) => {
+    if (checked) {
+      setValues(Array.from(new Set([...values, value])))
+      return
+    }
+    setValues(values.filter((selectedValue) => selectedValue !== value))
+  }
+
   return (
     <div className="flex flex-col gap-2">
-      <select
-        id={param.name}
-        multiple={param.multiple}
-        disabled={disabled || isLoading}
-        value={values}
-        className="min-h-10 rounded-md border bg-background px-3 py-2"
-        onChange={(event) =>
-          setValues(
-            Array.from(event.target.selectedOptions, (option) => option.value),
-          )
-        }
-      >
-        {!param.multiple && <option value="">Choose a file</option>}
-        {data.map((file) => (
-          <option key={file.id} value={file.id}>
-            {file.name} ({file.file_type}
-            {file.is_group ? ", group" : ""})
-          </option>
-        ))}
-      </select>
+      {param.multiple ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              id={param.name}
+              type="button"
+              variant="outline"
+              disabled={disabled || isLoading}
+              aria-label={`Select files for ${param.name}`}
+              className="w-full justify-between font-normal"
+            >
+              <span className="truncate">{selectionLabel}</span>
+              <ChevronDown className="text-muted-foreground" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="start"
+            className="max-h-64 w-[var(--radix-dropdown-menu-trigger-width)]"
+          >
+            {data.map((file) => (
+              <DropdownMenuCheckboxItem
+                key={file.id}
+                checked={values.includes(file.id)}
+                onCheckedChange={(checked) =>
+                  toggleValue(file.id, checked === true)
+                }
+                onSelect={(event) => event.preventDefault()}
+              >
+                <span className="truncate">{fileLabel(file)}</span>
+              </DropdownMenuCheckboxItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : (
+        <select
+          id={param.name}
+          disabled={disabled || isLoading}
+          value={values[0] ?? ""}
+          className="min-h-10 rounded-md border bg-background px-3 py-2"
+          onChange={(event) =>
+            setValues(event.target.value ? [event.target.value] : [])
+          }
+        >
+          <option value="">Choose a file</option>
+          {data.map((file) => (
+            <option key={file.id} value={file.id}>
+              {fileLabel(file)}
+            </option>
+          ))}
+        </select>
+      )}
       {!disabled && (
         <FileUploadButton
           onComplete={(file) =>
-            setValues(param.multiple ? [...values, file.id] : [file.id])
+            setValues(
+              param.multiple
+                ? Array.from(new Set([...values, file.id]))
+                : [file.id],
+            )
           }
           onStart={() => setIsLoading(true)}
           onEnd={() => setIsLoading(false)}
