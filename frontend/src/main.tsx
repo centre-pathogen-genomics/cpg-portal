@@ -61,7 +61,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <QueryClientProvider client={queryClient}>
         <UploadProvider>
           <RouterProvider router={router} />
-          <Toaster richColors closeButton />
+          <Toaster closeButton />
         </UploadProvider>
       </QueryClientProvider>
     </ThemeProvider>
