@@ -9,6 +9,7 @@ import { useEffect, useState } from "react"
 import { BsFolder } from "react-icons/bs"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
@@ -135,11 +136,10 @@ function FilesTable({ selected, setSelected, typeFilter }: FilesTableProps) {
                 >
                   <TableCell className="w-[1%] px-2">
                     {canSelect(file) && (
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         aria-label={`Select file ${file.name}`}
                         checked={selected.includes(file.id)}
-                        onChange={() => toggle(file.id)}
+                        onCheckedChange={() => toggle(file.id)}
                       />
                     )}
                     {file.is_group && <BsFolder />}
