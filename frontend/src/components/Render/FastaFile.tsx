@@ -1,6 +1,6 @@
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { useState } from "react"
-import seqparse, { type Seq } from "seqparse"
+import { parseFile, type Seq } from "seqparse"
 import { SeqViz } from "seqviz"
 import { useTheme } from "@/components/theme-provider"
 import { downloadFileOptions } from "../../client/@tanstack/react-query.gen"
@@ -27,16 +27,9 @@ const FastaFile = ({ fileId, height = 500 }: FastaFileProps) => {
   // Parse each FASTA entry
   const { data: parsed } = useSuspenseQuery<Seq[]>({
     queryKey: ["fasta-parse", fileId, fasta],
-    queryFn: async () => {
+    queryFn: () => {
       try {
-        // Split multi-FASTA file into individual sequences
-        const fastaEntries = fasta
-          .split(/(?=^>)/m)
-          .filter((entry) => entry.trim())
-        const sequences = await Promise.all(
-          fastaEntries.map((entry) => seqparse(entry)),
-        )
-        return sequences
+        return parseFile(fasta, { fileName: "preview.fasta" })
       } catch (e) {
         console.error("Fasta parsing failed:", e)
         throw e

@@ -1,6 +1,6 @@
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { Component, type ReactNode, useState } from "react"
-import seqparse, { type Seq } from "seqparse"
+import { parseFile, type Seq } from "seqparse"
 import { SeqViz } from "seqviz"
 import { useTheme } from "@/components/theme-provider"
 import { downloadFileOptions } from "../../client/@tanstack/react-query.gen"
@@ -52,12 +52,9 @@ const GenbankFileContent = ({
       : new TextDecoder().decode(genbankContent as ArrayBuffer)
 
   // Parse GenBank file - seqparse handles GenBank format directly
-  const { data: parsed } = useSuspenseQuery<Seq | Seq[]>({
+  const { data: parsed } = useSuspenseQuery<Seq[]>({
     queryKey: ["genbank-parse", fileId],
-    queryFn: async () => {
-      const result = await seqparse(genbank, { fileName: "file.gb" })
-      return result
-    },
+    queryFn: () => parseFile(genbank, { fileName: "file.gb" }),
     retry: false,
   })
 
@@ -65,8 +62,7 @@ const GenbankFileContent = ({
     return <p className="text-gray-500">No sequences found in GenBank file</p>
   }
 
-  // Handle both single and multi-sequence GenBank files
-  const sequences = Array.isArray(parsed) ? parsed : [parsed]
+  const sequences = parsed
 
   if (sequences.length === 0) {
     return <p className="text-gray-500">No sequences found in GenBank file</p>
