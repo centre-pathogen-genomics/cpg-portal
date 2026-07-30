@@ -29,6 +29,23 @@ test("Log In button is visible", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Log In" })).toBeVisible()
 })
 
+test("Login remains accessible with a stale unexpired token", async ({
+  page,
+}) => {
+  await page.goto("/")
+  await page.evaluate(() => {
+    const payload = btoa(
+      JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 }),
+    )
+    localStorage.setItem("access_token", `invalid.${payload}.signature`)
+  })
+
+  await page.goto("/login")
+
+  await expect(page).toHaveURL(/\/login$/)
+  await expect(page.getByRole("button", { name: "Log In" })).toBeVisible()
+})
+
 test("Forgot Password link is visible", async ({ page }) => {
   await page.goto("/login")
 
