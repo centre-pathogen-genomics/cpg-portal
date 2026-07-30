@@ -23,7 +23,9 @@ services:
     image: nats:2.11-alpine
     hostname: nats
     restart: always
-    command: ["-m", "8222"]
+    command: ["-js", "--store_dir", "/data", "-m", "8222"]
+    volumes:
+      - app-nats-data:/data
     networks:
       - traefik-public
       - default
@@ -230,6 +232,7 @@ volumes:
   app-db-data:
   app-storage-data:
   app-conda-data:
+  app-nats-data:
 
 networks:
   traefik-public:
