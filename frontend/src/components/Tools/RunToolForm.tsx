@@ -23,7 +23,7 @@ import EmailOnFinished from "./EmailOnFinished"
 interface FileParamProps {
   param: Param
   values: string[]
-  setValues: (values: string[]) => void
+  updateValues: (update: (values: string[]) => string[]) => void
   setIsLoading: (loading: boolean) => void
   disabled: boolean
 }
@@ -31,7 +31,7 @@ interface FileParamProps {
 const FileParam = ({
   param,
   values,
-  setValues,
+  updateValues,
   setIsLoading,
   disabled,
 }: FileParamProps) => {
@@ -58,7 +58,7 @@ const FileParam = ({
             value: file.id,
           }))}
           value={values}
-          onValueChange={setValues}
+          onValueChange={(nextValues) => updateValues(() => nextValues)}
           placeholder="Choose multiple files"
           searchPlaceholder="Search files..."
           emptyMessage="No matching files found."
@@ -73,7 +73,7 @@ const FileParam = ({
           value={values[0] ?? ""}
           className="min-h-10 rounded-md border bg-background px-3 py-2"
           onChange={(event) =>
-            setValues(event.target.value ? [event.target.value] : [])
+            updateValues(() => (event.target.value ? [event.target.value] : []))
           }
         >
           <option value="">Choose a file</option>
@@ -87,9 +87,9 @@ const FileParam = ({
       {!disabled && (
         <FileUploadButton
           onComplete={(file) =>
-            setValues(
+            updateValues((currentValues) =>
               param.multiple
-                ? Array.from(new Set([...values, file.id]))
+                ? Array.from(new Set([...currentValues, file.id]))
                 : [file.id],
             )
           }
@@ -127,6 +127,7 @@ const RunToolForm = ({
   }, [params])
   const {
     register,
+    getValues,
     handleSubmit,
     reset,
     setValue,
@@ -244,7 +245,9 @@ const RunToolForm = ({
               disabled={isDisabled}
               setIsLoading={setIsLoading}
               values={watch(param.name) || []}
-              setValues={(values) => setValue(param.name, values)}
+              updateValues={(update) =>
+                setValue(param.name, update(getValues(param.name) || []))
+              }
             />
           )}
           {errors[param.name] && (
