@@ -103,12 +103,35 @@ def read_files(
 
     return FilesPublic(data=files, count=count)
 
+
 @router.get("/types", response_model=dict[str, FileTypeMetadata], dependencies=[Depends(get_current_user)])
 def get_files_allowed_types() -> Any:
     """
     Get allowed file types.
     """
     return file_types.allowed
+
+
+@router.get("/types/current", response_model=dict[str, FileTypeMetadata])
+def get_current_file_types(session: SessionDep, current_user: CurrentUser) -> Any:
+    """
+    Get file types present in the current user's saved top-level files.
+    """
+    statement = (
+        select(File.file_type)
+        .where(File.owner_id == current_user.id)
+        .where(File.saved)
+        .where(File.parent_id.is_(None))
+        .distinct()
+        .order_by(File.file_type)
+    )
+    current_types = session.exec(statement).all()
+    return {
+        file_type: file_types.allowed[file_type]
+        for file_type in current_types
+        if file_type in file_types.allowed
+    }
+
 
 @router.get("/stats", response_model=FilesStatistics)
 def get_files_stats(session: SessionDep, current_user: CurrentUser) -> Any:

@@ -32,6 +32,7 @@ class ToolsOrderBy(StrEnum):
     created_at = "created_at"
     run_count = "run_count"
 
+
 @router.get("/", response_model=ToolsPublic)
 def read_tools(
     session: SessionDep,
@@ -106,6 +107,7 @@ def read_tools(
 
     return ToolsPublic(data=tools_with_favourite_status, count=count)
 
+
 def read_tool_with_favourite(
     session: SessionDep, current_user: CurrentUserOrAnonymous, *, tool_id: uuid.UUID | None = None, name: str | None = None
 ) -> select:
@@ -153,6 +155,7 @@ def read_tool_with_favourite(
     tool_public.favourited = favourited_tool_id is not None
     return tool_public
 
+
 @router.get("/name/{tool_name}", response_model=ToolPublic)
 def read_tool_by_name(
     *, session: SessionDep, current_user: CurrentUserOrAnonymous, tool_name: str
@@ -163,6 +166,7 @@ def read_tool_by_name(
     # Query the tool by name
     tool_public = read_tool_with_favourite(session, current_user, name=tool_name)
     return tool_public
+
 
 @router.get("/{tool_id}", response_model=ToolPublic)
 def read_tool(

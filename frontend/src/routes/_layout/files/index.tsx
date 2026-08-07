@@ -36,7 +36,6 @@ import {
 } from "@/components/ui/table"
 import type { FileTypeEnum } from "../../../client"
 import { FilesService } from "../../../client"
-import { getFilesAllowedTypesOptions } from "../../../client/@tanstack/react-query.gen"
 import CreateGroupButton from "../../../components/Files/CreateGroupButton"
 import DeleteFileButton from "../../../components/Files/DeleteFileButton"
 import DownloadFileButton from "../../../components/Files/DownloadFileButton"
@@ -425,7 +424,10 @@ function Files() {
   const [nameFilter, setNameFilter] = useState("")
   const [orderBy, setOrderBy] = useState("-created_at")
   const trimmedNameFilter = nameFilter.trim()
-  const { data: fileTypes } = useQuery({ ...getFilesAllowedTypesOptions() })
+  const { data: fileTypes } = useQuery({
+    queryKey: ["files", "types", "current"],
+    queryFn: async () => (await FilesService.getCurrentFileTypes()).data ?? {},
+  })
   const { data: currentFilesCount } = useQuery({
     queryKey: ["files-count", "current", typeFilter, trimmedNameFilter],
     queryFn: async () =>

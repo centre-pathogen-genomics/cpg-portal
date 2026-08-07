@@ -2300,6 +2300,25 @@ export type FilesGetFilesAllowedTypesResponses = {
 
 export type FilesGetFilesAllowedTypesResponse = FilesGetFilesAllowedTypesResponses[keyof FilesGetFilesAllowedTypesResponses];
 
+export type FilesGetCurrentFileTypesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/files/types/current';
+};
+
+export type FilesGetCurrentFileTypesResponses = {
+    /**
+     * Response Files-Get Current File Types
+     * Successful Response
+     */
+    200: {
+        [key: string]: FileTypeMetadata;
+    };
+};
+
+export type FilesGetCurrentFileTypesResponse = FilesGetCurrentFileTypesResponses[keyof FilesGetCurrentFileTypesResponses];
+
 export type FilesGetFilesStatsData = {
     body?: never;
     path?: never;
@@ -2698,6 +2717,14 @@ export type RunsReadRunsData = {
          * Order By
          */
         order_by?: string;
+        /**
+         * Name
+         */
+        name?: string | null;
+        /**
+         * Tool Name
+         */
+        tool_name?: string | null;
     };
     url: '/api/v1/runs/';
 };
@@ -2719,6 +2746,22 @@ export type RunsReadRunsResponses = {
 };
 
 export type RunsReadRunsResponse = RunsReadRunsResponses[keyof RunsReadRunsResponses];
+
+export type RunsReadRunToolNamesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/runs/tools';
+};
+
+export type RunsReadRunToolNamesResponses = {
+    /**
+     * Successful Response
+     */
+    200: Array<string>;
+};
+
+export type RunsReadRunToolNamesResponse = RunsReadRunToolNamesResponses[keyof RunsReadRunToolNamesResponses];
 
 export type RunsCreateRunData = {
     body: BodyRunsCreateRun;

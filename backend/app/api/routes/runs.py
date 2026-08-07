@@ -5,7 +5,7 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, status
 from jinja2 import Environment as JinjaEnvironment
-from sqlalchemy import desc
+from sqlalchemy import and_, desc
 from sqlmodel import func, select
 
 from app.api.deps import CurrentUser, SessionDep
@@ -17,13 +17,28 @@ from app.wsmanager import manager
 
 router = APIRouter()
 
+RUN_SORT_COLUMNS = {
+    "created_at": Run.created_at,
+    "finished_at": Run.finished_at,
+    "name": Run.name,
+    "runtime": func.coalesce(
+        func.extract("epoch", func.coalesce(Run.finished_at, func.now()) - Run.started_at),
+        0,
+    ),
+    "started_at": Run.started_at,
+    "status": Run.status,
+}
+
+
 @router.get("/", response_model=RunsPublicMinimal)
 def read_runs(
     session: SessionDep,
     current_user: CurrentUser,
     skip: int = 0,
     limit: int = 100,
-    order_by: str = Query("-created_at", pattern=r"^-?[a-zA-Z_]+$")
+    order_by: str = Query("-created_at", pattern=r"^-?[a-zA-Z_]+$"),
+    name: str | None = Query(None, min_length=1, max_length=255),
+    tool_name: str | None = Query(None, min_length=1, max_length=255),
 ) -> Any:
     """
     Retrieve runs with optional ordering.
@@ -34,24 +49,43 @@ def read_runs(
     column_name = order_by[1:] if descending else order_by
 
     # Validate and obtain the actual column object from the Run model
-    if hasattr(Run, column_name):
-        column = getattr(Run, column_name)
-        order_expression = desc(column) if descending else column
-    else:
+    column = RUN_SORT_COLUMNS.get(column_name)
+    if column is None:
         raise HTTPException(status_code=400, detail=f"Invalid column name: {column_name}")
+    order_expression = desc(column) if descending else column
 
     # Build the query based on user role
-    query_base = select(Run).where(Run.owner_id == current_user.id)
+    base_where = Run.owner_id == current_user.id
+    if name:
+        base_where = and_(base_where, Run.name.icontains(name, autoescape=True))
+    if tool_name:
+        base_where = and_(base_where, Run.tool.has(Tool.name == tool_name))
+    query_base = select(Run).where(base_where)
 
     # Apply ordering, pagination and execute
     runs_query = query_base.order_by(order_expression).offset(skip).limit(limit)
     runs = session.exec(runs_query).all()
 
     # Counting for pagination
-    count_query = select(func.count()).select_from(Run).where(Run.owner_id == current_user.id)
+    count_query = select(func.count()).select_from(Run).where(base_where)
     count = session.exec(count_query).one()
 
     return RunsPublicMinimal(data=runs, count=count)
+
+
+@router.get("/tools", response_model=list[str])
+def read_run_tool_names(session: SessionDep, current_user: CurrentUser) -> Any:
+    """
+    Retrieve distinct tool names used by the current user's runs.
+    """
+    statement = (
+        select(Tool.name)
+        .join(Run, Run.tool_id == Tool.id)
+        .where(Run.owner_id == current_user.id)
+        .distinct()
+        .order_by(Tool.name)
+    )
+    return session.exec(statement).all()
 
 
 @router.post("/", response_model=RunPublic)
