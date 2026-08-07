@@ -134,6 +134,16 @@ def update_run(session: Session, run: Run, status: RunStatus, message=None):
         send_email(email_to=run.owner.email, subject=email_data.subject, html_content=email_data.html_content)
     session.add(run)
     session.commit()
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        return
+    loop.create_task(
+        manager.broadcast(
+            json.dumps({"stdout": run.stdout, "status": run.status}),
+            str(run.id),
+        )
+    )
 
 @contextmanager
 def create_tmp_dir(run_id: uuid.UUID) -> Path:

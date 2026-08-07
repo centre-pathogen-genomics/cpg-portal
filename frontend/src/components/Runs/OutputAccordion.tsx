@@ -1,5 +1,5 @@
 import { LoaderCircle } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { HiOutlineDocumentText, HiQuestionMarkCircle } from "react-icons/hi"
 import { HiOutlineCommandLine } from "react-icons/hi2"
 import { SiAnaconda } from "react-icons/si"
@@ -28,13 +28,27 @@ const OutputAccordionItem = ({
   runId,
 }: OutputAccordionItemProps) => {
   const [output, setOutput] = useState<string | null>(content || null)
+  const [currentStatus, setCurrentStatus] = useState(status)
   const lineCount = output?.trim().split("\n").length || 0
-  const active = status === "running" || status === "pending"
+  const active = currentStatus === "running" || currentStatus === "pending"
+
+  useEffect(() => {
+    setOutput(content || null)
+  }, [content])
+
+  useEffect(() => {
+    setCurrentStatus(status)
+  }, [status])
 
   useWebSocket(`logs/${runId}`, {
     onMessage: (event) => {
       try {
         const data = JSON.parse(event.data)
+        if (typeof data.status === "string") setCurrentStatus(data.status)
+        if (typeof data.stdout === "string") {
+          setOutput(data.stdout || null)
+          return
+        }
         if (data.log)
           setOutput((previous) =>
             [previous, data.log].filter(Boolean).join("\n"),

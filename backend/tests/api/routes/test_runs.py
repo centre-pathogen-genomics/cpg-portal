@@ -1,10 +1,11 @@
+import asyncio
 from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi import HTTPException
 from sqlmodel import Session
 
-from app.api.routes.runs import delete_runs, read_run_tool_names, read_runs
+from app.api.routes.runs import create_run, delete_runs, read_run_tool_names, read_runs
 from app.models import Run, RunStatus, Tool, ToolStatus, User
 from tests.utils.user import create_random_user
 from tests.utils.utils import random_lower_string
@@ -297,3 +298,27 @@ def test_read_run_tool_names_includes_only_current_users_run_tools(db: Session) 
     assert used_tool.name in tool_names
     assert unused_tool.name not in tool_names
     assert other_users_tool.name not in tool_names
+
+
+def test_create_run_rejects_required_empty_values(db: Session) -> None:
+    owner = create_random_user(db)
+    tool = _create_tool(db=db, owner=owner)
+    tool.params = [{"name": "sample", "param_type": "str", "required": True}]
+    db.add(tool)
+    db.commit()
+    db.refresh(tool)
+
+    for empty_value in ["", "   ", []]:
+        with pytest.raises(HTTPException) as exc_info:
+            asyncio.run(
+                create_run(
+                    session=db,
+                    current_user=owner,
+                    tool_id=tool.id,
+                    params={"sample": empty_value},
+                    tags=[],
+                )
+            )
+
+        assert exc_info.value.status_code == 400
+        assert exc_info.value.detail == "Missing required parameter: sample"
