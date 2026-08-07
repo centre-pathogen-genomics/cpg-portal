@@ -1,7 +1,7 @@
 services:
 
   db:
-    image: postgres:12
+    image: postgres:18
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
@@ -33,7 +33,7 @@ services:
       retries: 5
 
   redis:
-    image: redis:8.2-alpine
+    image: redis:8.8-alpine
     hostname: redis
     restart: always
     healthcheck:
