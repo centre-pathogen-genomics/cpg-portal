@@ -232,6 +232,7 @@ const FileUpload = ({
               })
               .then(() => {
                 queryClient.invalidateQueries({ queryKey: ["files"] })
+                queryClient.invalidateQueries({ queryKey: ["files-count"] })
                 queryClient.invalidateQueries({
                   queryKey: [{ _id: "getFilesStats" }],
                 })
@@ -239,6 +240,7 @@ const FileUpload = ({
           } else {
             // Invalidate the files query to refetch the list.
             queryClient.invalidateQueries({ queryKey: ["files"] })
+            queryClient.invalidateQueries({ queryKey: ["files-count"] })
             queryClient.invalidateQueries({
               queryKey: [{ _id: "getFilesStats" }],
             })
@@ -287,26 +289,45 @@ const FileUpload = ({
   }
 
   // Handle files dropped directly on the button
-  const handleButtonDrop = (
-    event: React.DragEvent<HTMLButtonElement | HTMLDivElement>,
-  ) => {
+  const handleButtonDrop = (event: React.DragEvent<HTMLElement>) => {
     event.preventDefault()
+    event.stopPropagation()
+    dragCounter.current = 0
     processFiles(event.dataTransfer.files)
     setIsDragging(false)
   }
 
   // Prevent default behavior for dragover on the button
-  const handleButtonDragOver = (
-    event: React.DragEvent<HTMLButtonElement | HTMLDivElement>,
-  ) => {
+  const handleButtonDragOver = (event: React.DragEvent<HTMLElement>) => {
     event.preventDefault()
     event.stopPropagation()
+    event.dataTransfer.dropEffect = "copy"
+  }
+
+  const handleDropZoneDragEnter = (event: React.DragEvent<HTMLElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    setIsDragging(true)
+  }
+
+  const handleDropZoneKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault()
+      handleButtonClick()
+    }
   }
   if (dragAndDrop) {
     return (
       <div className="flex w-full flex-col items-center">
         <div
           className={`relative flex h-[150px] w-full cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed bg-secondary p-4 text-center hover:border-blue-400 ${isDragging ? "border-blue-400" : "border-gray-300 dark:border-gray-600"}`}
+          role="button"
+          tabIndex={0}
+          onClick={handleButtonClick}
+          onDrop={handleButtonDrop}
+          onDragEnter={handleDropZoneDragEnter}
+          onDragOver={handleButtonDragOver}
+          onKeyDown={handleDropZoneKeyDown}
         >
           <HiDocumentArrowUp className="mb-2 size-10 text-muted-foreground" />
           <div className="text-muted-foreground">
@@ -323,10 +344,9 @@ const FileUpload = ({
           </p>
           <input
             type="file"
-            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+            ref={fileInputRef}
+            className="hidden"
             onChange={handleFileChange}
-            onDrop={handleButtonDrop}
-            onDragOver={handleButtonDragOver}
             multiple
             required={false}
             accept={accept?.join(",") ?? undefined} // how will the front end know the ext? 1. api 2. load on build 3. remove types just use exts and let the tool decide explicitly
