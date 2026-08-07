@@ -26,6 +26,13 @@ from app.models import (
 
 router = APIRouter()
 
+FILE_SORT_COLUMNS = {
+    "created_at": File.created_at,
+    "file_type": File.file_type,
+    "name": File.name,
+    "size": File.size,
+}
+
 
 def check_file_access(session: SessionDep, current_user: CurrentUser, file_metadata: File) -> bool:
     """
@@ -51,6 +58,7 @@ def read_files(
     skip: int = 0,
     limit: int = 100,
     order_by: str = Query("-created_at", pattern=r"^-?[a-zA-Z_]+$"),
+    name: str | None = Query(None, min_length=1, max_length=255),
     types: list[FileTypeEnum] = Query(None),
 ) -> Any:
     """
@@ -69,6 +77,9 @@ def read_files(
     if types:
         base_where = and_(base_where, File.file_type.in_(t.value for t in types))
 
+    if name:
+        base_where = and_(base_where, File.name.icontains(name, autoescape=True))
+
     # Counting for pagination
     count_query = select(func.count()).select_from(File).where(base_where)
     count = session.exec(count_query).one()
@@ -77,12 +88,11 @@ def read_files(
     descending = order_by.startswith('-')
     column_name = order_by[1:] if descending else order_by
 
-    # Validate and obtain the actual column object from the Run model
-    if hasattr(File, column_name):
-        column = getattr(File, column_name)
-        order_expression = desc(column) if descending else column
-    else:
+    # Validate and obtain the actual column object from the File model
+    column = FILE_SORT_COLUMNS.get(column_name)
+    if column is None:
         raise HTTPException(status_code=400, detail=f"Invalid column name: {column_name}")
+    order_expression = desc(column) if descending else column
 
     # Build the query based on user role
     query_base = select(File).where(base_where)
@@ -433,11 +443,28 @@ def delete_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -
     return Message(message="File deleted successfully")
 
 @router.delete("/")
-def delete_files(session: SessionDep, current_user: CurrentUser) -> Any:
+def delete_files(
+    session: SessionDep,
+    current_user: CurrentUser,
+    name: str | None = Query(None, min_length=1, max_length=255),
+    types: list[FileTypeEnum] = Query(None),
+    top_level_only: bool = False,
+) -> Any:
     """
-    Delete all saved files.
+    Delete saved files, optionally filtered by name and type.
     """
-    files = session.exec(select(File).where((File.owner_id == current_user.id) & (File.saved))).all()
+    if not types:
+        types = []
+
+    base_where = (File.owner_id == current_user.id) & (File.saved)
+    if name:
+        base_where = and_(base_where, File.name.icontains(name, autoescape=True))
+    if types:
+        base_where = and_(base_where, File.file_type.in_(t.value for t in types))
+    if top_level_only:
+        base_where = and_(base_where, File.parent_id.is_(None))
+
+    files = session.exec(select(File).where(base_where)).all()
     try:
         for file_metadata in files:
             # remove file

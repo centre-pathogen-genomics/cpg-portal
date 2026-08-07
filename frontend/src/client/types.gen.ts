@@ -2185,7 +2185,20 @@ export type ToolsUninstallToolResponse = ToolsUninstallToolResponses[keyof Tools
 export type FilesDeleteFilesData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        /**
+         * Name
+         */
+        name?: string | null;
+        /**
+         * Types
+         */
+        types?: Array<FileTypeEnum>;
+        /**
+         * Top Level Only
+         */
+        top_level_only?: boolean;
+    };
     url: '/api/v1/files/';
 };
 
@@ -2213,6 +2226,10 @@ export type FilesReadFilesData = {
          * Order By
          */
         order_by?: string;
+        /**
+         * Name
+         */
+        name?: string | null;
         /**
          * Types
          */
