@@ -13,11 +13,16 @@ const Badge = ({ label, value, url, color = "green" }: ToolBadgeProps) => {
     shield += `-${color}`
   }
   if (!url) {
-    return <img src={shield} alt={`${label}: ${value}`} />
+    return <img src={shield} alt={`${label}: ${value}`} className="block h-5" />
   }
   return (
-    <a href={url} target="_blank" rel="noreferrer">
-      <img src={shield} alt={`${label}: ${value}`} />
+    <a
+      href={url}
+      target="_blank"
+      rel="noreferrer"
+      className="inline-flex h-5 items-center"
+    >
+      <img src={shield} alt={`${label}: ${value}`} className="block h-5" />
     </a>
   )
 }

@@ -11,8 +11,9 @@ const GitHubBadge = ({
       href={`https://github.com/${githubRepo}`}
       target="_blank"
       rel="noreferrer"
+      className="inline-flex h-5 items-center"
     >
-      <img src={shield} alt={`GitHub ${type}`} />
+      <img src={shield} alt={`GitHub ${type}`} className="block h-5" />
     </a>
   )
 }

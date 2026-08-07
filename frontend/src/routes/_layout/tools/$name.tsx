@@ -208,15 +208,15 @@ function Tool() {
             />
           )}
         </div>
-        <div className="mb-2 flex flex-wrap gap-1">
+        <div className="mb-2 flex flex-wrap items-center gap-1.5">
           {tool.url && (
-            <Badge url={tool.url} value={tool.url} label="home" color="blue" />
+            <Badge url={tool.url} value={tool.url} label="Home" color="blue" />
           )}
           {tool.docs_url && (
             <Badge
               url={tool.docs_url}
               value={tool.docs_url}
-              label="docs"
+              label="Docs"
               color="purple"
             />
           )}
@@ -224,12 +224,12 @@ function Tool() {
             <Badge
               url={`https://doi.org/${tool.paper_doi}`}
               value={tool.paper_doi}
-              label="doi"
+              label="DOI"
               color="red"
             />
           )}
           {tool.license && (
-            <Badge value={tool.license} label="license" color="blue" />
+            <Badge value={tool.license} label="License" color="blue" />
           )}
           {tool.github_repo && (
             <>
@@ -245,8 +245,9 @@ function Tool() {
                   href={badge.url || undefined}
                   target="_blank"
                   rel="noreferrer"
+                  className="inline-flex h-5 items-center"
                 >
-                  <img src={badge.badge} alt="" />
+                  <img src={badge.badge} alt="" className="block h-5" />
                 </a>
               ),
           )}
@@ -256,10 +257,11 @@ function Tool() {
               params={{ query: tag }}
               key={tag}
               aria-label={`Search for tools tagged ${tag}`}
+              className="inline-flex h-5 items-center"
             >
               <UiBadge
                 variant="secondary"
-                className="rounded-sm hover:bg-accent"
+                className="h-5 rounded-md hover:bg-accent"
               >
                 #{tag}
               </UiBadge>
