@@ -10,7 +10,16 @@ from sqlmodel import func, select
 
 from app.api.deps import CurrentUser, SessionDep
 from app.core.file_types import FileTypeEnum
-from app.models import File, Message, Param, Run, RunPublic, RunsPublicMinimal, Tool
+from app.models import (
+    File,
+    Message,
+    Param,
+    Run,
+    RunPublic,
+    RunsPublicMinimal,
+    RunStatus,
+    Tool,
+)
 from app.tasks import run_tool
 from app.utils import escape, flatten
 from app.wsmanager import manager
@@ -39,6 +48,7 @@ def read_runs(
     order_by: str = Query("-created_at", pattern=r"^-?[a-zA-Z_]+$"),
     name: str | None = Query(None, min_length=1, max_length=255),
     tool_name: str | None = Query(None, min_length=1, max_length=255),
+    statuses: list[RunStatus] = Query(None),
 ) -> Any:
     """
     Retrieve runs with optional ordering.
@@ -60,6 +70,8 @@ def read_runs(
         base_where = and_(base_where, Run.name.icontains(name, autoescape=True))
     if tool_name:
         base_where = and_(base_where, Run.tool.has(Tool.name == tool_name))
+    if statuses:
+        base_where = and_(base_where, Run.status.in_(statuses))
     query_base = select(Run).where(base_where)
 
     # Apply ordering, pagination and execute
@@ -292,16 +304,24 @@ def cancel_runs(session: SessionDep, current_user: CurrentUser) -> Any:
 
 
 @router.delete("/", response_model=Message)
-def delete_runs(session: SessionDep, current_user: CurrentUser) -> Any:
+def delete_runs(
+    session: SessionDep,
+    current_user: CurrentUser,
+    name: str | None = Query(None, min_length=1, max_length=255),
+    tool_name: str | None = Query(None, min_length=1, max_length=255),
+) -> Any:
     """
-    Delete all inactive runs.
+    Delete inactive runs, optionally filtered by name and tool.
     """
     # Select runs based on user permissions and status
-    statement = (
-        select(Run)
-        .where(Run.owner_id == current_user.id)
-        .where(Run.status.notin_(["pending", "running"]))
-    )
+    base_where = Run.owner_id == current_user.id
+    base_where = and_(base_where, Run.status.notin_(["pending", "running"]))
+    if name:
+        base_where = and_(base_where, Run.name.icontains(name, autoescape=True))
+    if tool_name:
+        base_where = and_(base_where, Run.tool.has(Tool.name == tool_name))
+
+    statement = select(Run).where(base_where)
     runs: list[Run] = session.exec(statement).all()
 
     if not runs:

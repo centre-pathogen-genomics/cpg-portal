@@ -2688,7 +2688,16 @@ export type FilesDownloadFileWithTokenResponses = {
 export type RunsDeleteRunsData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        /**
+         * Name
+         */
+        name?: string | null;
+        /**
+         * Tool Name
+         */
+        tool_name?: string | null;
+    };
     url: '/api/v1/runs/';
 };
 
@@ -2725,6 +2734,10 @@ export type RunsReadRunsData = {
          * Tool Name
          */
         tool_name?: string | null;
+        /**
+         * Statuses
+         */
+        statuses?: Array<RunStatus>;
     };
     url: '/api/v1/runs/';
 };

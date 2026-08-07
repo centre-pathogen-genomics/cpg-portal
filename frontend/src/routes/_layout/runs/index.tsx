@@ -1,15 +1,27 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query"
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
   LoaderCircle,
+  MoreVertical,
   Search,
 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -20,14 +32,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { RunsService } from "../../../client"
+import { type RunStatus, RunsService } from "../../../client"
+import { ConfirmationDialog } from "../../../components/Common/ConfirmationDialog"
 import CancelRunButton from "../../../components/Runs/CancelRunButton"
 import CancelRunsButton from "../../../components/Runs/CancelRunsButton"
 import DeleteRunButton from "../../../components/Runs/DeleteRunButton"
-import DeleteRunsButton from "../../../components/Runs/DeleteRunsButton"
 import ParamTag from "../../../components/Runs/ParamTag"
 import RunRuntime from "../../../components/Runs/RunTime"
 import StatusBadge from "../../../components/Runs/StatusBadge"
+import useCustomToast from "../../../hooks/useCustomToast"
 import { humanReadableDate } from "../../../utils"
 
 export const Route = createFileRoute("/_layout/runs/")({
@@ -43,6 +56,9 @@ interface RunsTableProps {
 }
 
 type SortColumn = "name" | "status" | "created_at" | "finished_at" | "runtime"
+type DeleteMode = "current" | "all"
+
+const inactiveRunStatuses: RunStatus[] = ["completed", "failed", "cancelled"]
 
 const sortLabels: Record<SortColumn, string> = {
   name: "Name",
@@ -304,13 +320,129 @@ function RunsTable({
   )
 }
 
+interface RunsActionsMenuProps {
+  currentCount: number
+  allCount: number
+  nameFilter: string
+  toolFilter: string
+}
+
+function RunsActionsMenu({
+  currentCount,
+  allCount,
+  nameFilter,
+  toolFilter,
+}: RunsActionsMenuProps) {
+  const [deleteMode, setDeleteMode] = useState<DeleteMode | null>(null)
+  const queryClient = useQueryClient()
+  const showToast = useCustomToast()
+  const trimmedNameFilter = nameFilter.trim()
+  const deleteCount = deleteMode === "current" ? currentCount : allCount
+
+  const mutation = useMutation({
+    mutationFn: async (mode: DeleteMode) => {
+      await RunsService.deleteRuns({
+        query:
+          mode === "current"
+            ? {
+                ...(trimmedNameFilter ? { name: trimmedNameFilter } : {}),
+                ...(toolFilter !== "all" ? { tool_name: toolFilter } : {}),
+              }
+            : {},
+      })
+    },
+    onSuccess: () => {
+      showToast("Success", "Runs deleted successfully.", "success")
+      setDeleteMode(null)
+    },
+    onError: () => {
+      showToast("An error occurred.", "Failed to delete runs.", "error")
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["runs"] })
+      queryClient.invalidateQueries({ queryKey: ["runs-count"] })
+      queryClient.invalidateQueries({ queryKey: ["files"] })
+    },
+  })
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="icon" aria-label="Run actions">
+            <MoreVertical className="size-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            variant="destructive"
+            disabled={currentCount === 0}
+            onSelect={() => setDeleteMode("current")}
+          >
+            Delete Current ({currentCount})
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            variant="destructive"
+            disabled={allCount === 0}
+            onSelect={() => setDeleteMode("all")}
+          >
+            Delete All ({allCount})
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <ConfirmationDialog
+        open={deleteMode !== null}
+        onOpenChange={(open) => !open && setDeleteMode(null)}
+        title={
+          deleteMode === "current" ? "Delete Current Runs" : "Delete All Runs"
+        }
+        description={`Are you sure you want to delete ${deleteCount} inactive run${
+          deleteCount === 1 ? "" : "s"
+        } and associated unsaved files? This action cannot be undone.`}
+        confirmLabel={
+          deleteMode === "current" ? "Delete Current" : "Delete All"
+        }
+        pending={mutation.isPending}
+        onConfirm={() => {
+          if (deleteMode) mutation.mutate(deleteMode)
+        }}
+      />
+    </>
+  )
+}
+
 function Runs() {
   const [nameFilter, setNameFilter] = useState("")
   const [orderBy, setOrderBy] = useState("-created_at")
   const [toolFilter, setToolFilter] = useState("all")
+  const trimmedNameFilter = nameFilter.trim()
   const { data: toolNames } = useQuery({
     queryKey: ["runs", "tools"],
     queryFn: async () => (await RunsService.readRunToolNames()).data ?? [],
+  })
+  const { data: currentRunsCount } = useQuery({
+    queryKey: ["runs-count", "current", toolFilter, trimmedNameFilter],
+    queryFn: async () =>
+      (
+        await RunsService.readRuns({
+          query: {
+            skip: 0,
+            limit: 1,
+            statuses: inactiveRunStatuses,
+            ...(trimmedNameFilter ? { name: trimmedNameFilter } : {}),
+            ...(toolFilter !== "all" ? { tool_name: toolFilter } : {}),
+          },
+        })
+      ).data?.count ?? 0,
+  })
+  const { data: allRunsCount } = useQuery({
+    queryKey: ["runs-count", "all"],
+    queryFn: async () =>
+      (
+        await RunsService.readRuns({
+          query: { skip: 0, limit: 1, statuses: inactiveRunStatuses },
+        })
+      ).data?.count ?? 0,
   })
 
   return (
@@ -346,7 +478,12 @@ function Runs() {
         </div>
         <div className="flex justify-end gap-4">
           <CancelRunsButton />
-          <DeleteRunsButton />
+          <RunsActionsMenu
+            currentCount={currentRunsCount ?? 0}
+            allCount={allRunsCount ?? 0}
+            nameFilter={nameFilter}
+            toolFilter={toolFilter}
+          />
         </div>
       </div>
       <RunsTable

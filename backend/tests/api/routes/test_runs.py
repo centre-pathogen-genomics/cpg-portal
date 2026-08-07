@@ -4,7 +4,7 @@ import pytest
 from fastapi import HTTPException
 from sqlmodel import Session
 
-from app.api.routes.runs import read_run_tool_names, read_runs
+from app.api.routes.runs import delete_runs, read_run_tool_names, read_runs
 from app.models import Run, RunStatus, Tool, ToolStatus, User
 from tests.utils.user import create_random_user
 from tests.utils.utils import random_lower_string
@@ -90,6 +90,7 @@ def test_read_runs_filters_by_name_and_sorts(db: Session) -> None:
         name=prefix.upper(),
         order_by="name",
         tool_name=None,
+        statuses=None,
     )
 
     assert result.count == 3
@@ -106,6 +107,7 @@ def test_read_runs_rejects_unknown_sort_column(db: Session) -> None:
             order_by="owner_id",
             name=None,
             tool_name=None,
+            statuses=None,
         )
 
     assert exc_info.value.status_code == 400
@@ -141,6 +143,7 @@ def test_read_runs_sorts_by_runtime(db: Session) -> None:
         order_by="-runtime",
         name=None,
         tool_name=None,
+        statuses=None,
     )
 
     assert [item.id for item in result.data[:2]] == [longer.id, shorter.id]
@@ -174,10 +177,95 @@ def test_read_runs_filters_by_tool_name(db: Session) -> None:
         order_by="-created_at",
         name=None,
         tool_name=selected_tool.name,
+        statuses=None,
     )
 
     assert result.count == 1
     assert result.data[0].id == matching.id
+
+
+def test_read_runs_filters_by_statuses(db: Session) -> None:
+    owner = create_random_user(db)
+    tool = _create_tool(db=db, owner=owner)
+    completed = _create_run(
+        db=db,
+        owner=owner,
+        tool=tool,
+        name=f"completed-{random_lower_string()}",
+        status=RunStatus.completed,
+        created_at=_utc_now(),
+    )
+    _create_run(
+        db=db,
+        owner=owner,
+        tool=tool,
+        name=f"running-{random_lower_string()}",
+        status=RunStatus.running,
+        created_at=_utc_now(),
+    )
+
+    result = read_runs(
+        session=db,
+        current_user=owner,
+        order_by="-created_at",
+        name=None,
+        tool_name=None,
+        statuses=[RunStatus.completed],
+    )
+
+    assert result.count == 1
+    assert result.data[0].id == completed.id
+
+
+def test_delete_runs_filters_by_name_and_tool(db: Session) -> None:
+    owner = create_random_user(db)
+    selected_tool = _create_tool(db=db, owner=owner)
+    other_tool = _create_tool(db=db, owner=owner)
+    prefix = random_lower_string()
+    matching = _create_run(
+        db=db,
+        owner=owner,
+        tool=selected_tool,
+        name=f"{prefix}-matching",
+        status=RunStatus.completed,
+        created_at=_utc_now(),
+    )
+    unmatched_name = _create_run(
+        db=db,
+        owner=owner,
+        tool=selected_tool,
+        name=f"other-{random_lower_string()}",
+        status=RunStatus.completed,
+        created_at=_utc_now(),
+    )
+    unmatched_tool = _create_run(
+        db=db,
+        owner=owner,
+        tool=other_tool,
+        name=f"{prefix}-other-tool",
+        status=RunStatus.completed,
+        created_at=_utc_now(),
+    )
+    active = _create_run(
+        db=db,
+        owner=owner,
+        tool=selected_tool,
+        name=f"{prefix}-active",
+        status=RunStatus.running,
+        created_at=_utc_now(),
+    )
+
+    delete_runs(
+        session=db,
+        current_user=owner,
+        name=prefix,
+        tool_name=selected_tool.name,
+    )
+
+    assert db.get(Run, matching.id) is None
+    assert db.get(Run, unmatched_name.id) is not None
+    assert db.get(Run, unmatched_tool.id) is not None
+    assert db.get(Run, active.id) is not None
 
 
 def test_read_run_tool_names_includes_only_current_users_run_tools(db: Session) -> None:
