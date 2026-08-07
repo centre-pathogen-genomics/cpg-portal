@@ -39,6 +39,14 @@ RUN_SORT_COLUMNS = {
 }
 
 
+def is_missing_param_value(value: Any) -> bool:
+    return (
+        value is None
+        or (isinstance(value, str) and value.strip() == "")
+        or (isinstance(value, list) and len(value) == 0)
+    )
+
+
 @router.get("/", response_model=RunsPublicMinimal)
 def read_runs(
     session: SessionDep,
@@ -135,7 +143,7 @@ async def create_run(
         tool.params = []
     for param in tool.params:
         param = Param(**param)
-        if param.name not in params or params[param.name] is None:
+        if param.name not in params or is_missing_param_value(params[param.name]):
             if param.required:
                 raise HTTPException(
                     status_code=400, detail=f"Missing required parameter: {param.name}"

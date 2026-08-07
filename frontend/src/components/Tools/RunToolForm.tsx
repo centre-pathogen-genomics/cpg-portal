@@ -127,9 +127,11 @@ const RunToolForm = ({
   }, [params])
   const {
     register,
+    clearErrors,
     getValues,
     handleSubmit,
     reset,
+    setError,
     setValue,
     watch,
     formState: { errors },
@@ -150,11 +152,28 @@ const RunToolForm = ({
       queryClient.invalidateQueries({ queryKey: ["toolRuns"] })
     },
   })
+  const isEmptyParamValue = (value: unknown) =>
+    value === null ||
+    value === undefined ||
+    (typeof value === "string" && value.trim() === "") ||
+    (Array.isArray(value) && value.length === 0) ||
+    (typeof value === "number" && Number.isNaN(value))
+
   const submit: SubmitHandler<Record<string, any>> = async (formData) => {
-    setIsLoading(true)
+    clearErrors()
+    let hasValidationError = false
+    for (const param of params) {
+      if (param.required && isEmptyParamValue(formData[param.name])) {
+        setError(param.name, { type: "required", message: "Required" })
+        hasValidationError = true
+      }
+    }
+    if (hasValidationError) return
+
     const filtered = Object.fromEntries(
-      Object.entries(formData).filter(([, value]) => value !== null),
+      Object.entries(formData).filter(([, value]) => !isEmptyParamValue(value)),
     )
+    setIsLoading(true)
     await mutation.mutateAsync({
       body: { params: filtered, tags },
       query: {
@@ -183,6 +202,11 @@ const RunToolForm = ({
           <Label htmlFor={param.name}>
             {param.name.toUpperCase()}
             {param.required && " *"}
+            {errors[param.name] && (
+              <div className="text-destructive pt-0 mt-0">
+                {String(errors[param.name]?.message)}
+              </div>
+            )}
           </Label>
           {param.param_type !== "bool" && (
             <p className="mb-2 text-sm text-gray-500">{param.description}</p>
@@ -214,7 +238,13 @@ const RunToolForm = ({
               disabled={isDisabled}
               className="h-10 w-full rounded-md border bg-background px-3"
               value={watch(param.name) ?? ""}
-              onChange={(event) => setValue(param.name, event.target.value)}
+              onChange={(event) => {
+                clearErrors(param.name)
+                setValue(param.name, event.target.value, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }}
             >
               <option value="">Select an option</option>
               {param.options?.map((option) => (
@@ -230,9 +260,13 @@ const RunToolForm = ({
                 id={param.name}
                 disabled={isDisabled}
                 defaultChecked={param.default as boolean}
-                onCheckedChange={(checked) =>
-                  setValue(param.name, checked === true)
-                }
+                onCheckedChange={(checked) => {
+                  clearErrors(param.name)
+                  setValue(param.name, checked === true, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }}
               />
               <Label htmlFor={param.name}>
                 {param.description || "Check to enable"}
@@ -245,15 +279,14 @@ const RunToolForm = ({
               disabled={isDisabled}
               setIsLoading={setIsLoading}
               values={watch(param.name) || []}
-              updateValues={(update) =>
-                setValue(param.name, update(getValues(param.name) || []))
-              }
+              updateValues={(update) => {
+                clearErrors(param.name)
+                setValue(param.name, update(getValues(param.name) || []), {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }}
             />
-          )}
-          {errors[param.name] && (
-            <p className="mt-1 text-sm text-destructive">
-              {String(errors[param.name]?.message)}
-            </p>
           )}
         </div>
       ))}
