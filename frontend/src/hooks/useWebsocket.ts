@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 
 export interface UseWebSocketOptions {
   protocols?: string | string[]
+  auth?: boolean
   onOpen?: (event: Event) => void
   onMessage?: (event: MessageEvent) => void
   onError?: (event: Event) => void
@@ -10,7 +11,14 @@ export interface UseWebSocketOptions {
 
 export const useWebSocket = (
   channel: string,
-  { protocols, onOpen, onMessage, onError, onClose }: UseWebSocketOptions = {},
+  {
+    protocols,
+    auth = true,
+    onOpen,
+    onMessage,
+    onError,
+    onClose,
+  }: UseWebSocketOptions = {},
 ) => {
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -39,9 +47,11 @@ export const useWebSocket = (
     if (wsRef.current) {
       wsRef.current.close()
     }
-    const baseURL = import.meta.env.VITE_API_URL
+    const baseURL = import.meta.env.VITE_API_URL || window.location.origin
     const token = localStorage.getItem("access_token")
-    const wsUrl = `${baseURL.replace("http", "ws")}/api/v1/websockets/${channel}?token=${token}`
+    const wsUrl = new URL(`/api/v1/websockets/${channel}`, baseURL)
+    wsUrl.protocol = wsUrl.protocol === "https:" ? "wss:" : "ws:"
+    if (auth && token) wsUrl.searchParams.set("token", token)
     const ws = new WebSocket(wsUrl, protocols)
     wsRef.current = ws
 
@@ -63,12 +73,13 @@ export const useWebSocket = (
       setIsConnected(false)
       callbacksRef.current.onClose?.(event)
     }
-  }, [channel, protocols])
+  }, [auth, channel, protocols])
 
   useEffect(() => {
-    connect()
+    const connectTimer = window.setTimeout(connect, 0)
     // Clean up on unmount.
     return () => {
+      clearTimeout(connectTimer)
       if (wsRef.current) {
         wsRef.current.close()
       }

@@ -27,7 +27,7 @@ const EventStreamContent = forwardRef<
   const [_, setVersion] = useState<number>(0)
 
   const colorList = [
-    0x3498db, 0xe67e22, 0x2ecc71, 0xe74c3c, 0x9b59b6, 0x795548, 0xfd79a8,
+    0xe67e22, 0x2ecc71, 0xe74c3c, 0x9b59b6, 0x795548, 0xfd79a8, 0x3498db,
     0x95a5a6, 0xf1c40f, 0x1abc9c, 0x34495e, 0x27ae60, 0xd35400, 0xc0392b,
     0x8e44ad, 0xe84393,
   ]
@@ -50,19 +50,28 @@ const EventStreamContent = forwardRef<
       color = eventTypeColorsRef.current.get(eventData.name)!
     }
 
-    // Calculate spawn location.
-    const spawnMargin = 50
-    const spawnRadius = Math.max(0, Math.min(width, height) / 2 - spawnMargin)
-    const angle = Math.random() * 2 * Math.PI
-    const spawnX = spawnRadius * Math.cos(angle)
-    const spawnY = spawnRadius * Math.sin(angle)
+    const radius = Math.sqrt(eventData.size) * 10
+    const spawnPadding = radius + 40
+    const side = Math.floor(Math.random() * 4)
+    const spawnX =
+      side === 0
+        ? -spawnPadding
+        : side === 1
+          ? width + spawnPadding
+          : Math.random() * width
+    const spawnY =
+      side === 2
+        ? -spawnPadding
+        : side === 3
+          ? height + spawnPadding
+          : Math.random() * height
 
     // Create new circle.
     const newCircle: Circle = {
       id: Date.now() + Math.random(),
       name: eventData.name,
       size: eventData.size,
-      radius: Math.sqrt(eventData.size) * 10,
+      radius,
       x: spawnX,
       y: spawnY,
       vx: 0,
@@ -82,14 +91,10 @@ const EventStreamContent = forwardRef<
   const handlePointerDown = (e: any) => {
     if (!e.global) return
     const globalPos = e.global
-    const repulsionCenter = {
-      x: globalPos.x - centerX,
-      y: globalPos.y - centerY,
-    }
     const clickForce = 4000
     circlesRef.current.forEach((circle) => {
-      const dx = circle.x - repulsionCenter.x
-      const dy = circle.y - repulsionCenter.y
+      const dx = circle.x - globalPos.x
+      const dy = circle.y - globalPos.y
       const dist = Math.sqrt(dx * dx + dy * dy) || 1
       const force = clickForce / dist
       circle.vx += (dx / dist) * force
@@ -100,16 +105,15 @@ const EventStreamContent = forwardRef<
   // Animate circles: update positions, attraction/repulsion, and handle collisions.
   useTick((ticker) => {
     const dt = ticker.deltaTime / 60
-    const attractionStrength = 100
-    const damping = 0.98
+    const attractionStrength = 2.8
+    const damping = 0.96
     const repulsionStrength = 50
 
     circlesRef.current.forEach((circle) => {
-      const dx = -circle.x
-      const dy = -circle.y
-      const dist = Math.sqrt(dx * dx + dy * dy) || 1
-      const ax = (dx / dist) * attractionStrength
-      const ay = (dy / dist) * attractionStrength
+      const dx = centerX - circle.x
+      const dy = centerY - circle.y
+      const ax = dx * attractionStrength
+      const ay = dy * attractionStrength
       circle.vx = (circle.vx + ax * dt) * damping
       circle.vy = (circle.vy + ay * dt) * damping
       circle.x += circle.vx * dt
@@ -158,6 +162,7 @@ const EventStreamContent = forwardRef<
         }
       }
     }
+
     if (mergedIds.size > 0) {
       // Remove merged circles.
       circlesRef.current = circlesRef.current.filter(
@@ -169,8 +174,6 @@ const EventStreamContent = forwardRef<
 
   return (
     <pixiContainer
-      x={centerX}
-      y={centerY}
       eventMode="static"
       onPointerDown={handlePointerDown}
     >
@@ -189,7 +192,7 @@ const EventStreamVisualizationPixi = forwardRef<
     width={props.width}
     height={props.height}
     backgroundAlpha={0}
-    resolution={window.devicePixelRatio}
+    resolution={1}
   >
     <EventStreamContent ref={ref} {...props} />
   </Application>

@@ -1,6 +1,6 @@
 import { useTick } from "@pixi/react"
 import * as PIXI from "pixi.js"
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 export type Circle = {
   id: number
@@ -26,10 +26,30 @@ function CircleDisplay({ circle }: CircleDisplayProps) {
   const textRef = useRef<PIXI.Text | null>(null)
 
   const [isHovered, setIsHovered] = useState(false)
-  const imageTexture = useMemo(
-    () => (circle.image ? PIXI.Texture.from(circle.image) : null),
-    [circle.image],
-  )
+  const [imageTexture, setImageTexture] = useState<PIXI.Texture | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    if (!circle.image) {
+      setImageTexture(null)
+      return
+    }
+
+    PIXI.Assets.load<PIXI.Texture>(circle.image)
+      .then((texture) => {
+        if (!cancelled) setImageTexture(texture)
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.error(`Failed to load stream event image: ${circle.image}`, error)
+          setImageTexture(null)
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [circle.image])
   const drawCircle = useCallback(
     (graphics: PIXI.Graphics) => {
       graphics

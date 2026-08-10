@@ -34,7 +34,10 @@ function Stream() {
     const updateSize = () => {
       if (containerRef.current) {
         const { clientWidth, clientHeight } = containerRef.current
-        setDimensions({ width: clientWidth, height: clientHeight })
+        setDimensions({
+          width: clientWidth || window.innerWidth,
+          height: clientHeight || window.innerHeight,
+        })
       }
     }
 
@@ -64,6 +67,7 @@ function Stream() {
 
   // Use the useWebSocket hook to manage the WebSocket connection.
   const { reconnect, isConnected } = useWebSocket("stream", {
+    auth: false,
     onMessage: (event) => {
       try {
         const data = JSON.parse(event.data)
@@ -113,7 +117,7 @@ function Stream() {
       <div
         id="frame"
         ref={containerRef}
-        className="relative m-0 block h-full w-full overflow-hidden"
+        className="relative m-0 block h-screen w-screen overflow-hidden"
       >
         {/* Fullscreen Icon Button positioned at the top-right */}
         <Button
