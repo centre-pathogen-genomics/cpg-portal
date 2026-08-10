@@ -15,6 +15,7 @@ import {
   readUsersOptions,
 } from "@/client/@tanstack/react-query.gen"
 import AddUser from "@/components/Admin/AddUser"
+import CreateTool from "@/components/Admin/CreateTool"
 import { columns, type UserTableData } from "@/components/Admin/columns"
 import { DataTable } from "@/components/Common/DataTable"
 import PendingUsers from "@/components/Pending/PendingUsers"
@@ -201,7 +202,10 @@ function AdminDashboard() {
 
   return (
     <div className="w-full px-4 py-6 md:px-6 lg:px-8 xl:px-12">
-      <h1 className="mb-6 text-4xl font-bold">Admin Dashboard</h1>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <h1 className="text-4xl font-bold">Admin Dashboard</h1>
+        <CreateTool />
+      </div>
 
       <div
         className={`grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4 ${
