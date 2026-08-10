@@ -1,7 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { Check } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import EventStreamVisualizationPixi, {
+  type EventStreamVisualizationRef,
+} from "@/components/EventStream/EventStreamVisualizationPixi"
 import { Button } from "@/components/ui/button"
 import Logo from "/assets/images/cpg-logo.png"
+import IconLogoTransparent from "/assets/images/cpg-logo-icon-transparent.png"
 import ToolsGrid from "../../components/Tools/ToolsGrid"
 import useAuth from "../../hooks/useAuth"
 
@@ -20,15 +25,17 @@ function Tools() {
 
   return (
     <div className="w-full px-4 md:px-6 lg:px-8 xl:px-12">
-      <section className="mx-auto grid max-w-7xl gap-4 py-8 md:py-12 lg:grid-cols-[minmax(0,0.95fr)_minmax(420px,1.05fr)] lg:items-center lg:gap-14">
-        <div className="order-2 flex flex-col items-center text-center lg:order-1 lg:items-start lg:text-left">
+      <section className="relative mx-auto grid min-h-[520px] max-w-7xl py-8 md:py-12 lg:grid-cols-[minmax(0,0.95fr)_minmax(420px,1.05fr)] lg:items-center lg:gap-14">
+        <HeroStreamBackground />
+
+        <div className="relative z-10 order-2 flex flex-col items-center text-center lg:order-1 lg:items-start lg:text-left">
           <h1 className="max-w-4xl text-4xl leading-tight font-bold tracking-normal text-foreground md:text-6xl">
             Pathogen genomics{" "}
             <span className="text-primary">without the command line</span>
           </h1>
 
           <p className="lg:block hidden  mt-6 max-w-2xl text-lg leading-8 text-muted-foreground md:text-xl">
-            The CPG Portal turns complex bioinformatics pipelines into a
+            The CPG Portal turns complex bioinformatics tools into a
             browser-based experience for laboratories, outbreak response teams,
             and pathogen-genomics specialists.
           </p>
@@ -56,22 +63,129 @@ function Tools() {
           )}
         </div>
 
-        <div className="order-1 flex flex-col items-center justify-center text-center lg:order-2 lg:rounded-lg lg:border lg:bg-card lg:p-10 lg:shadow-sm">
-          <img
-            src={Logo}
-            alt="CPG logo"
-            className="h-auto w-full max-w-xs md:max-w-md lg:max-w-xl"
-          />
-          <p className=" lg:block hidden mt-6 max-w-xl text-base leading-7 text-foreground/80 md:text-lg italic">
-            Explore and run tools from the most talented and accomplished
-            scientists ready to take on your next project.
-          </p>
+        <div className="relative z-10 order-1 flex flex-col items-center justify-center text-center lg:order-2">
+          <div
+            className="rounded-lg p-6 shadow-sm backdrop-blur-sm md:p-8"
+          >
+            <img
+              id="hero-logo-target"
+              src={Logo}
+              alt="CPG logo"
+              className="h-auto w-full max-w-xs md:max-w-md lg:max-w-xl"
+            />
+            <p className=" lg:block hidden mt-6 max-w-xl text-base leading-7 text-foreground/80 md:text-lg italic">
+              Explore and run tools from the most talented and accomplished
+              scientists ready to take on your next project.
+            </p>
+          </div>
         </div>
       </section>
 
       <div id="tools" className="scroll-mt-24">
         <ToolsGrid hideFilters={currentUser === undefined} />
       </div>
+    </div>
+  )
+}
+
+function HeroStreamBackground() {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const logoRef = useRef<HTMLElement | null>(null)
+  const streamRef = useRef<EventStreamVisualizationRef>(null)
+  const [geometry, setGeometry] = useState({
+    width: 0,
+    height: 0,
+    targetX: 0,
+    targetY: 0,
+  })
+
+  useEffect(() => {
+    logoRef.current = document.getElementById("hero-logo-target")
+
+    const updateGeometry = () => {
+      const container = containerRef.current
+      const logo = logoRef.current
+      if (!container) return
+
+      const containerRect = container.getBoundingClientRect()
+      const logoRect = logo?.getBoundingClientRect()
+      const fallbackTargetX = containerRect.width * 0.68
+      const fallbackTargetY = containerRect.height * 0.48
+
+      setGeometry({
+        width: containerRect.width || window.innerWidth,
+        height: containerRect.height || 520,
+        targetX: logoRect
+          ? logoRect.left - containerRect.left + logoRect.height / 2
+          : fallbackTargetX,
+        targetY: logoRect
+          ? logoRect.top - containerRect.top + logoRect.height / 2
+          : fallbackTargetY,
+      })
+    }
+
+    updateGeometry()
+    const resizeObserver = new ResizeObserver(updateGeometry)
+    if (containerRef.current) resizeObserver.observe(containerRef.current)
+    if (logoRef.current) resizeObserver.observe(logoRef.current)
+    window.addEventListener("resize", updateGeometry)
+
+    return () => {
+      resizeObserver.disconnect()
+      window.removeEventListener("resize", updateGeometry)
+    }
+  }, [])
+
+  useEffect(() => {
+    const toolNames = [
+      "assembly",
+      "typing",
+      "qc",
+      "variants",
+      "phylogeny",
+      "reporting",
+    ]
+    let index = 0
+
+    const addHeroEvent = () => {
+      streamRef.current?.addEvent({
+        name: toolNames[index % toolNames.length],
+        size: 6 * (index % 3),
+        image: IconLogoTransparent,
+      })
+      index += 1
+    }
+
+    const seedTimer = window.setTimeout(() => {
+      for (let i = 0; i < 8; i++) addHeroEvent()
+    }, 300)
+    const interval = window.setInterval(addHeroEvent, 150)
+
+    return () => {
+      window.clearTimeout(seedTimer)
+      window.clearInterval(interval)
+    }
+  }, [])
+
+  return (
+    <div
+      ref={containerRef}
+      className="pointer-events-none absolute top-0 left-1/2 z-0 h-full w-screen -translate-x-1/2 overflow-hidden opacity-45 lg:[mask-image:linear-gradient(to_right,transparent_0%,transparent_36%,black_50%)]"
+      aria-hidden="true"
+    >
+      {geometry.width > 0 && geometry.height > 0 && (
+        <EventStreamVisualizationPixi
+          ref={streamRef}
+          width={geometry.width}
+          height={geometry.height}
+          targetX={geometry.targetX}
+          targetY={geometry.targetY}
+          maxCircles={25}
+          mergeSameName={true}
+          spawnMode="target"
+          targetMode="repel"
+        />
+      )}
     </div>
   )
 }

@@ -13,6 +13,12 @@ export interface EventStreamVisualizationRef {
 interface EventStreamVisualizationPixiProps {
   width: number
   height: number
+  targetX?: number
+  targetY?: number
+  maxCircles?: number
+  mergeSameName?: boolean
+  spawnMode?: "edges" | "view" | "target"
+  targetMode?: "attract" | "repel"
 }
 
 const EventStreamContent = forwardRef<
@@ -20,8 +26,11 @@ const EventStreamContent = forwardRef<
   EventStreamVisualizationPixiProps
 >((props, ref) => {
   const { width, height } = props
-  const centerX = width / 2
-  const centerY = height / 2
+  const targetX = props.targetX ?? width / 2
+  const targetY = props.targetY ?? height / 2
+  const mergeSameName = props.mergeSameName ?? true
+  const spawnMode = props.spawnMode ?? "edges"
+  const targetMode = props.targetMode ?? "attract"
 
   const circlesRef = useRef<Circle[]>([])
   const [_, setVersion] = useState<number>(0)
@@ -51,20 +60,36 @@ const EventStreamContent = forwardRef<
     }
 
     const radius = Math.sqrt(eventData.size) * 10
-    const spawnPadding = radius + 40
-    const side = Math.floor(Math.random() * 4)
-    const spawnX =
-      side === 0
-        ? -spawnPadding
-        : side === 1
-          ? width + spawnPadding
-          : Math.random() * width
-    const spawnY =
-      side === 2
-        ? -spawnPadding
-        : side === 3
-          ? height + spawnPadding
-          : Math.random() * height
+    const viewSpawnMinX = Math.min(radius, width / 2)
+    const viewSpawnMaxX = Math.max(viewSpawnMinX, width - radius)
+    const viewSpawnMinY = Math.min(radius, height / 2)
+    const viewSpawnMaxY = Math.max(viewSpawnMinY, height - radius)
+    let spawnX =
+      viewSpawnMinX + Math.random() * (viewSpawnMaxX - viewSpawnMinX)
+    let spawnY =
+      viewSpawnMinY + Math.random() * (viewSpawnMaxY - viewSpawnMinY)
+
+    if (spawnMode === "edges") {
+      const spawnPadding = radius + 40
+      const side = Math.floor(Math.random() * 4)
+      spawnX =
+        side === 0
+          ? -spawnPadding
+          : side === 1
+            ? width + spawnPadding
+            : Math.random() * width
+      spawnY =
+        side === 2
+          ? -spawnPadding
+          : side === 3
+            ? height + spawnPadding
+            : Math.random() * height
+    } else if (spawnMode === "target") {
+      const angle = Math.random() * Math.PI * 2
+      const targetSpawnDistance = Math.max(radius * 0.35, 8)
+      spawnX = targetX + Math.cos(angle) * targetSpawnDistance
+      spawnY = targetY + Math.sin(angle) * targetSpawnDistance
+    }
 
     // Create new circle.
     const newCircle: Circle = {
@@ -80,6 +105,9 @@ const EventStreamContent = forwardRef<
       image: eventData.image,
     }
     circlesRef.current.push(newCircle)
+    if (props.maxCircles && circlesRef.current.length > props.maxCircles) {
+      circlesRef.current = circlesRef.current.slice(-props.maxCircles)
+    }
     setVersion((v) => v + 1)
   }
 
@@ -105,13 +133,18 @@ const EventStreamContent = forwardRef<
   // Animate circles: update positions, attraction/repulsion, and handle collisions.
   useTick((ticker) => {
     const dt = ticker.deltaTime / 60
-    const attractionStrength = 2.8
+    const attractionStrength = targetMode === "repel" ? -5.2 : 2.8
     const damping = 0.96
     const repulsionStrength = 50
 
     circlesRef.current.forEach((circle) => {
-      const dx = centerX - circle.x
-      const dy = centerY - circle.y
+      let dx = targetX - circle.x
+      let dy = targetY - circle.y
+      if (targetMode === "repel" && dx === 0 && dy === 0) {
+        const angle = Math.random() * Math.PI * 2
+        dx = Math.cos(angle)
+        dy = Math.sin(angle)
+      }
       const ax = dx * attractionStrength
       const ay = dy * attractionStrength
       circle.vx = (circle.vx + ax * dt) * damping
@@ -132,7 +165,7 @@ const EventStreamContent = forwardRef<
         const distance = Math.sqrt(dx * dx + dy * dy)
         const minDist = circleA.radius + circleB.radius
         if (distance < minDist) {
-          if (circleA.name === circleB.name) {
+          if (mergeSameName && circleA.name === circleB.name) {
             const newSize = circleA.size + circleB.size
             const newRadius = Math.sqrt(newSize) * 10
             const newX =
