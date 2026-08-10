@@ -59,28 +59,37 @@ function ToolsGrid({
           </div>
         )}
       >
-        {!hideFilters && (
+        
           <div className="mb-4 flex items-end justify-between">
-            <select
-              className="h-10 w-[200px] rounded-md border bg-background px-3"
-              value={orderBy}
-              onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
-                setOrderBy(event.target.value as ToolsOrderBy)
-              }
-            >
-              <option value="run_count">Popular</option>
-              <option value="created_at">New &amp; Noteworthy</option>
-            </select>
-            <div className="flex items-center gap-1">
-              <Label htmlFor="show-favourites">Favourites</Label>
-              <Switch
-                id="show-favourites"
-                checked={showFavourites}
-                onCheckedChange={setShowFavourites}
-              />
+            <div className="flex items-center gap-4">
+              <div className="text-2xl font-semibold tracking-normal">
+                All tools
+              </div>
+              <select
+                className="h-10 w-[200px] rounded-md border bg-background px-3"
+                value={orderBy}
+                onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
+                  setOrderBy(event.target.value as ToolsOrderBy)
+                }
+              >
+                <option value="run_count">Popular</option>
+                <option value="created_at">New &amp; Noteworthy</option>
+              </select>
             </div>
+
+            {!hideFilters && (
+              <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1">
+                  <Label htmlFor="show-favourites">Favourites</Label>
+                  <Switch
+                    id="show-favourites"
+                    checked={showFavourites}
+                    onCheckedChange={setShowFavourites}
+                  />
+                </div>
+              </div>
+            )}
           </div>
-        )}
         <ToolCards
           orderBy={orderBy}
           showFavourites={showFavourites}

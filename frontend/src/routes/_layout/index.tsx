@@ -83,7 +83,7 @@ function Tools() {
       </section>
 
       <div id="tools" className="scroll-mt-24">
-        <ToolsCarousel tag="demo" title="Demo tools" />
+        <ToolsCarousel tag="cpg" title="CPG tools" subtitle="Tools we developed with love"/>
         <ToolsGrid hideFilters={currentUser === undefined} />
       </div>
     </div>

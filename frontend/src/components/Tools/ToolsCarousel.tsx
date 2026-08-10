@@ -10,10 +10,12 @@ import ToolCard from "./ToolCard"
 function ToolsCarouselContent({
   tag,
   title,
+  subtitle,
   limit,
 }: {
   tag: string
   title?: string
+  subtitle?: string
   limit?: number
 }) {
   const carouselRef = useRef<HTMLDivElement>(null)
@@ -46,15 +48,15 @@ function ToolsCarouselContent({
   }
 
   return (
-    <section className="mb-8" data-tool-carousel={tag}>
+    <section data-tool-carousel={tag}>
       <div className="mb-4 flex items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-semibold tracking-normal">
             {title ?? `${tag} tools`}
           </h2>
-          <p className="text-sm text-muted-foreground">
-            Curated tools tagged with {tag}
-          </p>
+          {subtitle && (
+            <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
+          )}
         </div>
         <div className="hidden shrink-0 gap-2 sm:flex">
           <Button
@@ -98,16 +100,18 @@ function ToolsCarouselContent({
 function ToolsCarousel({
   tag,
   title,
+  subtitle,
   limit = 12,
 }: {
   tag: string
   title?: string
+  subtitle?: string
   limit?: number
 }) {
   return (
-    <Suspense fallback={<Skeleton className="mb-8 h-[260px] w-full" />}>
+    <Suspense fallback={<Skeleton className="h-[260px] w-full" />}>
       <ErrorBoundary fallbackRender={() => null}>
-        <ToolsCarouselContent tag={tag} title={title} limit={limit} />
+        <ToolsCarouselContent tag={tag} title={title} subtitle={subtitle} limit={limit} />
       </ErrorBoundary>
     </Suspense>
   )
