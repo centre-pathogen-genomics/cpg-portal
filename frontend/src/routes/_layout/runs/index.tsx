@@ -16,7 +16,7 @@ import {
   Search,
   Trash2,
 } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -47,14 +47,19 @@ import {
   type RunStatus,
   RunsService,
 } from "../../../client"
-import { ConfirmationDialog } from "../../../components/Common/ConfirmationDialog"
+import {
+  BulkDeleteMenu,
+  type BulkDeleteMode,
+} from "../../../components/Common/BulkDeleteMenu"
 import DeleteAlert from "../../../components/Common/DeleteAlert"
+import { PaginatedTableFooter } from "../../../components/Common/PaginatedTableFooter"
 import CancelAlert from "../../../components/Runs/CancelAlert"
 import CancelRunsButton from "../../../components/Runs/CancelRunsButton"
 import ParamTag from "../../../components/Runs/ParamTag"
 import RunRuntime from "../../../components/Runs/RunTime"
 import StatusBadge from "../../../components/Runs/StatusBadge"
 import useCustomToast from "../../../hooks/useCustomToast"
+import { useVisibleIds } from "../../../hooks/useVisibleIds"
 import { humanReadableDate } from "../../../utils"
 
 export const Route = createFileRoute("/_layout/runs/")({
@@ -71,7 +76,6 @@ interface RunsTableProps {
 }
 
 type SortColumn = "name" | "status" | "created_at" | "finished_at" | "runtime"
-type DeleteMode = "current" | "all"
 
 const inactiveRunStatuses: RunStatus[] = ["completed", "failed", "cancelled"]
 
@@ -249,37 +253,11 @@ function RunsTable({
   const runs = data?.data ?? []
   const totalCount = data?.count ?? 0
   const pageCount = Math.max(1, Math.ceil(totalCount / pageSize))
-  const hasPreviousPage = page > 1
-  const hasNextPage = page < pageCount
-  const firstItem = totalCount ? (page - 1) * pageSize + 1 : 0
-  const lastItem = Math.min(page * pageSize, totalCount)
-  const firstVisiblePage = Math.min(
-    Math.max(page - 2, 1),
-    Math.max(pageCount - 4, 1),
+  const isInactiveRun = useCallback(
+    (run: RunPublicMinimal) => inactiveRunStatuses.includes(run.status),
+    [],
   )
-  const visiblePages = Array.from(
-    { length: Math.min(5, pageCount) },
-    (_, index) => firstVisiblePage + index,
-  )
-
-  useEffect(() => {
-    const nextVisibleRunIds = runs
-      .filter((run) => inactiveRunStatuses.includes(run.status))
-      .map((run) => run.id)
-
-    setVisibleRunIds((currentVisibleRunIds) => {
-      if (
-        currentVisibleRunIds.length === nextVisibleRunIds.length &&
-        currentVisibleRunIds.every(
-          (id, index) => id === nextVisibleRunIds[index],
-        )
-      ) {
-        return currentVisibleRunIds
-      }
-
-      return nextVisibleRunIds
-    })
-  }, [runs, setVisibleRunIds])
+  useVisibleIds(runs, setVisibleRunIds, isInactiveRun)
 
   const sortRuns = (column: SortColumn) => {
     setOrderBy((current) => (current === column ? `-${column}` : column))
@@ -319,7 +297,6 @@ function RunsTable({
               <TableHead>Tool</TableHead>
               <TableHead>Params</TableHead>
               <TableHead>Tags</TableHead>
-              <TableHead>Shared</TableHead>
               <TableHead>{renderSortableHeading("created_at")}</TableHead>
               <TableHead>{renderSortableHeading("runtime")}</TableHead>
               <TableHead></TableHead>
@@ -388,14 +365,6 @@ function RunsTable({
                     ))}
                   </TableCell>
                   <TableCell>
-                    <Badge
-                      variant={run.shared ? "default" : "secondary"}
-                      className={run.shared ? "bg-green-500" : undefined}
-                    >
-                      {run.shared ? "TRUE" : "FALSE"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
                     {humanReadableDate(run.created_at)}
                   </TableCell>
                   <TableCell>
@@ -426,63 +395,16 @@ function RunsTable({
           </TableBody>
         </Table>
       </div>
-      <div className="flex flex-col gap-3 py-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <div className="text-sm text-muted-foreground">
-            Showing {firstItem} to {lastItem} of {totalCount} runs
-            {isFetching && !isLoading && (
-              <LoaderCircle className="ml-2 inline h-4 w-4 animate-spin" />
-            )}
-          </div>
-          <label className="flex items-center gap-2 text-sm text-muted-foreground">
-            Rows per page
-            <select
-              className="h-8 rounded-md border bg-background px-2 text-foreground"
-              value={pageSize}
-              onChange={(event) => changePageSize(Number(event.target.value))}
-            >
-              {[10, 20, 50, 100].map((size) => (
-                <option key={size} value={size}>
-                  {size}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => changePage(page - 1)}
-            disabled={!hasPreviousPage}
-          >
-            Previous
-          </Button>
-          <div className="flex items-center gap-1">
-            {visiblePages.map((pageNumber) => (
-              <Button
-                key={pageNumber}
-                variant={pageNumber === page ? "outline" : "ghost"}
-                size="sm"
-                className="h-8 w-8 p-0"
-                onClick={() => changePage(pageNumber)}
-                aria-label={`Go to page ${pageNumber}`}
-                aria-current={pageNumber === page ? "page" : undefined}
-              >
-                {pageNumber}
-              </Button>
-            ))}
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => changePage(page + 1)}
-            disabled={!hasNextPage}
-          >
-            Next
-          </Button>
-        </div>
-      </div>
+      <PaginatedTableFooter
+        isFetching={isFetching}
+        isLoading={isLoading}
+        itemLabel="runs"
+        onPageChange={changePage}
+        onPageSizeChange={changePageSize}
+        page={page}
+        pageSize={pageSize}
+        totalCount={totalCount}
+      />
     </>
   )
 }
@@ -496,14 +418,12 @@ function RunsActionsMenu({
   allCount,
   visibleRunIds,
 }: RunsActionsMenuProps) {
-  const [deleteMode, setDeleteMode] = useState<DeleteMode | null>(null)
+  const [deleteMode, setDeleteMode] = useState<BulkDeleteMode | null>(null)
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
-  const currentCount = visibleRunIds.length
-  const deleteCount = deleteMode === "current" ? currentCount : allCount
 
   const mutation = useMutation({
-    mutationFn: async (mode: DeleteMode) => {
+    mutationFn: async (mode: BulkDeleteMode) => {
       await RunsService.deleteRuns({
         query:
           mode === "current"
@@ -528,48 +448,23 @@ function RunsActionsMenu({
   })
 
   return (
-    <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="icon" aria-label="Run actions">
-            <MoreVertical className="size-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem
-            variant="destructive"
-            disabled={currentCount === 0}
-            onSelect={() => setDeleteMode("current")}
-          >
-            Delete Visible ({currentCount})
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            variant="destructive"
-            disabled={allCount === 0}
-            onSelect={() => setDeleteMode("all")}
-          >
-            Delete All ({allCount})
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-      <ConfirmationDialog
-        open={deleteMode !== null}
-        onOpenChange={(open) => !open && setDeleteMode(null)}
-        title={
-          deleteMode === "current" ? "Delete Visible Runs" : "Delete All Runs"
-        }
-        description={`Are you sure you want to delete ${deleteCount} inactive run${
-          deleteCount === 1 ? "" : "s"
-        } and associated unsaved files? This action cannot be undone.`}
-        confirmLabel={
-          deleteMode === "current" ? "Delete Visible" : "Delete All"
-        }
-        pending={mutation.isPending}
-        onConfirm={() => {
-          if (deleteMode) mutation.mutate(deleteMode)
-        }}
-      />
-    </>
+    <BulkDeleteMenu
+      allCount={allCount}
+      confirmLabel={
+        deleteMode === "current" ? "Delete Visible" : "Delete All"
+      }
+      currentCount={visibleRunIds.length}
+      descriptionNoun="inactive run"
+      descriptionSuffix=" and associated unsaved files"
+      mode={deleteMode}
+      onConfirm={() => {
+        if (deleteMode) mutation.mutate(deleteMode)
+      }}
+      onModeChange={setDeleteMode}
+      pending={mutation.isPending}
+      titleNoun="Runs"
+      triggerAriaLabel="Run actions"
+    />
   )
 }
 

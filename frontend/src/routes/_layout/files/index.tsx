@@ -47,11 +47,17 @@ import {
 } from "@/components/ui/table"
 import type { FilePublic, FileTypeEnum } from "../../../client"
 import { FilesService } from "../../../client"
+import {
+  BulkDeleteMenu,
+  type BulkDeleteMode,
+} from "../../../components/Common/BulkDeleteMenu"
+import { ConfirmationDialog } from "../../../components/Common/ConfirmationDialog"
+import { PaginatedTableFooter } from "../../../components/Common/PaginatedTableFooter"
 import CreateGroupButton from "../../../components/Files/CreateGroupButton"
 import StorageStats from "../../../components/Files/StorageStats"
 import FileUpload from "../../../components/Files/UploadFileButtonWithProgress"
-import { ConfirmationDialog } from "../../../components/Common/ConfirmationDialog"
 import useCustomToast from "../../../hooks/useCustomToast"
+import { useVisibleIds } from "../../../hooks/useVisibleIds"
 import { humanReadableDate, humanReadableFileSize } from "../../../utils"
 
 export const Route = createFileRoute("/_layout/files/")({
@@ -79,8 +85,6 @@ const sortLabels: Record<SortColumn, string> = {
   size: "Size",
   created_at: "Created",
 }
-
-type DeleteMode = "selected" | "current" | "all"
 
 interface FileActionsMenuProps {
   file: FilePublic
@@ -267,31 +271,12 @@ function FilesActionsMenu({
   visibleFileIds,
   onDeleted,
 }: FilesActionsMenuProps) {
-  const [deleteMode, setDeleteMode] = useState<DeleteMode | null>(null)
+  const [deleteMode, setDeleteMode] = useState<BulkDeleteMode | null>(null)
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
-  const currentCount = visibleFileIds.length
-  const deleteCount =
-    deleteMode === "selected"
-      ? selectedIds.length
-      : deleteMode === "current"
-        ? currentCount
-        : allCount
-  const deleteTitle =
-    deleteMode === "selected"
-      ? "Delete Selected Files"
-      : deleteMode === "current"
-        ? "Delete Visible Files"
-        : "Delete All Files"
-  const deleteLabel =
-    deleteMode === "selected"
-      ? "Delete Selected"
-      : deleteMode === "current"
-        ? "Delete Visible"
-        : "Delete All"
 
   const mutation = useMutation({
-    mutationFn: async (mode: DeleteMode) => {
+    mutationFn: async (mode: BulkDeleteMode) => {
       if (mode === "selected") {
         await Promise.all(
           selectedIds.map((id) => FilesService.deleteFile({ path: { id } })),
@@ -323,52 +308,27 @@ function FilesActionsMenu({
   })
 
   return (
-    <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="icon" aria-label="File actions">
-            <MoreVertical className="size-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          {selectedIds.length > 0 && (
-            <DropdownMenuItem
-              variant="destructive"
-              onSelect={() => setDeleteMode("selected")}
-            >
-              Delete Selected ({selectedIds.length})
-            </DropdownMenuItem>
-          )}
-          <DropdownMenuItem
-            variant="destructive"
-            disabled={currentCount === 0}
-            onSelect={() => setDeleteMode("current")}
-          >
-            Delete Visible ({currentCount})
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            variant="destructive"
-            disabled={allCount === 0}
-            onSelect={() => setDeleteMode("all")}
-          >
-            Delete All ({allCount})
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-      <ConfirmationDialog
-        open={deleteMode !== null}
-        onOpenChange={(open) => !open && setDeleteMode(null)}
-        title={deleteTitle}
-        description={`Are you sure you want to delete ${deleteCount} file${
-          deleteCount === 1 ? "" : "s"
-        }? This action cannot be undone.`}
-        confirmLabel={deleteLabel}
-        pending={mutation.isPending}
-        onConfirm={() => {
-          if (deleteMode) mutation.mutate(deleteMode)
-        }}
-      />
-    </>
+    <BulkDeleteMenu
+      allCount={allCount}
+      confirmLabel={
+        deleteMode === "selected"
+          ? "Delete Selected"
+          : deleteMode === "current"
+            ? "Delete Visible"
+            : "Delete All"
+      }
+      currentCount={visibleFileIds.length}
+      descriptionNoun="file"
+      mode={deleteMode}
+      onConfirm={() => {
+        if (deleteMode) mutation.mutate(deleteMode)
+      }}
+      onModeChange={setDeleteMode}
+      pending={mutation.isPending}
+      selectedCount={selectedIds.length}
+      titleNoun="Files"
+      triggerAriaLabel="File actions"
+    />
   )
 }
 
@@ -414,38 +374,11 @@ function FilesTable({
   const files = data?.data ?? []
   const totalCount = data?.count ?? 0
   const pageCount = Math.max(1, Math.ceil(totalCount / pageSize))
-  const hasPreviousPage = page > 1
-  const hasNextPage = page < pageCount
-  const firstItem = totalCount ? (page - 1) * pageSize + 1 : 0
-  const lastItem = Math.min(page * pageSize, totalCount)
-  const firstVisiblePage = Math.min(
-    Math.max(page - 2, 1),
-    Math.max(pageCount - 4, 1),
-  )
-  const visiblePages = Array.from(
-    { length: Math.min(5, pageCount) },
-    (_, index) => firstVisiblePage + index,
-  )
   const canSelect = (file: (typeof files)[number]) =>
     file.is_group
       ? selected.length > 0 && file.file_type === selectedType
       : !selected.length || file.file_type === selectedType
-  useEffect(() => {
-    const nextVisibleFileIds = files.map((file) => file.id)
-
-    setVisibleFileIds((currentVisibleFileIds) => {
-      if (
-        currentVisibleFileIds.length === nextVisibleFileIds.length &&
-        currentVisibleFileIds.every(
-          (id, index) => id === nextVisibleFileIds[index],
-        )
-      ) {
-        return currentVisibleFileIds
-      }
-
-      return nextVisibleFileIds
-    })
-  }, [files, setVisibleFileIds])
+  useVisibleIds(files, setVisibleFileIds)
   useEffect(() => {
     if (!selected.length) {
       setSelectionAnchorId(null)
@@ -667,63 +600,16 @@ function FilesTable({
           </TableBody>
         </Table>
       </div>
-      <div className="flex flex-col gap-3 py-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <div className="text-sm text-muted-foreground">
-            Showing {firstItem} to {lastItem} of {totalCount} files
-            {isFetching && !isLoading && (
-              <LoaderCircle className="ml-2 inline h-4 w-4 animate-spin" />
-            )}
-          </div>
-          <label className="flex items-center gap-2 text-sm text-muted-foreground">
-            Rows per page
-            <select
-              className="h-8 rounded-md border bg-background px-2 text-foreground"
-              value={pageSize}
-              onChange={(event) => changePageSize(Number(event.target.value))}
-            >
-              {[10, 20, 50, 100].map((size) => (
-                <option key={size} value={size}>
-                  {size}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => changePage(page - 1)}
-            disabled={!hasPreviousPage}
-          >
-            Previous
-          </Button>
-          <div className="flex items-center gap-1">
-            {visiblePages.map((pageNumber) => (
-              <Button
-                key={pageNumber}
-                variant={pageNumber === page ? "outline" : "ghost"}
-                size="sm"
-                className="h-8 w-8 p-0"
-                onClick={() => changePage(pageNumber)}
-                aria-label={`Go to page ${pageNumber}`}
-                aria-current={pageNumber === page ? "page" : undefined}
-              >
-                {pageNumber}
-              </Button>
-            ))}
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => changePage(page + 1)}
-            disabled={!hasNextPage}
-          >
-            Next
-          </Button>
-        </div>
-      </div>
+      <PaginatedTableFooter
+        isFetching={isFetching}
+        isLoading={isLoading}
+        itemLabel="files"
+        onPageChange={changePage}
+        onPageSizeChange={changePageSize}
+        page={page}
+        pageSize={pageSize}
+        totalCount={totalCount}
+      />
     </>
   )
 }
