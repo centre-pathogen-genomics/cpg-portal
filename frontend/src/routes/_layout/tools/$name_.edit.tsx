@@ -837,6 +837,37 @@ function ParamDefaultField({
   )
 }
 
+function ParamOptionsField({
+  control,
+  index,
+}: {
+  control: Control<ToolFormData>
+  index: number
+}) {
+  const type = useWatch({ control, name: `params.${index}.param_type` })
+  if (type !== "enum") return null
+  return (
+    <StringListBuilder
+      control={control}
+      name={`params.${index}.options`}
+      label="Options"
+      placeholder="option"
+    />
+  )
+}
+
+function ParamFileTypesField({
+  control,
+  index,
+}: {
+  control: Control<ToolFormData>
+  index: number
+}) {
+  const type = useWatch({ control, name: `params.${index}.param_type` })
+  if (type !== "file") return null
+  return <FileTypeListBuilder control={control} paramIndex={index} />
+}
+
 function InputsTab({ control }: { control: Control<ToolFormData> }) {
   const params = useFieldArray({ control, name: "params" })
   return (
@@ -925,14 +956,9 @@ function InputsTab({ control }: { control: Control<ToolFormData> }) {
                   label="Multiple"
                 />
               </div>
-              <div className="grid gap-6 md:grid-cols-2">
-                <StringListBuilder
-                  control={control}
-                  name={`params.${index}.options`}
-                  label="Options"
-                  placeholder="option"
-                />
-                <FileTypeListBuilder control={control} paramIndex={index} />
+              <div className="grid gap-6">
+                <ParamOptionsField control={control} index={index} />
+                <ParamFileTypesField control={control} index={index} />
               </div>
             </div>
           ))}
