@@ -22,6 +22,7 @@ import { z } from "zod"
 import {
   type CondaEnv,
   type CondaEnvPipDependency,
+  type FileTypeEnum,
   type Param,
   type ParamType,
   type SetupFile,
@@ -38,6 +39,11 @@ import {
   readToolsQueryKey,
   updateToolMutation,
 } from "@/client/@tanstack/react-query.gen"
+import {
+  FileTypeEnumSchema,
+  ParamTypeSchema,
+  ToolStatusSchema,
+} from "@/client/schemas.gen"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -64,14 +70,9 @@ import { Textarea } from "@/components/ui/textarea"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
 
-const paramTypes: ParamType[] = ["str", "int", "float", "bool", "enum", "file"]
-const toolStatuses: ToolStatus[] = [
-  "uninstalled",
-  "uninstalling",
-  "installed",
-  "installing",
-  "failed",
-]
+const paramTypes = ParamTypeSchema.enum as unknown as ParamType[]
+const fileTypes = FileTypeEnumSchema.enum as unknown as FileTypeEnum[]
+const toolStatuses = ToolStatusSchema.enum as unknown as ToolStatus[]
 
 const optionalString = z.string().nullable().optional()
 
@@ -530,6 +531,95 @@ function StringListBuilder<T extends FieldValues>({
   )
 }
 
+function nextAvailableFileType(selectedTypes: { value: string }[] | undefined) {
+  const selected = new Set(
+    (selectedTypes ?? []).map((item) => item.value).filter(Boolean),
+  )
+  return fileTypes.find((type) => !selected.has(type)) ?? "unknown"
+}
+
+function FileTypeListBuilder({
+  control,
+  paramIndex,
+}: {
+  control: Control<ToolFormData>
+  paramIndex: number
+}) {
+  const name =
+    `params.${paramIndex}.allowed_file_types` as `params.${number}.allowed_file_types`
+  const { fields, append, remove, move } = useFieldArray({
+    control,
+    name,
+  })
+  const selectedTypes = useWatch({ control, name })
+
+  return (
+    <div className="grid gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-sm font-semibold">Allowed file types</h3>
+        <ArrayActions
+          label="Add allowed file type"
+          onAdd={() => append({ value: nextAvailableFileType(selectedTypes) })}
+        />
+      </div>
+      {fields.length === 0 && (
+        <p className="text-sm text-muted-foreground">
+          No file types configured.
+        </p>
+      )}
+      {fields.map((field, index) => {
+        const currentValue = selectedTypes?.[index]?.value
+        const selectedByOtherRows = new Set(
+          (selectedTypes ?? [])
+            .filter((_, selectedIndex) => selectedIndex !== index)
+            .map((item) => item.value),
+        )
+
+        return (
+          <div
+            key={field.id}
+            className="grid gap-3 rounded-md border p-3 md:grid-cols-[1fr_auto]"
+          >
+            <Controller
+              control={control}
+              name={`${name}.${index}.value`}
+              render={({ field: select }) => (
+                <Select
+                  value={String(select.value ?? "")}
+                  onValueChange={select.onChange}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select file type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {fileTypes.map((type) => (
+                      <SelectItem
+                        key={type}
+                        value={type}
+                        disabled={
+                          selectedByOtherRows.has(type) && currentValue !== type
+                        }
+                      >
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            <RowActions
+              index={index}
+              count={fields.length}
+              onMove={move}
+              onRemove={() => remove(index)}
+            />
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 function DetailsTab({ control }: { control: Control<ToolFormData> }) {
   const badges = useFieldArray({ control, name: "badges" })
   return (
@@ -842,18 +932,51 @@ function InputsTab({ control }: { control: Control<ToolFormData> }) {
                   label="Options"
                   placeholder="option"
                 />
-                <StringListBuilder
-                  control={control}
-                  name={`params.${index}.allowed_file_types`}
-                  label="Allowed file types"
-                  placeholder="csv"
-                />
+                <FileTypeListBuilder control={control} paramIndex={index} />
               </div>
             </div>
           ))}
         </CardContent>
       </Card>
     </TabsContent>
+  )
+}
+
+function TargetTypeField({
+  control,
+  index,
+}: {
+  control: Control<ToolFormData>
+  index: number
+}) {
+  return (
+    <FormField
+      control={control}
+      name={`targets.${index}.target_type`}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>Target type</FormLabel>
+          <Select
+            value={field.value || "unknown"}
+            onValueChange={field.onChange}
+          >
+            <FormControl>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select target type" />
+              </SelectTrigger>
+            </FormControl>
+            <SelectContent>
+              {fileTypes.map((type) => (
+                <SelectItem key={type} value={type}>
+                  {type}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
   )
 }
 
@@ -868,7 +991,11 @@ function OutputsTab({ control }: { control: Control<ToolFormData> }) {
           <ArrayActions
             label="Add target"
             onAdd={() =>
-              targets.append({ path: "", target_type: "", required: true })
+              targets.append({
+                path: "",
+                target_type: "unknown",
+                required: true,
+              })
             }
           />
         </CardHeader>
@@ -888,11 +1015,7 @@ function OutputsTab({ control }: { control: Control<ToolFormData> }) {
                 name={`targets.${index}.path`}
                 label="Path"
               />
-              <TextField
-                control={control}
-                name={`targets.${index}.target_type`}
-                label="Target type"
-              />
+              <TargetTypeField control={control} index={index} />
               <div className="space-y-3">
                 <BooleanField
                   control={control}
