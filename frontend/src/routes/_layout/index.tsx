@@ -7,6 +7,7 @@ import EventStreamVisualizationPixi, {
 import { Button } from "@/components/ui/button"
 import Logo from "/assets/images/cpg-logo.png"
 import IconLogoTransparent from "/assets/images/cpg-logo-icon-transparent.png"
+import ToolsCarousel from "../../components/Tools/ToolsCarousel"
 import ToolsGrid from "../../components/Tools/ToolsGrid"
 import useAuth from "../../hooks/useAuth"
 
@@ -82,6 +83,7 @@ function Tools() {
       </section>
 
       <div id="tools" className="scroll-mt-24">
+        <ToolsCarousel tag="demo" title="Demo tools" />
         <ToolsGrid hideFilters={currentUser === undefined} />
       </div>
     </div>

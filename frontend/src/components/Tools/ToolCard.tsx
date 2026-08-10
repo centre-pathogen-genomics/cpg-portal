@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { cn } from "@/lib/utils"
 import type { ToolMinimalPublic } from "../../client"
 import useAuth from "../../hooks/useAuth"
 import FavouriteButton from "./FavouriteButton"
@@ -19,7 +20,13 @@ import "../../assets/css/App.css"
 const fallbackImage =
   "https://images.unsplash.com/photo-1543145499-8193615267de?auto=format&fit=crop&w=800&q=60"
 
-const ToolCard = ({ tool }: { tool: ToolMinimalPublic }) => {
+const ToolCard = ({
+  tool,
+  className,
+}: {
+  tool: ToolMinimalPublic
+  className?: string
+}) => {
   const [modalOpen, setModalOpen] = useState(false)
   const [isFavourited, setIsFavourited] = useState(tool.favourited ?? false)
   const navigate = useNavigate()
@@ -35,7 +42,10 @@ const ToolCard = ({ tool }: { tool: ToolMinimalPublic }) => {
     <>
       <Card
         onClick={openTool}
-        className="group max-w-full cursor-pointer gap-0 overflow-hidden py-0 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl xl:max-w-[400px]"
+        className={cn(
+          "group max-w-full cursor-pointer gap-0 overflow-hidden py-0 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl xl:max-w-[400px]",
+          className,
+        )}
       >
         <div className="relative flex h-[120px] items-center justify-center overflow-hidden">
           <img
@@ -74,7 +84,7 @@ const ToolCard = ({ tool }: { tool: ToolMinimalPublic }) => {
         <CardContent className="py-4">
           <p className="line-clamp-3">{tool.description}</p>
         </CardContent>
-        <CardFooter className="justify-between pb-4">
+        <CardFooter className="mt-auto justify-between pb-4">
           <div className="no-scroll mr-2 flex flex-nowrap overflow-auto">
             {tool.tags?.map((tag) => (
               <Badge
