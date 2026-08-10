@@ -16,6 +16,7 @@ import useCustomToast from "../../hooks/useCustomToast"
 interface CreateGroupButtonProps {
   selectedFileIds: string[]
   onGroupCreated?: () => void
+  className?: string
   size?: "xs" | "sm" | "md" | "lg"
   variant?: string
   colorScheme?: string
@@ -24,6 +25,7 @@ interface CreateGroupButtonProps {
 export default function CreateGroupButton({
   selectedFileIds,
   onGroupCreated,
+  className,
   size = "md",
 }: CreateGroupButtonProps) {
   const queryClient = useQueryClient()
@@ -64,6 +66,7 @@ export default function CreateGroupButton({
   return (
     <>
       <Button
+        className={className}
         size={size === "md" ? "default" : size === "xs" ? "sm" : size}
         onClick={show}
         disabled={!selectedFileIds.length}

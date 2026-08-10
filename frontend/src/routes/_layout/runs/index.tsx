@@ -379,7 +379,7 @@ function RunsActionsMenu({
             disabled={currentCount === 0}
             onSelect={() => setDeleteMode("current")}
           >
-            Delete Current ({currentCount})
+            Delete Visible ({currentCount})
           </DropdownMenuItem>
           <DropdownMenuItem
             variant="destructive"
@@ -394,13 +394,13 @@ function RunsActionsMenu({
         open={deleteMode !== null}
         onOpenChange={(open) => !open && setDeleteMode(null)}
         title={
-          deleteMode === "current" ? "Delete Current Runs" : "Delete All Runs"
+          deleteMode === "current" ? "Delete Visible Runs" : "Delete All Runs"
         }
         description={`Are you sure you want to delete ${deleteCount} inactive run${
           deleteCount === 1 ? "" : "s"
         } and associated unsaved files? This action cannot be undone.`}
         confirmLabel={
-          deleteMode === "current" ? "Delete Current" : "Delete All"
+          deleteMode === "current" ? "Delete Visible" : "Delete All"
         }
         pending={mutation.isPending}
         onConfirm={() => {

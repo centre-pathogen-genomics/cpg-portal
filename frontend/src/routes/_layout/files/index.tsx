@@ -13,7 +13,7 @@ import {
   MoreVertical,
   Search,
 } from "lucide-react"
-import { useEffect, useState } from "react"
+import { type MouseEvent, useEffect, useState } from "react"
 import { BsFolder } from "react-icons/bs"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -69,9 +69,10 @@ const sortLabels: Record<SortColumn, string> = {
   created_at: "Created",
 }
 
-type DeleteMode = "current" | "all"
+type DeleteMode = "selected" | "current" | "all"
 
 interface FilesActionsMenuProps {
+  selectedIds: string[]
   currentCount: number
   allCount: number
   nameFilter: string
@@ -80,6 +81,7 @@ interface FilesActionsMenuProps {
 }
 
 function FilesActionsMenu({
+  selectedIds,
   currentCount,
   allCount,
   nameFilter,
@@ -90,10 +92,33 @@ function FilesActionsMenu({
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
   const trimmedNameFilter = nameFilter.trim()
-  const deleteCount = deleteMode === "current" ? currentCount : allCount
+  const deleteCount =
+    deleteMode === "selected"
+      ? selectedIds.length
+      : deleteMode === "current"
+        ? currentCount
+        : allCount
+  const deleteTitle =
+    deleteMode === "selected"
+      ? "Delete Selected Files"
+      : deleteMode === "current"
+        ? "Delete Visible Files"
+        : "Delete All Files"
+  const deleteLabel =
+    deleteMode === "selected"
+      ? "Delete Selected"
+      : deleteMode === "current"
+        ? "Delete Visible"
+        : "Delete All"
 
   const mutation = useMutation({
     mutationFn: async (mode: DeleteMode) => {
+      if (mode === "selected") {
+        await Promise.all(
+          selectedIds.map((id) => FilesService.deleteFile({ path: { id } })),
+        )
+        return
+      }
       await FilesService.deleteFiles({
         query:
           mode === "current"
@@ -131,12 +156,20 @@ function FilesActionsMenu({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          {selectedIds.length > 0 && (
+            <DropdownMenuItem
+              variant="destructive"
+              onSelect={() => setDeleteMode("selected")}
+            >
+              Delete Selected ({selectedIds.length})
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem
             variant="destructive"
             disabled={currentCount === 0}
             onSelect={() => setDeleteMode("current")}
           >
-            Delete Current ({currentCount})
+            Delete Visible ({currentCount})
           </DropdownMenuItem>
           <DropdownMenuItem
             variant="destructive"
@@ -150,15 +183,11 @@ function FilesActionsMenu({
       <ConfirmationDialog
         open={deleteMode !== null}
         onOpenChange={(open) => !open && setDeleteMode(null)}
-        title={
-          deleteMode === "current" ? "Delete Current Files" : "Delete All Files"
-        }
+        title={deleteTitle}
         description={`Are you sure you want to delete ${deleteCount} file${
           deleteCount === 1 ? "" : "s"
         }? This action cannot be undone.`}
-        confirmLabel={
-          deleteMode === "current" ? "Delete Current" : "Delete all"
-        }
+        confirmLabel={deleteLabel}
         pending={mutation.isPending}
         onConfirm={() => {
           if (deleteMode) mutation.mutate(deleteMode)
@@ -178,6 +207,10 @@ function FilesTable({
 }: FilesTableProps) {
   const [pageSize, setPageSize] = useState(20)
   const [page, setPage] = useState(1)
+  const [selectionAnchorId, setSelectionAnchorId] = useState<string | null>(
+    null,
+  )
+  const [selectionType, setSelectionType] = useState<string | null>(null)
   const navigate = useNavigate({ from: Route.fullPath })
   const trimmedNameFilter = nameFilter.trim()
   useEffect(() => {
@@ -214,30 +247,72 @@ function FilesTable({
   const hasNextPage = page < pageCount
   const firstItem = totalCount ? (page - 1) * pageSize + 1 : 0
   const lastItem = Math.min(page * pageSize, totalCount)
-  const firstVisiblePage = Math.min(Math.max(page - 2, 1), Math.max(pageCount - 4, 1))
+  const firstVisiblePage = Math.min(
+    Math.max(page - 2, 1),
+    Math.max(pageCount - 4, 1),
+  )
   const visiblePages = Array.from(
     { length: Math.min(5, pageCount) },
     (_, index) => firstVisiblePage + index,
   )
-  const selectedType = files.find((file) => file.id === selected[0])?.file_type
   const canSelect = (file: (typeof files)[number]) =>
-    !file.is_group && (!selected.length || file.file_type === selectedType)
-  const toggle = (id: string) =>
+    !file.is_group && (!selected.length || file.file_type === selectionType)
+  useEffect(() => {
+    if (!selected.length) {
+      setSelectionAnchorId(null)
+      setSelectionType(null)
+    }
+  }, [selected.length])
+  const toggle = (file: (typeof files)[number]) => {
+    setSelectionAnchorId(file.id)
     setSelected((current) =>
-      current.includes(id)
-        ? current.filter((value) => value !== id)
-        : [...current, id],
+      current.includes(file.id)
+        ? current.filter((value) => value !== file.id)
+        : [...current, file.id],
     )
+    setSelectionType(file.file_type ?? null)
+  }
+  const selectRange = (file: (typeof files)[number]) => {
+    if (!selectionAnchorId) {
+      toggle(file)
+      return
+    }
+    const anchorIndex = files.findIndex((item) => item.id === selectionAnchorId)
+    const fileIndex = files.findIndex((item) => item.id === file.id)
+    if (anchorIndex === -1 || fileIndex === -1) {
+      toggle(file)
+      return
+    }
+    const [start, end] =
+      anchorIndex < fileIndex
+        ? [anchorIndex, fileIndex]
+        : [fileIndex, anchorIndex]
+    const rangeIds = files
+      .slice(start, end + 1)
+      .filter((item) => !item.is_group && item.file_type === file.file_type)
+      .map((item) => item.id)
+    setSelectionType(file.file_type ?? null)
+    setSelected((current) => Array.from(new Set([...current, ...rangeIds])))
+  }
+  const handleSelectionClick = (
+    file: (typeof files)[number],
+    event: MouseEvent,
+  ) => {
+    if (!canSelect(file)) return
+    if (event.shiftKey) {
+      selectRange(file)
+      return
+    }
+    toggle(file)
+  }
   const sortFiles = (column: SortColumn) => {
     setSelected([])
     setOrderBy((current) => (current === column ? `-${column}` : column))
   }
   const changePage = (nextPage: number) => {
-    setSelected([])
     setPage(Math.min(Math.max(nextPage, 1), pageCount))
   }
   const changePageSize = (nextPageSize: number) => {
-    setSelected([])
     setPageSize(nextPageSize)
   }
   const renderSortableHeading = (column: SortColumn) => {
@@ -264,7 +339,15 @@ function FilesTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[1%] px-2" />
+              <TableHead className="w-[1%] px-2">
+                {selected.length > 0 && (
+                  <Checkbox
+                    aria-label="Deselect selected files"
+                    checked="indeterminate"
+                    onCheckedChange={() => setSelected([])}
+                  />
+                )}
+              </TableHead>
               <TableHead>{renderSortableHeading("name")}</TableHead>
               <TableHead>Tags</TableHead>
               <TableHead>{renderSortableHeading("file_type")}</TableHead>
@@ -295,9 +378,28 @@ function FilesTable({
                 <TableRow
                   key={file.id}
                   className="cursor-pointer hover:bg-muted/50"
-                  onClick={(event) => {
-                    if ((event.target as Element).closest("button, a, input"))
+                  onMouseDown={(event) => {
+                    if (
+                      (event.target as Element).closest(
+                        "button, a, input, [data-selection-cell]",
+                      )
+                    )
                       return
+                    if (event.metaKey || event.ctrlKey || event.shiftKey) {
+                      event.preventDefault()
+                    }
+                  }}
+                  onClick={(event) => {
+                    if (
+                      (event.target as Element).closest(
+                        "button, a, input, [data-selection-cell]",
+                      )
+                    )
+                      return
+                    if (event.metaKey || event.ctrlKey || event.shiftKey) {
+                      handleSelectionClick(file, event)
+                      return
+                    }
                     navigate({
                       to: "/files/$fileId",
                       params: { fileId: file.id },
@@ -306,12 +408,21 @@ function FilesTable({
                     })
                   }}
                 >
-                  <TableCell className="w-[1%] px-2">
+                  <TableCell
+                    className="w-[1%] px-2"
+                    data-selection-cell
+                    onClick={(event) => event.stopPropagation()}
+                  >
                     {canSelect(file) && (
                       <Checkbox
                         aria-label={`Select file ${file.name}`}
                         checked={selected.includes(file.id)}
-                        onCheckedChange={() => toggle(file.id)}
+                        onClick={(event) => {
+                          if (!event.shiftKey) return
+                          event.preventDefault()
+                          handleSelectionClick(file, event)
+                        }}
+                        onCheckedChange={() => toggle(file)}
                       />
                     )}
                     {file.is_group && <BsFolder />}
@@ -500,13 +611,17 @@ function Files() {
               )}
           </select>
         </div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <CreateGroupButton
-            selectedFileIds={selected}
-            onGroupCreated={() => setSelected([])}
-            size="md"
-          />
+        <div className="flex items-center gap-3 sm:justify-end">
+          <div className="min-w-0 flex-1 sm:flex-none">
+            <CreateGroupButton
+              className="w-full sm:w-auto"
+              selectedFileIds={selected}
+              onGroupCreated={() => setSelected([])}
+              size="md"
+            />
+          </div>
           <FilesActionsMenu
+            selectedIds={selected}
             currentCount={currentFilesCount ?? 0}
             allCount={allFilesCount ?? 0}
             nameFilter={nameFilter}
