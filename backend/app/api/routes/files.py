@@ -234,8 +234,9 @@ def create_group(
     if len(file_ids) > settings.MAX_FILES_IN_GROUP:
         raise HTTPException(status_code=400, detail=f"A maximum of {settings.MAX_FILES_IN_GROUP} files can be grouped together")
 
-    # Fetch all files and check ownership
     files = []
+    file_ids_in_group = set()
+    groups_to_delete = []
     sum_size = 0
     file_types_in_group = set()
 
@@ -246,11 +247,26 @@ def create_group(
         if file.owner_id != current_user.id:
             raise HTTPException(status_code=400, detail="Not enough permissions")
         if file.is_group:
-            raise HTTPException(status_code=400, detail="Cannot include a group within another group")
-        files.append(file)
-        sum_size += file.size
-        if file.file_type:
-            file_types_in_group.add(file.file_type)
+            if not file.children:
+                raise HTTPException(status_code=400, detail="Group has no children")
+            groups_to_delete.append(file)
+            children = list(file.children)
+        else:
+            children = [file]
+
+        for child in children:
+            if child.id in file_ids_in_group:
+                continue
+            if child.is_group:
+                raise HTTPException(status_code=400, detail="Cannot include a group within another group")
+            files.append(child)
+            file_ids_in_group.add(child.id)
+            sum_size += child.size
+            if child.file_type:
+                file_types_in_group.add(child.file_type)
+
+    if len(files) > settings.MAX_FILES_IN_GROUP:
+        raise HTTPException(status_code=400, detail=f"A maximum of {settings.MAX_FILES_IN_GROUP} files can be grouped together")
 
     # Ensure all files have the same type
     if len(file_types_in_group) > 1:
@@ -270,6 +286,8 @@ def create_group(
         is_group=True,
     )
     session.add(group_metadata)
+    for group in groups_to_delete:
+        session.delete(group)
     session.commit()
     session.refresh(group_metadata)
     session.commit()

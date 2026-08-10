@@ -4,7 +4,7 @@ import pytest
 from fastapi import HTTPException
 from sqlmodel import Session
 
-from app.api.routes.files import get_current_file_types, read_files
+from app.api.routes.files import create_group, get_current_file_types, read_files
 from app.models import File, User
 from tests.utils.user import create_random_user
 from tests.utils.utils import random_lower_string
@@ -38,6 +38,96 @@ def _create_saved_file(
     db.commit()
     db.refresh(file)
     return file
+
+
+def test_create_group_combines_selected_group_and_file(db: Session) -> None:
+    owner = create_random_user(db)
+    group = _create_saved_file(
+        db=db,
+        owner=owner,
+        name=f"group-{random_lower_string()}",
+        size=10,
+        created_at=_utc_now(),
+        file_type="fasta",
+    )
+    group.is_group = True
+    existing_child = _create_saved_file(
+        db=db,
+        owner=owner,
+        name=f"existing-{random_lower_string()}.fa",
+        size=10,
+        created_at=_utc_now(),
+        file_type="fasta",
+        parent_id=group.id,
+    )
+    child = _create_saved_file(
+        db=db,
+        owner=owner,
+        name=f"child-{random_lower_string()}.fa",
+        size=5,
+        created_at=_utc_now(),
+        file_type="fasta",
+    )
+    db.add(group)
+    db.commit()
+    db.refresh(group)
+
+    result = create_group(
+        session=db,
+        current_user=owner,
+        name=f"combined-{random_lower_string()}",
+        file_ids=[group.id, child.id],
+    )
+
+    db.refresh(child)
+    db.refresh(existing_child)
+    assert child.parent_id == result.id
+    assert existing_child.parent_id == result.id
+    assert result.size == 15
+
+
+def test_create_group_rejects_mismatched_group_and_file_type(db: Session) -> None:
+    owner = create_random_user(db)
+    group = _create_saved_file(
+        db=db,
+        owner=owner,
+        name=f"group-{random_lower_string()}",
+        size=10,
+        created_at=_utc_now(),
+        file_type="fasta",
+    )
+    group.is_group = True
+    _create_saved_file(
+        db=db,
+        owner=owner,
+        name=f"existing-{random_lower_string()}.fa",
+        size=10,
+        created_at=_utc_now(),
+        file_type="fasta",
+        parent_id=group.id,
+    )
+    child = _create_saved_file(
+        db=db,
+        owner=owner,
+        name=f"child-{random_lower_string()}.txt",
+        size=5,
+        created_at=_utc_now(),
+        file_type="text",
+    )
+    db.add(group)
+    db.commit()
+    db.refresh(group)
+
+    with pytest.raises(HTTPException) as exc_info:
+        create_group(
+            session=db,
+            current_user=owner,
+            name=f"combined-{random_lower_string()}",
+            file_ids=[group.id, child.id],
+        )
+
+    assert exc_info.value.status_code == 400
+    assert exc_info.value.detail == "All files in a group must have the same file type"
 
 
 def test_read_files_filters_by_name_and_sorts(

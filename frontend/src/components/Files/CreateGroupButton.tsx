@@ -41,6 +41,8 @@ export default function CreateGroupButton({
       setError(null)
       setOpen(false)
       queryClient.invalidateQueries({ queryKey: ["files"] })
+      queryClient.invalidateQueries({ queryKey: ["files-count"] })
+      queryClient.invalidateQueries({ queryKey: [{ _id: "getFilesStats" }] })
       onGroupCreated?.()
     },
     onError: (requestError: any) => {

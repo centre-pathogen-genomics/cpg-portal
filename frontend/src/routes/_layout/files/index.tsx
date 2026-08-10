@@ -54,6 +54,8 @@ export const Route = createFileRoute("/_layout/files/")({
 interface FilesTableProps {
   selected: string[]
   setSelected: React.Dispatch<React.SetStateAction<string[]>>
+  selectedType: string | null
+  setSelectedType: React.Dispatch<React.SetStateAction<string | null>>
   typeFilter?: string
   nameFilter: string
   orderBy: string
@@ -200,6 +202,8 @@ function FilesActionsMenu({
 function FilesTable({
   selected,
   setSelected,
+  selectedType,
+  setSelectedType,
   typeFilter,
   nameFilter,
   orderBy,
@@ -210,19 +214,12 @@ function FilesTable({
   const [selectionAnchorId, setSelectionAnchorId] = useState<string | null>(
     null,
   )
-  const [selectionType, setSelectionType] = useState<string | null>(null)
   const navigate = useNavigate({ from: Route.fullPath })
   const trimmedNameFilter = nameFilter.trim()
   useEffect(() => {
     setPage(1)
   }, [typeFilter, trimmedNameFilter, orderBy, pageSize])
-  const {
-    data,
-    isLoading,
-    isFetching,
-    isError,
-    error,
-  } = useQuery({
+  const { data, isLoading, isFetching, isError, error } = useQuery({
     queryKey: ["files", pageSize, page, typeFilter, trimmedNameFilter, orderBy],
     placeholderData: keepPreviousData,
     queryFn: async () =>
@@ -256,13 +253,15 @@ function FilesTable({
     (_, index) => firstVisiblePage + index,
   )
   const canSelect = (file: (typeof files)[number]) =>
-    !file.is_group && (!selected.length || file.file_type === selectionType)
+    file.is_group
+      ? selected.length > 0 && file.file_type === selectedType
+      : !selected.length || file.file_type === selectedType
   useEffect(() => {
     if (!selected.length) {
       setSelectionAnchorId(null)
-      setSelectionType(null)
+      setSelectedType(null)
     }
-  }, [selected.length])
+  }, [selected.length, setSelectedType])
   const toggle = (file: (typeof files)[number]) => {
     setSelectionAnchorId(file.id)
     setSelected((current) =>
@@ -270,7 +269,7 @@ function FilesTable({
         ? current.filter((value) => value !== file.id)
         : [...current, file.id],
     )
-    setSelectionType(file.file_type ?? null)
+    setSelectedType(file.file_type ?? null)
   }
   const selectRange = (file: (typeof files)[number]) => {
     if (!selectionAnchorId) {
@@ -289,9 +288,13 @@ function FilesTable({
         : [fileIndex, anchorIndex]
     const rangeIds = files
       .slice(start, end + 1)
-      .filter((item) => !item.is_group && item.file_type === file.file_type)
+      .filter((item) =>
+        item.is_group
+          ? selected.length > 0 && item.file_type === file.file_type
+          : item.file_type === file.file_type,
+      )
       .map((item) => item.id)
-    setSelectionType(file.file_type ?? null)
+    setSelectedType(file.file_type ?? null)
     setSelected((current) => Array.from(new Set([...current, ...rangeIds])))
   }
   const handleSelectionClick = (
@@ -339,7 +342,7 @@ function FilesTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[1%] px-2">
+              <TableHead className="w-12 min-w-12 max-w-12">
                 {selected.length > 0 && (
                   <Checkbox
                     aria-label="Deselect selected files"
@@ -409,11 +412,11 @@ function FilesTable({
                   }}
                 >
                   <TableCell
-                    className="w-[1%] px-2"
+                    className="w-6 min-w-6 max-w-6"
                     data-selection-cell
                     onClick={(event) => event.stopPropagation()}
                   >
-                    {canSelect(file) && (
+                    {canSelect(file) ? (
                       <Checkbox
                         aria-label={`Select file ${file.name}`}
                         checked={selected.includes(file.id)}
@@ -424,8 +427,9 @@ function FilesTable({
                         }}
                         onCheckedChange={() => toggle(file)}
                       />
+                    ) : (
+                      file.is_group && <BsFolder />
                     )}
-                    {file.is_group && <BsFolder />}
                   </TableCell>
                   <TableCell>{file.name}</TableCell>
                   <TableCell>
@@ -531,6 +535,7 @@ function FilesTable({
 
 function Files() {
   const [selected, setSelected] = useState<string[]>([])
+  const [selectedType, setSelectedType] = useState<string | null>(null)
   const [typeFilter, setTypeFilter] = useState("all")
   const [nameFilter, setNameFilter] = useState("")
   const [orderBy, setOrderBy] = useState("-created_at")
@@ -587,6 +592,7 @@ function Files() {
               onChange={(event) => {
                 setNameFilter(event.target.value)
                 setSelected([])
+                setSelectedType(null)
               }}
               placeholder="Search by name"
               aria-label="Search files by name"
@@ -598,6 +604,7 @@ function Files() {
             onChange={(event) => {
               setTypeFilter(event.target.value)
               setSelected([])
+              setSelectedType(null)
             }}
           >
             <option value="all">Types</option>
@@ -616,7 +623,10 @@ function Files() {
             <CreateGroupButton
               className="w-full sm:w-auto"
               selectedFileIds={selected}
-              onGroupCreated={() => setSelected([])}
+              onGroupCreated={() => {
+                setSelected([])
+                setSelectedType(null)
+              }}
               size="md"
             />
           </div>
@@ -626,13 +636,18 @@ function Files() {
             allCount={allFilesCount ?? 0}
             nameFilter={nameFilter}
             typeFilter={typeFilter}
-            onDeleted={() => setSelected([])}
+            onDeleted={() => {
+              setSelected([])
+              setSelectedType(null)
+            }}
           />
         </div>
       </div>
       <FilesTable
         selected={selected}
         setSelected={setSelected}
+        selectedType={selectedType}
+        setSelectedType={setSelectedType}
         typeFilter={typeFilter}
         nameFilter={nameFilter}
         orderBy={orderBy}
