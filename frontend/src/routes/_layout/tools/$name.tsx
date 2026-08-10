@@ -4,7 +4,7 @@ import {
   Link as RouterLink,
   useNavigate,
 } from "@tanstack/react-router"
-import { LoaderCircle } from "lucide-react"
+import { LoaderCircle, Pencil } from "lucide-react"
 import { useEffect, useState } from "react"
 import {
   Accordion,
@@ -195,17 +195,28 @@ function Tool() {
             </div>
             <h1 className="truncate text-4xl font-bold">{tool.name}</h1>
             {tool.version && (
-              <UiBadge className="ml-1 bg-green-500">
-                v{tool.version}
-              </UiBadge>
+              <UiBadge className="ml-1 bg-green-500">v{tool.version}</UiBadge>
             )}
           </div>
           {currentUser && (
-            <FavouriteButton
-              tool={tool}
-              isFavourited={favourited}
-              setIsFavourited={setFavourited}
-            />
+            <div className="flex shrink-0 items-center gap-2">
+              {currentUser.is_superuser && (
+                <Button variant="outline" asChild>
+                  <RouterLink
+                    to="/tools/$name/edit"
+                    params={{ name: tool.name }}
+                  >
+                    <Pencil />
+                    Edit
+                  </RouterLink>
+                </Button>
+              )}
+              <FavouriteButton
+                tool={tool}
+                isFavourited={favourited}
+                setIsFavourited={setFavourited}
+              />
+            </div>
           )}
         </div>
         <div className="mb-2 flex flex-wrap items-center gap-1.5">

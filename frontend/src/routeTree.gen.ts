@@ -26,6 +26,7 @@ import { Route as LayoutToolsNameRouteImport } from './routes/_layout/tools/$nam
 import { Route as LayoutSearchQueryRouteImport } from './routes/_layout/search/$query'
 import { Route as LayoutRunsRunidRouteImport } from './routes/_layout/runs/$runid'
 import { Route as LayoutFilesFileIdRouteImport } from './routes/_layout/files/$fileId'
+import { Route as LayoutToolsNameEditRouteImport } from './routes/_layout/tools/$name_.edit'
 
 const StreamRoute = StreamRouteImport.update({
   id: '/stream',
@@ -111,6 +112,11 @@ const LayoutFilesFileIdRoute = LayoutFilesFileIdRouteImport.update({
   path: '/files/$fileId',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutToolsNameEditRoute = LayoutToolsNameEditRouteImport.update({
+  id: '/tools/$name_/edit',
+  path: '/tools/$name/edit',
+  getParentRoute: () => LayoutRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof LayoutIndexRoute
@@ -129,6 +135,7 @@ export interface FileRoutesByFullPath {
   '/tools/$name': typeof LayoutToolsNameRoute
   '/files/': typeof LayoutFilesIndexRoute
   '/runs/': typeof LayoutRunsIndexRoute
+  '/tools/$name/edit': typeof LayoutToolsNameEditRoute
 }
 export interface FileRoutesByTo {
   '/about': typeof AboutRoute
@@ -147,6 +154,7 @@ export interface FileRoutesByTo {
   '/tools/$name': typeof LayoutToolsNameRoute
   '/files': typeof LayoutFilesIndexRoute
   '/runs': typeof LayoutRunsIndexRoute
+  '/tools/$name/edit': typeof LayoutToolsNameEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -167,6 +175,7 @@ export interface FileRoutesById {
   '/_layout/tools/$name': typeof LayoutToolsNameRoute
   '/_layout/files/': typeof LayoutFilesIndexRoute
   '/_layout/runs/': typeof LayoutRunsIndexRoute
+  '/_layout/tools/$name_/edit': typeof LayoutToolsNameEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -187,6 +196,7 @@ export interface FileRouteTypes {
     | '/tools/$name'
     | '/files/'
     | '/runs/'
+    | '/tools/$name/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/about'
@@ -205,6 +215,7 @@ export interface FileRouteTypes {
     | '/tools/$name'
     | '/files'
     | '/runs'
+    | '/tools/$name/edit'
   id:
     | '__root__'
     | '/_layout'
@@ -224,6 +235,7 @@ export interface FileRouteTypes {
     | '/_layout/tools/$name'
     | '/_layout/files/'
     | '/_layout/runs/'
+    | '/_layout/tools/$name_/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -358,6 +370,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutFilesFileIdRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/tools/$name_/edit': {
+      id: '/_layout/tools/$name_/edit'
+      path: '/tools/$name/edit'
+      fullPath: '/tools/$name/edit'
+      preLoaderRoute: typeof LayoutToolsNameEditRouteImport
+      parentRoute: typeof LayoutRoute
+    }
   }
 }
 
@@ -371,6 +390,7 @@ interface LayoutRouteChildren {
   LayoutToolsNameRoute: typeof LayoutToolsNameRoute
   LayoutFilesIndexRoute: typeof LayoutFilesIndexRoute
   LayoutRunsIndexRoute: typeof LayoutRunsIndexRoute
+  LayoutToolsNameEditRoute: typeof LayoutToolsNameEditRoute
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
@@ -383,6 +403,7 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutToolsNameRoute: LayoutToolsNameRoute,
   LayoutFilesIndexRoute: LayoutFilesIndexRoute,
   LayoutRunsIndexRoute: LayoutRunsIndexRoute,
+  LayoutToolsNameEditRoute: LayoutToolsNameEditRoute,
 }
 
 const LayoutRouteWithChildren =
