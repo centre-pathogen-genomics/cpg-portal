@@ -261,11 +261,53 @@ def test_delete_runs_filters_by_name_and_tool(db: Session) -> None:
         current_user=owner,
         name=prefix,
         tool_name=selected_tool.name,
+        ids=None,
     )
 
     assert db.get(Run, matching.id) is None
     assert db.get(Run, unmatched_name.id) is not None
     assert db.get(Run, unmatched_tool.id) is not None
+    assert db.get(Run, active.id) is not None
+
+
+def test_delete_runs_filters_by_ids(db: Session) -> None:
+    owner = create_random_user(db)
+    tool = _create_tool(db=db, owner=owner)
+    visible = _create_run(
+        db=db,
+        owner=owner,
+        tool=tool,
+        name=f"visible-{random_lower_string()}",
+        status=RunStatus.completed,
+        created_at=_utc_now(),
+    )
+    hidden = _create_run(
+        db=db,
+        owner=owner,
+        tool=tool,
+        name=f"hidden-{random_lower_string()}",
+        status=RunStatus.completed,
+        created_at=_utc_now(),
+    )
+    active = _create_run(
+        db=db,
+        owner=owner,
+        tool=tool,
+        name=f"active-{random_lower_string()}",
+        status=RunStatus.running,
+        created_at=_utc_now(),
+    )
+
+    delete_runs(
+        session=db,
+        current_user=owner,
+        ids=[visible.id, active.id],
+        name=None,
+        tool_name=None,
+    )
+
+    assert db.get(Run, visible.id) is None
+    assert db.get(Run, hidden.id) is not None
     assert db.get(Run, active.id) is not None
 
 

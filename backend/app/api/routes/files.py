@@ -490,14 +490,17 @@ def delete_files(
     name: str | None = Query(None, min_length=1, max_length=255),
     types: list[FileTypeEnum] = Query(None),
     top_level_only: bool = False,
+    ids: list[uuid.UUID] | None = Query(None),
 ) -> Any:
     """
-    Delete saved files, optionally filtered by name and type.
+    Delete saved files, optionally filtered by name, type, and file IDs.
     """
     if not types:
         types = []
 
     base_where = (File.owner_id == current_user.id) & (File.saved)
+    if ids:
+        base_where = and_(base_where, File.id.in_(ids))
     if name:
         base_where = and_(base_where, File.name.icontains(name, autoescape=True))
     if types:

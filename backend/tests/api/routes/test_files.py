@@ -4,7 +4,12 @@ import pytest
 from fastapi import HTTPException
 from sqlmodel import Session
 
-from app.api.routes.files import create_group, get_current_file_types, read_files
+from app.api.routes.files import (
+    create_group,
+    delete_files,
+    get_current_file_types,
+    read_files,
+)
 from app.models import File, User
 from tests.utils.user import create_random_user
 from tests.utils.utils import random_lower_string
@@ -184,6 +189,45 @@ def test_read_files_rejects_unknown_sort_column(db: Session) -> None:
 
     assert exc_info.value.status_code == 400
     assert exc_info.value.detail == "Invalid column name: owner_id"
+
+
+def test_delete_files_filters_by_ids(db: Session) -> None:
+    owner = create_random_user(db)
+    visible = _create_saved_file(
+        db=db,
+        owner=owner,
+        name=f"visible-{random_lower_string()}.txt",
+        size=10,
+        created_at=_utc_now(),
+    )
+    hidden = _create_saved_file(
+        db=db,
+        owner=owner,
+        name=f"hidden-{random_lower_string()}.txt",
+        size=10,
+        created_at=_utc_now(),
+    )
+    unsaved = _create_saved_file(
+        db=db,
+        owner=owner,
+        name=f"unsaved-{random_lower_string()}.txt",
+        size=10,
+        created_at=_utc_now(),
+        saved=False,
+    )
+
+    delete_files(
+        session=db,
+        current_user=owner,
+        ids=[visible.id, unsaved.id],
+        name=None,
+        types=[],
+        top_level_only=False,
+    )
+
+    assert db.get(File, visible.id) is None
+    assert db.get(File, hidden.id) is not None
+    assert db.get(File, unsaved.id) is not None
 
 
 def test_get_current_file_types_includes_only_current_saved_top_level_types(

@@ -2198,6 +2198,10 @@ export type FilesDeleteFilesData = {
          * Top Level Only
          */
         top_level_only?: boolean;
+        /**
+         * Ids
+         */
+        ids?: Array<string>;
     };
     url: '/api/v1/files/';
 };
@@ -2697,6 +2701,10 @@ export type RunsDeleteRunsData = {
          * Tool Name
          */
         tool_name?: string | null;
+        /**
+         * Ids
+         */
+        ids?: Array<string>;
     };
     url: '/api/v1/runs/';
 };

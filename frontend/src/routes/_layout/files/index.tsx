@@ -9,15 +9,26 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  Download,
+  FolderOpen,
   LoaderCircle,
   MoreVertical,
+  Pencil,
   Search,
+  Trash2,
 } from "lucide-react"
 import { type MouseEvent, useEffect, useState } from "react"
 import { BsFolder } from "react-icons/bs"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,13 +45,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import type { FileTypeEnum } from "../../../client"
+import type { FilePublic, FileTypeEnum } from "../../../client"
 import { FilesService } from "../../../client"
 import CreateGroupButton from "../../../components/Files/CreateGroupButton"
-import DeleteFileButton from "../../../components/Files/DeleteFileButton"
-import DownloadFileButton from "../../../components/Files/DownloadFileButton"
 import StorageStats from "../../../components/Files/StorageStats"
-import UngroupButton from "../../../components/Files/UngroupButton"
 import FileUpload from "../../../components/Files/UploadFileButtonWithProgress"
 import { ConfirmationDialog } from "../../../components/Common/ConfirmationDialog"
 import useCustomToast from "../../../hooks/useCustomToast"
@@ -60,6 +68,7 @@ interface FilesTableProps {
   nameFilter: string
   orderBy: string
   setOrderBy: React.Dispatch<React.SetStateAction<string>>
+  setVisibleFileIds: React.Dispatch<React.SetStateAction<string[]>>
 }
 
 type SortColumn = "name" | "file_type" | "size" | "created_at"
@@ -73,27 +82,195 @@ const sortLabels: Record<SortColumn, string> = {
 
 type DeleteMode = "selected" | "current" | "all"
 
+interface FileActionsMenuProps {
+  file: FilePublic
+}
+
+const getDownloadUrl = async (fileId: string) => {
+  const token = (await FilesService.getDownloadToken({ path: { id: fileId } }))
+    .data
+  return `${import.meta.env.VITE_API_URL}/api/v1/files/download/${token}`
+}
+
+function FileActionsMenu({ file }: FileActionsMenuProps) {
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [renameOpen, setRenameOpen] = useState(false)
+  const [renameValue, setRenameValue] = useState(file.name)
+  const queryClient = useQueryClient()
+  const showToast = useCustomToast()
+  const isGroup = file.is_group && file.children && file.children.length > 0
+  const fileIds =
+    file.children && file.children.length > 0
+      ? file.children.map((child) => child.id)
+      : [file.id]
+
+  const ungroupMutation = useMutation({
+    mutationFn: () => FilesService.ungroupFile({ path: { id: file.id } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["files"] })
+      queryClient.invalidateQueries({ queryKey: ["files-count"] })
+      queryClient.invalidateQueries({ queryKey: [{ _id: "getFilesStats" }] })
+    },
+    onError: () => {
+      showToast("Error", "Failed to ungroup file.", "error")
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: () => FilesService.deleteFile({ path: { id: file.id } }),
+    onSuccess: () => {
+      showToast("Success", "File deleted successfully.", "success")
+      setDeleteOpen(false)
+    },
+    onError: () => {
+      showToast("An error occurred.", "Failed to delete file.", "error")
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["files"] })
+      queryClient.invalidateQueries({ queryKey: ["files-count"] })
+      queryClient.invalidateQueries({ queryKey: [{ _id: "getFilesStats" }] })
+    },
+  })
+
+  const renameMutation = useMutation({
+    mutationFn: (name: string) =>
+      FilesService.renameFile({ path: { id: file.id }, query: { name } }),
+    onSuccess: () => {
+      showToast("Success", "File renamed successfully.", "success")
+      setRenameOpen(false)
+      queryClient.invalidateQueries({ queryKey: ["files"] })
+    },
+    onError: (error: any) => {
+      showToast(
+        "Error",
+        error?.response?.data?.detail ||
+          "An error occurred while renaming the file.",
+        "error",
+      )
+    },
+  })
+
+  const downloadFiles = async () => {
+    const urls = await Promise.all(fileIds.map(getDownloadUrl))
+    urls.forEach((url) => window.open(url, "_blank"))
+  }
+  const showRename = () => {
+    setRenameValue(file.name)
+    setRenameOpen(true)
+  }
+  const rename = () => {
+    const name = renameValue.trim()
+    if (name && name !== file.name) {
+      renameMutation.mutate(name)
+    } else {
+      setRenameOpen(false)
+    }
+  }
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="icon" aria-label="File actions">
+            <MoreVertical className="size-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            onClick={(event) => event.stopPropagation()}
+            onSelect={() => void downloadFiles()}
+          >
+            <Download className="size-4" />
+            Download
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={(event) => event.stopPropagation()}
+            onSelect={showRename}
+          >
+            <Pencil className="size-4" />
+            Rename
+          </DropdownMenuItem>
+          {isGroup && (
+            <DropdownMenuItem
+              disabled={ungroupMutation.isPending}
+              onClick={(event) => event.stopPropagation()}
+              onSelect={() => ungroupMutation.mutate()}
+            >
+              {ungroupMutation.isPending ? (
+                <LoaderCircle className="size-4 animate-spin" />
+              ) : (
+                <FolderOpen className="size-4" />
+              )}
+              Ungroup
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuItem
+            variant="destructive"
+            onClick={(event) => event.stopPropagation()}
+            onSelect={() => setDeleteOpen(true)}
+          >
+            <Trash2 className="size-4" />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <ConfirmationDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Delete File"
+        description={`Are you sure you want to delete ${file.name}? This action cannot be undone.`}
+        confirmLabel="Delete"
+        pending={deleteMutation.isPending}
+        onConfirm={() => deleteMutation.mutate()}
+      />
+      <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename File</DialogTitle>
+          </DialogHeader>
+          <Input
+            value={renameValue}
+            onChange={(event) => setRenameValue(event.target.value)}
+            onKeyDown={(event) => event.key === "Enter" && rename()}
+            autoFocus
+          />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setRenameOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={rename}
+              disabled={!renameValue.trim() || renameMutation.isPending}
+            >
+              {renameMutation.isPending && (
+                <LoaderCircle className="animate-spin" />
+              )}
+              Rename
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}
+
 interface FilesActionsMenuProps {
   selectedIds: string[]
-  currentCount: number
   allCount: number
-  nameFilter: string
-  typeFilter: string
+  visibleFileIds: string[]
   onDeleted: () => void
 }
 
 function FilesActionsMenu({
   selectedIds,
-  currentCount,
   allCount,
-  nameFilter,
-  typeFilter,
+  visibleFileIds,
   onDeleted,
 }: FilesActionsMenuProps) {
   const [deleteMode, setDeleteMode] = useState<DeleteMode | null>(null)
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
-  const trimmedNameFilter = nameFilter.trim()
+  const currentCount = visibleFileIds.length
   const deleteCount =
     deleteMode === "selected"
       ? selectedIds.length
@@ -125,11 +302,7 @@ function FilesActionsMenu({
         query:
           mode === "current"
             ? {
-                ...(trimmedNameFilter ? { name: trimmedNameFilter } : {}),
-                ...(typeFilter !== "all"
-                  ? { types: [typeFilter as FileTypeEnum] }
-                  : {}),
-                top_level_only: true,
+                ids: visibleFileIds,
               }
             : {},
       })
@@ -208,6 +381,7 @@ function FilesTable({
   nameFilter,
   orderBy,
   setOrderBy,
+  setVisibleFileIds,
 }: FilesTableProps) {
   const [pageSize, setPageSize] = useState(20)
   const [page, setPage] = useState(1)
@@ -256,6 +430,22 @@ function FilesTable({
     file.is_group
       ? selected.length > 0 && file.file_type === selectedType
       : !selected.length || file.file_type === selectedType
+  useEffect(() => {
+    const nextVisibleFileIds = files.map((file) => file.id)
+
+    setVisibleFileIds((currentVisibleFileIds) => {
+      if (
+        currentVisibleFileIds.length === nextVisibleFileIds.length &&
+        currentVisibleFileIds.every(
+          (id, index) => id === nextVisibleFileIds[index],
+        )
+      ) {
+        return currentVisibleFileIds
+      }
+
+      return nextVisibleFileIds
+    })
+  }, [files, setVisibleFileIds])
   useEffect(() => {
     if (!selected.length) {
       setSelectionAnchorId(null)
@@ -356,7 +546,7 @@ function FilesTable({
               <TableHead>{renderSortableHeading("file_type")}</TableHead>
               <TableHead>{renderSortableHeading("size")}</TableHead>
               <TableHead>{renderSortableHeading("created_at")}</TableHead>
-              <TableHead>Actions</TableHead>
+              <TableHead></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -384,7 +574,7 @@ function FilesTable({
                   onMouseDown={(event) => {
                     if (
                       (event.target as Element).closest(
-                        "button, a, input, [data-selection-cell]",
+                        "button, a, input, [data-selection-cell], [data-file-actions-cell]",
                       )
                     )
                       return
@@ -395,7 +585,7 @@ function FilesTable({
                   onClick={(event) => {
                     if (
                       (event.target as Element).closest(
-                        "button, a, input, [data-selection-cell]",
+                        "button, a, input, [data-selection-cell], [data-file-actions-cell]",
                       )
                     )
                       return
@@ -432,7 +622,10 @@ function FilesTable({
                     )}
                   </TableCell>
                   <TableCell>{file.name}</TableCell>
-                  <TableCell>
+                  <TableCell
+                    onMouseDown={(event) => event.stopPropagation()}
+                    onClick={(event) => event.stopPropagation()}
+                  >
                     {file.tags?.map((tag) => (
                       <Badge
                         key={tag}
@@ -453,11 +646,13 @@ function FilesTable({
                     {file.size ? humanReadableFileSize(file.size) : ""}
                   </TableCell>
                   <TableCell>{humanReadableDate(file.created_at)}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <DownloadFileButton file={file} size="sm" />
-                      <UngroupButton file={file} size="sm" />
-                      <DeleteFileButton file={file} />
+                  <TableCell
+                    data-file-actions-cell
+                    onMouseDown={(event) => event.stopPropagation()}
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <div className="flex justify-end">
+                      <FileActionsMenu file={file} />
                     </div>
                   </TableCell>
                 </TableRow>
@@ -539,26 +734,10 @@ function Files() {
   const [typeFilter, setTypeFilter] = useState("all")
   const [nameFilter, setNameFilter] = useState("")
   const [orderBy, setOrderBy] = useState("-created_at")
-  const trimmedNameFilter = nameFilter.trim()
+  const [visibleFileIds, setVisibleFileIds] = useState<string[]>([])
   const { data: fileTypes } = useQuery({
     queryKey: ["files", "types", "current"],
     queryFn: async () => (await FilesService.getCurrentFileTypes()).data ?? {},
-  })
-  const { data: currentFilesCount } = useQuery({
-    queryKey: ["files-count", "current", typeFilter, trimmedNameFilter],
-    queryFn: async () =>
-      (
-        await FilesService.readFiles({
-          query: {
-            skip: 0,
-            limit: 1,
-            ...(typeFilter !== "all"
-              ? { types: [typeFilter as FileTypeEnum] }
-              : {}),
-            ...(trimmedNameFilter ? { name: trimmedNameFilter } : {}),
-          },
-        })
-      ).data?.count ?? 0,
   })
   const { data: allFilesCount } = useQuery({
     queryKey: ["files-count", "all"],
@@ -632,10 +811,8 @@ function Files() {
           </div>
           <FilesActionsMenu
             selectedIds={selected}
-            currentCount={currentFilesCount ?? 0}
             allCount={allFilesCount ?? 0}
-            nameFilter={nameFilter}
-            typeFilter={typeFilter}
+            visibleFileIds={visibleFileIds}
             onDeleted={() => {
               setSelected([])
               setSelectedType(null)
@@ -652,6 +829,7 @@ function Files() {
         nameFilter={nameFilter}
         orderBy={orderBy}
         setOrderBy={setOrderBy}
+        setVisibleFileIds={setVisibleFileIds}
       />
     </div>
   )

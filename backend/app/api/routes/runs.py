@@ -317,13 +317,16 @@ def delete_runs(
     current_user: CurrentUser,
     name: str | None = Query(None, min_length=1, max_length=255),
     tool_name: str | None = Query(None, min_length=1, max_length=255),
+    ids: list[uuid.UUID] | None = Query(None),
 ) -> Any:
     """
-    Delete inactive runs, optionally filtered by name and tool.
+    Delete inactive runs, optionally filtered by name, tool, and run IDs.
     """
     # Select runs based on user permissions and status
     base_where = Run.owner_id == current_user.id
     base_where = and_(base_where, Run.status.notin_(["pending", "running"]))
+    if ids:
+        base_where = and_(base_where, Run.id.in_(ids))
     if name:
         base_where = and_(base_where, Run.name.icontains(name, autoescape=True))
     if tool_name:

@@ -9,13 +9,23 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  Ban,
   LoaderCircle,
   MoreVertical,
+  Pencil,
   Search,
+  Trash2,
 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,11 +42,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { type RunStatus, RunsService } from "../../../client"
+import {
+  type RunPublicMinimal,
+  type RunStatus,
+  RunsService,
+} from "../../../client"
 import { ConfirmationDialog } from "../../../components/Common/ConfirmationDialog"
-import CancelRunButton from "../../../components/Runs/CancelRunButton"
+import DeleteAlert from "../../../components/Common/DeleteAlert"
+import CancelAlert from "../../../components/Runs/CancelAlert"
 import CancelRunsButton from "../../../components/Runs/CancelRunsButton"
-import DeleteRunButton from "../../../components/Runs/DeleteRunButton"
 import ParamTag from "../../../components/Runs/ParamTag"
 import RunRuntime from "../../../components/Runs/RunTime"
 import StatusBadge from "../../../components/Runs/StatusBadge"
@@ -52,6 +66,7 @@ interface RunsTableProps {
   nameFilter: string
   orderBy: string
   setOrderBy: React.Dispatch<React.SetStateAction<string>>
+  setVisibleRunIds: React.Dispatch<React.SetStateAction<string[]>>
   toolFilter: string
 }
 
@@ -68,10 +83,139 @@ const sortLabels: Record<SortColumn, string> = {
   runtime: "Runtime",
 }
 
+interface RunActionsMenuProps {
+  run: RunPublicMinimal
+}
+
+function RunActionsMenu({ run }: RunActionsMenuProps) {
+  const [cancelOpen, setCancelOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [renameOpen, setRenameOpen] = useState(false)
+  const [renameValue, setRenameValue] = useState(run.name ?? "")
+  const queryClient = useQueryClient()
+  const showToast = useCustomToast()
+  const canCancel = ["running", "pending"].includes(run.status)
+  const displayName = run.name ?? run.id.split("-")[0]
+
+  const renameMutation = useMutation({
+    mutationFn: (name: string) =>
+      RunsService.renameRun({
+        path: { id: run.id },
+        query: { name },
+      }),
+    onSuccess: () => {
+      showToast("Success", "Run renamed successfully.", "success")
+      setRenameOpen(false)
+      queryClient.invalidateQueries({ queryKey: ["runs"] })
+      queryClient.invalidateQueries({
+        queryKey: [{ _id: "runsReadRun", path: { id: run.id } }],
+      })
+    },
+    onError: () => {
+      showToast(
+        "An error occurred.",
+        "An error occurred while renaming the run.",
+        "error",
+      )
+    },
+  })
+
+  const showRename = () => {
+    setRenameValue(displayName)
+    setRenameOpen(true)
+  }
+  const rename = () => {
+    const name = renameValue.trim()
+    if (name && name !== displayName) {
+      renameMutation.mutate(name)
+    } else {
+      setRenameOpen(false)
+    }
+  }
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="icon" aria-label="Run actions">
+            <MoreVertical className="size-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            onClick={(event) => event.stopPropagation()}
+            onSelect={showRename}
+          >
+            <Pencil className="size-4" />
+            Rename
+          </DropdownMenuItem>
+          {canCancel ? (
+            <DropdownMenuItem
+              onClick={(event) => event.stopPropagation()}
+              onSelect={() => setCancelOpen(true)}
+            >
+              <Ban className="size-4" />
+              Cancel
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem
+              variant="destructive"
+              onClick={(event) => event.stopPropagation()}
+              onSelect={() => setDeleteOpen(true)}
+            >
+              <Trash2 className="size-4" />
+              Delete
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename Run</DialogTitle>
+          </DialogHeader>
+          <Input
+            value={renameValue}
+            onChange={(event) => setRenameValue(event.target.value)}
+            onKeyDown={(event) => event.key === "Enter" && rename()}
+            autoFocus
+          />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setRenameOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={rename}
+              disabled={!renameValue.trim() || renameMutation.isPending}
+            >
+              {renameMutation.isPending && (
+                <LoaderCircle className="animate-spin" />
+              )}
+              Rename
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <CancelAlert
+        id={run.id}
+        isOpen={cancelOpen}
+        onClose={() => setCancelOpen(false)}
+      />
+      <DeleteAlert
+        type="Run"
+        id={run.id}
+        isOpen={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+      />
+    </>
+  )
+}
+
 function RunsTable({
   nameFilter,
   orderBy,
   setOrderBy,
+  setVisibleRunIds,
   toolFilter,
 }: RunsTableProps) {
   const [pageSize, setPageSize] = useState(20)
@@ -118,6 +262,25 @@ function RunsTable({
     (_, index) => firstVisiblePage + index,
   )
 
+  useEffect(() => {
+    const nextVisibleRunIds = runs
+      .filter((run) => inactiveRunStatuses.includes(run.status))
+      .map((run) => run.id)
+
+    setVisibleRunIds((currentVisibleRunIds) => {
+      if (
+        currentVisibleRunIds.length === nextVisibleRunIds.length &&
+        currentVisibleRunIds.every(
+          (id, index) => id === nextVisibleRunIds[index],
+        )
+      ) {
+        return currentVisibleRunIds
+      }
+
+      return nextVisibleRunIds
+    })
+  }, [runs, setVisibleRunIds])
+
   const sortRuns = (column: SortColumn) => {
     setOrderBy((current) => (current === column ? `-${column}` : column))
   }
@@ -159,7 +322,7 @@ function RunsTable({
               <TableHead>Shared</TableHead>
               <TableHead>{renderSortableHeading("created_at")}</TableHead>
               <TableHead>{renderSortableHeading("runtime")}</TableHead>
-              <TableHead>Actions</TableHead>
+              <TableHead></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -185,7 +348,11 @@ function RunsTable({
                   key={run.id}
                   className="cursor-pointer hover:bg-muted/50"
                   onClick={(event) => {
-                    if ((event.target as Element).closest("button, a, input"))
+                    if (
+                      (event.target as Element).closest(
+                        "button, a, input, [data-run-actions-cell]",
+                      )
+                    )
                       return
                     navigate({
                       to: "/runs/$runid",
@@ -238,13 +405,13 @@ function RunsTable({
                       status={run.status}
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell
+                    data-run-actions-cell
+                    onMouseDown={(event) => event.stopPropagation()}
+                    onClick={(event) => event.stopPropagation()}
+                  >
                     <div className="flex justify-center">
-                      {["running", "pending"].includes(run.status) ? (
-                        <CancelRunButton run_id={run.id} />
-                      ) : (
-                        <DeleteRunButton run_id={run.id} />
-                      )}
+                      <RunActionsMenu run={run} />
                     </div>
                   </TableCell>
                 </TableRow>
@@ -321,22 +488,18 @@ function RunsTable({
 }
 
 interface RunsActionsMenuProps {
-  currentCount: number
   allCount: number
-  nameFilter: string
-  toolFilter: string
+  visibleRunIds: string[]
 }
 
 function RunsActionsMenu({
-  currentCount,
   allCount,
-  nameFilter,
-  toolFilter,
+  visibleRunIds,
 }: RunsActionsMenuProps) {
   const [deleteMode, setDeleteMode] = useState<DeleteMode | null>(null)
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
-  const trimmedNameFilter = nameFilter.trim()
+  const currentCount = visibleRunIds.length
   const deleteCount = deleteMode === "current" ? currentCount : allCount
 
   const mutation = useMutation({
@@ -345,8 +508,7 @@ function RunsActionsMenu({
         query:
           mode === "current"
             ? {
-                ...(trimmedNameFilter ? { name: trimmedNameFilter } : {}),
-                ...(toolFilter !== "all" ? { tool_name: toolFilter } : {}),
+                ids: visibleRunIds,
               }
             : {},
       })
@@ -415,25 +577,10 @@ function Runs() {
   const [nameFilter, setNameFilter] = useState("")
   const [orderBy, setOrderBy] = useState("-created_at")
   const [toolFilter, setToolFilter] = useState("all")
-  const trimmedNameFilter = nameFilter.trim()
+  const [visibleRunIds, setVisibleRunIds] = useState<string[]>([])
   const { data: toolNames } = useQuery({
     queryKey: ["runs", "tools"],
     queryFn: async () => (await RunsService.readRunToolNames()).data ?? [],
-  })
-  const { data: currentRunsCount } = useQuery({
-    queryKey: ["runs-count", "current", toolFilter, trimmedNameFilter],
-    queryFn: async () =>
-      (
-        await RunsService.readRuns({
-          query: {
-            skip: 0,
-            limit: 1,
-            statuses: inactiveRunStatuses,
-            ...(trimmedNameFilter ? { name: trimmedNameFilter } : {}),
-            ...(toolFilter !== "all" ? { tool_name: toolFilter } : {}),
-          },
-        })
-      ).data?.count ?? 0,
   })
   const { data: allRunsCount } = useQuery({
     queryKey: ["runs-count", "all"],
@@ -479,10 +626,8 @@ function Runs() {
         <div className="flex justify-end gap-4">
           <CancelRunsButton />
           <RunsActionsMenu
-            currentCount={currentRunsCount ?? 0}
             allCount={allRunsCount ?? 0}
-            nameFilter={nameFilter}
-            toolFilter={toolFilter}
+            visibleRunIds={visibleRunIds}
           />
         </div>
       </div>
@@ -490,6 +635,7 @@ function Runs() {
         nameFilter={nameFilter}
         orderBy={orderBy}
         setOrderBy={setOrderBy}
+        setVisibleRunIds={setVisibleRunIds}
         toolFilter={toolFilter}
       />
     </div>
