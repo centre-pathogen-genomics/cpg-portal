@@ -109,9 +109,16 @@ function ToolsCarousel({
   limit?: number
 }) {
   return (
-    <Suspense fallback={<Skeleton className="h-[260px] w-full" />}>
+    <Suspense
+      fallback={<Skeleton className="hidden h-[260px] w-full sm:block" />}
+    >
       <ErrorBoundary fallbackRender={() => null}>
-        <ToolsCarouselContent tag={tag} title={title} subtitle={subtitle} limit={limit} />
+        <ToolsCarouselContent
+          tag={tag}
+          title={title}
+          subtitle={subtitle}
+          limit={limit}
+        />
       </ErrorBoundary>
     </Suspense>
   )
