@@ -18,6 +18,7 @@ export const Route = createFileRoute("/_layout/")({
 
 function Tools() {
   const { user: currentUser } = useAuth()
+  const [isLogoHovered, setIsLogoHovered] = useState(false)
   const checklist = [
     "Drag-and-drop genomics data uploads",
     "Version-pinned, reproducible workflows",
@@ -27,7 +28,7 @@ function Tools() {
   return (
     <div className="w-full px-4 md:px-6 lg:px-8 xl:px-12">
       <section className="relative mx-auto grid max-w-7xl gap-5 py-6 md:min-h-[520px] md:gap-8 md:py-12 lg:grid-cols-[minmax(0,0.95fr)_minmax(420px,1.05fr)] lg:items-center lg:gap-14">
-        <HeroStreamBackground />
+        <HeroStreamBackground isLogoHovered={isLogoHovered} />
 
         <div className="relative z-10 order-2 flex flex-col items-center text-center lg:order-1 lg:items-start lg:text-left">
           <h1 className="max-w-4xl text-3xl leading-tight font-bold tracking-normal text-foreground sm:text-4xl md:text-6xl">
@@ -65,7 +66,11 @@ function Tools() {
         </div>
 
         <div className="relative z-10 order-1 flex flex-col items-center justify-center text-center lg:order-2">
-          <div className="w-full max-w-sm rounded-lg sm:p-4 sm:shadow-sm backdrop-blur-sm sm:max-w-md md:p-8 lg:max-w-none">
+          <div
+            className="w-full max-w-sm rounded-lg sm:p-4 sm:shadow-sm backdrop-blur-sm sm:max-w-md md:p-8 lg:max-w-none"
+            onPointerEnter={() => setIsLogoHovered(true)}
+            onPointerLeave={() => setIsLogoHovered(false)}
+          >
             <img
               id="hero-logo-target"
               src={Logo}
@@ -92,7 +97,7 @@ function Tools() {
   )
 }
 
-function HeroStreamBackground() {
+function HeroStreamBackground({ isLogoHovered }: { isLogoHovered: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const logoRef = useRef<HTMLElement | null>(null)
   const streamRef = useRef<EventStreamVisualizationRef>(null)
@@ -160,16 +165,16 @@ function HeroStreamBackground() {
       index += 1
     }
 
-    const seedTimer = window.setTimeout(() => {
-      for (let i = 0; i < 8; i++) addHeroEvent()
-    }, 300)
+    if (!isLogoHovered) return
+
     const interval = window.setInterval(addHeroEvent, 150)
 
+    for (let i = 0; i < 8; i++) addHeroEvent()
+
     return () => {
-      window.clearTimeout(seedTimer)
       window.clearInterval(interval)
     }
-  }, [])
+  }, [isLogoHovered])
 
   return (
     <div
