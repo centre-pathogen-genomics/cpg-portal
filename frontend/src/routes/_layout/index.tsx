@@ -26,11 +26,11 @@ function Tools() {
 
   return (
     <div className="w-full px-4 md:px-6 lg:px-8 xl:px-12">
-      <section className="relative mx-auto grid min-h-[520px] max-w-7xl py-8 md:py-12 lg:grid-cols-[minmax(0,0.95fr)_minmax(420px,1.05fr)] lg:items-center lg:gap-14">
+      <section className="relative mx-auto grid max-w-7xl gap-5 py-6 md:min-h-[520px] md:gap-8 md:py-12 lg:grid-cols-[minmax(0,0.95fr)_minmax(420px,1.05fr)] lg:items-center lg:gap-14">
         <HeroStreamBackground />
 
         <div className="relative z-10 order-2 flex flex-col items-center text-center lg:order-1 lg:items-start lg:text-left">
-          <h1 className="max-w-4xl text-4xl leading-tight font-bold tracking-normal text-foreground md:text-6xl">
+          <h1 className="max-w-4xl text-3xl leading-tight font-bold tracking-normal text-foreground sm:text-4xl md:text-6xl">
             Pathogen genomics{" "}
             <span className="text-primary">without the command line</span>
           </h1>
@@ -65,14 +65,12 @@ function Tools() {
         </div>
 
         <div className="relative z-10 order-1 flex flex-col items-center justify-center text-center lg:order-2">
-          <div
-            className="rounded-lg p-6 shadow-sm backdrop-blur-sm md:p-8"
-          >
+          <div className="w-full max-w-sm rounded-lg sm:p-4 sm:shadow-sm backdrop-blur-sm sm:max-w-md md:p-8 lg:max-w-none">
             <img
               id="hero-logo-target"
               src={Logo}
               alt="CPG logo"
-              className="h-auto w-full max-w-xs md:max-w-md lg:max-w-xl"
+              className="mx-auto h-auto w-full max-w-[280px] sm:max-w-xs md:max-w-md lg:max-w-xl"
             />
             <p className=" lg:block hidden mt-6 max-w-xl text-base leading-7 text-foreground/80 md:text-lg italic">
               Explore and run tools from the most talented and accomplished
@@ -83,7 +81,11 @@ function Tools() {
       </section>
 
       <div id="tools" className="scroll-mt-24">
-        <ToolsCarousel tag="cpg" title="CPG tools" subtitle="Tools we developed with love"/>
+        <ToolsCarousel
+          tag="cpg"
+          title="CPG tools"
+          subtitle="Tools we develop and maintain for the community"
+        />
         <ToolsGrid hideFilters={currentUser === undefined} />
       </div>
     </div>
@@ -172,7 +174,7 @@ function HeroStreamBackground() {
   return (
     <div
       ref={containerRef}
-      className="pointer-events-none absolute top-0 left-1/2 z-0 h-full w-screen -translate-x-1/2 overflow-hidden opacity-45 lg:[mask-image:linear-gradient(to_right,transparent_0%,transparent_36%,black_50%)]"
+      className="pointer-events-none absolute top-0 left-1/2 z-0 hidden h-full w-screen -translate-x-1/2 overflow-hidden opacity-45 sm:block lg:[mask-image:linear-gradient(to_right,transparent_0%,transparent_36%,black_50%)]"
       aria-hidden="true"
     >
       {geometry.width > 0 && geometry.height > 0 && (
