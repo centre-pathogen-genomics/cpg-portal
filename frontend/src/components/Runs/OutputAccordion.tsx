@@ -21,20 +21,42 @@ interface OutputAccordionItemProps {
   runId: string
 }
 
+const normalizeLogSnapshot = (value: string | null | undefined) =>
+  value ? value.replace(/\n+$/g, "") : null
+
+const appendLogLine = (
+  previous: string | null,
+  line: string,
+): string | null => {
+  const normalizedPrevious = normalizeLogSnapshot(previous)
+  if (!normalizedPrevious) return line
+  return `${normalizedPrevious}\n${line}`
+}
+
 const OutputAccordionItem = ({
   title,
   content,
   status,
   runId,
 }: OutputAccordionItemProps) => {
-  const [output, setOutput] = useState<string | null>(content || null)
+  const [output, setOutput] = useState<string | null>(
+    normalizeLogSnapshot(content),
+  )
   const [currentStatus, setCurrentStatus] = useState(status)
   const lineCount = output?.trim().split("\n").length || 0
   const active = currentStatus === "running" || currentStatus === "pending"
 
   useEffect(() => {
-    setOutput(content || null)
-  }, [content])
+    setOutput((previous) => {
+      const normalizedContent = normalizeLogSnapshot(content)
+      if (!normalizedContent) return previous || null
+      if (!active) return normalizedContent
+      if (!previous) return normalizedContent
+      return normalizedContent.length >= previous.length
+        ? normalizedContent
+        : previous
+    })
+  }, [active, content])
 
   useEffect(() => {
     setCurrentStatus(status)
@@ -46,13 +68,11 @@ const OutputAccordionItem = ({
         const data = JSON.parse(event.data)
         if (typeof data.status === "string") setCurrentStatus(data.status)
         if (typeof data.stdout === "string") {
-          setOutput(data.stdout || null)
+          setOutput(normalizeLogSnapshot(data.stdout))
           return
         }
-        if (data.log)
-          setOutput((previous) =>
-            [previous, data.log].filter(Boolean).join("\n"),
-          )
+        if (typeof data.log === "string")
+          setOutput((previous) => appendLogLine(previous, data.log))
       } catch (error) {
         console.error("Error parsing WebSocket message:", error)
       }
