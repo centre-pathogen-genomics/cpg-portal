@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useLayoutEffect, useRef, useState } from "react"
 import { CopyToClipboard } from "react-copy-to-clipboard"
 import { IoIosCheckmarkCircleOutline, IoIosCopy } from "react-icons/io"
 import SyntaxHighlighter from "react-syntax-highlighter"
@@ -45,14 +45,44 @@ const CodeBlock = ({
   // Follow (auto-scroll) logic
   const [isFollowing, setIsFollowing] = useState(follow)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const codeContentRef = useRef<HTMLElement>(null)
+  const isPlainText = language === "text" || language === "plaintext"
+  const lines = code.split("\n")
+
+  const scrollToBottom = useCallback(() => {
+    if (!scrollContainerRef.current) return
+    scrollContainerRef.current.scrollTop =
+      scrollContainerRef.current.scrollHeight
+  }, [])
 
   // Auto-scroll to bottom when new code arrives if follow mode is enabled.
-  useEffect(() => {
-    if (follow && isFollowing && scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop =
-        scrollContainerRef.current.scrollHeight
+  useLayoutEffect(() => {
+    // Keep code in the effect body so new log text retriggers follow mode.
+    void code
+    if (!follow || !isFollowing || !scrollContainerRef.current) return
+
+    scrollToBottom()
+    const frameIds: number[] = []
+    frameIds.push(window.requestAnimationFrame(scrollToBottom))
+    frameIds.push(
+      window.requestAnimationFrame(() => {
+        frameIds.push(window.requestAnimationFrame(scrollToBottom))
+      }),
+    )
+    return () => {
+      for (const frameId of frameIds) window.cancelAnimationFrame(frameId)
     }
-  }, [isFollowing, follow])
+  }, [code, follow, isFollowing, scrollToBottom])
+
+  useLayoutEffect(() => {
+    if (!follow || !codeContentRef.current) return
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (isFollowing) scrollToBottom()
+    })
+    resizeObserver.observe(codeContentRef.current)
+    return () => resizeObserver.disconnect()
+  }, [follow, isFollowing, scrollToBottom])
 
   // Update follow state based on scrolling.
   const handleScroll = () => {
@@ -85,16 +115,41 @@ const CodeBlock = ({
         style={{ maxHeight }}
         className="overflow-y-auto"
       >
-        <SyntaxHighlighter
-          language={language}
-          style={style}
-          wrapLines={true}
-          wrapLongLines={true}
-          showLineNumbers={lineNumbers}
-          customStyle={{ padding: "16px", margin: 0 }}
-        >
-          {code}
-        </SyntaxHighlighter>
+        {isPlainText ? (
+          <pre
+            ref={codeContentRef as React.RefObject<HTMLPreElement>}
+            className="m-0 overflow-visible whitespace-pre-wrap break-words p-4 font-mono text-sm"
+          >
+            {lineNumbers ? (
+              lines.map((line, index) => (
+                <span
+                  key={`${index}-${line}`}
+                  className="grid grid-cols-[3ch_1fr] gap-4"
+                >
+                  <span className="select-none text-right text-muted-foreground">
+                    {index + 1}
+                  </span>
+                  <span>{line || " "}</span>
+                </span>
+              ))
+            ) : (
+              <code>{code}</code>
+            )}
+          </pre>
+        ) : (
+          <div ref={codeContentRef as React.RefObject<HTMLDivElement>}>
+            <SyntaxHighlighter
+              language={language}
+              style={style}
+              wrapLines={true}
+              wrapLongLines={true}
+              showLineNumbers={lineNumbers}
+              customStyle={{ padding: "16px", margin: 0 }}
+            >
+              {code}
+            </SyntaxHighlighter>
+          </div>
+        )}
       </div>
       {/* "Follow" button only appears if the follow prop is enabled */}
       {follow && !isFollowing && (
