@@ -139,6 +139,7 @@ class ToolStatus(StrEnum):
     uninstalled = "uninstalled"
     uninstalling = "uninstalling"
     installed = "installed"
+    install_queued = "install_queued"
     installing = "installing"
     failed = "failed"
 

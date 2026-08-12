@@ -17,7 +17,7 @@ from app.api.deps import get_db
 from app.conda import CondaEnvManger, CondaEnvMangerError
 from app.core.config import settings
 from app.crud import save_file
-from app.models import File, Run, RunStatus, SetupFile, Target, Tool
+from app.models import File, Run, RunStatus, SetupFile, Target, Tool, ToolStatus
 from app.tkq import broker
 from app.utils import generate_run_finished_email, send_email
 from app.wsmanager import manager
@@ -345,10 +345,18 @@ async def install_tool(
         return False
     if tool.conda_env is None:
         print(f"Tool(id={tool_id}) does not have an environment")
-        tool.status = "failed"
+        tool.status = ToolStatus.failed
         session.add(tool)
         session.commit()
         return False
+    if tool.status != ToolStatus.install_queued:
+        print(
+            f"Tool(id={tool_id}) install task skipped because status is {tool.status}"
+        )
+        return False
+    tool.status = ToolStatus.installing
+    session.add(tool)
+    session.commit()
     post_install_command = tool.post_install
     conda_env = CondaEnvManger(
         path=Path(settings.CONDA_PATH) / str(tool_id),
@@ -366,14 +374,14 @@ async def install_tool(
         conda_env_pinned = await conda_env.pin()
     except Exception as e:
         print(f"An error occurred will creating conda environment: {e}")
-        tool.status = "failed"
+        tool.status = ToolStatus.failed
         tool.installation_log = str(e)
         session.add(tool)
         session.commit()
         raise e
 
     print(f"Conda environment for Tool(id={tool_id}) created")
-    tool.status = "installed"
+    tool.status = ToolStatus.installed
     tool.installation_log = stdout
     tool.conda_env_pinned = conda_env_pinned
     session.add(tool)

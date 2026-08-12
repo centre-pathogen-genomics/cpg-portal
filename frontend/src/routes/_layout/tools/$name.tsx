@@ -111,6 +111,8 @@ function ToolToggle({
 function InstallToolButton({ tool }: { tool: ToolPublic }) {
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
+  const installInProgress =
+    tool.status === "install_queued" || tool.status === "installing"
   const mutation = useMutation({
     ...installToolMutation(),
     onError: ({ message }) =>
@@ -123,19 +125,21 @@ function InstallToolButton({ tool }: { tool: ToolPublic }) {
       queryClient.invalidateQueries({ queryKey })
       const interval = setInterval(() => {
         const updated = queryClient.getQueryData(queryKey) as ToolPublic
-        if (updated?.status !== "installing") clearInterval(interval)
-        else queryClient.invalidateQueries({ queryKey })
+        if (
+          updated?.status !== "install_queued" &&
+          updated?.status !== "installing"
+        ) {
+          clearInterval(interval)
+        } else queryClient.invalidateQueries({ queryKey })
       }, 5000)
     },
   })
   return (
     <Button
-      disabled={tool.status === "installed" || tool.status === "installing"}
+      disabled={tool.status === "installed" || installInProgress}
       onClick={() => mutation.mutate({ path: { tool_id: tool.id } })}
     >
-      {tool.status === "installing" && (
-        <LoaderCircle className="animate-spin" />
-      )}
+      {installInProgress && <LoaderCircle className="animate-spin" />}
       Install
     </Button>
   )

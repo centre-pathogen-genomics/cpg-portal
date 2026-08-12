@@ -18,6 +18,7 @@ from app.models import (
     Tool,
     ToolCreate,
     ToolPublic,
+    ToolStatus,
     ToolsPublic,
     ToolUpdate,
     UserFavouriteToolsLink,
@@ -335,16 +336,16 @@ async def install_tool(
     tool = session.get(Tool, tool_id)
     if not tool:
         raise HTTPException(status_code=404, detail="Tool not found")
-    if tool.status == "installing":
+    if tool.status in {ToolStatus.install_queued, ToolStatus.installing}:
         raise HTTPException(status_code=400, detail="Tool is already being installed")
 
     if tool.conda_env is None:
-        tool.status = "installed"
+        tool.status = ToolStatus.installed
         session.add(tool)
         session.commit()
         return Message(message="Tool installed successfully")
 
-    tool.status = "installing"
+    tool.status = ToolStatus.install_queued
     tool.installation_log = ""
     session.add(tool)
     session.commit()
@@ -366,7 +367,7 @@ async def uninstall_tool(
     tool = session.get(Tool, tool_id)
     if not tool:
         raise HTTPException(status_code=404, detail="Tool not found")
-    if tool.status == "installing":
+    if tool.status in {ToolStatus.install_queued, ToolStatus.installing}:
         raise HTTPException(status_code=400, detail="Tool is being installed")
 
     taskiq_task = await uninstall_tool_task.kiq(tool_id=tool.id)
@@ -407,11 +408,11 @@ def delete_tool(
         raise HTTPException(status_code=404, detail="Tool not found")
     # TODO: Delete all params, targets and runs associated with this tool
     # add cascade delete to the relationships
-    if tool.status == "installing":
+    if tool.status in {ToolStatus.install_queued, ToolStatus.installing}:
         raise HTTPException(status_code=400, detail="Tool is being installed")
-    if tool.status == "uninstalling":
+    if tool.status == ToolStatus.uninstalling:
         raise HTTPException(status_code=400, detail="Tool is being uninstalled")
-    if tool.status == "installed":
+    if tool.status == ToolStatus.installed:
         raise HTTPException(status_code=400, detail="Tool is installed")
     print(f"Deleting tool {tool_id}")
     session.delete(tool)

@@ -933,7 +933,7 @@ export type ToolStats = {
 /**
  * ToolStatus
  */
-export type ToolStatus = 'uninstalled' | 'uninstalling' | 'installed' | 'installing' | 'failed';
+export type ToolStatus = 'uninstalled' | 'uninstalling' | 'installed' | 'install_queued' | 'installing' | 'failed';
 
 /**
  * ToolUpdate
