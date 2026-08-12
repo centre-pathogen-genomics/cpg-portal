@@ -179,7 +179,7 @@ function HeroStreamBackground({ isLogoHovered }: { isLogoHovered: boolean }) {
   return (
     <div
       ref={containerRef}
-      className="pointer-events-none absolute top-0 left-1/2 z-0 hidden h-full w-screen -translate-x-1/2 overflow-hidden opacity-45 sm:block lg:[mask-image:linear-gradient(to_right,transparent_0%,transparent_36%,black_50%)]"
+      className="pointer-events-none absolute inset-x-0 top-0 z-0 hidden h-full overflow-hidden opacity-45 sm:block lg:[mask-image:linear-gradient(to_right,transparent_0%,transparent_36%,black_50%)]"
       aria-hidden="true"
     >
       {geometry.width > 0 && geometry.height > 0 && (
