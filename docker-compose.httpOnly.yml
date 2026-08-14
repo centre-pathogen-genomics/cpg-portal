@@ -109,6 +109,7 @@ services:
     volumes:
       - app-storage-data:/storage
       - app-conda-data:/conda
+      - ./DB:/DB # Mount the DB folder to share external databases with the backend container.
     networks:
       - traefik-public
       - default
