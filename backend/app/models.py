@@ -88,6 +88,29 @@ class Message(SQLModel):
     message: str
 
 
+DEFAULT_LLM_MODEL = "gemini-2.5-flash"
+
+
+class AppSettingBase(SQLModel):
+    llm_model: str = Field(
+        default=DEFAULT_LLM_MODEL,
+        min_length=1,
+        max_length=255,
+    )
+
+
+class AppSetting(AppSettingBase, table=True):
+    id: int = Field(default=1, primary_key=True)
+
+
+class AppSettingPublic(AppSettingBase):
+    id: int
+
+
+class AppSettingUpdate(SQLModel):
+    llm_model: str = Field(min_length=1, max_length=255)
+
+
 # JSON payload containing access token
 class Token(SQLModel):
     access_token: str

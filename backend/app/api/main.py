@@ -5,6 +5,7 @@ from app.api.routes import (
     llm,
     login,
     runs,
+    settings,
     stats,
     tools,
     users,
@@ -21,4 +22,5 @@ api_router.include_router(files.router, prefix="/files", tags=["files"])
 api_router.include_router(runs.router, prefix="/runs", tags=["runs"])
 api_router.include_router(websockets.router, prefix="/websockets", tags=["websockets"])
 api_router.include_router(llm.router, prefix="/llm", tags=["llm"])
+api_router.include_router(settings.router, prefix="/settings", tags=["settings"])
 api_router.include_router(stats.router, prefix="/stats", tags=["stats"])

@@ -141,6 +141,12 @@
   *::-webkit-scrollbar-corner {
     background: var(--scrollbar-track);
   }
+  html,
+  body,
+  #root {
+    height: 100%;
+    overflow: hidden;
+  }
   body {
     @apply bg-background text-foreground;
     font-family:
