@@ -1,18 +1,13 @@
-from nats.js.api import RetentionPolicy, StorageType, StreamConfig
 from taskiq import TaskiqEvents, TaskiqState
-from taskiq_nats import PullBasedJetStreamBroker
+from taskiq_nats import NatsBroker
 from taskiq_redis import RedisAsyncResultBackend
 
 from app.core.config import settings
 from app.wsmanager import manager
 
-broker = PullBasedJetStreamBroker(
+broker = NatsBroker(
     settings.NATS_URIS.split(","),
-    durable="cpg_queue",
-    stream_config=StreamConfig(
-        retention=RetentionPolicy.WORK_QUEUE,
-        storage=StorageType.FILE,
-    ),
+    queue="cpg_queue",
 ).with_result_backend(
     RedisAsyncResultBackend(settings.REDIS_URI),
 )

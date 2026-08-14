@@ -367,8 +367,9 @@ async def install_tool(
     try:
         if conda_env.is_created:
             print(
-                f"Conda environment for Tool(id={tool_id}) already exists. Will force create."
+                f"Conda environment for Tool(id={tool_id}) already exists. Removing before install."
             )
+            shutil.rmtree(conda_env.path)
         print(f"Creating conda environment for Tool(id={tool_id})")
         stdout = await conda_env.create()
         conda_env_pinned = await conda_env.pin()
