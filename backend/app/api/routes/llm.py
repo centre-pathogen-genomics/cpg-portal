@@ -7,6 +7,7 @@ from google import genai
 from jinja2 import Environment as JinjaEnvironment
 
 from app.api.deps import CurrentUser, SessionDep
+from app.core.app_settings import get_or_create_app_settings
 from app.core.config import settings
 from app.models import File, Run
 
@@ -116,6 +117,7 @@ async def generate_run_summary(
     env = JinjaEnvironment()
     template = env.from_string(default_prompt)
     client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    app_settings = get_or_create_app_settings(session)
     results = []
     for file in run.files:
         content = get_file_content_for_prompt(file)
@@ -132,7 +134,7 @@ async def generate_run_summary(
     print(prompt)
     try:
         response = await client.aio.models.generate_content(
-                model='gemini-2.0-flash',
+                model=app_settings.llm_model,
                 contents=prompt,
                 config=genai.types.GenerateContentConfig(
                     system_instruction=f"Acting as bioinformatics expert generate a short summary report of the following analysis. The report should be targeted to a {audience} audience.",

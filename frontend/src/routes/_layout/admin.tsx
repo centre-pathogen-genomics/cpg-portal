@@ -1,18 +1,28 @@
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query"
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query"
 import { createFileRoute, redirect } from "@tanstack/react-router"
 import {
   Activity,
+  Bot,
   Database,
   type LucideIcon,
+  Save,
   Users,
   Wrench,
 } from "lucide-react"
-import { Suspense } from "react"
+import { Suspense, useEffect, useState } from "react"
 
 import { type SystemStats, type UserPublic, UsersService } from "@/client"
 import {
   getSystemStatsOptions,
+  readAppSettingsOptions,
+  readAppSettingsQueryKey,
   readUsersOptions,
+  updateAppSettingsMutation,
 } from "@/client/@tanstack/react-query.gen"
 import AddUser from "@/components/Admin/AddUser"
 import CreateTool from "@/components/Admin/CreateTool"
@@ -20,8 +30,12 @@ import { columns, type UserTableData } from "@/components/Admin/columns"
 import { DataTable } from "@/components/Common/DataTable"
 import PendingUsers from "@/components/Pending/PendingUsers"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import useAuth from "@/hooks/useAuth"
+import useCustomToast from "@/hooks/useCustomToast"
 
 function getUsersQueryOptions() {
   return readUsersOptions({ query: { skip: 0, limit: 1000 } })
@@ -161,6 +175,78 @@ function UsersTable() {
     <Suspense fallback={<PendingUsers />}>
       <UsersTableContent />
     </Suspense>
+  )
+}
+
+function LlmSettingsPanel() {
+  const queryClient = useQueryClient()
+  const showToast = useCustomToast()
+  const [model, setModel] = useState("")
+  const { data, isLoading, isError } = useQuery(readAppSettingsOptions())
+  const savedModel = data?.llm_model ?? ""
+
+  useEffect(() => {
+    setModel(savedModel)
+  }, [savedModel])
+
+  const mutation = useMutation({
+    ...updateAppSettingsMutation(),
+    onSuccess: (updatedSettings) => {
+      setModel(updatedSettings.llm_model ?? "")
+      queryClient.invalidateQueries({ queryKey: readAppSettingsQueryKey() })
+      showToast("Success", "LLM model updated.", "success")
+    },
+    onError: () => {
+      showToast("Error", "Failed to update the LLM model.", "error")
+    },
+  })
+
+  const trimmedModel = model.trim()
+  const canSave =
+    trimmedModel.length > 0 &&
+    trimmedModel !== savedModel &&
+    !mutation.isPending
+
+  return (
+    <StatsPanel title="LLM Settings">
+      <form
+        className="space-y-4"
+        onSubmit={(event) => {
+          event.preventDefault()
+          if (!canSave) return
+          mutation.mutate({ body: { llm_model: trimmedModel } })
+        }}
+      >
+        <div className="flex items-start gap-3">
+          <Bot className="mt-1 size-6 text-indigo-500" />
+          <div>
+            <p className="text-sm font-medium">Summary model</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Used when generating AI summaries for completed runs.
+            </p>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="llm-model">Model name</Label>
+          <Input
+            id="llm-model"
+            value={model}
+            onChange={(event) => setModel(event.target.value)}
+            disabled={isLoading || mutation.isPending}
+            placeholder="gemini-2.5-flash"
+          />
+          {isError && (
+            <p className="text-sm text-destructive">
+              Failed to load LLM settings.
+            </p>
+          )}
+        </div>
+        <Button type="submit" disabled={!canSave}>
+          <Save />
+          Save Model
+        </Button>
+      </form>
+    </StatsPanel>
   )
 }
 
@@ -384,6 +470,8 @@ function AdminDashboard() {
             />
           </div>
         </StatsPanel>
+
+        <LlmSettingsPanel />
       </div>
 
       <section className="mt-8">
