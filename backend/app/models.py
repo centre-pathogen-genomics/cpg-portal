@@ -65,6 +65,7 @@ class UpdatePassword(SQLModel):
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
+    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     favourite_tools: list[Tool] = Relationship(
         back_populates="favourited_by",
         link_model=UserFavouriteToolsLink
@@ -77,6 +78,7 @@ class User(UserBase, table=True):
 # Properties to return via API, id is always required
 class UserPublic(UserBase):
     id: uuid.UUID
+    created_at: datetime
 
 
 class UsersPublic(SQLModel):
@@ -97,6 +99,9 @@ class AppSettingBase(SQLModel):
         min_length=1,
         max_length=255,
     )
+    queue_paused: bool = False
+    queue_paused_at: datetime | None = None
+    queue_pause_reason: str | None = Field(default=None, max_length=500)
 
 
 class AppSetting(AppSettingBase, table=True):

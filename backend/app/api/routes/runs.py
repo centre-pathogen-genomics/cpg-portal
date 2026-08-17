@@ -9,6 +9,7 @@ from sqlalchemy import and_, desc
 from sqlmodel import func, select
 
 from app.api.deps import CurrentUser, SessionDep
+from app.core.app_settings import get_or_create_app_settings
 from app.core.file_types import FileTypeEnum
 from app.models import (
     File,
@@ -271,10 +272,10 @@ async def create_run(
     session.commit()
     session.refresh(run)
 
-    # run the command
-    taskiq_task = await run_tool.kiq(run.id, cmd)
-
-    run.taskiq_id = taskiq_task.task_id
+    app_settings = get_or_create_app_settings(session)
+    if not app_settings.queue_paused:
+        taskiq_task = await run_tool.kiq(run.id, cmd)
+        run.taskiq_id = taskiq_task.task_id
     run.email_on_completion = email_on_completion
     session.add(run)
     session.commit()

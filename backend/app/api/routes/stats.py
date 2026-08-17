@@ -1,25 +1,47 @@
+import uuid
 from datetime import datetime, timedelta
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import Session, and_, func, select
-from typing_extensions import TypedDict
+from fastapi import APIRouter, HTTPException, Query
+from sqlmodel import Session, SQLModel, and_, func, select
 
-from app.api.deps import CurrentUser, get_db
-from app.models import File, Run, RunStatus, Tool, User
+from app.api.deps import SessionDep, SuperUser
+from app.models import File, Run, RunStatus, Tool, ToolPublic, User, UserPublic
 
 router = APIRouter()
 
 
-# Response type definitions
-class UserStats(TypedDict):
+class CountItem(SQLModel):
+    name: str
+    count: int
+
+
+class UserUsage(SQLModel):
+    id: uuid.UUID
+    email: str
+    full_name: str | None = None
+    count: int
+
+
+class RecentRun(SQLModel):
+    id: uuid.UUID
+    name: str | None = None
+    tool_name: str
+    owner_email: str
+    status: RunStatus
+    created_at: datetime
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+
+
+class UserStats(SQLModel):
     total: int
     active: int
     superusers: int
     active_last_30_days: int
 
 
-class FileStats(TypedDict):
+class FileStats(SQLModel):
     total: int
     saved: int
     temporary: int
@@ -32,7 +54,7 @@ class FileStats(TypedDict):
     by_type: dict[str, int]
 
 
-class RunStats(TypedDict):
+class RunStats(SQLModel):
     total: int
     by_status: dict[str, int]
     currently_running: int
@@ -42,281 +64,331 @@ class RunStats(TypedDict):
     last_24_hours: int
 
 
-class ToolStats(TypedDict):
+class ToolStats(SQLModel):
     total: int
     enabled: int
     disabled: int
     by_status: dict[str, int]
-    most_popular: list[dict[str, Any]]
-    most_favourited: list[dict[str, Any]]
-    most_favourited: list[dict[str, Any]]
+    most_popular: list[CountItem]
+    most_favourited: list[CountItem]
 
 
-class SystemStats(TypedDict):
+class SystemStats(SQLModel):
     users: UserStats
     files: FileStats
     runs: RunStats
     tools: ToolStats
 
 
-class SummaryUserStats(TypedDict):
+class SummaryUserStats(SQLModel):
     total: int
 
 
-class SummaryToolStats(TypedDict):
+class SummaryToolStats(SQLModel):
     total: int
     enabled: int
 
 
-class SummaryRunStats(TypedDict):
+class SummaryRunStats(SQLModel):
     total: int
     currently_running: int
 
 
-class SummaryFileStats(TypedDict):
+class SummaryFileStats(SQLModel):
     total: int
     total_size_gb: float
 
 
-class StatsResponse(TypedDict):
+class StatsResponse(SQLModel):
     users: SummaryUserStats
     tools: SummaryToolStats
     runs: SummaryRunStats
     files: SummaryFileStats
 
 
-@router.get("/stats")
-def get_system_stats(
-    session: Session = Depends(get_db),
-    current_user: CurrentUser = None
-) -> SystemStats:
-    """
-    Get comprehensive system statistics for admin panel.
-
-    Returns statistics about users, files, runs, and tools.
-    Requires superuser privileges.
-    """
-
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    if not current_user.is_superuser:
-        raise HTTPException(status_code=403, detail="Superuser access required")
-
-    stats = {}
-    stats.update(_get_user_stats(session))
-    stats.update(_get_file_stats(session))
-    stats.update(_get_run_stats(session))
-    stats.update(_get_tool_stats(session))
-
-    return stats
+class UserDetailStats(SQLModel):
+    user: UserPublic
+    runs: RunStats
+    files: FileStats
+    top_tools: list[CountItem]
+    recent_runs: list[RecentRun]
 
 
-def _get_user_stats(session: Session) -> UserStats:
-    """Get user-related statistics"""
+class ToolDetailStats(SQLModel):
+    tool: ToolPublic
+    runs: RunStats
+    top_users: list[UserUsage]
+    recent_runs: list[RecentRun]
 
-    # Total users
+
+def _validate_date_range(start: datetime | None, end: datetime | None) -> None:
+    if start and end and start > end:
+        raise HTTPException(status_code=400, detail="start must be before end")
+
+
+def _run_filters(
+    *,
+    start: datetime | None = None,
+    end: datetime | None = None,
+    owner_id: uuid.UUID | None = None,
+    tool_id: uuid.UUID | None = None,
+) -> list[Any]:
+    filters: list[Any] = []
+    if start:
+        filters.append(Run.created_at >= start)
+    if end:
+        filters.append(Run.created_at <= end)
+    if owner_id:
+        filters.append(Run.owner_id == owner_id)
+    if tool_id:
+        filters.append(Run.tool_id == tool_id)
+    return filters
+
+
+def _run_where(
+    *,
+    start: datetime | None = None,
+    end: datetime | None = None,
+    owner_id: uuid.UUID | None = None,
+    tool_id: uuid.UUID | None = None,
+) -> Any | None:
+    filters = _run_filters(start=start, end=end, owner_id=owner_id, tool_id=tool_id)
+    return and_(*filters) if filters else None
+
+
+def _get_run_stats(
+    session: Session,
+    *,
+    start: datetime | None = None,
+    end: datetime | None = None,
+    owner_id: uuid.UUID | None = None,
+    tool_id: uuid.UUID | None = None,
+) -> RunStats:
+    where_clause = _run_where(start=start, end=end, owner_id=owner_id, tool_id=tool_id)
+
+    total_query = select(func.count()).select_from(Run)
+    status_query = select(Run.status, func.count().label("count")).group_by(Run.status)
+    avg_runtime_query = select(
+        func.avg(
+            func.extract("epoch", Run.finished_at)
+            - func.extract("epoch", Run.started_at)
+        )
+    ).where(
+        Run.status == RunStatus.completed,
+        Run.started_at.is_not(None),
+        Run.finished_at.is_not(None),
+    )
+    runs_24h_query = select(func.count()).select_from(Run).where(
+        Run.created_at >= datetime.utcnow() - timedelta(hours=24)
+    )
+
+    if where_clause is not None:
+        total_query = total_query.where(where_clause)
+        status_query = status_query.where(where_clause)
+        avg_runtime_query = avg_runtime_query.where(where_clause)
+        runs_24h_query = runs_24h_query.where(where_clause)
+
+    total_runs = session.exec(total_query).one()
+    runs_by_status = {
+        status.value: count for status, count in session.exec(status_query).all()
+    }
+    completed_runs = runs_by_status.get("completed", 0)
+    failed_runs = runs_by_status.get("failed", 0)
+    finished_runs = completed_runs + failed_runs
+    success_rate = (completed_runs / finished_runs * 100) if finished_runs else 0
+    avg_runtime_seconds = session.exec(avg_runtime_query).one() or 0
+    runs_24h = session.exec(runs_24h_query).one()
+
+    return RunStats(
+        total=total_runs,
+        by_status=runs_by_status,
+        currently_running=runs_by_status.get("running", 0),
+        success_rate_percent=round(success_rate, 2),
+        average_runtime_seconds=int(avg_runtime_seconds),
+        average_runtime_minutes=round(avg_runtime_seconds / 60, 2),
+        last_24_hours=runs_24h,
+    )
+
+
+def _get_user_stats(
+    session: Session,
+    *,
+    start: datetime | None = None,
+    end: datetime | None = None,
+) -> UserStats:
     total_users = session.exec(select(func.count()).select_from(User)).one()
-
-    # Active users
     active_users = session.exec(
         select(func.count()).select_from(User).where(User.is_active)
     ).one()
-
-    # Superusers
     superusers = session.exec(
         select(func.count()).select_from(User).where(User.is_superuser)
     ).one()
 
-    # Users with runs in last 30 days
-    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
-    active_users_30d = session.exec(
+    activity_start = start or (datetime.utcnow() - timedelta(days=30))
+    active_users_query = (
         select(func.count(func.distinct(Run.owner_id)))
         .select_from(Run)
-        .where(Run.created_at >= thirty_days_ago)
-    ).one()
+        .where(Run.created_at >= activity_start)
+    )
+    if end:
+        active_users_query = active_users_query.where(Run.created_at <= end)
+    active_users_in_range = session.exec(active_users_query).one()
 
-    return {
-        "users": {
-            "total": total_users,
-            "active": active_users,
-            "superusers": superusers,
-            "active_last_30_days": active_users_30d,
-        }
-    }
+    return UserStats(
+        total=total_users,
+        active=active_users,
+        superusers=superusers,
+        active_last_30_days=active_users_in_range,
+    )
 
 
-def _get_file_stats(session: Session) -> FileStats:
-    """Get file-related statistics"""
+def _get_file_stats(
+    session: Session,
+    *,
+    owner_id: uuid.UUID | None = None,
+) -> FileStats:
+    where_clause = and_(File.owner_id == owner_id) if owner_id else None
 
-    # Total files
-    total_files = session.exec(select(func.count()).select_from(File)).one()
-
-    # Saved files only
-    saved_files = session.exec(
-        select(func.count()).select_from(File).where(File.saved)
-    ).one()
-
-    # Total size of all files
-    total_size = session.exec(select(func.sum(File.size)).select_from(File)).one() or 0
-
-    # Total size of saved files only
-    saved_size = session.exec(
-        select(func.sum(File.size)).select_from(File).where(File.saved)
-    ).one() or 0
-
-    # Average file size
-    avg_size = total_size / total_files if total_files > 0 else 0
-
-    # Files by type (top 10)
+    total_query = select(func.count()).select_from(File)
+    saved_query = select(func.count()).select_from(File).where(File.saved)
+    total_size_query = select(func.sum(File.size)).select_from(File)
+    saved_size_query = select(func.sum(File.size)).select_from(File).where(File.saved)
     file_types_query = (
-        select(File.file_type, func.count().label('count'))
+        select(File.file_type, func.count().label("count"))
         .group_by(File.file_type)
         .order_by(func.count().desc())
         .limit(10)
     )
-    file_types_result = session.exec(file_types_query).all()
-    file_types = dict(file_types_result)
+    if where_clause is not None:
+        total_query = total_query.where(where_clause)
+        saved_query = saved_query.where(where_clause)
+        total_size_query = total_size_query.where(where_clause)
+        saved_size_query = saved_size_query.where(where_clause)
+        file_types_query = file_types_query.where(where_clause)
 
-    return {
-        "files": {
-            "total": total_files,
-            "saved": saved_files,
-            "temporary": total_files - saved_files,
-            "total_size_bytes": total_size,
-            "saved_size_bytes": saved_size,
-            "temporary_size_bytes": total_size - saved_size,
-            "average_size_bytes": int(avg_size),
-            "total_size_gb": round(total_size / (1024**3), 2),
-            "saved_size_gb": round(saved_size / (1024**3), 2),
-            "by_type": file_types,
-        }
-    }
+    total_files = session.exec(total_query).one()
+    saved_files = session.exec(saved_query).one()
+    total_size = session.exec(total_size_query).one() or 0
+    saved_size = session.exec(saved_size_query).one() or 0
+    avg_size = total_size / total_files if total_files > 0 else 0
 
-
-def _get_run_stats(session: Session) -> RunStats:
-    """Get run/job-related statistics"""
-
-    # Total runs
-    total_runs = session.exec(select(func.count()).select_from(Run)).one()
-
-    # Runs by status
-    runs_by_status_query = (
-        select(Run.status, func.count().label('count'))
-        .group_by(Run.status)
+    return FileStats(
+        total=total_files,
+        saved=saved_files,
+        temporary=total_files - saved_files,
+        total_size_bytes=total_size,
+        saved_size_bytes=saved_size,
+        temporary_size_bytes=total_size - saved_size,
+        average_size_bytes=int(avg_size),
+        total_size_gb=round(total_size / (1024**3), 2),
+        saved_size_gb=round(saved_size / (1024**3), 2),
+        by_type=dict(session.exec(file_types_query).all()),
     )
-    runs_by_status_result = session.exec(runs_by_status_query).all()
-    runs_by_status = {status.value: count for status, count in runs_by_status_result}
-
-    # Currently running
-    running_runs = runs_by_status.get('running', 0)
-
-    # Success rate
-    completed_runs = runs_by_status.get('completed', 0)
-    failed_runs = runs_by_status.get('failed', 0)
-    finished_runs = completed_runs + failed_runs
-    success_rate = (completed_runs / finished_runs * 100) if finished_runs > 0 else 0
-
-    # Average runtime for completed runs
-    avg_runtime_query = (
-        select(func.avg(
-            func.extract('epoch', Run.finished_at) - func.extract('epoch', Run.started_at)
-        ))
-        .where(and_(
-            Run.status == RunStatus.completed,
-            Run.started_at.is_not(None),
-            Run.finished_at.is_not(None)
-        ))
-    )
-    avg_runtime_seconds = session.exec(avg_runtime_query).one() or 0
-
-    # Runs in last 24 hours
-    twenty_four_hours_ago = datetime.utcnow() - timedelta(hours=24)
-    runs_24h = session.exec(
-        select(func.count()).select_from(Run).where(Run.created_at >= twenty_four_hours_ago)
-    ).one()
-
-    return {
-        "runs": {
-            "total": total_runs,
-            "by_status": runs_by_status,
-            "currently_running": running_runs,
-            "success_rate_percent": round(success_rate, 2),
-            "average_runtime_seconds": int(avg_runtime_seconds),
-            "average_runtime_minutes": round(avg_runtime_seconds / 60, 2),
-            "last_24_hours": runs_24h,
-        }
-    }
 
 
-def _get_tool_stats(session: Session) -> ToolStats:
-    """Get tool-related statistics"""
-
-    # Total tools
+def _get_tool_stats(
+    session: Session,
+    *,
+    start: datetime | None = None,
+    end: datetime | None = None,
+) -> ToolStats:
     total_tools = session.exec(select(func.count()).select_from(Tool)).one()
-
-    # Tools by status
-    tools_by_status_query = (
-        select(Tool.status, func.count().label('count'))
-        .group_by(Tool.status)
-    )
-    tools_by_status_result = session.exec(tools_by_status_query).all()
-    tools_by_status = {status.value: count for status, count in tools_by_status_result}
-
-    # Enabled tools
     enabled_tools = session.exec(
         select(func.count()).select_from(Tool).where(Tool.enabled)
     ).one()
-
-    # Most popular tools (by run count)
-    popular_tools_query = (
-        select(Tool.name, Tool.run_count)
-        .order_by(Tool.run_count.desc())
-        .limit(10)
-    )
-    popular_tools_result = session.exec(popular_tools_query).all()
-    popular_tools = [{"name": name, "count": count} for name, count in popular_tools_result]
-
-    # Most favourited tools
-    favourited_tools_query = (
-        select(Tool.name, Tool.favourited_count)
-        .order_by(Tool.favourited_count.desc())
-        .limit(10)
-    )
-    favourited_tools_result = session.exec(favourited_tools_query).all()
-    favourited_tools = [{"name": name, "count": count} for name, count in favourited_tools_result]
-
-    return {
-        "tools": {
-            "total": total_tools,
-            "enabled": enabled_tools,
-            "disabled": total_tools - enabled_tools,
-            "by_status": tools_by_status,
-            "most_popular": popular_tools,
-            "most_favourited": favourited_tools,
-        }
+    tools_by_status = {
+        status.value: count
+        for status, count in session.exec(
+            select(Tool.status, func.count().label("count")).group_by(Tool.status)
+        ).all()
     }
 
+    run_where = _run_where(start=start, end=end)
+    popular_tools_query = (
+        select(Tool.name, func.count(Run.id).label("count"))
+        .join(Run, Run.tool_id == Tool.id)
+        .group_by(Tool.id, Tool.name)
+        .order_by(func.count(Run.id).desc())
+        .limit(10)
+    )
+    if run_where is not None:
+        popular_tools_query = popular_tools_query.where(run_where)
 
-@router.get("/stats/summary")
+    return ToolStats(
+        total=total_tools,
+        enabled=enabled_tools,
+        disabled=total_tools - enabled_tools,
+        by_status=tools_by_status,
+        most_popular=[
+            CountItem(name=name, count=count)
+            for name, count in session.exec(popular_tools_query).all()
+        ],
+        most_favourited=[
+            CountItem(name=name, count=count)
+            for name, count in session.exec(
+                select(Tool.name, Tool.favourited_count)
+                .order_by(Tool.favourited_count.desc())
+                .limit(10)
+            ).all()
+        ],
+    )
+
+
+def _recent_runs(
+    session: Session,
+    *,
+    owner_id: uuid.UUID | None = None,
+    tool_id: uuid.UUID | None = None,
+    start: datetime | None = None,
+    end: datetime | None = None,
+) -> list[RecentRun]:
+    where_clause = _run_where(start=start, end=end, owner_id=owner_id, tool_id=tool_id)
+    query = (
+        select(Run, Tool.name, User.email)
+        .join(Tool, Run.tool_id == Tool.id)
+        .join(User, Run.owner_id == User.id)
+        .order_by(Run.created_at.desc())
+        .limit(10)
+    )
+    if where_clause is not None:
+        query = query.where(where_clause)
+
+    return [
+        RecentRun(
+            id=run.id,
+            name=run.name,
+            tool_name=tool_name,
+            owner_email=owner_email,
+            status=run.status,
+            created_at=run.created_at,
+            started_at=run.started_at,
+            finished_at=run.finished_at,
+        )
+        for run, tool_name, owner_email in session.exec(query).all()
+    ]
+
+
+@router.get("/stats", response_model=SystemStats)
+def get_system_stats(
+    session: SessionDep,
+    _current_user: SuperUser,
+    start: datetime | None = Query(default=None),
+    end: datetime | None = Query(default=None),
+) -> SystemStats:
+    _validate_date_range(start, end)
+    return SystemStats(
+        users=_get_user_stats(session, start=start, end=end),
+        files=_get_file_stats(session),
+        runs=_get_run_stats(session, start=start, end=end),
+        tools=_get_tool_stats(session, start=start, end=end),
+    )
+
+
+@router.get("/stats/summary", response_model=StatsResponse)
 def get_stats_summary(
-    session: Session = Depends(get_db),
-    current_user: CurrentUser = None,
+    session: SessionDep,
+    _current_user: SuperUser,
 ) -> StatsResponse:
-    """
-    Get a summary of key system statistics for admin panel.
-
-    Returns a condensed view of the most important metrics.
-    Requires superuser privileges.
-    """
-
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    if not current_user.is_superuser:
-        raise HTTPException(status_code=403, detail="Superuser access required")
-
-    # System summary stats for admin panel
     total_users = session.exec(select(func.count()).select_from(User)).one()
     total_tools = session.exec(select(func.count()).select_from(Tool)).one()
     enabled_tools = session.exec(
@@ -329,18 +401,85 @@ def get_stats_summary(
     total_files = session.exec(select(func.count()).select_from(File)).one()
     total_size = session.exec(select(func.sum(File.size)).select_from(File)).one() or 0
 
-    return {
-        "users": {"total": total_users},
-        "tools": {
-            "total": total_tools,
-            "enabled": enabled_tools,
-        },
-        "runs": {
-            "total": total_runs,
-            "currently_running": running_runs,
-        },
-        "files": {
-            "total": total_files,
-            "total_size_gb": round(total_size / (1024**3), 2),
-        },
-    }
+    return StatsResponse(
+        users=SummaryUserStats(total=total_users),
+        tools=SummaryToolStats(total=total_tools, enabled=enabled_tools),
+        runs=SummaryRunStats(total=total_runs, currently_running=running_runs),
+        files=SummaryFileStats(
+            total=total_files,
+            total_size_gb=round(total_size / (1024**3), 2),
+        ),
+    )
+
+
+@router.get("/users/{user_id}", response_model=UserDetailStats)
+def get_user_detail_stats(
+    session: SessionDep,
+    _current_user: SuperUser,
+    user_id: uuid.UUID,
+    start: datetime | None = Query(default=None),
+    end: datetime | None = Query(default=None),
+) -> UserDetailStats:
+    _validate_date_range(start, end)
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    top_tools_query = (
+        select(Tool.name, func.count(Run.id).label("count"))
+        .join(Run, Run.tool_id == Tool.id)
+        .where(Run.owner_id == user_id)
+        .group_by(Tool.id, Tool.name)
+        .order_by(func.count(Run.id).desc())
+        .limit(10)
+    )
+    run_where = _run_where(start=start, end=end, owner_id=user_id)
+    if run_where is not None:
+        top_tools_query = top_tools_query.where(run_where)
+
+    return UserDetailStats(
+        user=UserPublic.model_validate(user),
+        runs=_get_run_stats(session, start=start, end=end, owner_id=user_id),
+        files=_get_file_stats(session, owner_id=user_id),
+        top_tools=[
+            CountItem(name=name, count=count)
+            for name, count in session.exec(top_tools_query).all()
+        ],
+        recent_runs=_recent_runs(session, owner_id=user_id, start=start, end=end),
+    )
+
+
+@router.get("/tools/{tool_id}", response_model=ToolDetailStats)
+def get_tool_detail_stats(
+    session: SessionDep,
+    _current_user: SuperUser,
+    tool_id: uuid.UUID,
+    start: datetime | None = Query(default=None),
+    end: datetime | None = Query(default=None),
+) -> ToolDetailStats:
+    _validate_date_range(start, end)
+    tool = session.get(Tool, tool_id)
+    if not tool:
+        raise HTTPException(status_code=404, detail="Tool not found")
+
+    top_users_query = (
+        select(User.id, User.email, User.full_name, func.count(Run.id).label("count"))
+        .join(Run, Run.owner_id == User.id)
+        .where(Run.tool_id == tool_id)
+        .group_by(User.id, User.email, User.full_name)
+        .order_by(func.count(Run.id).desc())
+        .limit(10)
+    )
+    run_where = _run_where(start=start, end=end, tool_id=tool_id)
+    if run_where is not None:
+        top_users_query = top_users_query.where(run_where)
+
+    return ToolDetailStats(
+        tool=ToolPublic.model_validate(tool),
+        runs=_get_run_stats(session, start=start, end=end, tool_id=tool_id),
+        top_users=[
+            UserUsage(id=user_id, email=email, full_name=full_name, count=count)
+            for user_id, email, full_name, count in session.exec(top_users_query).all()
+        ],
+        recent_runs=_recent_runs(session, tool_id=tool_id, start=start, end=end),
+    )

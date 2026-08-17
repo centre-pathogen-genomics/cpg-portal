@@ -3,6 +3,7 @@ import type { ColumnDef } from "@tanstack/react-table"
 import type { UserPublic } from "@/client"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import { humanReadableDate } from "@/utils"
 import { UserActionsMenu } from "./UserActionsMenu"
 
 export type UserTableData = UserPublic & {
@@ -65,7 +66,16 @@ export const columns: ColumnDef<UserTableData>[] = [
     ),
   },
   {
+    accessorKey: "created_at",
+    header: "Created",
+    sortingFn: (first, second) =>
+      new Date(first.original.created_at).getTime() -
+      new Date(second.original.created_at).getTime(),
+    cell: ({ row }) => humanReadableDate(row.original.created_at),
+  },
+  {
     id: "actions",
+    enableSorting: false,
     header: () => <span className="sr-only">Actions</span>,
     cell: ({ row }) => (
       <div className="flex justify-end">

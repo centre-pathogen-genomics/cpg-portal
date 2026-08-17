@@ -47,7 +47,7 @@ function About() {
       "Lightweight Docker deployment",
       "Runs on anything from a laptop to a cluster",
     ],
-    ["Modular task registry", "Add new assays in minutes—no front-end coding"],
+    ["Modular task registry", "Add new assays in minutes - no front-end coding"],
     [
       "Completely open source",
       "Encourages local ownership and regional collaboration",
@@ -60,10 +60,10 @@ function About() {
     ],
     [
       "Open & sustainable.",
-      " The entire code base is MIT-licensed on GitHub—free to audit, extend or fork.",
+      " The entire code base is MIT-licensed on GitHub - free to audit, extend or fork.",
     ],
     [
-      "Local or hosted—your choice.",
+      "Local or hosted - your choice.",
       " Use our University of Melbourne instance or deploy on-prem with one Docker command.",
     ],
     [
@@ -99,7 +99,7 @@ function About() {
             Portal turns complex genomics pipelines into a{" "}
             <strong>point-and-click web experience</strong>, so laboratorians and
             public-health teams can move from raw reads to actionable
-            insight—without touching the command line. Whether you are
+            insight - without touching the command line. Whether you are
             investigating an outbreak in a provincial hospital or curating
             national surveillance data, The Portal lets you focus on science and
             response, not servers.

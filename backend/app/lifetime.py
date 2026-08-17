@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from sqlmodel import Session, select
 
+from app.core.app_settings import get_or_create_app_settings
 from app.core.db import engine
 from app.models import Run, RunStatus, Tool, ToolStatus
 from app.tasks import install_tool, run_tool
@@ -22,14 +23,16 @@ async def recover_interrupted_tasks(session: Session) -> None:
         run.stdout = "Run was cancelled due to server restart."
         session.add(run)
 
-    pending_runs = session.exec(
-        select(Run).where(Run.status == RunStatus.pending)
-    ).all()
-    for run in pending_runs:
-        print(f"Run(id={run.id}) is pending. Restarting...")
-        taskiq_task = await run_tool.kiq(run.id, run.command)
-        run.taskiq_id = taskiq_task.task_id
-        session.add(run)
+    app_settings = get_or_create_app_settings(session)
+    if not app_settings.queue_paused:
+        pending_runs = session.exec(
+            select(Run).where(Run.status == RunStatus.pending)
+        ).all()
+        for run in pending_runs:
+            print(f"Run(id={run.id}) is pending. Restarting...")
+            taskiq_task = await run_tool.kiq(run.id, run.command)
+            run.taskiq_id = taskiq_task.task_id
+            session.add(run)
 
     installing_tools = session.exec(
         select(Tool).where(Tool.status == ToolStatus.installing)

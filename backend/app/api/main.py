@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.routes import (
+    admin,
     files,
     llm,
     login,
@@ -24,3 +25,4 @@ api_router.include_router(websockets.router, prefix="/websockets", tags=["websoc
 api_router.include_router(llm.router, prefix="/llm", tags=["llm"])
 api_router.include_router(settings.router, prefix="/settings", tags=["settings"])
 api_router.include_router(stats.router, prefix="/stats", tags=["stats"])
+api_router.include_router(admin.router, prefix="/admin", tags=["admin"])
