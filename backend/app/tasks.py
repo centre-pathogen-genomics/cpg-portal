@@ -15,6 +15,7 @@ from taskiq import TaskiqDepends
 
 from app.api.deps import get_db
 from app.conda import CondaEnvManger, CondaEnvMangerError
+from app.core.app_settings import get_or_create_app_settings
 from app.core.config import settings
 from app.crud import save_file
 from app.models import File, Run, RunStatus, SetupFile, Target, Tool, ToolStatus
@@ -274,6 +275,12 @@ async def run_tool(
     # Clear previous stdout and check statuses.
     run.stdout = ""
     if run.status != "pending":
+        return False
+    app_settings = get_or_create_app_settings(session)
+    if app_settings.queue_paused:
+        run.taskiq_id = None
+        session.add(run)
+        session.commit()
         return False
     if run.tool.status != "installed":
         update_run(session, run, RunStatus.failed, "Tool must be installed first. Please contact an administrator.")

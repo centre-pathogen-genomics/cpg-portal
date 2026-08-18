@@ -2150,10 +2150,15 @@ export const UserPublicSchema = {
             type: 'string',
             format: 'uuid',
             title: 'Id'
+        },
+        created_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Created At'
         }
     },
     type: 'object',
-    required: ['email', 'id'],
+    required: ['email', 'id', 'created_at'],
     title: 'UserPublic'
 } as const;
 

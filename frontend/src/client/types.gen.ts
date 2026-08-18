@@ -9,6 +9,18 @@ export type AppSettingPublic = {
      */
     llm_model?: string;
     /**
+     * Queue Paused
+     */
+    queue_paused?: boolean;
+    /**
+     * Queue Paused At
+     */
+    queue_paused_at?: string | null;
+    /**
+     * Queue Pause Reason
+     */
+    queue_pause_reason?: string | null;
+    /**
      * Id
      */
     id: number;
@@ -22,6 +34,20 @@ export type AppSettingUpdate = {
      * Llm Model
      */
     llm_model: string;
+};
+
+/**
+ * QueuePublicStatus
+ */
+export type QueuePublicStatus = {
+    /**
+     * Queue Paused
+     */
+    queue_paused: boolean;
+    /**
+     * Queue Pause Reason
+     */
+    queue_pause_reason?: string | null;
 };
 
 /**
@@ -83,6 +109,20 @@ export type BodyRunsCreateRun = {
      * Tags
      */
     tags?: Array<string>;
+};
+
+/**
+ * CountItem
+ */
+export type CountItem = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Count
+     */
+    count: number;
 };
 
 /**
@@ -519,6 +559,77 @@ export type RunStats = {
 };
 
 /**
+ * QueuePauseRequest
+ */
+export type QueuePauseRequest = {
+    /**
+     * Reason
+     */
+    reason?: string | null;
+};
+
+/**
+ * QueueStatus
+ */
+export type QueueStatus = {
+    /**
+     * Queue Paused
+     */
+    queue_paused: boolean;
+    /**
+     * Queue Paused At
+     */
+    queue_paused_at?: string | null;
+    /**
+     * Queue Pause Reason
+     */
+    queue_pause_reason?: string | null;
+    /**
+     * Pending Runs
+     */
+    pending_runs: number;
+    /**
+     * Running Runs
+     */
+    running_runs: number;
+};
+
+/**
+ * RecentRun
+ */
+export type RecentRun = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Name
+     */
+    name?: string | null;
+    /**
+     * Tool Name
+     */
+    tool_name: string;
+    /**
+     * Owner Email
+     */
+    owner_email: string;
+    status: RunStatus;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Started At
+     */
+    started_at?: string | null;
+    /**
+     * Finished At
+     */
+    finished_at?: string | null;
+};
+
+/**
  * RunStatus
  */
 export type RunStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
@@ -916,6 +1027,10 @@ export type ToolPublic = {
      * Id
      */
     id: string;
+    /**
+     * Created At
+     */
+    created_at: string;
 };
 
 /**
@@ -943,15 +1058,21 @@ export type ToolStats = {
     /**
      * Most Popular
      */
-    most_popular: Array<{
-        [key: string]: unknown;
-    }>;
+    most_popular: Array<CountItem>;
     /**
      * Most Favourited
      */
-    most_favourited: Array<{
-        [key: string]: unknown;
-    }>;
+    most_favourited: Array<CountItem>;
+};
+
+/**
+ * ToolDetailStats
+ */
+export type ToolDetailStats = {
+    tool: ToolPublic;
+    runs: RunStats;
+    top_users: Array<UserUsage>;
+    recent_runs: Array<RecentRun>;
 };
 
 /**
@@ -1206,6 +1327,39 @@ export type UserStats = {
      * Active Last 30 Days
      */
     active_last_30_days: number;
+};
+
+/**
+ * UserDetailStats
+ */
+export type UserDetailStats = {
+    user: UserPublic;
+    runs: RunStats;
+    files: FileStats;
+    top_tools: Array<CountItem>;
+    recent_runs: Array<RecentRun>;
+};
+
+/**
+ * UserUsage
+ */
+export type UserUsage = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Email
+     */
+    email: string;
+    /**
+     * Full Name
+     */
+    full_name?: string | null;
+    /**
+     * Count
+     */
+    count: number;
 };
 
 /**
@@ -3124,6 +3278,22 @@ export type SettingsReadAppSettingsResponses = {
 
 export type SettingsReadAppSettingsResponse = SettingsReadAppSettingsResponses[keyof SettingsReadAppSettingsResponses];
 
+export type SettingsReadQueueStatusData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/settings/queue';
+};
+
+export type SettingsReadQueueStatusResponses = {
+    /**
+     * Successful Response
+     */
+    200: QueuePublicStatus;
+};
+
+export type SettingsReadQueueStatusResponse = SettingsReadQueueStatusResponses[keyof SettingsReadQueueStatusResponses];
+
 export type SettingsUpdateAppSettingsData = {
     body: AppSettingUpdate;
     path?: never;
@@ -3152,7 +3322,16 @@ export type SettingsUpdateAppSettingsResponse = SettingsUpdateAppSettingsRespons
 export type StatsGetSystemStatsData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        /**
+         * Start
+         */
+        start?: string | null;
+        /**
+         * End
+         */
+        end?: string | null;
+    };
     url: '/api/v1/stats/stats';
 };
 
@@ -3164,6 +3343,84 @@ export type StatsGetSystemStatsResponses = {
 };
 
 export type StatsGetSystemStatsResponse = StatsGetSystemStatsResponses[keyof StatsGetSystemStatsResponses];
+
+export type StatsGetUserDetailStatsData = {
+    body?: never;
+    path: {
+        /**
+         * User Id
+         */
+        user_id: string;
+    };
+    query?: {
+        /**
+         * Start
+         */
+        start?: string | null;
+        /**
+         * End
+         */
+        end?: string | null;
+    };
+    url: '/api/v1/stats/users/{user_id}';
+};
+
+export type StatsGetUserDetailStatsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type StatsGetUserDetailStatsError = StatsGetUserDetailStatsErrors[keyof StatsGetUserDetailStatsErrors];
+
+export type StatsGetUserDetailStatsResponses = {
+    /**
+     * Successful Response
+     */
+    200: UserDetailStats;
+};
+
+export type StatsGetUserDetailStatsResponse = StatsGetUserDetailStatsResponses[keyof StatsGetUserDetailStatsResponses];
+
+export type StatsGetToolDetailStatsData = {
+    body?: never;
+    path: {
+        /**
+         * Tool Id
+         */
+        tool_id: string;
+    };
+    query?: {
+        /**
+         * Start
+         */
+        start?: string | null;
+        /**
+         * End
+         */
+        end?: string | null;
+    };
+    url: '/api/v1/stats/tools/{tool_id}';
+};
+
+export type StatsGetToolDetailStatsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type StatsGetToolDetailStatsError = StatsGetToolDetailStatsErrors[keyof StatsGetToolDetailStatsErrors];
+
+export type StatsGetToolDetailStatsResponses = {
+    /**
+     * Successful Response
+     */
+    200: ToolDetailStats;
+};
+
+export type StatsGetToolDetailStatsResponse = StatsGetToolDetailStatsResponses[keyof StatsGetToolDetailStatsResponses];
 
 export type StatsGetStatsSummaryData = {
     body?: never;
@@ -3180,6 +3437,63 @@ export type StatsGetStatsSummaryResponses = {
 };
 
 export type StatsGetStatsSummaryResponse = StatsGetStatsSummaryResponses[keyof StatsGetStatsSummaryResponses];
+
+export type AdminReadQueueStatusData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/queue';
+};
+
+export type AdminReadQueueStatusResponses = {
+    /**
+     * Successful Response
+     */
+    200: QueueStatus;
+};
+
+export type AdminReadQueueStatusResponse = AdminReadQueueStatusResponses[keyof AdminReadQueueStatusResponses];
+
+export type AdminPauseQueueData = {
+    body: QueuePauseRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/queue/pause';
+};
+
+export type AdminPauseQueueErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AdminPauseQueueError = AdminPauseQueueErrors[keyof AdminPauseQueueErrors];
+
+export type AdminPauseQueueResponses = {
+    /**
+     * Successful Response
+     */
+    200: QueueStatus;
+};
+
+export type AdminPauseQueueResponse = AdminPauseQueueResponses[keyof AdminPauseQueueResponses];
+
+export type AdminResumeQueueData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/queue/resume';
+};
+
+export type AdminResumeQueueResponses = {
+    /**
+     * Successful Response
+     */
+    200: QueueStatus;
+};
+
+export type AdminResumeQueueResponse = AdminResumeQueueResponses[keyof AdminResumeQueueResponses];
 
 export type ClientOptions = {
     baseURL: `${string}://${string}` | (string & {});

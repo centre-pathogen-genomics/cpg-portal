@@ -15,8 +15,10 @@ import {
   Pencil,
   Search,
   Trash2,
+  TriangleAlert,
 } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -46,6 +48,7 @@ import {
   type RunPublicMinimal,
   type RunStatus,
   RunsService,
+  SettingsService,
 } from "../../../client"
 import {
   BulkDeleteMenu,
@@ -486,6 +489,11 @@ function Runs() {
         })
       ).data?.count ?? 0,
   })
+  const { data: queueStatus } = useQuery({
+    queryKey: ["settings", "queue"],
+    queryFn: async () => (await SettingsService.readQueueStatus()).data,
+    refetchInterval: 15_000,
+  })
 
   return (
     <div className="w-full px-4 md:px-6 lg:px-8 xl:px-12">
@@ -493,6 +501,20 @@ function Runs() {
         <h1 className="pt-6 text-4xl font-bold">My Runs</h1>
         <p>Click on a run to view more details and results.</p>
       </div>
+      {queueStatus?.queue_paused && (
+        <Alert className="mb-4 border-amber-300 bg-amber-50 text-amber-950">
+          <TriangleAlert className="size-4" />
+          <AlertTitle>Queue is draining</AlertTitle>
+          <AlertDescription>
+            New runs will stay pending until the queue is resumed.
+            {queueStatus.queue_pause_reason && (
+              <span className="mt-1 block">
+                Reason: {queueStatus.queue_pause_reason}
+              </span>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
       <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative w-full sm:w-[280px]">

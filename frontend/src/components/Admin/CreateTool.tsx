@@ -45,7 +45,11 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>
 
-const CreateTool = () => {
+type CreateToolProps = {
+  variant?: "dialog" | "panel"
+}
+
+const CreateTool = ({ variant = "dialog" }: CreateToolProps) => {
   const [isOpen, setIsOpen] = useState(false)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -88,6 +92,91 @@ const CreateTool = () => {
     mutation.mutate({ body })
   }
 
+  const formContent = (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)}>
+        <div className="grid gap-4 py-4">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Name <span className="text-destructive">*</span>
+                </FormLabel>
+                <FormControl>
+                  <Input placeholder="Tool name" {...field} required />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="command"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Command <span className="text-destructive">*</span>
+                </FormLabel>
+                <FormControl>
+                  <Textarea
+                    className="min-h-24 font-mono"
+                    placeholder="python script.py --input {input}"
+                    {...field}
+                    required
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Description</FormLabel>
+                <FormControl>
+                  <Textarea
+                    className="min-h-20"
+                    placeholder="Optional short description"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        {variant === "dialog" ? (
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline" disabled={mutation.isPending}>
+                Cancel
+              </Button>
+            </DialogClose>
+            <LoadingButton type="submit" loading={mutation.isPending}>
+              Create
+            </LoadingButton>
+          </DialogFooter>
+        ) : (
+          <LoadingButton type="submit" loading={mutation.isPending}>
+            <Plus />
+            Create Tool
+          </LoadingButton>
+        )}
+      </form>
+    </Form>
+  )
+
+  if (variant === "panel") {
+    return formContent
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
@@ -103,77 +192,7 @@ const CreateTool = () => {
             Create the tool shell, then finish configuration in the full editor.
           </DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
-            <div className="grid gap-4 py-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Name <span className="text-destructive">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input placeholder="Tool name" {...field} required />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="command"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Command <span className="text-destructive">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Textarea
-                        className="min-h-24 font-mono"
-                        placeholder="python script.py --input {input}"
-                        {...field}
-                        required
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        className="min-h-20"
-                        placeholder="Optional short description"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline" disabled={mutation.isPending}>
-                  Cancel
-                </Button>
-              </DialogClose>
-              <LoadingButton type="submit" loading={mutation.isPending}>
-                Create
-              </LoadingButton>
-            </DialogFooter>
-          </form>
-        </Form>
+        {formContent}
       </DialogContent>
     </Dialog>
   )

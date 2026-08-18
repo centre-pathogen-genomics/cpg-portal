@@ -23,6 +23,7 @@ import {
   disableToolMutation,
   enableLlmSummaryMutation,
   enableToolMutation,
+  getToolDetailStatsOptions,
   installToolMutation,
   readToolByNameOptions,
   readToolByNameQueryKey,
@@ -142,6 +143,98 @@ function InstallToolButton({ tool }: { tool: ToolPublic }) {
       {installInProgress && <LoaderCircle className="animate-spin" />}
       Install
     </Button>
+  )
+}
+
+function AdminStatValue({
+  label,
+  value,
+}: {
+  label: string
+  value: string | number
+}) {
+  return (
+    <div>
+      <p className="text-sm font-medium text-muted-foreground">{label}</p>
+      <p className="mt-1 text-2xl font-semibold">
+        {typeof value === "number" ? value.toLocaleString() : value}
+      </p>
+    </div>
+  )
+}
+
+function ToolAdminStats({ tool }: { tool: ToolPublic }) {
+  const { data, isLoading } = useQuery({
+    ...getToolDetailStatsOptions({ path: { tool_id: tool.id } }),
+    refetchInterval: 30_000,
+  })
+
+  return (
+    <div className="mb-5 rounded border p-4">
+      <h3 className="mb-3 text-sm font-semibold">Usage Statistics</h3>
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <AdminStatValue
+          label="Runs"
+          value={isLoading ? "..." : (data?.runs.total ?? 0)}
+        />
+        <AdminStatValue
+          label="Success Rate"
+          value={
+            isLoading
+              ? "..."
+              : `${(data?.runs.success_rate_percent ?? 0).toFixed(1)}%`
+          }
+        />
+        <AdminStatValue
+          label="Avg Runtime"
+          value={
+            isLoading
+              ? "..."
+              : `${(data?.runs.average_runtime_minutes ?? 0).toFixed(1)} min`
+          }
+        />
+        <AdminStatValue
+          label="Running"
+          value={isLoading ? "..." : (data?.runs.currently_running ?? 0)}
+        />
+      </div>
+      <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div>
+          <p className="text-sm font-medium">Top Users</p>
+          <div className="mt-2 space-y-2">
+            {data?.top_users.slice(0, 5).map((user) => (
+              <div
+                key={user.id}
+                className="flex items-center justify-between gap-3 text-sm"
+              >
+                <span>{user.full_name || user.email}</span>
+                <UiBadge variant="secondary">{user.count} runs</UiBadge>
+              </div>
+            ))}
+            {!isLoading && !data?.top_users.length && (
+              <p className="text-sm text-muted-foreground">No users yet.</p>
+            )}
+          </div>
+        </div>
+        <div>
+          <p className="text-sm font-medium">Recent Runs</p>
+          <div className="mt-2 space-y-2">
+            {data?.recent_runs.slice(0, 5).map((run) => (
+              <div
+                key={run.id}
+                className="flex items-center justify-between gap-3 text-sm"
+              >
+                <span>{run.name || run.owner_email}</span>
+                <UiBadge variant="outline">{run.status}</UiBadge>
+              </div>
+            ))}
+            {!isLoading && !data?.recent_runs.length && (
+              <p className="text-sm text-muted-foreground">No runs yet.</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -322,6 +415,7 @@ function Tool() {
                     <ToolToggle tool={tool} kind="tool" />
                   </div>
                 </div>
+                <ToolAdminStats tool={tool} />
                 <h3 className="text-sm font-semibold">
                   Installation Log ({tool.status})
                 </h3>

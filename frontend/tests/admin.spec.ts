@@ -17,18 +17,73 @@ test("Add User button is visible", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Add User" })).toBeVisible()
 })
 
-test("Create Tool button opens the create tool dialog", async ({ page }) => {
+test("Create Tool panel shows the create tool form", async ({ page }) => {
   await page.goto("/admin")
 
-  await page.getByRole("button", { name: "Create Tool" }).click()
-
-  const dialog = page.getByRole("dialog")
-  await expect(dialog).toBeVisible()
   await expect(
-    dialog.getByRole("heading", { name: "Create Tool" }),
+    page.getByRole("heading", { name: "Create Tool" }),
   ).toBeVisible()
-  await expect(dialog.getByRole("textbox", { name: "Name *" })).toBeVisible()
-  await expect(dialog.getByRole("textbox", { name: "Command *" })).toBeVisible()
+  await expect(page.getByRole("textbox", { name: "Name *" })).toBeVisible()
+  await expect(page.getByRole("textbox", { name: "Command *" })).toBeVisible()
+})
+
+test("Admin page shows date filters and queue controls", async ({ page }) => {
+  await page.goto("/admin")
+
+  await expect(page.getByLabel("Start")).toBeVisible()
+  await expect(page.getByLabel("End")).toBeVisible()
+  await expect(page.getByRole("button", { name: "Today" })).toBeVisible()
+  await expect(page.getByRole("button", { name: "7 days" })).toBeVisible()
+  await expect(page.getByRole("button", { name: "30 days" })).toBeVisible()
+  await expect(page.getByRole("button", { name: "90 days" })).toBeVisible()
+  await expect(page.getByRole("button", { name: "All" })).toBeVisible()
+  await expect(
+    page.getByRole("heading", { name: "Queue Controls" }),
+  ).toBeVisible()
+  await expect(page.getByText(/Accepting|Draining|Paused|Loading/)).toBeVisible()
+})
+
+test("Admin users table has search and pagination controls", async ({ page }) => {
+  await page.goto("/admin")
+
+  await expect(page.getByRole("textbox", { name: "Search users" })).toBeVisible()
+  await expect(
+    page.getByRole("combobox", { name: "Filter users by status" }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole("button", { name: "User bulk actions" }),
+  ).toBeVisible()
+  await expect(page.getByRole("button", { name: /Sort by Created/ })).toBeVisible()
+  await expect(page.getByText("Rows per page")).toBeVisible()
+  await expect(page.getByRole("button", { name: "Previous" })).toBeVisible()
+  await expect(page.getByRole("button", { name: "Next" })).toBeVisible()
+})
+
+test("Admin can drain and resume the queue", async ({ page }) => {
+  await page.goto("/admin")
+
+  const drainButton = page.getByRole("button", { name: "Drain" })
+  const resumeButton = page.getByRole("button", { name: "Resume" })
+
+  if (await drainButton.isVisible()) {
+    await page.getByPlaceholder("Drain reason").fill("playwright check")
+    await drainButton.click()
+    await expect(page.getByText("Queue drain started.")).toBeVisible()
+    await expect(resumeButton).toBeVisible()
+  }
+
+  await resumeButton.click()
+  await expect(page.getByText("Queue resumed.")).toBeVisible()
+  await expect(page.getByRole("button", { name: "Drain" })).toBeVisible()
+})
+
+test("Admin can open a user stats drilldown", async ({ page }) => {
+  await page.goto("/admin")
+
+  await page.getByRole("button", { name: "Stats" }).first().click()
+
+  await expect(page.getByText("User analytics")).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Recent Runs" })).toBeVisible()
 })
 
 test.describe("Admin user management", () => {

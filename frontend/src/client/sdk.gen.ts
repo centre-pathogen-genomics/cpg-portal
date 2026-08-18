@@ -2,6 +2,8 @@
 
 import { type Options as ClientOptions, type TDataShape, type Client, urlSearchParamsBodySerializer, formDataBodySerializer } from './client';
 import type { LoginLoginAccessTokenData, LoginLoginAccessTokenResponses, LoginLoginAccessTokenErrors, LoginTestTokenData, LoginTestTokenResponses, LoginRecoverPasswordData, LoginRecoverPasswordResponses, LoginRecoverPasswordErrors, LoginResetPasswordData, LoginResetPasswordResponses, LoginResetPasswordErrors, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponses, LoginRecoverPasswordHtmlContentErrors, UsersReadUsersData, UsersReadUsersResponses, UsersReadUsersErrors, UsersCreateUserData, UsersCreateUserResponses, UsersCreateUserErrors, UsersDeleteUserMeData, UsersDeleteUserMeResponses, UsersReadUserMeData, UsersReadUserMeResponses, UsersUpdateUserMeData, UsersUpdateUserMeResponses, UsersUpdateUserMeErrors, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponses, UsersUpdatePasswordMeErrors, UsersRegisterUserData, UsersRegisterUserResponses, UsersRegisterUserErrors, UsersActivateAccountData, UsersActivateAccountResponses, UsersActivateAccountErrors, UsersDeleteUserData, UsersDeleteUserResponses, UsersDeleteUserErrors, UsersReadUserByIdData, UsersReadUserByIdResponses, UsersReadUserByIdErrors, UsersUpdateUserData, UsersUpdateUserResponses, UsersUpdateUserErrors, UtilsTestEmailData, UtilsTestEmailResponses, UtilsTestEmailErrors, UtilsHealthCheckData, UtilsHealthCheckResponses, UtilsMaxUploadSizeData, UtilsMaxUploadSizeResponses, ToolsReadToolsData, ToolsReadToolsResponses, ToolsReadToolsErrors, ToolsCreateToolData, ToolsCreateToolResponses, ToolsCreateToolErrors, ToolsReadToolByNameData, ToolsReadToolByNameResponses, ToolsReadToolByNameErrors, ToolsDeleteToolData, ToolsDeleteToolResponses, ToolsDeleteToolErrors, ToolsReadToolData, ToolsReadToolResponses, ToolsReadToolErrors, ToolsUpdateToolData, ToolsUpdateToolResponses, ToolsUpdateToolErrors, ToolsUnfavouriteToolData, ToolsUnfavouriteToolResponses, ToolsUnfavouriteToolErrors, ToolsFavouriteToolData, ToolsFavouriteToolResponses, ToolsFavouriteToolErrors, ToolsEnableToolData, ToolsEnableToolResponses, ToolsEnableToolErrors, ToolsDisableToolData, ToolsDisableToolResponses, ToolsDisableToolErrors, ToolsEnableLlmSummaryData, ToolsEnableLlmSummaryResponses, ToolsEnableLlmSummaryErrors, ToolsDisableLlmSummaryData, ToolsDisableLlmSummaryResponses, ToolsDisableLlmSummaryErrors, ToolsInstallToolData, ToolsInstallToolResponses, ToolsInstallToolErrors, ToolsUninstallToolData, ToolsUninstallToolResponses, ToolsUninstallToolErrors, FilesDeleteFilesData, FilesDeleteFilesResponses, FilesDeleteFilesErrors, FilesReadFilesData, FilesReadFilesResponses, FilesReadFilesErrors, FilesUploadFileData, FilesUploadFileResponses, FilesUploadFileErrors, FilesGetFilesAllowedTypesData, FilesGetFilesAllowedTypesResponses, FilesGetCurrentFileTypesData, FilesGetCurrentFileTypesResponses, FilesGetFilesStatsData, FilesGetFilesStatsResponses, FilesCreatePairData, FilesCreatePairResponses, FilesCreatePairErrors, FilesCreateGroupData, FilesCreateGroupResponses, FilesCreateGroupErrors, FilesUngroupFileData, FilesUngroupFileResponses, FilesUngroupFileErrors, FilesDeleteFileData, FilesDeleteFileResponses, FilesDeleteFileErrors, FilesReadFileData, FilesReadFileResponses, FilesReadFileErrors, FilesSaveFileData, FilesSaveFileResponses, FilesSaveFileErrors, FilesCopyFileData, FilesCopyFileResponses, FilesCopyFileErrors, FilesDownloadFileData, FilesDownloadFileResponses, FilesDownloadFileErrors, FilesGetDownloadTokenData, FilesGetDownloadTokenResponses, FilesGetDownloadTokenErrors, FilesRenameFileData, FilesRenameFileResponses, FilesRenameFileErrors, FilesDownloadFileWithTokenData, FilesDownloadFileWithTokenResponses, FilesDownloadFileWithTokenErrors, RunsDeleteRunsData, RunsDeleteRunsResponses, RunsDeleteRunsErrors, RunsReadRunsData, RunsReadRunsResponses, RunsReadRunsErrors, RunsCreateRunData, RunsCreateRunResponses, RunsCreateRunErrors, RunsReadRunToolNamesData, RunsReadRunToolNamesResponses, RunsCancelRunsData, RunsCancelRunsResponses, RunsReadActiveRunsData, RunsReadActiveRunsResponses, RunsReadActiveRunsErrors, RunsDeleteRunData, RunsDeleteRunResponses, RunsDeleteRunErrors, RunsReadRunData, RunsReadRunResponses, RunsReadRunErrors, RunsCancelRunData, RunsCancelRunResponses, RunsCancelRunErrors, RunsRenameRunData, RunsRenameRunResponses, RunsRenameRunErrors, RunsToggleRunSharingData, RunsToggleRunSharingResponses, RunsToggleRunSharingErrors, LlmGenerateRunSummaryData, LlmGenerateRunSummaryResponses, LlmGenerateRunSummaryErrors, SettingsReadAppSettingsData, SettingsReadAppSettingsResponses, SettingsUpdateAppSettingsData, SettingsUpdateAppSettingsResponses, SettingsUpdateAppSettingsErrors, StatsGetSystemStatsData, StatsGetSystemStatsResponses, StatsGetStatsSummaryData, StatsGetStatsSummaryResponses } from './types.gen';
+import type { AdminPauseQueueData, AdminPauseQueueErrors, AdminPauseQueueResponses, AdminReadQueueStatusData, AdminReadQueueStatusResponses, AdminResumeQueueData, AdminResumeQueueResponses, StatsGetToolDetailStatsData, StatsGetToolDetailStatsErrors, StatsGetToolDetailStatsResponses, StatsGetUserDetailStatsData, StatsGetUserDetailStatsErrors, StatsGetUserDetailStatsResponses } from './types.gen';
+import type { SettingsReadQueueStatusData, SettingsReadQueueStatusResponses } from './types.gen';
 import { client as _heyApiClient } from './client.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = ClientOptions<TData, ThrowOnError> & {
@@ -1173,6 +1175,24 @@ export class SettingsService {
     }
     
     /**
+     * Read Queue Status
+     * Retrieve user-visible queue drain status.
+     */
+    public static readQueueStatus<ThrowOnError extends boolean = false>(options?: Options<SettingsReadQueueStatusData, ThrowOnError>) {
+        return (options?.client ?? _heyApiClient).get<SettingsReadQueueStatusResponses, unknown, ThrowOnError>({
+            responseType: 'json',
+            security: [
+                {
+                    scheme: 'bearer',
+                    type: 'http'
+                }
+            ],
+            url: '/api/v1/settings/queue',
+            ...options
+        });
+    }
+    
+    /**
      * Update App Settings
      * Update application settings.
      */
@@ -1216,6 +1236,40 @@ export class StatsService {
             ...options
         });
     }
+
+    /**
+     * Get User Detail Stats
+     */
+    public static getUserDetailStats<ThrowOnError extends boolean = false>(options: Options<StatsGetUserDetailStatsData, ThrowOnError>) {
+        return (options.client ?? _heyApiClient).get<StatsGetUserDetailStatsResponses, StatsGetUserDetailStatsErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [
+                {
+                    scheme: 'bearer',
+                    type: 'http'
+                }
+            ],
+            url: '/api/v1/stats/users/{user_id}',
+            ...options
+        });
+    }
+
+    /**
+     * Get Tool Detail Stats
+     */
+    public static getToolDetailStats<ThrowOnError extends boolean = false>(options: Options<StatsGetToolDetailStatsData, ThrowOnError>) {
+        return (options.client ?? _heyApiClient).get<StatsGetToolDetailStatsResponses, StatsGetToolDetailStatsErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [
+                {
+                    scheme: 'bearer',
+                    type: 'http'
+                }
+            ],
+            url: '/api/v1/stats/tools/{tool_id}',
+            ...options
+        });
+    }
     
     /**
      * Get Stats Summary
@@ -1234,6 +1288,63 @@ export class StatsService {
                 }
             ],
             url: '/api/v1/stats/stats/summary',
+            ...options
+        });
+    }
+}
+
+export class AdminService {
+    /**
+     * Read Queue Status
+     */
+    public static readQueueStatus<ThrowOnError extends boolean = false>(options?: Options<AdminReadQueueStatusData, ThrowOnError>) {
+        return (options?.client ?? _heyApiClient).get<AdminReadQueueStatusResponses, unknown, ThrowOnError>({
+            responseType: 'json',
+            security: [
+                {
+                    scheme: 'bearer',
+                    type: 'http'
+                }
+            ],
+            url: '/api/v1/admin/queue',
+            ...options
+        });
+    }
+
+    /**
+     * Pause Queue
+     */
+    public static pauseQueue<ThrowOnError extends boolean = false>(options: Options<AdminPauseQueueData, ThrowOnError>) {
+        return (options.client ?? _heyApiClient).post<AdminPauseQueueResponses, AdminPauseQueueErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [
+                {
+                    scheme: 'bearer',
+                    type: 'http'
+                }
+            ],
+            url: '/api/v1/admin/queue/pause',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+
+    /**
+     * Resume Queue
+     */
+    public static resumeQueue<ThrowOnError extends boolean = false>(options?: Options<AdminResumeQueueData, ThrowOnError>) {
+        return (options?.client ?? _heyApiClient).post<AdminResumeQueueResponses, unknown, ThrowOnError>({
+            responseType: 'json',
+            security: [
+                {
+                    scheme: 'bearer',
+                    type: 'http'
+                }
+            ],
+            url: '/api/v1/admin/queue/resume',
             ...options
         });
     }

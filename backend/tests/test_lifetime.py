@@ -6,6 +6,7 @@ from types import SimpleNamespace
 from sqlmodel import Session
 
 from app import lifetime
+from app.core.app_settings import get_or_create_app_settings
 from app.models import Run, RunStatus, Tool, ToolStatus
 from tests.utils.user import create_random_user
 from tests.utils.utils import random_lower_string
@@ -27,6 +28,13 @@ def test_recover_interrupted_tasks_requeues_and_marks_interrupted(
 
     monkeypatch.setattr(lifetime.run_tool, "kiq", fake_run_kiq)
     monkeypatch.setattr(lifetime.install_tool, "kiq", fake_install_kiq)
+
+    app_settings = get_or_create_app_settings(db)
+    app_settings.queue_paused = False
+    app_settings.queue_pause_reason = None
+    app_settings.queue_paused_at = None
+    db.add(app_settings)
+    db.commit()
 
     owner = create_random_user(db)
     pending_tool = Tool(
@@ -88,7 +96,7 @@ def test_recover_interrupted_tasks_requeues_and_marks_interrupted(
     db.refresh(queued_tool)
     db.refresh(installing_tool)
 
-    assert run_task_ids == [pending_run.id]
+    assert pending_run.id in run_task_ids
     assert install_task_ids == [queued_tool.id]
     assert pending_run.status == RunStatus.pending
     assert pending_run.taskiq_id == f"run-task-{pending_run.id}"
@@ -104,3 +112,60 @@ def test_recover_interrupted_tasks_requeues_and_marks_interrupted(
         "Tool installation was interrupted by server restart. "
         "Please retry installation."
     )
+
+
+def test_recover_interrupted_tasks_does_not_requeue_pending_runs_when_paused(
+    monkeypatch, db: Session
+) -> None:
+    run_task_ids: list[uuid.UUID] = []
+
+    async def fake_run_kiq(run_id: uuid.UUID, _command: str | None):
+        run_task_ids.append(run_id)
+        return SimpleNamespace(task_id=f"run-task-{run_id}")
+
+    async def fake_install_kiq(tool_id: uuid.UUID):
+        return SimpleNamespace(task_id=f"install-task-{tool_id}")
+
+    monkeypatch.setattr(lifetime.run_tool, "kiq", fake_run_kiq)
+    monkeypatch.setattr(lifetime.install_tool, "kiq", fake_install_kiq)
+
+    app_settings = get_or_create_app_settings(db)
+    app_settings.queue_paused = True
+    db.add(app_settings)
+    db.commit()
+
+    owner = create_random_user(db)
+    tool = Tool(
+        name=f"paused-pending-tool-{random_lower_string()}",
+        command="echo pending",
+        enabled=True,
+        status=ToolStatus.installed,
+    )
+    db.add(tool)
+    db.commit()
+
+    pending_run = Run(
+        status=RunStatus.pending,
+        created_at=datetime.utcnow(),
+        command="echo pending",
+        params={},
+        tool_id=tool.id,
+        owner_id=owner.id,
+    )
+    db.add(pending_run)
+    db.commit()
+
+    try:
+        asyncio.run(lifetime.recover_interrupted_tasks(db))
+    finally:
+        app_settings.queue_paused = False
+        app_settings.queue_pause_reason = None
+        app_settings.queue_paused_at = None
+        db.add(app_settings)
+        db.commit()
+
+    db.refresh(pending_run)
+
+    assert pending_run.taskiq_id is None
+    assert pending_run.status == RunStatus.pending
+    assert pending_run.id not in run_task_ids
