@@ -44,6 +44,11 @@ class FileTypes:
             file_format="text",
             mime_types=["text/x-fasta"]
         ),
+        "fasta.gz": FileTypeMetadata(
+            extensions=[".fasta.gz", ".fa.gz", ".fna.gz", ".ffn.gz", ".frn.gz", ".faa.gz"],
+            file_format="binary",
+            mime_types=["application/gzip"]
+        ),
         "fastq": FileTypeMetadata(
             extensions=[".fastq", ".fq"],
             file_format="text",
