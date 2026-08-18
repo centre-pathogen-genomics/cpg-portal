@@ -1287,6 +1287,10 @@ export type UserPublic = {
      * Id
      */
     id: string;
+    /**
+     * Created At
+     */
+    created_at: string;
 };
 
 /**
