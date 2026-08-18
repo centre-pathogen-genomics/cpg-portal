@@ -8,7 +8,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table"
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 import { PaginatedTableFooter } from "@/components/Common/PaginatedTableFooter"
 import { Button } from "@/components/ui/button"
@@ -24,11 +24,13 @@ import {
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
+  onVisibleDataChange?: (data: TData[]) => void
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
+  onVisibleDataChange,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([])
   const table = useReactTable({
@@ -47,6 +49,14 @@ export function DataTable<TData, TValue>({
     getSortedRowModel: getSortedRowModel(),
   })
   const pageCount = Math.max(table.getPageCount(), 1)
+  const visibleData = useMemo(
+    () => table.getRowModel().rows.map((row) => row.original),
+    [table.getRowModel().rows],
+  )
+
+  useEffect(() => {
+    onVisibleDataChange?.(visibleData)
+  }, [onVisibleDataChange, visibleData])
 
   return (
     <>

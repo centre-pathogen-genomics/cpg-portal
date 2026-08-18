@@ -23,7 +23,7 @@ import {
   Users,
   Wrench,
 } from "lucide-react"
-import { Suspense, useEffect, useMemo, useState } from "react"
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react"
 
 import {
   type SystemStats,
@@ -249,6 +249,7 @@ function UsersTableContent({
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<UserStatusFilter>("all")
   const [deleteVisibleOpen, setDeleteVisibleOpen] = useState(false)
+  const [visibleTableUsers, setVisibleTableUsers] = useState<UserTableData[]>([])
   const { data: users } = useSuspenseQuery(getUsersQueryOptions())
   const tableData: UserTableData[] = useMemo(
     () =>
@@ -274,9 +275,16 @@ function UsersTableContent({
       ].some((value) => value.toLowerCase().includes(query))
     })
   }, [search, statusFilter, tableData])
-  const deletableVisibleUsers = filteredTableData.filter(
+  const deletableVisibleUsers = visibleTableUsers.filter(
     (user) => user.id !== currentUser?.id,
   )
+  const updateVisibleTableUsers = useCallback((nextUsers: UserTableData[]) => {
+    setVisibleTableUsers((currentUsers) => {
+      const currentIds = currentUsers.map((user) => user.id).join(",")
+      const nextIds = nextUsers.map((user) => user.id).join(",")
+      return currentIds === nextIds ? currentUsers : nextUsers
+    })
+  }, [])
   const bulkDeleteMutation = useMutation({
     mutationFn: async (usersToDelete: UserTableData[]) => {
       await Promise.all(
@@ -392,7 +400,11 @@ function UsersTableContent({
         pending={bulkDeleteMutation.isPending}
         onConfirm={deleteVisibleUsers}
       />
-      <DataTable columns={tableColumns} data={filteredTableData} />
+      <DataTable
+        columns={tableColumns}
+        data={filteredTableData}
+        onVisibleDataChange={updateVisibleTableUsers}
+      />
     </>
   )
 }
