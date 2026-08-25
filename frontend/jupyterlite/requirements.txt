@@ -1,13 +1,13 @@
 # Core modules (mandatory)
-jupyterlite-core==0.5.0
-jupyterlab~=4.3.4
-notebook~=7.3.2
+jupyterlite-core==0.6.4
+jupyterlab~=4.4.5
+notebook~=7.4.5
 
 # JupyterLab: CPG Portal Extension
 jupyterlab-cpg-portal==0.1.11
 
 # Python kernel (optional)
-jupyterlite-pyodide-kernel==0.5.2
+jupyterlite-pyodide-kernel==0.6.1
 
 # JavaScript kernel (optional)
 jupyterlite-javascript-kernel==0.3.0
