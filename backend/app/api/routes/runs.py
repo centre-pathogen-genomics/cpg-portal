@@ -193,7 +193,11 @@ async def create_run(
                         files.append(child)
                         child_names.append(Path(child.location).name)
 
-                    if param.allowed_file_types and FileTypeEnum.PAIR.value in param.allowed_file_types:
+                    if (
+                        file.file_type == FileTypeEnum.PAIR.value
+                        and param.allowed_file_types
+                        and FileTypeEnum.PAIR.value in param.allowed_file_types
+                    ):
                         # if the parameter allows pairs, add the pair as [pair1, pair2]
                         file_names.append(child_names)
                     else:
