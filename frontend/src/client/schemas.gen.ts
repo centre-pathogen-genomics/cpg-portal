@@ -399,7 +399,7 @@ export const FileStatsSchema = {
 
 export const FileTypeEnumSchema = {
     type: 'string',
-    enum: ['bam', 'beast', 'bed', 'csv', 'docx', 'fasta', 'fastq', 'fastq.gz', 'geojson', 'gff', 'genbank', 'graphml', 'gzip', 'hdf5', 'hs', 'html', 'iqtree', 'jpeg', 'json', 'jsonl', 'log', 'md', 'newick', 'nexus', 'pdb', 'pdf', 'phy', 'text', 'png', 'rmd', 'sam', 'svg', 'tiff', 'toml', 'tsv', 'vega', 'vega-lite', 'vcf', 'vcf.gz', 'xlsx', 'xml', 'yaml', 'zip', 'pair', 'unknown'],
+    enum: ['bam', 'beast', 'bed', 'csv', 'docx', 'fasta', 'fasta.gz', 'fastq', 'fastq.gz', 'geojson', 'gff', 'genbank', 'graphml', 'gzip', 'hdf5', 'hs', 'html', 'iqtree', 'jpeg', 'json', 'jsonl', 'log', 'md', 'newick', 'nexus', 'pdb', 'pdf', 'phy', 'text', 'png', 'rmd', 'sam', 'svg', 'tiff', 'toml', 'tsv', 'vega', 'vega-lite', 'vcf', 'vcf.gz', 'xlsx', 'xml', 'yaml', 'zip', 'pair', 'unknown'],
     title: 'FileTypeEnum'
 } as const;
 
