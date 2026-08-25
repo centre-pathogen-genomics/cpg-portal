@@ -1,12 +1,14 @@
 import asyncio
 from datetime import UTC, datetime, timedelta
+from types import SimpleNamespace
 
 import pytest
 from fastapi import HTTPException
 from sqlmodel import Session
 
 from app.api.routes.runs import create_run, delete_runs, read_run_tool_names, read_runs
-from app.models import Run, RunStatus, Tool, ToolStatus, User
+from app.core.file_types import FileTypeEnum
+from app.models import File, Run, RunStatus, Tool, ToolStatus, User
 from tests.utils.user import create_random_user
 from tests.utils.utils import random_lower_string
 
@@ -53,6 +55,37 @@ def _create_run(
     db.commit()
     db.refresh(run)
     return run
+
+
+def _create_saved_file(
+    *,
+    db: Session,
+    owner: User,
+    name: str,
+    file_type: str = "fastq.gz",
+    parent_id=None,
+) -> File:
+    file = File(
+        name=name,
+        file_type=file_type,
+        size=10,
+        saved=True,
+        location=f"/tmp/{name}",
+        owner_id=owner.id,
+        parent_id=parent_id,
+    )
+    db.add(file)
+    db.commit()
+    db.refresh(file)
+    return file
+
+
+async def _fake_broadcast(*args, **kwargs):  # noqa: ANN002, ANN003, ARG001
+    return None
+
+
+async def _fake_kiq(*args, **kwargs):  # noqa: ANN002, ANN003, ARG001
+    return SimpleNamespace(task_id="task-id")
 
 
 def test_read_runs_filters_by_name_and_sorts(db: Session) -> None:
@@ -364,3 +397,94 @@ def test_create_run_rejects_required_empty_values(db: Session) -> None:
 
         assert exc_info.value.status_code == 400
         assert exc_info.value.detail == "Missing required parameter: sample"
+
+
+def test_create_run_flattens_group_children_when_pairs_are_allowed(
+    monkeypatch: pytest.MonkeyPatch, db: Session
+) -> None:
+    owner = create_random_user(db)
+    tool = _create_tool(db=db, owner=owner)
+    tool.params = [
+        {
+            "name": "reads",
+            "param_type": "file",
+            "allowed_file_types": [FileTypeEnum.PAIR.value, "fastq.gz"],
+            "multiple": True,
+            "required": True,
+        }
+    ]
+    db.add(tool)
+    db.commit()
+    db.refresh(tool)
+
+    group = _create_saved_file(db=db, owner=owner, name=f"group-{random_lower_string()}")
+    group.is_group = True
+    _create_saved_file(db=db, owner=owner, name="sample-a.fastq.gz", parent_id=group.id)
+    _create_saved_file(db=db, owner=owner, name="sample-b.fastq.gz", parent_id=group.id)
+    db.add(group)
+    db.commit()
+    db.refresh(group)
+
+    monkeypatch.setattr("app.api.routes.runs.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
+
+    run = asyncio.run(
+        create_run(
+            session=db,
+            current_user=owner,
+            tool_id=tool.id,
+            params={"reads": [str(group.id)]},
+            tags=[],
+        )
+    )
+
+    assert run.params["reads"] == ["sample-a.fastq.gz", "sample-b.fastq.gz"]
+
+
+def test_create_run_preserves_pair_children_when_pairs_are_allowed(
+    monkeypatch: pytest.MonkeyPatch, db: Session
+) -> None:
+    owner = create_random_user(db)
+    tool = _create_tool(db=db, owner=owner)
+    tool.params = [
+        {
+            "name": "reads",
+            "param_type": "file",
+            "allowed_file_types": [FileTypeEnum.PAIR.value, "fastq.gz"],
+            "multiple": True,
+            "required": True,
+        }
+    ]
+    db.add(tool)
+    db.commit()
+    db.refresh(tool)
+
+    forward = _create_saved_file(db=db, owner=owner, name="sample_R1.fastq.gz")
+    reverse = _create_saved_file(db=db, owner=owner, name="sample_R2.fastq.gz")
+    pair = File(
+        name="sample",
+        file_type=FileTypeEnum.PAIR.value,
+        size=20,
+        saved=True,
+        location=None,
+        owner_id=owner.id,
+        children=[forward, reverse],
+    )
+    db.add(pair)
+    db.commit()
+    db.refresh(pair)
+
+    monkeypatch.setattr("app.api.routes.runs.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
+
+    run = asyncio.run(
+        create_run(
+            session=db,
+            current_user=owner,
+            tool_id=tool.id,
+            params={"reads": [str(pair.id)]},
+            tags=[],
+        )
+    )
+
+    assert run.params["reads"] == [["sample_R1.fastq.gz", "sample_R2.fastq.gz"]]
