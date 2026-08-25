@@ -23,9 +23,7 @@ services:
     image: nats:2.11-alpine
     hostname: nats
     restart: always
-    command: ["-js", "--store_dir", "/data", "-m", "8222"]
-    volumes:
-      - app-nats-data:/data
+    command: ["-m", "8222"]
     healthcheck:
       test: ["CMD", "wget", "http://localhost:8222/healthz", "-q", "-O", "-"]
       interval: 5s
@@ -225,7 +223,6 @@ volumes:
   app-db-data:
   app-storage-data:
   app-conda-data:
-  app-nats-data:
 
 networks:
   traefik-public:
