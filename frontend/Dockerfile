@@ -19,7 +19,7 @@ RUN bun run build
 
 
 # Stage 1, build the JupyterLite static app from source.
-FROM python:3.10-slim AS jupyterlite-build
+FROM python:3.14-slim AS jupyterlite-build
 
 WORKDIR /app
 
