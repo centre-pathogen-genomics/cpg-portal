@@ -1,27 +1,29 @@
-import { useSuspenseQuery } from "@tanstack/react-query"
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
-import { Suspense, useState } from "react"
-import { ErrorBoundary } from "react-error-boundary"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { readRunOptions } from "../../../client/@tanstack/react-query.gen"
-import AISummaryButton from "../../../components/AI/AISummary"
-import ReactMarkdown from "../../../components/Common/Markdown"
-import DownloadAllFilesButton from "../../../components/Runs/DownloadAllFilesButton"
-import FileRenderer from "../../../components/Render/FileRenderer"
-import CancelRunButton from "../../../components/Runs/CancelRunButton"
-import DeleteRunButton from "../../../components/Runs/DeleteRunButton"
-import EditRunName from "../../../components/Runs/EditableRunName"
-import OutputAccordion from "../../../components/Runs/OutputAccordion"
-import OutputFile from "../../../components/Runs/OutputFile"
-import RunMetadata from "../../../components/Runs/RunMetadata"
-import ShareRunButton from "../../../components/Runs/ShareRunButton"
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Suspense, useState } from "react";
+import { ErrorBoundary } from "react-error-boundary";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { readRunOptions } from "../../../client/@tanstack/react-query.gen";
+import AISummaryButton from "../../../components/AI/AISummary";
+import ReactMarkdown from "../../../components/Common/Markdown";
+import DownloadAllFilesButton from "../../../components/Runs/DownloadAllFilesButton";
+import FileRenderer from "../../../components/Render/FileRenderer";
+import CancelRunButton from "../../../components/Runs/CancelRunButton";
+import DeleteRunButton from "../../../components/Runs/DeleteRunButton";
+import EditRunName from "../../../components/Runs/EditableRunName";
+import OutputAccordion from "../../../components/Runs/OutputAccordion";
+import OutputFile from "../../../components/Runs/OutputFile";
+import RunMetadata from "../../../components/Runs/RunMetadata";
+import ShareRunButton from "../../../components/Runs/ShareRunButton";
 
-export const Route = createFileRoute("/_layout/runs/$runid")({ component: Run })
+export const Route = createFileRoute("/_layout/runs/$runid")({
+  component: Run,
+});
 
 function RunDetail() {
-  const { runid } = Route.useParams()
-  const navigate = useNavigate({ from: Route.fullPath })
+  const { runid } = Route.useParams();
+  const navigate = useNavigate({ from: Route.fullPath });
   const { data: run } = useSuspenseQuery({
     ...readRunOptions({ path: { id: runid } }),
     refetchInterval: (query) =>
@@ -29,14 +31,16 @@ function RunDetail() {
         ? 3000
         : false,
     refetchIntervalInBackground: true,
-  })
+  });
   const [llmSummary, setLlmSummary] = useState<string | null>(
     run.llm_summary || null,
-  )
+  );
   const fileTabs =
-    run.files?.filter((file) => file.size && file.size < 500000) || []
+    run.files?.filter((file) => file.size && file.size < 500000) || [];
   const firstTab =
-    run.tool.llm_summary_enabled && llmSummary ? "llm_summary" : fileTabs[0]?.id
+    run.tool.llm_summary_enabled && llmSummary
+      ? "llm_summary"
+      : fileTabs[0]?.id;
 
   return (
     <div className="w-full max-w-5xl justify-self-center overflow-x-hidden px-2">
@@ -127,7 +131,7 @@ function RunDetail() {
       )}
       <OutputAccordion run={run} />
     </div>
-  )
+  );
 }
 
 function Run() {
@@ -145,7 +149,7 @@ function Run() {
         </ErrorBoundary>
       </Suspense>
     </div>
-  )
+  );
 }
 
-export default Run
+export default Run;
