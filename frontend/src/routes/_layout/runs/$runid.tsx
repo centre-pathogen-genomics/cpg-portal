@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { readRunOptions } from "../../../client/@tanstack/react-query.gen"
 import AISummaryButton from "../../../components/AI/AISummary"
 import ReactMarkdown from "../../../components/Common/Markdown"
+import DownloadAllFilesButton from "../../../components/Runs/DownloadAllFilesButton"
 import FileRenderer from "../../../components/Render/FileRenderer"
 import CancelRunButton from "../../../components/Runs/CancelRunButton"
 import DeleteRunButton from "../../../components/Runs/DeleteRunButton"
@@ -66,7 +67,10 @@ function RunDetail() {
       </div>
       {run.files.length > 0 && (
         <>
-          <h2 className="mb-4 text-lg font-semibold">Files</h2>
+          <div className="mb-4 flex items-center justify-between gap-2">
+            <h2 className="text-lg font-semibold">Files</h2>
+            <DownloadAllFilesButton files={run.files} />
+          </div>
           <div className="mb-4 flex flex-nowrap overflow-x-auto">
             {run.files.map((file) => (
               <div key={file.id} className="mr-2 mb-2">
