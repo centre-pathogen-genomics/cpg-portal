@@ -411,13 +411,21 @@ async def uninstall_tool(
         post_install_command=tool.post_install,
     )
     print(f"Removing conda environment for Tool(id={tool_id})")
-    tool.status = "uninstalled"
     try:
-        await conda_env.remove()
+        if conda_env.is_created:
+            await conda_env.remove()
+            tool.installation_log = "Conda environment removed successfully."
+        else:
+            tool.installation_log = "Conda environment already absent; tool uninstalled."
     except CondaEnvMangerError as e:
         print(f"Removing conda environment failed: {e}")
         tool.installation_log = str(e)
-        tool.status = "failed"
+        tool.status = ToolStatus.failed
+        session.add(tool)
+        session.commit()
+        return False
+    tool.status = ToolStatus.uninstalled
+    tool.conda_env_pinned = None
     session.add(tool)
     session.commit()
     return True

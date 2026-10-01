@@ -370,6 +370,14 @@ async def uninstall_tool(
     if tool.status in {ToolStatus.install_queued, ToolStatus.installing}:
         raise HTTPException(status_code=400, detail="Tool is being installed")
 
+    if tool.conda_env is None:
+        tool.status = ToolStatus.uninstalled
+        tool.conda_env_pinned = None
+        tool.installation_log = "No Conda environment configured; tool uninstalled."
+        session.add(tool)
+        session.commit()
+        return Message(message="Tool uninstalled successfully")
+
     taskiq_task = await uninstall_tool_task.kiq(tool_id=tool.id)
 
     return Message(message=f"Tool uninstallation task {taskiq_task.task_id} started")
