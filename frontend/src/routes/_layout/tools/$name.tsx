@@ -1,23 +1,23 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createFileRoute,
   Link as RouterLink,
   useNavigate,
-} from "@tanstack/react-router"
-import { LoaderCircle, Pencil } from "lucide-react"
-import { useEffect, useState } from "react"
+} from "@tanstack/react-router";
+import { LoaderCircle, Pencil } from "lucide-react";
+import { useEffect, useState } from "react";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/components/ui/accordion"
-import { Badge as UiBadge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Switch } from "@/components/ui/switch"
-import type { ToolPublic, UserPublic } from "../../../client"
+} from "@/components/ui/accordion";
+import { Badge as UiBadge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import type { ToolPublic, UserPublic } from "../../../client";
 import {
   disableLlmSummaryMutation,
   disableToolMutation,
@@ -28,13 +28,14 @@ import {
   readToolByNameOptions,
   readToolByNameQueryKey,
   readUserMeQueryKey,
-} from "../../../client/@tanstack/react-query.gen"
-import CodeBlock from "../../../components/Common/CodeBlock"
-import Badge from "../../../components/Tools/badges/Badge"
-import GitHubBadge from "../../../components/Tools/badges/GitHubBadge"
-import FavouriteButton from "../../../components/Tools/FavouriteButton"
-import RunToolForm from "../../../components/Tools/RunToolForm"
-import useCustomToast from "../../../hooks/useCustomToast"
+  uninstallToolMutation,
+} from "../../../client/@tanstack/react-query.gen";
+import CodeBlock from "../../../components/Common/CodeBlock";
+import Badge from "../../../components/Tools/badges/Badge";
+import GitHubBadge from "../../../components/Tools/badges/GitHubBadge";
+import FavouriteButton from "../../../components/Tools/FavouriteButton";
+import RunToolForm from "../../../components/Tools/RunToolForm";
+import useCustomToast from "../../../hooks/useCustomToast";
 
 export const Route = createFileRoute("/_layout/tools/$name")({
   component: Tool,
@@ -47,19 +48,19 @@ export const Route = createFileRoute("/_layout/tools/$name")({
       { title: `${(context.params as { name: string }).name} | CPG Portal` },
     ],
   }),
-})
+});
 
 function ToolToggle({
   tool,
   kind,
 }: {
-  tool: ToolPublic
-  kind: "tool" | "summary"
+  tool: ToolPublic;
+  kind: "tool" | "summary";
 }) {
-  const queryClient = useQueryClient()
-  const showToast = useCustomToast()
-  const initial = kind === "tool" ? tool.enabled : tool.llm_summary_enabled
-  const [enabled, setEnabled] = useState(initial)
+  const queryClient = useQueryClient();
+  const showToast = useCustomToast();
+  const initial = kind === "tool" ? tool.enabled : tool.llm_summary_enabled;
+  const [enabled, setEnabled] = useState(initial);
   const enable = useMutation({
     ...(kind === "tool" ? enableToolMutation() : enableLlmSummaryMutation()),
     onError: () =>
@@ -69,12 +70,12 @@ function ToolToggle({
         "error",
       ),
     onSuccess: () => {
-      setEnabled(true)
+      setEnabled(true);
       queryClient.invalidateQueries({
         queryKey: readToolByNameQueryKey({ path: { tool_name: tool.name } }),
-      })
+      });
     },
-  })
+  });
   const disable = useMutation({
     ...(kind === "tool" ? disableToolMutation() : disableLlmSummaryMutation()),
     onError: () =>
@@ -84,13 +85,13 @@ function ToolToggle({
         "error",
       ),
     onSuccess: () => {
-      setEnabled(false)
+      setEnabled(false);
       queryClient.invalidateQueries({
         queryKey: readToolByNameQueryKey({ path: { tool_name: tool.name } }),
-      })
+      });
     },
-  })
-  const id = `enable-${kind}`
+  });
+  const id = `enable-${kind}`;
   return (
     <div className="flex items-center gap-2">
       <Switch
@@ -106,52 +107,121 @@ function ToolToggle({
           : `AI Summary ${enabled ? "Enabled" : "Disabled"}`}
       </Label>
     </div>
-  )
+  );
 }
 
 function InstallToolButton({ tool }: { tool: ToolPublic }) {
-  const queryClient = useQueryClient()
-  const showToast = useCustomToast()
+  const queryClient = useQueryClient();
+  const showToast = useCustomToast();
+  const [awaitingUninstallConfirmation, setAwaitingUninstallConfirmation] =
+    useState(false);
   const installInProgress =
-    tool.status === "install_queued" || tool.status === "installing"
-  const mutation = useMutation({
+    tool.status === "install_queued" || tool.status === "installing";
+  const uninstallInProgress = tool.status === "uninstalling";
+  const statusInProgress = installInProgress || uninstallInProgress;
+  const isInstalled = tool.status === "installed";
+  const isUninstallAction =
+    isInstalled || uninstallInProgress || awaitingUninstallConfirmation;
+
+  useEffect(() => {
+    if (!awaitingUninstallConfirmation) {
+      return;
+    }
+
+    if (tool.status === "uninstalled") {
+      setAwaitingUninstallConfirmation(false);
+      return;
+    }
+
+    if (tool.status === "failed") {
+      setAwaitingUninstallConfirmation(false);
+      showToast("Error", "Uninstall failed", "error");
+    }
+  }, [awaitingUninstallConfirmation, tool.status, showToast]);
+
+  useEffect(() => {
+    if (!awaitingUninstallConfirmation && !statusInProgress) {
+      return;
+    }
+
+    const queryKey = readToolByNameQueryKey({
+      path: { tool_name: tool.name },
+    });
+    void queryClient.invalidateQueries({ queryKey });
+    const interval = setInterval(() => {
+      void queryClient.invalidateQueries({ queryKey });
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [awaitingUninstallConfirmation, statusInProgress, tool.name, queryClient]);
+
+  const refreshStatus = () => {
+    return queryClient.invalidateQueries({
+      queryKey: readToolByNameQueryKey({ path: { tool_name: tool.name } }),
+    });
+  };
+
+  const installMutation = useMutation({
     ...installToolMutation(),
     onError: ({ message }) =>
       showToast("Error", message || "Could not install tool", "error"),
     onSuccess: ({ message }) => {
-      showToast("Success", message || "Installation started", "success")
-      const queryKey = readToolByNameQueryKey({
-        path: { tool_name: tool.name },
-      })
-      queryClient.invalidateQueries({ queryKey })
-      const interval = setInterval(() => {
-        const updated = queryClient.getQueryData(queryKey) as ToolPublic
-        if (
-          updated?.status !== "install_queued" &&
-          updated?.status !== "installing"
-        ) {
-          clearInterval(interval)
-        } else queryClient.invalidateQueries({ queryKey })
-      }, 5000)
+      showToast("Success", message || "Installation started", "success");
+      return refreshStatus();
     },
-  })
+  });
+
+  const uninstallMutation = useMutation({
+    ...uninstallToolMutation(),
+    onError: ({ message }) => {
+      setAwaitingUninstallConfirmation(false);
+      showToast("Error", message || "Could not uninstall tool", "error");
+    },
+    onSuccess: ({ message }) => {
+      showToast("Success", message || "Uninstall started", "success");
+      return refreshStatus();
+    },
+  });
+
+  const mutationInProgress =
+    installMutation.isPending || uninstallMutation.isPending;
+  const inProgress =
+    statusInProgress || mutationInProgress || awaitingUninstallConfirmation;
+
+  const handleClick = () => {
+    if (inProgress) return;
+
+    if (isUninstallAction) {
+      setAwaitingUninstallConfirmation(true);
+      uninstallMutation.mutate({ path: { tool_id: tool.id } });
+      return;
+    }
+
+    installMutation.mutate({ path: { tool_id: tool.id } });
+  };
+
   return (
-    <Button
-      disabled={tool.status === "installed" || installInProgress}
-      onClick={() => mutation.mutate({ path: { tool_id: tool.id } })}
-    >
-      {installInProgress && <LoaderCircle className="animate-spin" />}
-      Install
+    <Button disabled={inProgress} onClick={handleClick}>
+      {inProgress && <LoaderCircle className="animate-spin" />}
+      {awaitingUninstallConfirmation ||
+      uninstallInProgress ||
+      uninstallMutation.isPending
+        ? "Uninstalling..."
+        : installInProgress || installMutation.isPending
+          ? "Installing..."
+          : isUninstallAction
+            ? "Uninstall"
+            : "Install"}
     </Button>
-  )
+  );
 }
 
 function AdminStatValue({
   label,
   value,
 }: {
-  label: string
-  value: string | number
+  label: string;
+  value: string | number;
 }) {
   return (
     <div>
@@ -160,14 +230,14 @@ function AdminStatValue({
         {typeof value === "number" ? value.toLocaleString() : value}
       </p>
     </div>
-  )
+  );
 }
 
 function ToolAdminStats({ tool }: { tool: ToolPublic }) {
   const { data, isLoading } = useQuery({
     ...getToolDetailStatsOptions({ path: { tool_id: tool.id } }),
     refetchInterval: 30_000,
-  })
+  });
 
   return (
     <div className="mb-5 rounded border p-4">
@@ -235,23 +305,24 @@ function ToolAdminStats({ tool }: { tool: ToolPublic }) {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 function Tool() {
-  const navigate = useNavigate()
-  const queryClient = useQueryClient()
-  const currentUser = queryClient.getQueryData<UserPublic>(readUserMeQueryKey())
-  const { name } = Route.useParams()
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const currentUser =
+    queryClient.getQueryData<UserPublic>(readUserMeQueryKey());
+  const { name } = Route.useParams();
   const {
     isError,
     data: tool,
     isPending,
-  } = useQuery({ ...readToolByNameOptions({ path: { tool_name: name } }) })
-  const [favourited, setFavourited] = useState(false)
+  } = useQuery({ ...readToolByNameOptions({ path: { tool_name: name } }) });
+  const [favourited, setFavourited] = useState(false);
   useEffect(() => {
-    if (tool) setFavourited(tool.favourited ?? false)
-  }, [tool])
+    if (tool) setFavourited(tool.favourited ?? false);
+  }, [tool]);
 
   if (isError)
     return (
@@ -262,7 +333,7 @@ function Tool() {
           again.
         </p>
       </div>
-    )
+    );
   if (isPending)
     return (
       <div className="flex justify-center">
@@ -273,8 +344,8 @@ function Tool() {
           <Skeleton className="h-[200px]" />
         </div>
       </div>
-    )
-  const anonymous = !currentUser
+    );
+  const anonymous = !currentUser;
   return (
     <div className="flex justify-center">
       <div className="w-full max-w-5xl px-4 pt-6 pb-8">
@@ -430,7 +501,7 @@ function Tool() {
         )}
       </div>
     </div>
-  )
+  );
 }
 
-export default Tool
+export default Tool;

@@ -73,7 +73,10 @@ function RunDetail() {
         <>
           <div className="mb-4 flex items-center justify-between gap-2">
             <h2 className="text-lg font-semibold">Files</h2>
-            <DownloadAllFilesButton files={run.files} />
+            <DownloadAllFilesButton
+              files={run.files}
+              zipFileName={run.name ?? run.id.split("-")[0]}
+            />
           </div>
           <div className="mb-4 flex flex-nowrap overflow-x-auto">
             {run.files.map((file) => (
