@@ -1,20 +1,28 @@
 import uuid
 from datetime import timedelta
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 from typing import Any
+from zipfile import ZIP_DEFLATED, ZipFile
 
+import jwt
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, status
 from fastapi.responses import FileResponse
+from jwt.exceptions import InvalidTokenError
 from sqlalchemy import and_, desc
 from sqlmodel import func, select
+from starlette.background import BackgroundTask
 
 from app.api.deps import CurrentUser, FileDep, SessionDep, get_current_user
+from app.core import security
 from app.core.config import settings
 from app.core.file_types import FileTypeEnum, FileTypeMetadata, file_types
 from app.core.security import create_access_token
-from app.crud import get_file_stats
-from app.crud import rename_file as rename_file_crud
-from app.crud import save_file as save_file_to_filesystem
+from app.crud import (
+    get_file_stats,
+    rename_file as rename_file_crud,
+    save_file as save_file_to_filesystem,
+)
 from app.models import (
     File,
     FilePublic,
@@ -23,8 +31,12 @@ from app.models import (
     Message,
     Run,
 )
+from app.utils import sanitise_shell_input
 
 router = APIRouter()
+
+BULK_DOWNLOAD_TOKEN_PREFIX = "files-download-all:"
+BULK_DOWNLOAD_NAME_PREFIX = "|name:"
 
 FILE_SORT_COLUMNS = {
     "created_at": File.created_at,
@@ -34,7 +46,9 @@ FILE_SORT_COLUMNS = {
 }
 
 
-def check_file_access(session: SessionDep, current_user: CurrentUser, file_metadata: File) -> bool:
+def check_file_access(
+    session: SessionDep, current_user: CurrentUser, file_metadata: File
+) -> bool:
     """
     Check if the current user has access to the file.
     Returns True if:
@@ -67,7 +81,7 @@ def read_files(
     if not types:
         types = []
 
-    base_where_owner = (File.owner_id == current_user.id)
+    base_where_owner = File.owner_id == current_user.id
     base_where_saved = base_where_owner & (File.saved)
     # start with all the top level files (not in a group or pair)
     base_where_not_group = base_where_saved & (File.parent_id.is_(None))
@@ -85,13 +99,15 @@ def read_files(
     count = session.exec(count_query).one()
 
     # Parse the order_by string to determine the column and direction
-    descending = order_by.startswith('-')
+    descending = order_by.startswith("-")
     column_name = order_by[1:] if descending else order_by
 
     # Validate and obtain the actual column object from the File model
     column = FILE_SORT_COLUMNS.get(column_name)
     if column is None:
-        raise HTTPException(status_code=400, detail=f"Invalid column name: {column_name}")
+        raise HTTPException(
+            status_code=400, detail=f"Invalid column name: {column_name}"
+        )
     order_expression = desc(column) if descending else column
 
     # Build the query based on user role
@@ -104,7 +120,11 @@ def read_files(
     return FilesPublic(data=files, count=count)
 
 
-@router.get("/types", response_model=dict[str, FileTypeMetadata], dependencies=[Depends(get_current_user)])
+@router.get(
+    "/types",
+    response_model=dict[str, FileTypeMetadata],
+    dependencies=[Depends(get_current_user)],
+)
 def get_files_allowed_types() -> Any:
     """
     Get allowed file types.
@@ -141,20 +161,29 @@ def get_files_stats(session: SessionDep, current_user: CurrentUser) -> Any:
     return get_file_stats(session, current_user)
 
 
-
 @router.post("/", response_model=FilePublic)
 def upload_file(
-    *, session: SessionDep, current_user: CurrentUser, file: UploadFile) -> Any:
+    *, session: SessionDep, current_user: CurrentUser, file: UploadFile
+) -> Any:
     """
     Upload a new file.
     """
     if file.size > settings.MAX_FILE_UPLOAD_SIZE:
-        raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail=f"File size is too large. Max allowed size is {settings.MAX_FILE_UPLOAD_SIZE} bytes")
+        raise HTTPException(
+            status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"File size is too large. Max allowed size is {settings.MAX_FILE_UPLOAD_SIZE} bytes",
+        )
     storage_stats = get_file_stats(session, current_user)
     if storage_stats.total_size + file.size > current_user.max_storage:
-        raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail=f"Not enough storage space. Max allowed storage size is {current_user.max_storage} bytes")
+        raise HTTPException(
+            status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"Not enough storage space. Max allowed storage size is {current_user.max_storage} bytes",
+        )
     if storage_stats.count + 1 > current_user.max_storage_files:
-        raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail=f"Not enough storage space. Max allowed number of files is {current_user.max_storage_files}")
+        raise HTTPException(
+            status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"Not enough storage space. Max allowed number of files is {current_user.max_storage_files}",
+        )
     # TODO: potentially convert to async func and use aiofiles (https://stackoverflow.com/questions/63580229/how-to-save-uploadfile-in-fastapi)
     # Create a temporary directory
 
@@ -167,16 +196,19 @@ def upload_file(
         file=file.file,
         file_type=file_type,
         owner_id=current_user.id,
-        saved=True
+        saved=True,
     )
 
     return file_metadata
 
 
-
 @router.post("/pairs", response_model=FilePublic)
 def create_pair(
-    session: SessionDep, current_user: CurrentUser, name: str, forward: uuid.UUID, reverse: uuid.UUID
+    session: SessionDep,
+    current_user: CurrentUser,
+    name: str,
+    forward: uuid.UUID,
+    reverse: uuid.UUID,
 ) -> Any:
     """
     Create a pair of paired-end reads.
@@ -186,12 +218,17 @@ def create_pair(
     reverse_file = session.get(File, reverse)
     if not forward_file or not reverse_file:
         raise HTTPException(status_code=404, detail="File not found")
-    if forward_file.owner_id != current_user.id or reverse_file.owner_id != current_user.id:
+    if (
+        forward_file.owner_id != current_user.id
+        or reverse_file.owner_id != current_user.id
+    ):
         raise HTTPException(status_code=400, detail="Not enough permissions")
 
     # Check that both files have the same type
     if forward_file.file_type != reverse_file.file_type:
-        raise HTTPException(status_code=400, detail="Both files in a pair must have the same file type")
+        raise HTTPException(
+            status_code=400, detail="Both files in a pair must have the same file type"
+        )
 
     sum_size = forward_file.size + reverse_file.size
     children = [forward_file, reverse_file]
@@ -227,12 +264,17 @@ def create_group(
     """
     Create a group of files of any size.
     """
-    unique_file_ids = set(file_ids) # Remove duplicates
+    unique_file_ids = set(file_ids)  # Remove duplicates
     file_ids = list(unique_file_ids)
     if not file_ids or len(file_ids) < 1:
-        raise HTTPException(status_code=400, detail="At least one file must be provided")
+        raise HTTPException(
+            status_code=400, detail="At least one file must be provided"
+        )
     if len(file_ids) > settings.MAX_FILES_IN_GROUP:
-        raise HTTPException(status_code=400, detail=f"A maximum of {settings.MAX_FILES_IN_GROUP} files can be grouped together")
+        raise HTTPException(
+            status_code=400,
+            detail=f"A maximum of {settings.MAX_FILES_IN_GROUP} files can be grouped together",
+        )
 
     files = []
     file_ids_in_group = set()
@@ -258,7 +300,10 @@ def create_group(
             if child.id in file_ids_in_group:
                 continue
             if child.is_group:
-                raise HTTPException(status_code=400, detail="Cannot include a group within another group")
+                raise HTTPException(
+                    status_code=400,
+                    detail="Cannot include a group within another group",
+                )
             files.append(child)
             file_ids_in_group.add(child.id)
             sum_size += child.size
@@ -266,14 +311,21 @@ def create_group(
                 file_types_in_group.add(child.file_type)
 
     if len(files) > settings.MAX_FILES_IN_GROUP:
-        raise HTTPException(status_code=400, detail=f"A maximum of {settings.MAX_FILES_IN_GROUP} files can be grouped together")
+        raise HTTPException(
+            status_code=400,
+            detail=f"A maximum of {settings.MAX_FILES_IN_GROUP} files can be grouped together",
+        )
 
     # Ensure all files have the same type
     if len(file_types_in_group) > 1:
-        raise HTTPException(status_code=400, detail="All files in a group must have the same file type")
+        raise HTTPException(
+            status_code=400, detail="All files in a group must have the same file type"
+        )
 
     # Determine the file type for the group (use the type of the children, or 'unknown' if no type)
-    group_file_type = next(iter(file_types_in_group)) if file_types_in_group else "unknown"
+    group_file_type = (
+        next(iter(file_types_in_group)) if file_types_in_group else "unknown"
+    )
 
     # Create the group
     group_metadata = File(
@@ -314,7 +366,9 @@ def ungroup_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) 
         raise HTTPException(status_code=400, detail="Group has no children to ungroup")
 
     # Make all children independent
-    children = list(group_file.children)  # Create a copy to avoid modifying while iterating
+    children = list(
+        group_file.children
+    )  # Create a copy to avoid modifying while iterating
     for child in children:
         child.parent_id = None
         session.add(child)
@@ -483,6 +537,7 @@ def delete_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -
         raise HTTPException(status_code=500, detail="Failed to delete file")
     return Message(message="File deleted successfully")
 
+
 @router.delete("/")
 def delete_files(
     session: SessionDep,
@@ -522,6 +577,7 @@ def delete_files(
         raise HTTPException(status_code=500, detail="Failed to delete files")
     return Message(message="All files deleted successfully")
 
+
 @router.get("/{id}/download")
 def download_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
     """
@@ -534,14 +590,24 @@ def download_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID)
         raise HTTPException(status_code=400, detail="Not enough permissions")
     if file_metadata.is_group or file_metadata.file_type == FileTypeEnum.PAIR.value:
         # TODO: Download zipped files?
-        file_type_desc = "Paired files" if file_metadata.file_type == FileTypeEnum.PAIR.value else "Grouped files"
-        raise HTTPException(status_code=400, detail=f"{file_type_desc} cannot be downloaded directly. Please download the files separately.")
+        file_type_desc = (
+            "Paired files"
+            if file_metadata.file_type == FileTypeEnum.PAIR.value
+            else "Grouped files"
+        )
+        raise HTTPException(
+            status_code=400,
+            detail=f"{file_type_desc} cannot be downloaded directly. Please download the files separately.",
+        )
     if not file_metadata.location:
         raise HTTPException(status_code=404, detail="File not found")
     return FileResponse(file_metadata.location, filename=file_metadata.name)
 
+
 @router.get("/{id}/token", response_model=str)
-def get_download_token(session: SessionDep, current_user: CurrentUser, id: uuid.UUID, minutes: int = 1) -> Any:
+def get_download_token(
+    session: SessionDep, current_user: CurrentUser, id: uuid.UUID, minutes: int = 1
+) -> Any:
     """
     Get signed file download token.
     """
@@ -550,17 +616,176 @@ def get_download_token(session: SessionDep, current_user: CurrentUser, id: uuid.
         raise HTTPException(status_code=404, detail="File not found")
     if not check_file_access(session, current_user, file_metadata):
         raise HTTPException(status_code=400, detail="Not enough permissions")
-    access_token_expires = timedelta(minutes=minutes if minutes > 0 and minutes <= 60 * 24 else 1)
+    access_token_expires = timedelta(
+        minutes=minutes if minutes > 0 and minutes <= 60 * 24 else 1
+    )
     return create_access_token(
-            str(file_metadata.id), expires_delta=access_token_expires
+        str(file_metadata.id), expires_delta=access_token_expires
+    )
+
+
+@router.get("/downloads/all/token", response_model=str)
+def get_bulk_download_token(
+    session: SessionDep,
+    current_user: CurrentUser,
+    ids: list[uuid.UUID] = Query(..., min_length=1),
+    filename: str | None = Query(None, min_length=1, max_length=255),
+    minutes: int = 1,
+) -> Any:
+    """
+    Get signed bulk-download token for multiple files.
+    """
+    for file_id in ids:
+        file_metadata = session.get(File, file_id)
+        if not file_metadata:
+            raise HTTPException(status_code=404, detail=f"File not found: {file_id}")
+        if not check_file_access(session, current_user, file_metadata):
+            raise HTTPException(status_code=400, detail="Not enough permissions")
+        if file_metadata.is_group or file_metadata.file_type == FileTypeEnum.PAIR.value:
+            raise HTTPException(
+                status_code=400,
+                detail=f"File {file_metadata.name} cannot be downloaded directly",
+            )
+        if not file_metadata.location:
+            raise HTTPException(status_code=404, detail=f"File not found: {file_id}")
+        file_path = Path(file_metadata.location)
+        if not file_path.exists():
+            raise HTTPException(status_code=404, detail=f"File not found: {file_id}")
+
+    ids_csv = ",".join(str(file_id) for file_id in ids)
+    safe_filename = _sanitize_bulk_zip_filename(filename)
+    token_subject = f"{BULK_DOWNLOAD_TOKEN_PREFIX}{ids_csv}"
+    if safe_filename:
+        token_subject = f"{token_subject}{BULK_DOWNLOAD_NAME_PREFIX}{safe_filename}"
+
+    access_token_expires = timedelta(minutes=minutes if 0 < minutes <= 60 * 24 else 1)
+    return create_access_token(
+        token_subject,
+        expires_delta=access_token_expires,
+    )
+
+
+def _sanitize_bulk_zip_filename(filename: str | None) -> str | None:
+    if not filename:
+        return None
+
+    safe_name = sanitise_shell_input(filename).strip("._")
+    if not safe_name:
+        return None
+
+    max_total_length = 124
+    extension = ".zip"
+    max_base_length = max_total_length - len(extension)
+
+    if safe_name.lower().endswith(extension):
+        safe_name = safe_name[: -len(extension)]
+
+    safe_name = safe_name[:max_base_length].strip("._")
+    if not safe_name:
+        return None
+
+    return f"{safe_name}{extension}"
+
+
+def _decode_bulk_download_token(token: str) -> tuple[list[uuid.UUID], str | None]:
+    try:
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
         )
+    except InvalidTokenError as exc:
+        raise HTTPException(
+            status_code=403, detail="Could not validate credentials"
+        ) from exc
+
+    subject = payload.get("sub")
+    if not isinstance(subject, str) or not subject.startswith(
+        BULK_DOWNLOAD_TOKEN_PREFIX
+    ):
+        raise HTTPException(status_code=403, detail="Could not validate credentials")
+
+    subject_payload = subject.removeprefix(BULK_DOWNLOAD_TOKEN_PREFIX)
+    ids_payload = subject_payload
+    filename: str | None = None
+
+    if BULK_DOWNLOAD_NAME_PREFIX in subject_payload:
+        ids_payload, raw_filename = subject_payload.split(BULK_DOWNLOAD_NAME_PREFIX, 1)
+        filename = _sanitize_bulk_zip_filename(raw_filename)
+
+    raw_ids = [value for value in ids_payload.split(",") if value]
+    if not raw_ids:
+        raise HTTPException(status_code=403, detail="Could not validate credentials")
+
+    try:
+        return [uuid.UUID(value) for value in raw_ids], filename
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=403, detail="Could not validate credentials"
+        ) from exc
+
+
+@router.get("/downloads/all/{token}")
+def download_all_files_with_token(session: SessionDep, token: str) -> Any:
+    """
+    Download multiple files as a single ZIP archive by token.
+    """
+    ids, filename_from_token = _decode_bulk_download_token(token)
+    files_to_zip: list[File] = []
+    for file_id in ids:
+        file_metadata = session.get(File, file_id)
+        if not file_metadata:
+            raise HTTPException(status_code=404, detail=f"File not found: {file_id}")
+        if file_metadata.is_group or file_metadata.file_type == FileTypeEnum.PAIR.value:
+            raise HTTPException(
+                status_code=400,
+                detail=f"File {file_metadata.name} cannot be downloaded directly",
+            )
+        if not file_metadata.location:
+            raise HTTPException(status_code=404, detail=f"File not found: {file_id}")
+        file_path = Path(file_metadata.location)
+        if not file_path.exists():
+            raise HTTPException(status_code=404, detail=f"File not found: {file_id}")
+        files_to_zip.append(file_metadata)
+
+    temp_file = NamedTemporaryFile(suffix=".zip", delete=False)
+    temp_zip_path = Path(temp_file.name)
+    temp_file.close()
+
+    used_names: dict[str, int] = {}
+    with ZipFile(temp_zip_path, "w", compression=ZIP_DEFLATED) as zip_file:
+        for file_metadata in files_to_zip:
+            location = file_metadata.location
+            if location is None:
+                raise HTTPException(
+                    status_code=404, detail=f"File not found: {file_metadata.id}"
+                )
+            source_path = Path(location)
+            base_name = file_metadata.name
+            duplicate_count = used_names.get(base_name, 0)
+            used_names[base_name] = duplicate_count + 1
+            if duplicate_count:
+                stem = Path(base_name).stem
+                suffix = Path(base_name).suffix
+                archive_name = f"{stem} ({duplicate_count + 1}){suffix}"
+            else:
+                archive_name = base_name
+            zip_file.write(source_path, arcname=archive_name)
+
+    zip_filename = filename_from_token or "files.zip"
+
+    return FileResponse(
+        temp_zip_path,
+        filename=zip_filename,
+        media_type="application/zip",
+        background=BackgroundTask(lambda: temp_zip_path.unlink(missing_ok=True)),
+    )
+
 
 @router.patch("/{id}/rename", response_model=FilePublic)
 def rename_file(
     session: SessionDep,
     current_user: CurrentUser,
     id: uuid.UUID,
-    name: str = Query(..., description="New name for the file")
+    name: str = Query(..., description="New name for the file"),
 ) -> Any:
     """
     Rename a file.
@@ -579,6 +804,7 @@ def rename_file(
     if not file_metadata:
         raise HTTPException(status_code=500, detail="Failed to rename file")
     return file_metadata
+
 
 @router.get("/download/{token}")
 def download_file_with_token(file_metadata: FileDep) -> Any:
