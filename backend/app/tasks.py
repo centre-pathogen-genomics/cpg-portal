@@ -132,7 +132,11 @@ def update_run(session: Session, run: Run, status: RunStatus, message=None):
         if run.name:
             name = f"{name} ({run.name})"
         email_data = generate_run_finished_email(run.tool.name, str(run.id), status)
-        send_email(email_to=run.owner.email, subject=email_data.subject, html_content=email_data.html_content)
+        send_email(
+            email_to=run.owner.email,
+            subject=email_data.subject,
+            html_content=email_data.html_content,
+        )
     session.add(run)
     session.commit()
     try:
@@ -146,6 +150,7 @@ def update_run(session: Session, run: Run, status: RunStatus, message=None):
         )
     )
 
+
 @contextmanager
 def create_tmp_dir(run_id: uuid.UUID) -> Path:
     """Context manager to create and clean up a temporary directory."""
@@ -156,6 +161,7 @@ def create_tmp_dir(run_id: uuid.UUID) -> Path:
     finally:
         if tmp_dir.exists():
             shutil.rmtree(tmp_dir)
+
 
 def symlink_input_files(session, run, tmp_dir):
     """Symlink input files to the temporary directory."""
@@ -173,6 +179,7 @@ def symlink_input_files(session, run, tmp_dir):
         update_run(session, run, RunStatus.failed, "Error symlinking files!")
         return False
 
+
 def write_setup_files(session, run, tmp_dir):
     """Render and write setup files to the temporary directory."""
     env = JinjaEnvironment()
@@ -182,7 +189,12 @@ def write_setup_files(session, run, tmp_dir):
             file_path = tmp_dir / setup_file.name
             if file_path.exists():
                 print(f"File '{file_path}' already exists")
-                update_run(session, run, RunStatus.failed, "Tool setup failed. Please contact an administrator.")
+                update_run(
+                    session,
+                    run,
+                    RunStatus.failed,
+                    "Tool setup failed. Please contact an administrator.",
+                )
                 return False
             with open(file_path, "w") as f:
                 template = env.from_string(setup_file.content)
@@ -190,6 +202,7 @@ def write_setup_files(session, run, tmp_dir):
                 print(f"Writing content to {file_path}\n{content}")
                 f.write(content)
     return True
+
 
 def setup_conda_env(session, run, run_command):
     """Prepare the conda environment if required, and update the command accordingly."""
@@ -200,12 +213,18 @@ def setup_conda_env(session, run, run_command):
             post_install_command=run.tool.post_install,
         )
         if not conda_env.is_created:
-            update_run(session, run, RunStatus.failed, "Tool environment not found. Please contact an administrator.")
+            update_run(
+                session,
+                run,
+                RunStatus.failed,
+                "Tool environment not found. Please contact an administrator.",
+            )
             run.tool.status = "uninstalled"
             return None
         # Prepend the conda activation command.
         run_command = f"{conda_env.activate_command} && {run_command}"
     return run_command
+
 
 def handle_return_code(session, run, returncode):
     """Handle the subprocess return code and update the run accordingly."""
@@ -217,6 +236,7 @@ def handle_return_code(session, run, returncode):
         update_run(session, run, run.status)
         return False
     return True
+
 
 def process_targets(session, run, tmp_dir):
     """Process target files: check their existence and save them."""
@@ -262,6 +282,7 @@ def process_targets(session, run, tmp_dir):
 
     return True
 
+
 @broker.task
 async def run_tool(
     run_id: uuid.UUID,
@@ -283,7 +304,12 @@ async def run_tool(
         session.commit()
         return False
     if run.tool.status != "installed":
-        update_run(session, run, RunStatus.failed, "Tool must be installed first. Please contact an administrator.")
+        update_run(
+            session,
+            run,
+            RunStatus.failed,
+            "Tool must be installed first. Please contact an administrator.",
+        )
         return False
 
     # Update run state to running.
@@ -310,7 +336,9 @@ async def run_tool(
 
             # Run the command in a subprocess.
             try:
-                returncode, stdout = await run_command_in_subprocess(session, run_id, updated_command, tmp_dir)
+                returncode, stdout = await run_command_in_subprocess(
+                    session, run_id, updated_command, tmp_dir
+                )
                 print(f"Run(id={run_id}) finished with return code: {returncode}")
             except Exception as e:
                 print(f"An error occurred: {e}")
@@ -340,6 +368,7 @@ async def run_tool(
     except Exception as e:
         update_run(session, run, RunStatus.failed, f"An unexpected error occurred: {e}")
         return False
+
 
 @broker.task
 async def install_tool(
@@ -396,6 +425,7 @@ async def install_tool(
     session.commit()
     return True
 
+
 @broker.task
 async def uninstall_tool(
     tool_id: uuid.UUID,
@@ -416,7 +446,9 @@ async def uninstall_tool(
             await conda_env.remove()
             tool.installation_log = "Conda environment removed successfully."
         else:
-            tool.installation_log = "Conda environment already absent; tool uninstalled."
+            tool.installation_log = (
+                "Conda environment already absent; tool uninstalled."
+            )
     except CondaEnvMangerError as e:
         print(f"Removing conda environment failed: {e}")
         tool.installation_log = str(e)

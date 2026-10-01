@@ -49,17 +49,20 @@ def read_tools(
     """
     if current_user is None:
         # If the user is anonymous, we don't need to join with UserFavouriteToolsLink
-        query = select(Tool).order_by(getattr(Tool, order_by).desc()).offset(skip).limit(limit).where((Tool.enabled) & (Tool.status == "installed"))
+        query = (
+            select(Tool)
+            .order_by(getattr(Tool, order_by).desc())
+            .offset(skip)
+            .limit(limit)
+            .where((Tool.enabled) & (Tool.status == "installed"))
+        )
         result = session.exec(query).all()
         count_query = select(func.count()).select_from(Tool)
         count = session.exec(count_query).one()
         return ToolsPublic(data=result, count=count)
     # Build the query
     query = (
-        select(
-            Tool,
-            UserFavouriteToolsLink.tool_id.label("favourited_tool_id")
-        )
+        select(Tool, UserFavouriteToolsLink.tool_id.label("favourited_tool_id"))
         .join(
             UserFavouriteToolsLink,
             (UserFavouriteToolsLink.tool_id == Tool.id)
@@ -86,7 +89,7 @@ def read_tools(
             or_(
                 func.lower(Tool.name).contains(search_lower),
                 func.lower(Tool.description).contains(search_lower),
-                Tool.tags.contains([search]), # tags must be exact match
+                Tool.tags.contains([search]),  # tags must be exact match
             )
         )
     # Execute the query
@@ -99,7 +102,6 @@ def read_tools(
         tool_public.favourited = favourited_tool_id is not None
         tools_with_favourite_status.append(tool_public)
 
-
     # Count total tools
     count_query = select(func.count()).select_from(Tool)
     if not current_user.is_superuser:
@@ -110,9 +112,12 @@ def read_tools(
 
 
 def read_tool_with_favourite(
-    session: SessionDep, current_user: CurrentUserOrAnonymous, *, tool_id: uuid.UUID | None = None, name: str | None = None
+    session: SessionDep,
+    current_user: CurrentUserOrAnonymous,
+    *,
+    tool_id: uuid.UUID | None = None,
+    name: str | None = None,
 ) -> select:
-
     """
     Build the tool query based on the current user and show_favourites flag.
     """
@@ -126,17 +131,13 @@ def read_tool_with_favourite(
         elif name:
             query = query.where(func.lower(Tool.name) == name.lower())
         return session.exec(query).first()
-    query = (
-        select(
-            Tool,
-            UserFavouriteToolsLink.tool_id.label("favourited_tool_id")
-        )
-        .join(
-            UserFavouriteToolsLink,
-            (UserFavouriteToolsLink.tool_id == Tool.id)
-            & (UserFavouriteToolsLink.user_id == current_user.id),
-            isouter=True,  # LEFT JOIN to include all tools
-        )
+    query = select(
+        Tool, UserFavouriteToolsLink.tool_id.label("favourited_tool_id")
+    ).join(
+        UserFavouriteToolsLink,
+        (UserFavouriteToolsLink.tool_id == Tool.id)
+        & (UserFavouriteToolsLink.user_id == current_user.id),
+        isouter=True,  # LEFT JOIN to include all tools
     )
     if tool_id:
         query = query.where(Tool.id == tool_id)
@@ -150,7 +151,9 @@ def read_tool_with_favourite(
     if not result:
         raise HTTPException(status_code=404, detail="Tool not found")
     tool, favourited_tool_id = result
-    if not current_user.is_superuser and (not tool.enabled or tool.status != "installed"):
+    if not current_user.is_superuser and (
+        not tool.enabled or tool.status != "installed"
+    ):
         raise HTTPException(status_code=403, detail="Tool is disabled")
     tool_public = ToolPublic.from_orm(tool)
     tool_public.favourited = favourited_tool_id is not None
@@ -182,7 +185,9 @@ def read_tool(
 
 
 @router.post("/{tool_id}/favourite", response_model=Message)
-def favourite_tool(tool_id: uuid.UUID, session: SessionDep, current_user: CurrentUser) -> Any:
+def favourite_tool(
+    tool_id: uuid.UUID, session: SessionDep, current_user: CurrentUser
+) -> Any:
     """
     Add a tool to the current user's favourites.
     """
@@ -207,7 +212,9 @@ def favourite_tool(tool_id: uuid.UUID, session: SessionDep, current_user: Curren
 
 
 @router.delete("/{tool_id}/favourite", response_model=Message)
-def unfavourite_tool(tool_id: uuid.UUID, session: SessionDep, current_user: CurrentUser) -> Any:
+def unfavourite_tool(
+    tool_id: uuid.UUID, session: SessionDep, current_user: CurrentUser
+) -> Any:
     """
     Remove a tool from the current user's favourites.
     """
@@ -241,14 +248,13 @@ def create_tool(
     """
     Create new tool along with its params.
     """
-    tool = Tool(
-        **tool_in.dict()
-    )
+    tool = Tool(**tool_in.dict())
     session.add(tool)
     session.commit()
     session.refresh(tool)
 
     return tool
+
 
 @router.post("/{tool_id}/enable", response_model=Message)
 def enable_tool(
@@ -268,6 +274,7 @@ def enable_tool(
     session.commit()
     return Message(message="Tool enabled successfully")
 
+
 @router.post("/{tool_id}/disable", response_model=Message)
 def disable_tool(
     *,
@@ -286,7 +293,12 @@ def disable_tool(
     session.commit()
     return Message(message="Tool disabled successfully")
 
-@router.post("/{tool_id}/enable_llm_summary", response_model=Message, dependencies=[Depends(get_current_active_superuser)])
+
+@router.post(
+    "/{tool_id}/enable_llm_summary",
+    response_model=Message,
+    dependencies=[Depends(get_current_active_superuser)],
+)
 def enable_llm_summary(
     *,
     session: SessionDep,
@@ -303,7 +315,12 @@ def enable_llm_summary(
     session.commit()
     return Message(message="LLM summary enabled successfully")
 
-@router.post("/{tool_id}/disable_llm_summary", response_model=Message, dependencies=[Depends(get_current_active_superuser)])
+
+@router.post(
+    "/{tool_id}/disable_llm_summary",
+    response_model=Message,
+    dependencies=[Depends(get_current_active_superuser)],
+)
 def disable_llm_summary(
     *,
     session: SessionDep,
@@ -319,8 +336,6 @@ def disable_llm_summary(
     session.add(tool)
     session.commit()
     return Message(message="LLM summary disabled successfully")
-
-
 
 
 @router.post("/{tool_id}/install", response_model=Message)
@@ -354,6 +369,7 @@ async def install_tool(
 
     return Message(message=f"Tool installation task {taskiq_task.task_id} started")
 
+
 @router.delete("/{tool_id}/uninstall", response_model=Message)
 async def uninstall_tool(
     *,
@@ -383,7 +399,11 @@ async def uninstall_tool(
     return Message(message=f"Tool uninstallation task {taskiq_task.task_id} started")
 
 
-@router.patch("/{tool_id}", dependencies=[Depends(get_current_active_superuser)], response_model=ToolPublic)
+@router.patch(
+    "/{tool_id}",
+    dependencies=[Depends(get_current_active_superuser)],
+    response_model=ToolPublic,
+)
 def update_tool(
     *,
     session: SessionDep,
@@ -404,10 +424,13 @@ def update_tool(
     session.refresh(tool)
     return tool
 
-@router.delete("/{tool_id}", dependencies=[Depends(get_current_active_superuser)], response_model=Message)
-def delete_tool(
-    *, session: SessionDep, tool_id: uuid.UUID
-) -> Any:
+
+@router.delete(
+    "/{tool_id}",
+    dependencies=[Depends(get_current_active_superuser)],
+    response_model=Message,
+)
+def delete_tool(*, session: SessionDep, tool_id: uuid.UUID) -> Any:
     """
     Delete tool by ID.
     """
