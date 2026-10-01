@@ -6,7 +6,14 @@ import {
   redirect,
   useNavigate,
 } from "@tanstack/react-router";
-import { ArrowLeft, Braces, ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Braces,
+  ChevronDown,
+  ChevronUp,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   type Control,
@@ -1405,7 +1412,9 @@ function ToolEditor() {
       parsed = JSON.parse(jsonConfig);
     } catch (error) {
       setJsonError(
-        error instanceof Error ? `Invalid JSON: ${error.message}` : "Invalid JSON",
+        error instanceof Error
+          ? `Invalid JSON: ${error.message}`
+          : "Invalid JSON",
       );
       return;
     }
@@ -1469,7 +1478,11 @@ function ToolEditor() {
         <div className="flex flex-wrap gap-2">
           <Dialog open={jsonOpen} onOpenChange={onJsonOpenChange}>
             <DialogTrigger asChild>
-              <Button type="button" variant="outline" disabled={mutation.isPending}>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={mutation.isPending}
+              >
                 <Braces />
                 Edit JSON config
               </Button>
@@ -1481,12 +1494,16 @@ function ToolEditor() {
               <DialogHeader>
                 <DialogTitle>Edit JSON config</DialogTitle>
                 <DialogDescription>
-                  Edit the raw tool configuration, including unsaved form changes.
-                  Save JSON saves directly to the tool. Cancel discards only JSON edits.
+                  Edit the raw tool configuration, including unsaved form
+                  changes. Save JSON saves directly to the tool. Cancel discards
+                  only JSON edits.
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={onSubmitJson} className="grid min-w-0 gap-4">
-                <label htmlFor="tool-json-config" className="text-sm font-medium">
+                <label
+                  htmlFor="tool-json-config"
+                  className="text-sm font-medium"
+                >
                   Tool JSON config
                 </label>
                 <Textarea
@@ -1505,7 +1522,11 @@ function ToolEditor() {
                   aria-describedby={jsonError ? "tool-json-error" : undefined}
                 />
                 {jsonError && (
-                  <p id="tool-json-error" role="alert" className="text-sm text-destructive">
+                  <p
+                    id="tool-json-error"
+                    role="alert"
+                    className="text-sm text-destructive"
+                  >
                     {jsonError}
                   </p>
                 )}
