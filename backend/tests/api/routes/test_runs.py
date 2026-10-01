@@ -399,6 +399,76 @@ def test_create_run_rejects_required_empty_values(db: Session) -> None:
         assert exc_info.value.detail == "Missing required parameter: sample"
 
 
+def test_create_run_skips_hidden_params(db: Session) -> None:
+    owner = create_random_user(db)
+    tool = _create_tool(db=db, owner=owner)
+    tool.params = [
+        {"name": "enable_extra", "param_type": "bool", "required": True},
+        {
+            "name": "extra",
+            "param_type": "str",
+            "required": True,
+            "visible_if_param": "enable_extra",
+            "visible_if_operator": "equals",
+            "visible_if_value": True,
+        },
+    ]
+    db.add(tool)
+    db.commit()
+    db.refresh(tool)
+
+    monkeypatch = pytest.MonkeyPatch()
+    monkeypatch.setattr("app.api.routes.runs.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
+    try:
+        run = asyncio.run(
+            create_run(
+                session=db,
+                current_user=owner,
+                tool_id=tool.id,
+                params={"enable_extra": False, "extra": "ignored"},
+                tags=[],
+            )
+        )
+    finally:
+        monkeypatch.undo()
+
+    assert run.params == {"enable_extra": False}
+
+
+def test_create_run_requires_visible_conditional_param(db: Session) -> None:
+    owner = create_random_user(db)
+    tool = _create_tool(db=db, owner=owner)
+    tool.params = [
+        {"name": "enable_extra", "param_type": "bool", "required": True},
+        {
+            "name": "extra",
+            "param_type": "str",
+            "required": True,
+            "visible_if_param": "enable_extra",
+            "visible_if_operator": "equals",
+            "visible_if_value": True,
+        },
+    ]
+    db.add(tool)
+    db.commit()
+    db.refresh(tool)
+
+    with pytest.raises(HTTPException) as exc_info:
+        asyncio.run(
+            create_run(
+                session=db,
+                current_user=owner,
+                tool_id=tool.id,
+                params={"enable_extra": True},
+                tags=[],
+            )
+        )
+
+    assert exc_info.value.status_code == 400
+    assert exc_info.value.detail == "Missing required parameter: extra"
+
+
 def test_create_run_flattens_group_children_when_pairs_are_allowed(
     monkeypatch: pytest.MonkeyPatch, db: Session
 ) -> None:

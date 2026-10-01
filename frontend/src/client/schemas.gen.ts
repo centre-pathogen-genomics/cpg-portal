@@ -583,6 +583,47 @@ export const ParamSchema = {
             type: 'boolean',
             title: 'Required',
             default: false
+        },
+        visible_if_param: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Visible If Param'
+        },
+        visible_if_operator: {
+            '$ref': '#/components/schemas/ParamVisibilityOperator',
+            title: 'Visible If Operator'
+        },
+        visible_if_value: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'boolean'
+                },
+                {
+                    items: {
+                        type: 'string'
+                    },
+                    type: 'array'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Visible If Value'
         }
     },
     type: 'object',
@@ -594,6 +635,12 @@ export const ParamTypeSchema = {
     type: 'string',
     enum: ['str', 'int', 'float', 'bool', 'enum', 'file'],
     title: 'ParamType'
+} as const;
+
+export const ParamVisibilityOperatorSchema = {
+    type: 'string',
+    enum: ['equals', 'not_equals', 'in', 'not_in', 'greater_than', 'greater_than_or_equal', 'less_than', 'less_than_or_equal', 'truthy', 'falsy', 'is_set', 'is_empty'],
+    title: 'ParamVisibilityOperator'
 } as const;
 
 export const RunPublicSchema = {

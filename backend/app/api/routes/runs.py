@@ -15,6 +15,7 @@ from app.models import (
     File,
     Message,
     Param,
+    ParamVisibilityOperator,
     Run,
     RunPublic,
     RunsPublicMinimal,
@@ -46,6 +47,162 @@ def is_missing_param_value(value: Any) -> bool:
         or (isinstance(value, str) and value.strip() == "")
         or (isinstance(value, list) and len(value) == 0)
     )
+
+
+def _parse_visibility_condition_value(
+    *,
+    value: Any,
+    dependency: Param,
+    operator: ParamVisibilityOperator,
+) -> Any:
+    def parse_scalar(raw_value: Any) -> Any:
+        if raw_value is None:
+            return None
+
+        if dependency.param_type == "bool":
+            if isinstance(raw_value, bool):
+                return raw_value
+            if isinstance(raw_value, str):
+                lowered = raw_value.strip().lower()
+                if lowered in {"true", "1", "yes", "on"}:
+                    return True
+                if lowered in {"false", "0", "no", "off"}:
+                    return False
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid visibility condition value for parameter `{dependency.name}`",
+            )
+
+        if dependency.param_type == "int":
+            try:
+                return int(raw_value)
+            except (TypeError, ValueError) as exc:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid visibility condition value for parameter `{dependency.name}`",
+                ) from exc
+
+        if dependency.param_type == "float":
+            try:
+                return float(raw_value)
+            except (TypeError, ValueError) as exc:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid visibility condition value for parameter `{dependency.name}`",
+                ) from exc
+
+        if isinstance(raw_value, list):
+            return [str(item) for item in raw_value]
+
+        return str(raw_value)
+
+    if operator in {
+        ParamVisibilityOperator.truthy,
+        ParamVisibilityOperator.falsy,
+        ParamVisibilityOperator.is_set,
+        ParamVisibilityOperator.is_empty,
+    }:
+        return None
+
+    if operator in {ParamVisibilityOperator.in_, ParamVisibilityOperator.not_in}:
+        if value is None:
+            return []
+        if isinstance(value, list):
+            return [parse_scalar(item) for item in value]
+        if isinstance(value, str):
+            return [parse_scalar(item.strip()) for item in value.split(",") if item.strip()]
+        return [parse_scalar(value)]
+
+    if value is None:
+        return None
+    return parse_scalar(value)
+
+
+def _is_visible_if_match(*, dependency_value: Any, operator: ParamVisibilityOperator, expected_value: Any) -> bool:
+    if operator == ParamVisibilityOperator.truthy:
+        return bool(dependency_value)
+    if operator == ParamVisibilityOperator.falsy:
+        return not bool(dependency_value)
+    if operator == ParamVisibilityOperator.is_set:
+        return not is_missing_param_value(dependency_value)
+    if operator == ParamVisibilityOperator.is_empty:
+        return is_missing_param_value(dependency_value)
+
+    if operator == ParamVisibilityOperator.equals:
+        return dependency_value == expected_value
+    if operator == ParamVisibilityOperator.not_equals:
+        return dependency_value != expected_value
+    if operator == ParamVisibilityOperator.in_:
+        if isinstance(dependency_value, list):
+            return any(item in expected_value for item in dependency_value)
+        return dependency_value in expected_value
+    if operator == ParamVisibilityOperator.not_in:
+        if isinstance(dependency_value, list):
+            return all(item not in expected_value for item in dependency_value)
+        return dependency_value not in expected_value
+    if operator == ParamVisibilityOperator.greater_than:
+        return dependency_value > expected_value
+    if operator == ParamVisibilityOperator.greater_than_or_equal:
+        return dependency_value >= expected_value
+    if operator == ParamVisibilityOperator.less_than:
+        return dependency_value < expected_value
+    if operator == ParamVisibilityOperator.less_than_or_equal:
+        return dependency_value <= expected_value
+    return False
+
+
+def _build_visible_param_lookup(tool_params: list[Param], params: dict[str, Any]) -> dict[str, bool]:
+    params_by_name = {param.name: param for param in tool_params}
+    raw_values = dict(params)
+    visibility_cache: dict[str, bool] = {}
+    visiting: set[str] = set()
+
+    def is_visible(param_name: str) -> bool:
+        if param_name in visibility_cache:
+            return visibility_cache[param_name]
+        if param_name in visiting:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Circular visibility condition detected for parameter `{param_name}`",
+            )
+
+        param = params_by_name.get(param_name)
+        if param is None:
+            visibility_cache[param_name] = True
+            return True
+
+        visiting.add(param_name)
+        try:
+            condition_param_name = param.visible_if_param
+            if not condition_param_name:
+                visible = True
+            else:
+                dependency = params_by_name.get(condition_param_name)
+                if dependency is None:
+                    visible = False
+                else:
+                    visible = is_visible(condition_param_name)
+                    if visible:
+                        dependency_value = raw_values.get(condition_param_name, dependency.default)
+                        expected_value = _parse_visibility_condition_value(
+                            value=param.visible_if_value,
+                            dependency=dependency,
+                            operator=param.visible_if_operator,
+                        )
+                        visible = _is_visible_if_match(
+                            dependency_value=dependency_value,
+                            operator=param.visible_if_operator,
+                            expected_value=expected_value,
+                        )
+            visibility_cache[param_name] = visible
+            return visible
+        finally:
+            visiting.discard(param_name)
+
+    for param in tool_params:
+        is_visible(param.name)
+
+    return visibility_cache
 
 
 @router.get("/", response_model=RunsPublicMinimal)
@@ -140,19 +297,23 @@ async def create_run(
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="You have reached the maximum number of active Runs. Please wait for some to finish!")
 
     files = []
-    if tool.params is None:
-        tool.params = []
-    for param in tool.params:
-        param = Param(**param)
-        if param.name not in params or is_missing_param_value(params[param.name]):
+    tool_params = [Param(**param) for param in (tool.params or [])]
+    visible_params = _build_visible_param_lookup(tool_params, params)
+    normalized_params = dict(params)
+    for param in tool_params:
+        if not visible_params.get(param.name, True):
+            normalized_params.pop(param.name, None)
+            continue
+
+        if param.name not in normalized_params or is_missing_param_value(normalized_params[param.name]):
             if param.required:
                 raise HTTPException(
                     status_code=400, detail=f"Missing required parameter: {param.name}"
                 )
-            params[param.name] = param.default
+            normalized_params[param.name] = param.default
             continue
         if param.param_type == "file":
-            file_ids = params[param.name]
+            file_ids = normalized_params[param.name]
             if not isinstance(file_ids, list):
                 raise HTTPException(
                     status_code=400, detail=f"For parameter `{param.name}`, expected list of file ids, got {file_ids}"
@@ -207,37 +368,37 @@ async def create_run(
                     file_names.append(Path(file.location).name)
                     files.append(file)
             if param.multiple:
-                params[param.name] = file_names
+                normalized_params[param.name] = file_names
             else:
-                params[param.name] = file_names[0]
+                normalized_params[param.name] = file_names[0]
         elif param.param_type == "bool":
-            if not isinstance(params[param.name], bool):
+            if not isinstance(normalized_params[param.name], bool):
                 raise HTTPException(
-                    status_code=400, detail=f"For parameter `{param.name}`, expected bool, got {params[param.name]}"
+                    status_code=400, detail=f"For parameter `{param.name}`, expected bool, got {normalized_params[param.name]}"
                 )
         elif param.param_type == "int":
             try:
-                params[param.name] = int(params[param.name])
+                normalized_params[param.name] = int(normalized_params[param.name])
             except ValueError:
                 raise HTTPException(
-                    status_code=400, detail=f"For parameter `{param.name}`, expected int, got {params[param.name]}"
+                    status_code=400, detail=f"For parameter `{param.name}`, expected int, got {normalized_params[param.name]}"
                 )
         elif param.param_type == "float":
             try:
-                params[param.name] = float(params[param.name])
+                normalized_params[param.name] = float(normalized_params[param.name])
             except ValueError:
                 raise HTTPException(
-                    status_code=400, detail=f"For parameter `{param.name}`, expected float, got {params[param.name]}"
+                    status_code=400, detail=f"For parameter `{param.name}`, expected float, got {normalized_params[param.name]}"
                 )
         elif param.param_type == "str":
-            if not isinstance(params[param.name], str):
+            if not isinstance(normalized_params[param.name], str):
                 raise HTTPException(
-                    status_code=400, detail=f"For parameter `{param.name}`, expected str, got {params[param.name]}"
+                    status_code=400, detail=f"For parameter `{param.name}`, expected str, got {normalized_params[param.name]}"
                 )
         elif param.param_type == "enum":
-            if params[param.name] not in param.options:
+            if normalized_params[param.name] not in param.options:
                 raise HTTPException(
-                    status_code=400, detail=f"For parameter `{param.name}`, expected one of {', '.join(param.options)}, got {params[param.name]}"
+                    status_code=400, detail=f"For parameter `{param.name}`, expected one of {', '.join(param.options)}, got {normalized_params[param.name]}"
                 )
         else:
             raise HTTPException(
@@ -246,7 +407,7 @@ async def create_run(
 
     # escape parameters
     escaped_params = {}
-    for k, v in params.items():
+    for k, v in normalized_params.items():
         try:
             escaped_params[k] = escape(v)
         except Exception:
@@ -267,7 +428,7 @@ async def create_run(
         name=name,
         owner_id=current_user.id,
         status="pending",
-        params=params,
+        params=normalized_params,
         input_file_ids=[str(file.id) for file in files],
         command=cmd,
         tags=tags,

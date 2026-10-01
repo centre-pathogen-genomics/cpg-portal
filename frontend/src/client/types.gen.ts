@@ -403,12 +403,29 @@ export type Param = {
      * Required
      */
     required?: boolean;
+    /**
+     * Visible If Param
+     */
+    visible_if_param?: string | null;
+    /**
+     * Visible If Operator
+     */
+    visible_if_operator?: ParamVisibilityOperator;
+    /**
+     * Visible If Value
+     */
+    visible_if_value?: number | string | boolean | Array<string> | null;
 };
 
 /**
  * ParamType
  */
 export type ParamType = 'str' | 'int' | 'float' | 'bool' | 'enum' | 'file';
+
+/**
+ * ParamVisibilityOperator
+ */
+export type ParamVisibilityOperator = 'equals' | 'not_equals' | 'in' | 'not_in' | 'greater_than' | 'greater_than_or_equal' | 'less_than' | 'less_than_or_equal' | 'truthy' | 'falsy' | 'is_set' | 'is_empty';
 
 /**
  * RunPublic

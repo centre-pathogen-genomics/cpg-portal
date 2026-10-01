@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Optional
 
@@ -21,6 +21,10 @@ from sqlmodel import (
 class UserFavouriteToolsLink(SQLModel, table=True):
     user_id: uuid.UUID  | None = Field(default=None, foreign_key="user.id", primary_key=True)
     tool_id: uuid.UUID  | None = Field(default=None, foreign_key="tool.id", primary_key=True)
+
+
+def _utcnow_naive() -> datetime:
+    return datetime.now(UTC).replace(tzinfo=None)
 
 # Shared properties
 class UserBase(SQLModel):
@@ -46,7 +50,7 @@ class UserRegister(SQLModel):
 
 # Properties to receive via API on update, all are optional
 class UserUpdate(UserBase):
-    email: EmailStr | None = Field(default=None, max_length=255)  # type: ignore
+    email: EmailStr | None = Field(default=None, max_length=255)
     password: str | None = Field(default=None, min_length=8, max_length=40)
 
 
@@ -65,7 +69,7 @@ class UpdatePassword(SQLModel):
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
-    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    created_at: datetime = Field(default_factory=_utcnow_naive, nullable=False)
     favourite_tools: list[Tool] = Relationship(
         back_populates="favourited_by",
         link_model=UserFavouriteToolsLink
@@ -153,6 +157,22 @@ class ParamType(StrEnum):
     enum = "enum"
     file = "file"
 
+
+class ParamVisibilityOperator(StrEnum):
+    equals = "equals"
+    not_equals = "not_equals"
+    in_ = "in"
+    not_in = "not_in"
+    greater_than = "greater_than"
+    greater_than_or_equal = "greater_than_or_equal"
+    less_than = "less_than"
+    less_than_or_equal = "less_than_or_equal"
+    truthy = "truthy"
+    falsy = "falsy"
+    is_set = "is_set"
+    is_empty = "is_empty"
+
+
 class Param(SQLModel):
     name: str
     param_type: ParamType
@@ -162,6 +182,9 @@ class Param(SQLModel):
     default: int | float | str | bool | None = None
     options: list[str] | None = None
     required: bool = False
+    visible_if_param: str | None = None
+    visible_if_operator: ParamVisibilityOperator = ParamVisibilityOperator.equals
+    visible_if_value: int | float | str | bool | list[str] | None = None
 
 class ToolStatus(StrEnum):
     uninstalled = "uninstalled"
@@ -215,7 +238,7 @@ class ToolUpdate(ToolBase):
     favourited_count: int = 0
     run_count: int = 0
     enabled: bool = False
-    name: str | None = None  # type: ignore
+    name: str | None = None
     command: str | None = None
     status: ToolStatus | None = None
     installation_log: str | None = None
@@ -245,7 +268,7 @@ class Tool(ToolBase, table=True):
     favourited_by: list[User] = Relationship(
         back_populates="favourite_tools", link_model=UserFavouriteToolsLink
     )
-    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    created_at: datetime = Field(default_factory=_utcnow_naive, nullable=False)
 
 
 # Properties to return via API, id is always required
@@ -317,7 +340,7 @@ class Run(RunBase, table=True):
     tool: Tool = Relationship(back_populates="runs")
     owner_id: uuid.UUID = Field(foreign_key="user.id", nullable=False)
     owner: User = Relationship(back_populates="runs")
-    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    created_at: datetime = Field(default_factory=_utcnow_naive, nullable=False)
     started_at: datetime | None = Field(default=None, nullable=True)
     finished_at: datetime | None = Field(default=None, nullable=True)
 
@@ -377,7 +400,7 @@ class File(FileBase, table=True):
     owner: User = Relationship(back_populates="files")
     run_id: uuid.UUID = Field(foreign_key="run.id", nullable=True)
     run: Run = Relationship(back_populates="files")
-    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    created_at: datetime = Field(default_factory=_utcnow_naive, nullable=False)
 
 
 class FilePublicChild(FileBase):

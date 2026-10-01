@@ -25,6 +25,7 @@ import {
   type FileTypeEnum,
   type Param,
   type ParamType,
+  type ParamVisibilityOperator,
   type SetupFile,
   type Target,
   type ToolBadge,
@@ -42,6 +43,7 @@ import {
 import {
   FileTypeEnumSchema,
   ParamTypeSchema,
+  ParamVisibilityOperatorSchema,
   ToolStatusSchema,
 } from "@/client/schemas.gen"
 import { Button } from "@/components/ui/button"
@@ -71,6 +73,8 @@ import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
 
 const paramTypes = ParamTypeSchema.enum as unknown as ParamType[]
+const paramVisibilityOperators =
+  ParamVisibilityOperatorSchema.enum as unknown as ParamVisibilityOperator[]
 const fileTypes = FileTypeEnumSchema.enum as unknown as FileTypeEnum[]
 const toolStatuses = ToolStatusSchema.enum as unknown as ToolStatus[]
 
@@ -94,6 +98,11 @@ const paramSchema = z.object({
   default: z.union([z.string(), z.number(), z.boolean()]).nullable(),
   options: z.array(listItemSchema),
   required: z.boolean(),
+  visible_if_param: optionalString,
+  visible_if_operator: z.enum(paramVisibilityOperators).nullable(),
+  visible_if_value: z
+    .union([z.string(), z.number(), z.boolean(), z.array(listItemSchema)])
+    .nullable(),
 })
 const targetSchema = z.object({
   path: z.string().min(1, "Path is required"),
@@ -223,6 +232,12 @@ function defaultValues(tool: ToolPublic): ToolFormData {
       default: param.default ?? null,
       options: stringList(param.options),
       required: param.required ?? false,
+      visible_if_param: param.visible_if_param ?? "",
+      visible_if_operator: param.visible_if_operator ?? "equals",
+      visible_if_value:
+        Array.isArray(param.visible_if_value)
+          ? stringList(param.visible_if_value)
+          : param.visible_if_value ?? "",
     })),
     targets: (tool.targets ?? []).map((target) => ({
       path: target.path,
@@ -249,6 +264,11 @@ function buildParam(param: ToolFormData["params"][number]): Param {
     else if (param.param_type === "bool") defaultValue = Boolean(value)
     else defaultValue = String(value)
   }
+  const visibleIfValue = Array.isArray(param.visible_if_value)
+    ? listValues(param.visible_if_value)
+    : param.visible_if_value === "" || param.visible_if_value === null
+      ? null
+      : param.visible_if_value
   return {
     name: param.name.trim(),
     param_type: param.param_type,
@@ -258,6 +278,9 @@ function buildParam(param: ToolFormData["params"][number]): Param {
     default: defaultValue,
     options: listValues(param.options),
     required: param.required,
+    visible_if_param: nullIfBlank(param.visible_if_param),
+    visible_if_operator: param.visible_if_operator ?? "equals",
+    visible_if_value: visibleIfValue,
   }
 }
 
@@ -868,6 +891,101 @@ function ParamFileTypesField({
   return <FileTypeListBuilder control={control} paramIndex={index} />
 }
 
+function ParamVisibilityFields({
+  control,
+  index,
+}: {
+  control: Control<ToolFormData>
+  index: number
+}) {
+  const params = useWatch({ control, name: "params" }) ?? []
+  const operator = useWatch({ control, name: `params.${index}.visible_if_operator` })
+  const dependencyName = useWatch({
+    control,
+    name: `params.${index}.visible_if_param`,
+  })
+  const dependencyOptions = params
+    .filter((_, paramIndex) => paramIndex !== index)
+    .map((param) => param.name)
+    .filter(Boolean)
+  const operatorValue = operator ?? "equals"
+  const noValueOperators = new Set(["truthy", "falsy", "is_set", "is_empty"])
+  const listValueOperators = new Set(["in", "not_in"])
+  return (
+    <div className="space-y-4 rounded-md border border-dashed p-4">
+      <p className="text-sm font-medium">Visibility rule</p>
+      <div className="grid gap-4 md:grid-cols-2">
+        <FormField
+          control={control}
+          name={`params.${index}.visible_if_param`}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Depends on</FormLabel>
+              <Select value={field.value || ""} onValueChange={field.onChange}>
+                <FormControl>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select param" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {dependencyOptions.map((paramName) => (
+                    <SelectItem key={paramName} value={paramName}>
+                      {paramName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={control}
+          name={`params.${index}.visible_if_operator`}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Condition</FormLabel>
+              <Select value={field.value || "equals"} onValueChange={field.onChange}>
+                <FormControl>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {paramVisibilityOperators.map((value) => (
+                    <SelectItem key={value} value={value}>
+                      {value}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+      {dependencyName && !noValueOperators.has(operatorValue) && (
+        <div>
+          {listValueOperators.has(operatorValue) ? (
+            <StringListBuilder
+              control={control}
+              name={`params.${index}.visible_if_value`}
+              label="Condition values"
+              placeholder="value"
+            />
+          ) : (
+            <TextField
+              control={control}
+              name={`params.${index}.visible_if_value`}
+              label="Condition value"
+            />
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function InputsTab({ control }: { control: Control<ToolFormData> }) {
   const params = useFieldArray({ control, name: "params" })
   return (
@@ -887,6 +1005,9 @@ function InputsTab({ control }: { control: Control<ToolFormData> }) {
                 default: null,
                 options: [],
                 required: false,
+                visible_if_param: "",
+                visible_if_operator: "equals",
+                visible_if_value: "",
               })
             }
           />
@@ -959,6 +1080,7 @@ function InputsTab({ control }: { control: Control<ToolFormData> }) {
               <div className="grid gap-6">
                 <ParamOptionsField control={control} index={index} />
                 <ParamFileTypesField control={control} index={index} />
+                <ParamVisibilityFields control={control} index={index} />
               </div>
             </div>
           ))}
