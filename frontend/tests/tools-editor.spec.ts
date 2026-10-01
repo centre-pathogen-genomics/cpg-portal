@@ -118,6 +118,94 @@ test.describe
       await expect(page.getByText(description)).toBeVisible()
     })
 
+    test("JSON config includes unsaved form changes and cancel preserves the form", async ({ page }) => {
+      const description = "Unsaved form description"
+      await page.goto(`/tools/${toolName}/edit`)
+      await page.getByLabel("Description").fill(description)
+      await page.getByRole("button", { name: "Edit JSON config" }).click()
+
+      const dialog = page.getByRole("dialog", { name: "Edit JSON config" })
+      const editor = dialog.getByLabel("Tool JSON config")
+      const config = JSON.parse(await editor.inputValue())
+      expect(config.description).toBe(description)
+      expect(config).not.toHaveProperty("id")
+      expect(config).not.toHaveProperty("conda_dependencies")
+      await editor.fill('{"description":"Discard this"}')
+      await dialog.getByRole("button", { name: "Cancel", exact: true }).click()
+
+      await expect(dialog).not.toBeVisible()
+      await expect(page.getByLabel("Description")).toHaveValue(description)
+      await page.getByRole("button", { name: "Edit JSON config" }).click()
+      expect(JSON.parse(await editor.inputValue())).toEqual(config)
+    })
+
+    test("JSON config rejects invalid input without saving", async ({ page }) => {
+      await page.goto(`/tools/${toolName}/edit`)
+      await page.getByRole("button", { name: "Edit JSON config" }).click()
+      const dialog = page.getByRole("dialog", { name: "Edit JSON config" })
+      const editor = dialog.getByLabel("Tool JSON config")
+      let updates = 0
+      page.on("request", (request) => {
+        if (request.method() === "PATCH") updates++
+      })
+
+      for (const [input, error] of [
+        ["{", "Invalid JSON"],
+        ["null", "JSON must be an object"],
+        ["[]", "JSON must be an object"],
+        ['"text"', "JSON must be an object"],
+        ['{"name":" "}', "non-empty 'name'"],
+        ['{"name":"Sleep","command":false}', "non-empty 'command'"],
+      ]) {
+        await editor.fill(input)
+        await dialog.getByRole("button", { name: "Save JSON" }).click()
+        await expect(dialog.getByRole("alert")).toContainText(error)
+        await expect(dialog).toBeVisible()
+      }
+      expect(updates).toBe(0)
+    })
+
+    test("Saving JSON preserves nested config and uses the tool update flow", async ({ page }) => {
+      const description = `JSON updated description ${Date.now()}`
+      await page.goto(`/tools/${toolName}/edit`)
+      await page.getByRole("button", { name: "Edit JSON config" }).click()
+      const dialog = page.getByRole("dialog", { name: "Edit JSON config" })
+      const editor = dialog.getByLabel("Tool JSON config")
+      const config = JSON.parse(await editor.inputValue())
+      config.description = description
+      config.tags = ["json-editor"]
+      config.setup_files = [{ name: "config.json", content: '{"enabled": true}\n' }]
+      config.params = [{ name: "flag", param_type: "bool", default: false }]
+      await editor.fill(JSON.stringify(config, null, 2))
+      const updateRequest = page.waitForRequest(
+        (request) => request.method() === "PATCH" && request.url().includes("/tools/"),
+      )
+      await dialog.getByRole("button", { name: "Save JSON" }).click()
+      expect((await updateRequest).postDataJSON()).toEqual(config)
+      await expect(page).toHaveURL(new RegExp(`/tools/${toolName}$`))
+      await expect(page.getByText("Tool updated successfully")).toBeVisible()
+      const updated = await readTool()
+      expect(updated.description).toBe(description)
+      expect(updated.tags).toEqual(config.tags)
+      expect(updated.setup_files).toEqual(config.setup_files)
+      expect(updated.params?.[0].default).toBe(false)
+    })
+
+    test("JSON config retains edits when server validation fails", async ({ page }) => {
+      await page.goto(`/tools/${toolName}/edit`)
+      await page.getByRole("button", { name: "Edit JSON config" }).click()
+      const dialog = page.getByRole("dialog", { name: "Edit JSON config" })
+      const editor = dialog.getByLabel("Tool JSON config")
+      const config = JSON.parse(await editor.inputValue())
+      config.params = "invalid params"
+      const json = JSON.stringify(config)
+      await editor.fill(json)
+      await dialog.getByRole("button", { name: "Save JSON" }).click()
+      await expect(dialog.getByRole("alert")).toBeVisible()
+      await expect(editor).toHaveValue(json)
+      await expect(dialog.getByRole("button", { name: "Save JSON" })).toBeEnabled()
+    })
+
     test("Adding and removing a param submits the expected data", async ({
       page,
     }) => {

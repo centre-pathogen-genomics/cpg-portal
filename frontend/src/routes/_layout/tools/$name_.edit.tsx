@@ -6,8 +6,8 @@ import {
   redirect,
   useNavigate,
 } from "@tanstack/react-router";
-import { ArrowLeft, ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
-import { useEffect } from "react";
+import { ArrowLeft, Braces, ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import {
   type Control,
   Controller,
@@ -49,6 +49,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -1331,6 +1340,9 @@ function ToolEditor() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { showSuccessToast, showErrorToast } = useCustomToast();
+  const [jsonOpen, setJsonOpen] = useState(false);
+  const [jsonConfig, setJsonConfig] = useState("");
+  const [jsonError, setJsonError] = useState<string | null>(null);
   const {
     data: tool,
     isError,
@@ -1369,8 +1381,53 @@ function ToolEditor() {
         resetScroll: true,
       });
     },
-    onError: (error) => handleError(error, showErrorToast),
+    onError: (error) => {
+      handleError(error, showErrorToast);
+      if (jsonOpen) handleError(error, setJsonError);
+    },
   });
+
+  const onJsonOpenChange = (open: boolean) => {
+    if (mutation.isPending) return;
+    if (open) {
+      setJsonConfig(JSON.stringify(buildToolUpdate(form.getValues()), null, 2));
+      setJsonError(null);
+    }
+    setJsonOpen(open);
+  };
+
+  const onSubmitJson = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!tool || mutation.isPending) return;
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(jsonConfig);
+    } catch (error) {
+      setJsonError(
+        error instanceof Error ? `Invalid JSON: ${error.message}` : "Invalid JSON",
+      );
+      return;
+    }
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      setJsonError("JSON must be an object.");
+      return;
+    }
+    const data = parsed as Record<string, unknown>;
+    for (const key of ["name", "command"] as const) {
+      if (typeof data[key] !== "string" || !data[key].trim()) {
+        setJsonError(`JSON must include a non-empty '${key}'.`);
+        return;
+      }
+    }
+
+    // Keep the API representation intact; the server validates nested config.
+    setJsonError(null);
+    mutation.mutate({
+      path: { tool_id: tool.id },
+      body: data as ToolUpdate,
+    });
+  };
 
   const onSubmit: SubmitHandler<ToolFormData> = (data) => {
     if (!tool) return;
@@ -1409,7 +1466,65 @@ function ToolEditor() {
           </Button>
           <h1 className="text-4xl font-bold">Edit {tool.name}</h1>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Dialog open={jsonOpen} onOpenChange={onJsonOpenChange}>
+            <DialogTrigger asChild>
+              <Button type="button" variant="outline" disabled={mutation.isPending}>
+                <Braces />
+                Edit JSON config
+              </Button>
+            </DialogTrigger>
+            <DialogContent
+              className="max-h-[90dvh] overflow-y-auto sm:max-w-4xl"
+              showCloseButton={!mutation.isPending}
+            >
+              <DialogHeader>
+                <DialogTitle>Edit JSON config</DialogTitle>
+                <DialogDescription>
+                  Edit the raw tool configuration, including unsaved form changes.
+                  Save JSON saves directly to the tool. Cancel discards only JSON edits.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={onSubmitJson} className="grid min-w-0 gap-4">
+                <label htmlFor="tool-json-config" className="text-sm font-medium">
+                  Tool JSON config
+                </label>
+                <Textarea
+                  id="tool-json-config"
+                  className="h-[55dvh] min-h-64 resize-y font-mono text-sm"
+                  value={jsonConfig}
+                  onChange={(event) => {
+                    setJsonConfig(event.target.value);
+                    setJsonError(null);
+                  }}
+                  spellCheck={false}
+                  autoCapitalize="off"
+                  autoCorrect="off"
+                  disabled={mutation.isPending}
+                  aria-invalid={Boolean(jsonError)}
+                  aria-describedby={jsonError ? "tool-json-error" : undefined}
+                />
+                {jsonError && (
+                  <p id="tool-json-error" role="alert" className="text-sm text-destructive">
+                    {jsonError}
+                  </p>
+                )}
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={mutation.isPending}
+                    onClick={() => onJsonOpenChange(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <LoadingButton type="submit" loading={mutation.isPending}>
+                    Save JSON
+                  </LoadingButton>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
           <Button variant="outline" asChild>
             <RouterLink to="/tools/$name" params={{ name }}>
               Cancel
