@@ -28,6 +28,7 @@ import {
   readToolByNameOptions,
   readToolByNameQueryKey,
   readUserMeQueryKey,
+  uninstallToolMutation,
 } from "../../../client/@tanstack/react-query.gen"
 import CodeBlock from "../../../components/Common/CodeBlock"
 import Badge from "../../../components/Tools/badges/Badge"
@@ -112,36 +113,103 @@ function ToolToggle({
 function InstallToolButton({ tool }: { tool: ToolPublic }) {
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
+  const [awaitingUninstallConfirmation, setAwaitingUninstallConfirmation] =
+    useState(false)
   const installInProgress =
     tool.status === "install_queued" || tool.status === "installing"
-  const mutation = useMutation({
+  const uninstallInProgress = tool.status === "uninstalling"
+  const statusInProgress = installInProgress || uninstallInProgress
+  const isInstalled = tool.status === "installed"
+  const isUninstallAction =
+    isInstalled || uninstallInProgress || awaitingUninstallConfirmation
+
+  useEffect(() => {
+    if (!awaitingUninstallConfirmation) {
+      return
+    }
+
+    if (tool.status === "uninstalled") {
+      setAwaitingUninstallConfirmation(false)
+      return
+    }
+
+    if (tool.status === "failed") {
+      setAwaitingUninstallConfirmation(false)
+      showToast("Error", "Uninstall failed", "error")
+    }
+  }, [awaitingUninstallConfirmation, tool.status, showToast])
+
+  useEffect(() => {
+    if (!awaitingUninstallConfirmation && !statusInProgress) {
+      return
+    }
+
+    const queryKey = readToolByNameQueryKey({
+      path: { tool_name: tool.name },
+    })
+    void queryClient.invalidateQueries({ queryKey })
+    const interval = setInterval(() => {
+      void queryClient.invalidateQueries({ queryKey })
+    }, 5000)
+
+    return () => clearInterval(interval)
+  }, [awaitingUninstallConfirmation, statusInProgress, tool.name, queryClient])
+
+  const refreshStatus = () => {
+    return queryClient.invalidateQueries({
+      queryKey: readToolByNameQueryKey({ path: { tool_name: tool.name } }),
+    })
+  }
+
+  const installMutation = useMutation({
     ...installToolMutation(),
     onError: ({ message }) =>
       showToast("Error", message || "Could not install tool", "error"),
     onSuccess: ({ message }) => {
       showToast("Success", message || "Installation started", "success")
-      const queryKey = readToolByNameQueryKey({
-        path: { tool_name: tool.name },
-      })
-      queryClient.invalidateQueries({ queryKey })
-      const interval = setInterval(() => {
-        const updated = queryClient.getQueryData(queryKey) as ToolPublic
-        if (
-          updated?.status !== "install_queued" &&
-          updated?.status !== "installing"
-        ) {
-          clearInterval(interval)
-        } else queryClient.invalidateQueries({ queryKey })
-      }, 5000)
+      return refreshStatus()
     },
   })
+
+  const uninstallMutation = useMutation({
+    ...uninstallToolMutation(),
+    onError: ({ message }) => {
+      setAwaitingUninstallConfirmation(false)
+      showToast("Error", message || "Could not uninstall tool", "error")
+    },
+    onSuccess: ({ message }) => {
+      showToast("Success", message || "Uninstall started", "success")
+      return refreshStatus()
+    },
+  })
+
+  const mutationInProgress =
+    installMutation.isPending || uninstallMutation.isPending
+  const inProgress =
+    statusInProgress || mutationInProgress || awaitingUninstallConfirmation
+
+  const handleClick = () => {
+    if (inProgress) return
+
+    if (isUninstallAction) {
+      setAwaitingUninstallConfirmation(true)
+      uninstallMutation.mutate({ path: { tool_id: tool.id } })
+      return
+    }
+
+    installMutation.mutate({ path: { tool_id: tool.id } })
+  }
+
   return (
-    <Button
-      disabled={tool.status === "installed" || installInProgress}
-      onClick={() => mutation.mutate({ path: { tool_id: tool.id } })}
-    >
-      {installInProgress && <LoaderCircle className="animate-spin" />}
-      Install
+    <Button disabled={inProgress} onClick={handleClick}>
+      {inProgress && <LoaderCircle className="animate-spin" />}
+      {awaitingUninstallConfirmation || uninstallInProgress || uninstallMutation.isPending
+        ? "Uninstalling..."
+        : installInProgress || installMutation.isPending
+          ? "Installing..."
+          : isUninstallAction
+            ? "Uninstall"
+            : "Install"}
     </Button>
   )
 }
