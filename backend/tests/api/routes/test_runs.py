@@ -487,7 +487,9 @@ def test_create_run_flattens_group_children_when_pairs_are_allowed(
     db.commit()
     db.refresh(tool)
 
-    group = _create_saved_file(db=db, owner=owner, name=f"group-{random_lower_string()}")
+    group = _create_saved_file(
+        db=db, owner=owner, name=f"group-{random_lower_string()}"
+    )
     group.is_group = True
     _create_saved_file(db=db, owner=owner, name="sample-a.fastq.gz", parent_id=group.id)
     _create_saved_file(db=db, owner=owner, name="sample-b.fastq.gz", parent_id=group.id)

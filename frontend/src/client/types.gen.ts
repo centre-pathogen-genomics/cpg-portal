@@ -4,621 +4,3056 @@
  * AppSettingPublic
  */
 export type AppSettingPublic = {
-    /**
-     * Llm Model
-     */
-    llm_model?: string;
-    /**
-     * Queue Paused
-     */
-    queue_paused?: boolean;
-    /**
-     * Queue Paused At
-     */
-    queue_paused_at?: string | null;
-    /**
-     * Queue Pause Reason
-     */
-    queue_pause_reason?: string | null;
-    /**
-     * Id
-     */
-    id: number;
+  /**
+   * Llm Model
+   */
+  llm_model?: string;
+  /**
+   * Queue Paused
+   */
+  queue_paused?: boolean;
+  /**
+   * Queue Paused At
+   */
+  queue_paused_at?: string | null;
+  /**
+   * Queue Pause Reason
+   */
+  queue_pause_reason?: string | null;
+  /**
+   * Id
+   */
+  id: number;
 };
 
 /**
  * AppSettingUpdate
  */
 export type AppSettingUpdate = {
-    /**
-     * Llm Model
-     */
-    llm_model: string;
+  /**
+   * Llm Model
+   */
+  llm_model: string;
 };
 
 /**
  * QueuePublicStatus
  */
 export type QueuePublicStatus = {
-    /**
-     * Queue Paused
-     */
-    queue_paused: boolean;
-    /**
-     * Queue Pause Reason
-     */
-    queue_pause_reason?: string | null;
+  /**
+   * Queue Paused
+   */
+  queue_paused: boolean;
+  /**
+   * Queue Pause Reason
+   */
+  queue_pause_reason?: string | null;
 };
 
 /**
  * Audience
  */
-export type Audience = 'layman' | 'expert';
+export type Audience = "layman" | "expert";
 
 /**
  * Body_files-upload_file
  */
 export type BodyFilesUploadFile = {
-    /**
-     * File
-     */
-    file: string;
+  /**
+   * File
+   */
+  file: string;
 };
 
 /**
  * Body_login-login_access_token
  */
 export type BodyLoginLoginAccessToken = {
-    /**
-     * Grant Type
-     */
-    grant_type?: string | null;
-    /**
-     * Username
-     */
-    username: string;
-    /**
-     * Password
-     */
-    password: string;
-    /**
-     * Scope
-     */
-    scope?: string;
-    /**
-     * Client Id
-     */
-    client_id?: string | null;
-    /**
-     * Client Secret
-     */
-    client_secret?: string | null;
+  /**
+   * Grant Type
+   */
+  grant_type?: string | null;
+  /**
+   * Username
+   */
+  username: string;
+  /**
+   * Password
+   */
+  password: string;
+  /**
+   * Scope
+   */
+  scope?: string;
+  /**
+   * Client Id
+   */
+  client_id?: string | null;
+  /**
+   * Client Secret
+   */
+  client_secret?: string | null;
 };
 
 /**
  * Body_runs-create_run
  */
 export type BodyRunsCreateRun = {
-    /**
-     * Params
-     */
-    params: {
-        [key: string]: unknown;
-    };
-    /**
-     * Tags
-     */
-    tags?: Array<string>;
+  /**
+   * Params
+   */
+  params: {
+    [key: string]: unknown;
+  };
+  /**
+   * Tags
+   */
+  tags?: Array<string>;
 };
 
 /**
  * CountItem
  */
 export type CountItem = {
-    /**
-     * Name
-     */
-    name: string;
-    /**
-     * Count
-     */
-    count: number;
+  /**
+   * Name
+   */
+  name: string;
+  /**
+   * Count
+   */
+  count: number;
 };
 
 /**
  * CondaEnv
  */
 export type CondaEnv = {
-    /**
-     * Channels
-     */
-    channels?: Array<string>;
-    /**
-     * Dependencies
-     */
-    dependencies?: Array<string | CondaEnvPipDependency>;
+  /**
+   * Channels
+   */
+  channels?: Array<string>;
+  /**
+   * Dependencies
+   */
+  dependencies?: Array<string | CondaEnvPipDependency>;
 };
 
 /**
  * CondaEnvPipDependency
  */
 export type CondaEnvPipDependency = {
-    /**
-     * Pip
-     */
-    pip: Array<string>;
+  /**
+   * Pip
+   */
+  pip: Array<string>;
 };
 
 /**
  * FilePublic
  */
 export type FilePublic = {
-    /**
-     * Name
-     */
-    name: string;
-    /**
-     * File Type
-     */
-    file_type?: string | null;
-    /**
-     * Size
-     */
-    size?: number | null;
-    /**
-     * Saved
-     */
-    saved?: boolean;
-    /**
-     * Tags
-     */
-    tags?: Array<string> | null;
-    /**
-     * Is Group
-     */
-    is_group?: boolean;
-    /**
-     * Id
-     */
-    id: string;
-    /**
-     * Children
-     */
-    children?: Array<FilePublicChild> | null;
-    /**
-     * Parent Id
-     */
-    parent_id?: string | null;
-    /**
-     * Created At
-     */
-    created_at: string;
+  /**
+   * Name
+   */
+  name: string;
+  /**
+   * File Type
+   */
+  file_type?: string | null;
+  /**
+   * Size
+   */
+  size?: number | null;
+  /**
+   * Saved
+   */
+  saved?: boolean;
+  /**
+   * Tags
+   */
+  tags?: Array<string> | null;
+  /**
+   * Is Group
+   */
+  is_group?: boolean;
+  /**
+   * Id
+   */
+  id: string;
+  /**
+   * Children
+   */
+  children?: Array<FilePublicChild> | null;
+  /**
+   * Parent Id
+   */
+  parent_id?: string | null;
+  /**
+   * Created At
+   */
+  created_at: string;
 };
 
 /**
  * FilePublicChild
  */
 export type FilePublicChild = {
-    /**
-     * Name
-     */
-    name: string;
-    /**
-     * File Type
-     */
-    file_type?: string | null;
-    /**
-     * Size
-     */
-    size?: number | null;
-    /**
-     * Saved
-     */
-    saved?: boolean;
-    /**
-     * Tags
-     */
-    tags?: Array<string> | null;
-    /**
-     * Is Group
-     */
-    is_group?: boolean;
-    /**
-     * Id
-     */
-    id: string;
-    /**
-     * Run Id
-     */
-    run_id?: string | null;
-    /**
-     * Created At
-     */
-    created_at: string;
+  /**
+   * Name
+   */
+  name: string;
+  /**
+   * File Type
+   */
+  file_type?: string | null;
+  /**
+   * Size
+   */
+  size?: number | null;
+  /**
+   * Saved
+   */
+  saved?: boolean;
+  /**
+   * Tags
+   */
+  tags?: Array<string> | null;
+  /**
+   * Is Group
+   */
+  is_group?: boolean;
+  /**
+   * Id
+   */
+  id: string;
+  /**
+   * Run Id
+   */
+  run_id?: string | null;
+  /**
+   * Created At
+   */
+  created_at: string;
 };
 
 /**
  * FileStats
  */
 export type FileStats = {
-    /**
-     * Total
-     */
-    total: number;
-    /**
-     * Saved
-     */
-    saved: number;
-    /**
-     * Temporary
-     */
-    temporary: number;
-    /**
-     * Total Size Bytes
-     */
-    total_size_bytes: number;
-    /**
-     * Saved Size Bytes
-     */
-    saved_size_bytes: number;
-    /**
-     * Temporary Size Bytes
-     */
-    temporary_size_bytes: number;
-    /**
-     * Average Size Bytes
-     */
-    average_size_bytes: number;
-    /**
-     * Total Size Gb
-     */
-    total_size_gb: number;
-    /**
-     * Saved Size Gb
-     */
-    saved_size_gb: number;
-    /**
-     * By Type
-     */
-    by_type: {
-        [key: string]: number;
-    };
+  /**
+   * Total
+   */
+  total: number;
+  /**
+   * Saved
+   */
+  saved: number;
+  /**
+   * Temporary
+   */
+  temporary: number;
+  /**
+   * Total Size Bytes
+   */
+  total_size_bytes: number;
+  /**
+   * Saved Size Bytes
+   */
+  saved_size_bytes: number;
+  /**
+   * Temporary Size Bytes
+   */
+  temporary_size_bytes: number;
+  /**
+   * Average Size Bytes
+   */
+  average_size_bytes: number;
+  /**
+   * Total Size Gb
+   */
+  total_size_gb: number;
+  /**
+   * Saved Size Gb
+   */
+  saved_size_gb: number;
+  /**
+   * By Type
+   */
+  by_type: {
+    [key: string]: number;
+  };
 };
 
 /**
  * FileTypeEnum
  */
-export type FileTypeEnum = 'bam' | 'beast' | 'bed' | 'csv' | 'docx' | 'fasta' | 'fasta.gz' | 'fastq' | 'fastq.gz' | 'geojson' | 'gff' | 'genbank' | 'graphml' | 'gzip' | 'hdf5' | 'hs' | 'html' | 'iqtree' | 'jpeg' | 'json' | 'jsonl' | 'log' | 'md' | 'newick' | 'nexus' | 'pdb' | 'pdf' | 'phy' | 'text' | 'png' | 'rmd' | 'sam' | 'svg' | 'tiff' | 'toml' | 'tsv' | 'vega' | 'vega-lite' | 'vcf' | 'vcf.gz' | 'xlsx' | 'xml' | 'yaml' | 'zip' | 'pair' | 'unknown';
+export type FileTypeEnum =
+  | "bam"
+  | "beast"
+  | "bed"
+  | "csv"
+  | "docx"
+  | "fasta"
+  | "fasta.gz"
+  | "fastq"
+  | "fastq.gz"
+  | "geojson"
+  | "gff"
+  | "genbank"
+  | "graphml"
+  | "gzip"
+  | "hdf5"
+  | "hs"
+  | "html"
+  | "iqtree"
+  | "jpeg"
+  | "json"
+  | "jsonl"
+  | "log"
+  | "md"
+  | "newick"
+  | "nexus"
+  | "pdb"
+  | "pdf"
+  | "phy"
+  | "text"
+  | "png"
+  | "rmd"
+  | "sam"
+  | "svg"
+  | "tiff"
+  | "toml"
+  | "tsv"
+  | "vega"
+  | "vega-lite"
+  | "vcf"
+  | "vcf.gz"
+  | "xlsx"
+  | "xml"
+  | "yaml"
+  | "zip"
+  | "pair"
+  | "unknown";
 
 /**
  * FileTypeMetadata
  */
 export type FileTypeMetadata = {
-    /**
-     * Extensions
-     */
-    extensions: Array<string>;
-    /**
-     * File Format
-     */
-    file_format: string;
-    /**
-     * Mime Types
-     */
-    mime_types: Array<string>;
+  /**
+   * Extensions
+   */
+  extensions: Array<string>;
+  /**
+   * File Format
+   */
+  file_format: string;
+  /**
+   * Mime Types
+   */
+  mime_types: Array<string>;
 };
 
 /**
  * FilesPublic
  */
 export type FilesPublic = {
-    /**
-     * Data
-     */
-    data: Array<FilePublic>;
-    /**
-     * Count
-     */
-    count: number;
+  /**
+   * Data
+   */
+  data: Array<FilePublic>;
+  /**
+   * Count
+   */
+  count: number;
 };
 
 /**
  * FilesStatistics
  */
 export type FilesStatistics = {
-    /**
-     * Count
-     */
-    count: number;
-    /**
-     * Total Size
-     */
-    total_size: number;
+  /**
+   * Count
+   */
+  count: number;
+  /**
+   * Total Size
+   */
+  total_size: number;
 };
 
 /**
  * HTTPValidationError
  */
 export type HttpValidationError = {
-    /**
-     * Detail
-     */
-    detail?: Array<ValidationError>;
+  /**
+   * Detail
+   */
+  detail?: Array<ValidationError>;
 };
 
 /**
  * Message
  */
 export type Message = {
-    /**
-     * Message
-     */
-    message: string;
+  /**
+   * Message
+   */
+  message: string;
 };
 
 /**
  * NewPassword
  */
 export type NewPassword = {
-    /**
-     * Token
-     */
-    token: string;
-    /**
-     * New Password
-     */
-    new_password: string;
+  /**
+   * Token
+   */
+  token: string;
+  /**
+   * New Password
+   */
+  new_password: string;
 };
 
 /**
  * Param
  */
 export type Param = {
-    /**
-     * Name
-     */
-    name: string;
-    param_type: ParamType;
-    /**
-     * Allowed File Types
-     */
-    allowed_file_types?: Array<string> | null;
-    /**
-     * Multiple
-     */
-    multiple?: boolean;
-    /**
-     * Description
-     */
-    description?: string | null;
-    /**
-     * Default
-     */
-    default?: number | number | string | boolean | null;
-    /**
-     * Options
-     */
-    options?: Array<string> | null;
-    /**
-     * Required
-     */
-    required?: boolean;
-    /**
-     * Visible If Param
-     */
-    visible_if_param?: string | null;
-    /**
-     * Visible If Operator
-     */
-    visible_if_operator?: ParamVisibilityOperator;
-    /**
-     * Visible If Value
-     */
-    visible_if_value?: number | string | boolean | Array<string> | null;
+  /**
+   * Name
+   */
+  name: string;
+  param_type: ParamType;
+  /**
+   * Allowed File Types
+   */
+  allowed_file_types?: Array<string> | null;
+  /**
+   * Multiple
+   */
+  multiple?: boolean;
+  /**
+   * Description
+   */
+  description?: string | null;
+  /**
+   * Default
+   */
+  default?: number | number | string | boolean | null;
+  /**
+   * Options
+   */
+  options?: Array<string> | null;
+  /**
+   * Required
+   */
+  required?: boolean;
+  /**
+   * Visible If Param
+   */
+  visible_if_param?: string | null;
+  /**
+   * Visible If Operator
+   */
+  visible_if_operator?: ParamVisibilityOperator;
+  /**
+   * Visible If Value
+   */
+  visible_if_value?: number | string | boolean | Array<string> | null;
 };
 
 /**
  * ParamType
  */
-export type ParamType = 'str' | 'int' | 'float' | 'bool' | 'enum' | 'file';
+export type ParamType = "str" | "int" | "float" | "bool" | "enum" | "file";
 
 /**
  * ParamVisibilityOperator
  */
-export type ParamVisibilityOperator = 'equals' | 'not_equals' | 'in' | 'not_in' | 'greater_than' | 'greater_than_or_equal' | 'less_than' | 'less_than_or_equal' | 'truthy' | 'falsy' | 'is_set' | 'is_empty';
+export type ParamVisibilityOperator =
+  | "equals"
+  | "not_equals"
+  | "in"
+  | "not_in"
+  | "greater_than"
+  | "greater_than_or_equal"
+  | "less_than"
+  | "less_than_or_equal"
+  | "truthy"
+  | "falsy"
+  | "is_set"
+  | "is_empty";
 
 /**
  * RunPublic
  */
 export type RunPublic = {
-    /**
-     * Id
-     */
-    id: string;
-    /**
-     * Name
-     */
-    name?: string | null;
-    tool: ToolMinimalPublic;
-    /**
-     * Params
-     */
-    params: {
-        [key: string]: unknown;
-    };
-    status: RunStatus;
-    /**
-     * Shared
-     */
-    shared?: boolean;
-    /**
-     * Tags
-     */
-    tags?: Array<string> | null;
-    /**
-     * Created At
-     */
-    created_at: string;
-    /**
-     * Started At
-     */
-    started_at?: string | null;
-    /**
-     * Finished At
-     */
-    finished_at?: string | null;
-    /**
-     * Owner Name
-     */
-    owner_name?: string | null;
-    /**
-     * Stdout
-     */
-    stdout?: string | null;
-    /**
-     * Command
-     */
-    command?: string | null;
-    /**
-     * Conda Env Pinned
-     */
-    conda_env_pinned?: string | null;
-    /**
-     * Llm Summary
-     */
-    llm_summary?: string | null;
-    /**
-     * Files
-     */
-    files: Array<FilePublic>;
+  /**
+   * Id
+   */
+  id: string;
+  /**
+   * Name
+   */
+  name?: string | null;
+  tool: ToolMinimalPublic;
+  /**
+   * Params
+   */
+  params: {
+    [key: string]: unknown;
+  };
+  status: RunStatus;
+  /**
+   * Shared
+   */
+  shared?: boolean;
+  /**
+   * Tags
+   */
+  tags?: Array<string> | null;
+  /**
+   * Created At
+   */
+  created_at: string;
+  /**
+   * Started At
+   */
+  started_at?: string | null;
+  /**
+   * Finished At
+   */
+  finished_at?: string | null;
+  /**
+   * Owner Name
+   */
+  owner_name?: string | null;
+  /**
+   * Stdout
+   */
+  stdout?: string | null;
+  /**
+   * Command
+   */
+  command?: string | null;
+  /**
+   * Conda Env Pinned
+   */
+  conda_env_pinned?: string | null;
+  /**
+   * Llm Summary
+   */
+  llm_summary?: string | null;
+  /**
+   * Files
+   */
+  files: Array<FilePublic>;
 };
 
 /**
  * RunPublicMinimal
  */
 export type RunPublicMinimal = {
-    /**
-     * Id
-     */
-    id: string;
-    /**
-     * Name
-     */
-    name?: string | null;
-    tool: ToolMinimalPublic;
-    /**
-     * Params
-     */
-    params: {
-        [key: string]: unknown;
-    };
-    status: RunStatus;
-    /**
-     * Shared
-     */
-    shared?: boolean;
-    /**
-     * Tags
-     */
-    tags?: Array<string> | null;
-    /**
-     * Created At
-     */
-    created_at: string;
-    /**
-     * Started At
-     */
-    started_at?: string | null;
-    /**
-     * Finished At
-     */
-    finished_at?: string | null;
-    /**
-     * Owner Name
-     */
-    owner_name?: string | null;
+  /**
+   * Id
+   */
+  id: string;
+  /**
+   * Name
+   */
+  name?: string | null;
+  tool: ToolMinimalPublic;
+  /**
+   * Params
+   */
+  params: {
+    [key: string]: unknown;
+  };
+  status: RunStatus;
+  /**
+   * Shared
+   */
+  shared?: boolean;
+  /**
+   * Tags
+   */
+  tags?: Array<string> | null;
+  /**
+   * Created At
+   */
+  created_at: string;
+  /**
+   * Started At
+   */
+  started_at?: string | null;
+  /**
+   * Finished At
+   */
+  finished_at?: string | null;
+  /**
+   * Owner Name
+   */
+  owner_name?: string | null;
 };
 
 /**
  * RunStats
  */
 export type RunStats = {
-    /**
-     * Total
-     */
-    total: number;
-    /**
-     * By Status
-     */
-    by_status: {
-        [key: string]: number;
-    };
-    /**
-     * Currently Running
-     */
-    currently_running: number;
-    /**
-     * Success Rate Percent
-     */
-    success_rate_percent: number;
-    /**
-     * Average Runtime Seconds
-     */
-    average_runtime_seconds: number;
-    /**
-     * Average Runtime Minutes
-     */
-    average_runtime_minutes: number;
-    /**
-     * Last 24 Hours
-     */
-    last_24_hours: number;
+  /**
+   * Total
+   */
+  total: number;
+  /**
+   * By Status
+   */
+  by_status: {
+    [key: string]: number;
+  };
+  /**
+   * Currently Running
+   */
+  currently_running: number;
+  /**
+   * Success Rate Percent
+   */
+  success_rate_percent: number;
+  /**
+   * Average Runtime Seconds
+   */
+  average_runtime_seconds: number;
+  /**
+   * Average Runtime Minutes
+   */
+  average_runtime_minutes: number;
+  /**
+   * Last 24 Hours
+   */
+  last_24_hours: number;
 };
 
 /**
  * QueuePauseRequest
  */
 export type QueuePauseRequest = {
-    /**
-     * Reason
-     */
-    reason?: string | null;
+  /**
+   * Reason
+   */
+  reason?: string | null;
 };
 
 /**
  * QueueStatus
  */
 export type QueueStatus = {
-    /**
-     * Queue Paused
-     */
-    queue_paused: boolean;
-    /**
-     * Queue Paused At
-     */
-    queue_paused_at?: string | null;
-    /**
-     * Queue Pause Reason
-     */
-    queue_pause_reason?: string | null;
-    /**
-     * Pending Runs
-     */
-    pending_runs: number;
-    /**
-     * Running Runs
-     */
-    running_runs: number;
+  /**
+   * Queue Paused
+   */
+  queue_paused: boolean;
+  /**
+   * Queue Paused At
+   */
+  queue_paused_at?: string | null;
+  /**
+   * Queue Pause Reason
+   */
+  queue_pause_reason?: string | null;
+  /**
+   * Pending Runs
+   */
+  pending_runs: number;
+  /**
+   * Running Runs
+   */
+  running_runs: number;
 };
 
 /**
  * RecentRun
  */
 export type RecentRun = {
+  /**
+   * Id
+   */
+  id: string;
+  /**
+   * Name
+   */
+  name?: string | null;
+  /**
+   * Tool Name
+   */
+  tool_name: string;
+  /**
+   * Owner Email
+   */
+  owner_email: string;
+  status: RunStatus;
+  /**
+   * Created At
+   */
+  created_at: string;
+  /**
+   * Started At
+   */
+  started_at?: string | null;
+  /**
+   * Finished At
+   */
+  finished_at?: string | null;
+};
+
+/**
+ * RunStatus
+ */
+export type RunStatus =
+  | "pending"
+  | "running"
+  | "completed"
+  | "failed"
+  | "cancelled";
+
+/**
+ * RunsPublicMinimal
+ */
+export type RunsPublicMinimal = {
+  /**
+   * Data
+   */
+  data: Array<RunPublicMinimal>;
+  /**
+   * Count
+   */
+  count: number;
+};
+
+/**
+ * SetupFile
+ */
+export type SetupFile = {
+  /**
+   * Name
+   */
+  name: string;
+  /**
+   * Content
+   */
+  content: string;
+};
+
+/**
+ * StatsResponse
+ */
+export type StatsResponse = {
+  users: SummaryUserStats;
+  tools: SummaryToolStats;
+  runs: SummaryRunStats;
+  files: SummaryFileStats;
+};
+
+/**
+ * SummaryFileStats
+ */
+export type SummaryFileStats = {
+  /**
+   * Total
+   */
+  total: number;
+  /**
+   * Total Size Gb
+   */
+  total_size_gb: number;
+};
+
+/**
+ * SummaryRunStats
+ */
+export type SummaryRunStats = {
+  /**
+   * Total
+   */
+  total: number;
+  /**
+   * Currently Running
+   */
+  currently_running: number;
+};
+
+/**
+ * SummaryToolStats
+ */
+export type SummaryToolStats = {
+  /**
+   * Total
+   */
+  total: number;
+  /**
+   * Enabled
+   */
+  enabled: number;
+};
+
+/**
+ * SummaryUserStats
+ */
+export type SummaryUserStats = {
+  /**
+   * Total
+   */
+  total: number;
+};
+
+/**
+ * SystemStats
+ */
+export type SystemStats = {
+  users: UserStats;
+  files: FileStats;
+  runs: RunStats;
+  tools: ToolStats;
+};
+
+/**
+ * Target
+ */
+export type Target = {
+  /**
+   * Path
+   */
+  path: string;
+  /**
+   * Target Type
+   */
+  target_type: string;
+  /**
+   * Required
+   */
+  required?: boolean;
+};
+
+/**
+ * Token
+ */
+export type Token = {
+  /**
+   * Access Token
+   */
+  access_token: string;
+  /**
+   * Token Type
+   */
+  token_type?: string;
+};
+
+/**
+ * ToolBadge
+ */
+export type ToolBadge = {
+  /**
+   * Badge
+   */
+  badge?: string | null;
+  /**
+   * Url
+   */
+  url?: string | null;
+};
+
+/**
+ * ToolCreate
+ */
+export type ToolCreate = {
+  /**
+   * Name
+   */
+  name: string;
+  /**
+   * Version
+   */
+  version?: string | null;
+  /**
+   * Image
+   */
+  image?: string | null;
+  /**
+   * Description
+   */
+  description?: string | null;
+  /**
+   * Explanation Of Results Markdown
+   */
+  explanation_of_results_markdown?: string | null;
+  /**
+   * Url
+   */
+  url?: string | null;
+  /**
+   * Github Repo
+   */
+  github_repo?: string | null;
+  /**
+   * Docs Url
+   */
+  docs_url?: string | null;
+  /**
+   * Paper Doi
+   */
+  paper_doi?: string | null;
+  /**
+   * License
+   */
+  license?: string | null;
+  /**
+   * Citation Markdown
+   */
+  citation_markdown?: string | null;
+  /**
+   * Badges
+   */
+  badges?: Array<ToolBadge> | null;
+  /**
+   * Tags
+   */
+  tags?: Array<string> | null;
+  /**
+   * Command
+   */
+  command: string;
+  conda_env?: CondaEnv | null;
+  /**
+   * Post Install
+   */
+  post_install?: string | null;
+  /**
+   * Setup Files
+   */
+  setup_files?: Array<SetupFile> | null;
+  /**
+   * Params
+   */
+  params?: Array<Param> | null;
+  /**
+   * Targets
+   */
+  targets?: Array<Target> | null;
+  /**
+   * Llm Summary Enabled
+   */
+  llm_summary_enabled?: boolean;
+};
+
+/**
+ * ToolMinimalPublic
+ */
+export type ToolMinimalPublic = {
+  /**
+   * Id
+   */
+  id: string;
+  /**
+   * Name
+   */
+  name: string;
+  /**
+   * Image
+   */
+  image?: string | null;
+  /**
+   * Description
+   */
+  description?: string | null;
+  /**
+   * Tags
+   */
+  tags?: Array<string> | null;
+  /**
+   * Params
+   */
+  params?: Array<Param> | null;
+  /**
+   * Favourited
+   */
+  favourited?: boolean;
+  /**
+   * Favourited Count
+   */
+  favourited_count?: number;
+  /**
+   * Run Count
+   */
+  run_count?: number;
+  /**
+   * Enabled
+   */
+  enabled?: boolean;
+  /**
+   * Llm Summary Enabled
+   */
+  llm_summary_enabled?: boolean;
+  /**
+   * Explanation Of Results Markdown
+   */
+  explanation_of_results_markdown?: string | null;
+};
+
+/**
+ * ToolPublic
+ */
+export type ToolPublic = {
+  /**
+   * Name
+   */
+  name: string;
+  /**
+   * Version
+   */
+  version?: string | null;
+  /**
+   * Image
+   */
+  image?: string | null;
+  /**
+   * Description
+   */
+  description?: string | null;
+  /**
+   * Explanation Of Results Markdown
+   */
+  explanation_of_results_markdown?: string | null;
+  /**
+   * Url
+   */
+  url?: string | null;
+  /**
+   * Github Repo
+   */
+  github_repo?: string | null;
+  /**
+   * Docs Url
+   */
+  docs_url?: string | null;
+  /**
+   * Paper Doi
+   */
+  paper_doi?: string | null;
+  /**
+   * License
+   */
+  license?: string | null;
+  /**
+   * Citation Markdown
+   */
+  citation_markdown?: string | null;
+  /**
+   * Badges
+   */
+  badges?: Array<ToolBadge> | null;
+  /**
+   * Tags
+   */
+  tags?: Array<string> | null;
+  /**
+   * Command
+   */
+  command: string;
+  conda_env?: CondaEnv | null;
+  /**
+   * Post Install
+   */
+  post_install?: string | null;
+  /**
+   * Setup Files
+   */
+  setup_files?: Array<SetupFile> | null;
+  /**
+   * Params
+   */
+  params?: Array<Param> | null;
+  /**
+   * Targets
+   */
+  targets?: Array<Target> | null;
+  /**
+   * Llm Summary Enabled
+   */
+  llm_summary_enabled?: boolean;
+  /**
+   * Favourited
+   */
+  favourited?: boolean;
+  status: ToolStatus;
+  /**
+   * Installation Log
+   */
+  installation_log?: string | null;
+  /**
+   * Favourited Count
+   */
+  favourited_count?: number;
+  /**
+   * Run Count
+   */
+  run_count?: number;
+  /**
+   * Enabled
+   */
+  enabled?: boolean;
+  /**
+   * Conda Env Pinned
+   */
+  conda_env_pinned?: string | null;
+  /**
+   * Id
+   */
+  id: string;
+  /**
+   * Created At
+   */
+  created_at: string;
+};
+
+/**
+ * ToolStats
+ */
+export type ToolStats = {
+  /**
+   * Total
+   */
+  total: number;
+  /**
+   * Enabled
+   */
+  enabled: number;
+  /**
+   * Disabled
+   */
+  disabled: number;
+  /**
+   * By Status
+   */
+  by_status: {
+    [key: string]: number;
+  };
+  /**
+   * Most Popular
+   */
+  most_popular: Array<CountItem>;
+  /**
+   * Most Favourited
+   */
+  most_favourited: Array<CountItem>;
+};
+
+/**
+ * ToolDetailStats
+ */
+export type ToolDetailStats = {
+  tool: ToolPublic;
+  runs: RunStats;
+  top_users: Array<UserUsage>;
+  recent_runs: Array<RecentRun>;
+};
+
+/**
+ * ToolStatus
+ */
+export type ToolStatus =
+  | "uninstalled"
+  | "uninstalling"
+  | "installed"
+  | "install_queued"
+  | "installing"
+  | "failed";
+
+/**
+ * ToolUpdate
+ */
+export type ToolUpdate = {
+  /**
+   * Name
+   */
+  name?: string | null;
+  /**
+   * Version
+   */
+  version?: string | null;
+  /**
+   * Image
+   */
+  image?: string | null;
+  /**
+   * Description
+   */
+  description?: string | null;
+  /**
+   * Explanation Of Results Markdown
+   */
+  explanation_of_results_markdown?: string | null;
+  /**
+   * Url
+   */
+  url?: string | null;
+  /**
+   * Github Repo
+   */
+  github_repo?: string | null;
+  /**
+   * Docs Url
+   */
+  docs_url?: string | null;
+  /**
+   * Paper Doi
+   */
+  paper_doi?: string | null;
+  /**
+   * License
+   */
+  license?: string | null;
+  /**
+   * Citation Markdown
+   */
+  citation_markdown?: string | null;
+  /**
+   * Badges
+   */
+  badges?: Array<ToolBadge> | null;
+  /**
+   * Tags
+   */
+  tags?: Array<string> | null;
+  /**
+   * Command
+   */
+  command?: string | null;
+  conda_env?: CondaEnv | null;
+  /**
+   * Post Install
+   */
+  post_install?: string | null;
+  /**
+   * Setup Files
+   */
+  setup_files?: Array<SetupFile> | null;
+  /**
+   * Params
+   */
+  params?: Array<Param> | null;
+  /**
+   * Targets
+   */
+  targets?: Array<Target> | null;
+  /**
+   * Llm Summary Enabled
+   */
+  llm_summary_enabled?: boolean;
+  /**
+   * Favourited Count
+   */
+  favourited_count?: number;
+  /**
+   * Run Count
+   */
+  run_count?: number;
+  /**
+   * Enabled
+   */
+  enabled?: boolean;
+  status?: ToolStatus | null;
+  /**
+   * Installation Log
+   */
+  installation_log?: string | null;
+};
+
+/**
+ * ToolsOrderBy
+ */
+export type ToolsOrderBy = "created_at" | "run_count";
+
+/**
+ * ToolsPublic
+ */
+export type ToolsPublic = {
+  /**
+   * Data
+   */
+  data: Array<ToolMinimalPublic>;
+  /**
+   * Count
+   */
+  count: number;
+};
+
+/**
+ * UpdatePassword
+ */
+export type UpdatePassword = {
+  /**
+   * Current Password
+   */
+  current_password: string;
+  /**
+   * New Password
+   */
+  new_password: string;
+};
+
+/**
+ * UserCreate
+ */
+export type UserCreate = {
+  /**
+   * Email
+   */
+  email: string;
+  /**
+   * Is Active
+   */
+  is_active?: boolean;
+  /**
+   * Is Superuser
+   */
+  is_superuser?: boolean;
+  /**
+   * Full Name
+   */
+  full_name?: string | null;
+  /**
+   * Max Runs
+   */
+  max_runs?: number;
+  /**
+   * Max Storage
+   */
+  max_storage?: number;
+  /**
+   * Max Storage Files
+   */
+  max_storage_files?: number;
+  /**
+   * Password
+   */
+  password: string;
+};
+
+/**
+ * UserPublic
+ */
+export type UserPublic = {
+  /**
+   * Email
+   */
+  email: string;
+  /**
+   * Is Active
+   */
+  is_active?: boolean;
+  /**
+   * Is Superuser
+   */
+  is_superuser?: boolean;
+  /**
+   * Full Name
+   */
+  full_name?: string | null;
+  /**
+   * Max Runs
+   */
+  max_runs?: number;
+  /**
+   * Max Storage
+   */
+  max_storage?: number;
+  /**
+   * Max Storage Files
+   */
+  max_storage_files?: number;
+  /**
+   * Id
+   */
+  id: string;
+  /**
+   * Created At
+   */
+  created_at: string;
+};
+
+/**
+ * UserRegister
+ */
+export type UserRegister = {
+  /**
+   * Email
+   */
+  email: string;
+  /**
+   * Password
+   */
+  password: string;
+  /**
+   * Full Name
+   */
+  full_name?: string | null;
+};
+
+/**
+ * UserStats
+ */
+export type UserStats = {
+  /**
+   * Total
+   */
+  total: number;
+  /**
+   * Active
+   */
+  active: number;
+  /**
+   * Superusers
+   */
+  superusers: number;
+  /**
+   * Active Last 30 Days
+   */
+  active_last_30_days: number;
+};
+
+/**
+ * UserDetailStats
+ */
+export type UserDetailStats = {
+  user: UserPublic;
+  runs: RunStats;
+  files: FileStats;
+  top_tools: Array<CountItem>;
+  recent_runs: Array<RecentRun>;
+};
+
+/**
+ * UserUsage
+ */
+export type UserUsage = {
+  /**
+   * Id
+   */
+  id: string;
+  /**
+   * Email
+   */
+  email: string;
+  /**
+   * Full Name
+   */
+  full_name?: string | null;
+  /**
+   * Count
+   */
+  count: number;
+};
+
+/**
+ * UserUpdate
+ */
+export type UserUpdate = {
+  /**
+   * Email
+   */
+  email?: string | null;
+  /**
+   * Is Active
+   */
+  is_active?: boolean;
+  /**
+   * Is Superuser
+   */
+  is_superuser?: boolean;
+  /**
+   * Full Name
+   */
+  full_name?: string | null;
+  /**
+   * Max Runs
+   */
+  max_runs?: number;
+  /**
+   * Max Storage
+   */
+  max_storage?: number;
+  /**
+   * Max Storage Files
+   */
+  max_storage_files?: number;
+  /**
+   * Password
+   */
+  password?: string | null;
+};
+
+/**
+ * UserUpdateMe
+ */
+export type UserUpdateMe = {
+  /**
+   * Full Name
+   */
+  full_name?: string | null;
+  /**
+   * Email
+   */
+  email?: string | null;
+};
+
+/**
+ * UsersPublic
+ */
+export type UsersPublic = {
+  /**
+   * Data
+   */
+  data: Array<UserPublic>;
+  /**
+   * Count
+   */
+  count: number;
+};
+
+/**
+ * ValidationError
+ */
+export type ValidationError = {
+  /**
+   * Location
+   */
+  loc: Array<string | number>;
+  /**
+   * Message
+   */
+  msg: string;
+  /**
+   * Error Type
+   */
+  type: string;
+  /**
+   * Input
+   */
+  input?: unknown;
+  /**
+   * Context
+   */
+  ctx?: {
+    [key: string]: unknown;
+  };
+};
+
+export type LoginLoginAccessTokenData = {
+  body: BodyLoginLoginAccessToken;
+  path?: never;
+  query?: never;
+  url: "/api/v1/login/access-token";
+};
+
+export type LoginLoginAccessTokenErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type LoginLoginAccessTokenError =
+  LoginLoginAccessTokenErrors[keyof LoginLoginAccessTokenErrors];
+
+export type LoginLoginAccessTokenResponses = {
+  /**
+   * Successful Response
+   */
+  200: Token;
+};
+
+export type LoginLoginAccessTokenResponse =
+  LoginLoginAccessTokenResponses[keyof LoginLoginAccessTokenResponses];
+
+export type LoginTestTokenData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/v1/login/test-token";
+};
+
+export type LoginTestTokenResponses = {
+  /**
+   * Successful Response
+   */
+  200: UserPublic;
+};
+
+export type LoginTestTokenResponse =
+  LoginTestTokenResponses[keyof LoginTestTokenResponses];
+
+export type LoginRecoverPasswordData = {
+  body?: never;
+  path: {
+    /**
+     * Email
+     */
+    email: string;
+  };
+  query?: never;
+  url: "/api/v1/password-recovery/{email}";
+};
+
+export type LoginRecoverPasswordErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type LoginRecoverPasswordError =
+  LoginRecoverPasswordErrors[keyof LoginRecoverPasswordErrors];
+
+export type LoginRecoverPasswordResponses = {
+  /**
+   * Successful Response
+   */
+  200: Message;
+};
+
+export type LoginRecoverPasswordResponse =
+  LoginRecoverPasswordResponses[keyof LoginRecoverPasswordResponses];
+
+export type LoginResetPasswordData = {
+  body: NewPassword;
+  path?: never;
+  query?: never;
+  url: "/api/v1/reset-password/";
+};
+
+export type LoginResetPasswordErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type LoginResetPasswordError =
+  LoginResetPasswordErrors[keyof LoginResetPasswordErrors];
+
+export type LoginResetPasswordResponses = {
+  /**
+   * Successful Response
+   */
+  200: Message;
+};
+
+export type LoginResetPasswordResponse =
+  LoginResetPasswordResponses[keyof LoginResetPasswordResponses];
+
+export type LoginRecoverPasswordHtmlContentData = {
+  body?: never;
+  path: {
+    /**
+     * Email
+     */
+    email: string;
+  };
+  query?: never;
+  url: "/api/v1/password-recovery-html-content/{email}";
+};
+
+export type LoginRecoverPasswordHtmlContentErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type LoginRecoverPasswordHtmlContentError =
+  LoginRecoverPasswordHtmlContentErrors[keyof LoginRecoverPasswordHtmlContentErrors];
+
+export type LoginRecoverPasswordHtmlContentResponses = {
+  /**
+   * Successful Response
+   */
+  200: string;
+};
+
+export type LoginRecoverPasswordHtmlContentResponse =
+  LoginRecoverPasswordHtmlContentResponses[keyof LoginRecoverPasswordHtmlContentResponses];
+
+export type UsersReadUsersData = {
+  body?: never;
+  path?: never;
+  query?: {
+    /**
+     * Skip
+     */
+    skip?: number;
+    /**
+     * Limit
+     */
+    limit?: number;
+  };
+  url: "/api/v1/users/";
+};
+
+export type UsersReadUsersErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type UsersReadUsersError =
+  UsersReadUsersErrors[keyof UsersReadUsersErrors];
+
+export type UsersReadUsersResponses = {
+  /**
+   * Successful Response
+   */
+  200: UsersPublic;
+};
+
+export type UsersReadUsersResponse =
+  UsersReadUsersResponses[keyof UsersReadUsersResponses];
+
+export type UsersCreateUserData = {
+  body: UserCreate;
+  path?: never;
+  query?: never;
+  url: "/api/v1/users/";
+};
+
+export type UsersCreateUserErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type UsersCreateUserError =
+  UsersCreateUserErrors[keyof UsersCreateUserErrors];
+
+export type UsersCreateUserResponses = {
+  /**
+   * Successful Response
+   */
+  200: UserPublic;
+};
+
+export type UsersCreateUserResponse =
+  UsersCreateUserResponses[keyof UsersCreateUserResponses];
+
+export type UsersDeleteUserMeData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/v1/users/me";
+};
+
+export type UsersDeleteUserMeResponses = {
+  /**
+   * Successful Response
+   */
+  200: Message;
+};
+
+export type UsersDeleteUserMeResponse =
+  UsersDeleteUserMeResponses[keyof UsersDeleteUserMeResponses];
+
+export type UsersReadUserMeData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/v1/users/me";
+};
+
+export type UsersReadUserMeResponses = {
+  /**
+   * Successful Response
+   */
+  200: UserPublic;
+};
+
+export type UsersReadUserMeResponse =
+  UsersReadUserMeResponses[keyof UsersReadUserMeResponses];
+
+export type UsersUpdateUserMeData = {
+  body: UserUpdateMe;
+  path?: never;
+  query?: never;
+  url: "/api/v1/users/me";
+};
+
+export type UsersUpdateUserMeErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type UsersUpdateUserMeError =
+  UsersUpdateUserMeErrors[keyof UsersUpdateUserMeErrors];
+
+export type UsersUpdateUserMeResponses = {
+  /**
+   * Successful Response
+   */
+  200: UserPublic;
+};
+
+export type UsersUpdateUserMeResponse =
+  UsersUpdateUserMeResponses[keyof UsersUpdateUserMeResponses];
+
+export type UsersUpdatePasswordMeData = {
+  body: UpdatePassword;
+  path?: never;
+  query?: never;
+  url: "/api/v1/users/me/password";
+};
+
+export type UsersUpdatePasswordMeErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type UsersUpdatePasswordMeError =
+  UsersUpdatePasswordMeErrors[keyof UsersUpdatePasswordMeErrors];
+
+export type UsersUpdatePasswordMeResponses = {
+  /**
+   * Successful Response
+   */
+  200: Message;
+};
+
+export type UsersUpdatePasswordMeResponse =
+  UsersUpdatePasswordMeResponses[keyof UsersUpdatePasswordMeResponses];
+
+export type UsersRegisterUserData = {
+  body: UserRegister;
+  path?: never;
+  query?: never;
+  url: "/api/v1/users/signup";
+};
+
+export type UsersRegisterUserErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type UsersRegisterUserError =
+  UsersRegisterUserErrors[keyof UsersRegisterUserErrors];
+
+export type UsersRegisterUserResponses = {
+  /**
+   * Successful Response
+   */
+  200: UserPublic;
+};
+
+export type UsersRegisterUserResponse =
+  UsersRegisterUserResponses[keyof UsersRegisterUserResponses];
+
+export type UsersActivateAccountData = {
+  body?: never;
+  path?: never;
+  query: {
+    /**
+     * Token
+     */
+    token: string;
+  };
+  url: "/api/v1/users/activate";
+};
+
+export type UsersActivateAccountErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type UsersActivateAccountError =
+  UsersActivateAccountErrors[keyof UsersActivateAccountErrors];
+
+export type UsersActivateAccountResponses = {
+  /**
+   * Successful Response
+   */
+  200: Message;
+};
+
+export type UsersActivateAccountResponse =
+  UsersActivateAccountResponses[keyof UsersActivateAccountResponses];
+
+export type UsersDeleteUserData = {
+  body?: never;
+  path: {
+    /**
+     * User Id
+     */
+    user_id: string;
+  };
+  query?: never;
+  url: "/api/v1/users/{user_id}";
+};
+
+export type UsersDeleteUserErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type UsersDeleteUserError =
+  UsersDeleteUserErrors[keyof UsersDeleteUserErrors];
+
+export type UsersDeleteUserResponses = {
+  /**
+   * Successful Response
+   */
+  200: Message;
+};
+
+export type UsersDeleteUserResponse =
+  UsersDeleteUserResponses[keyof UsersDeleteUserResponses];
+
+export type UsersReadUserByIdData = {
+  body?: never;
+  path: {
+    /**
+     * User Id
+     */
+    user_id: string;
+  };
+  query?: never;
+  url: "/api/v1/users/{user_id}";
+};
+
+export type UsersReadUserByIdErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type UsersReadUserByIdError =
+  UsersReadUserByIdErrors[keyof UsersReadUserByIdErrors];
+
+export type UsersReadUserByIdResponses = {
+  /**
+   * Successful Response
+   */
+  200: UserPublic;
+};
+
+export type UsersReadUserByIdResponse =
+  UsersReadUserByIdResponses[keyof UsersReadUserByIdResponses];
+
+export type UsersUpdateUserData = {
+  body: UserUpdate;
+  path: {
+    /**
+     * User Id
+     */
+    user_id: string;
+  };
+  query?: never;
+  url: "/api/v1/users/{user_id}";
+};
+
+export type UsersUpdateUserErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type UsersUpdateUserError =
+  UsersUpdateUserErrors[keyof UsersUpdateUserErrors];
+
+export type UsersUpdateUserResponses = {
+  /**
+   * Successful Response
+   */
+  200: UserPublic;
+};
+
+export type UsersUpdateUserResponse =
+  UsersUpdateUserResponses[keyof UsersUpdateUserResponses];
+
+export type UtilsTestEmailData = {
+  body?: never;
+  path?: never;
+  query: {
+    /**
+     * Email To
+     */
+    email_to: string;
+  };
+  url: "/api/v1/utils/test-email/";
+};
+
+export type UtilsTestEmailErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type UtilsTestEmailError =
+  UtilsTestEmailErrors[keyof UtilsTestEmailErrors];
+
+export type UtilsTestEmailResponses = {
+  /**
+   * Successful Response
+   */
+  201: Message;
+};
+
+export type UtilsTestEmailResponse =
+  UtilsTestEmailResponses[keyof UtilsTestEmailResponses];
+
+export type UtilsHealthCheckData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/v1/utils/health-check/";
+};
+
+export type UtilsHealthCheckResponses = {
+  /**
+   * Response Utils-Health Check
+   * Successful Response
+   */
+  200: boolean;
+};
+
+export type UtilsHealthCheckResponse =
+  UtilsHealthCheckResponses[keyof UtilsHealthCheckResponses];
+
+export type UtilsMaxUploadSizeData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/v1/utils/max-upload-size/";
+};
+
+export type UtilsMaxUploadSizeResponses = {
+  /**
+   * Response Utils-Max Upload Size
+   * Successful Response
+   */
+  200: number;
+};
+
+export type UtilsMaxUploadSizeResponse =
+  UtilsMaxUploadSizeResponses[keyof UtilsMaxUploadSizeResponses];
+
+export type ToolsReadToolsData = {
+  body?: never;
+  path?: never;
+  query?: {
+    /**
+     * Skip
+     */
+    skip?: number;
+    /**
+     * Limit
+     */
+    limit?: number;
+    order_by?: ToolsOrderBy;
+    /**
+     * Show Favourites
+     */
+    show_favourites?: boolean;
+    /**
+     * Search
+     */
+    search?: string;
+  };
+  url: "/api/v1/tools/";
+};
+
+export type ToolsReadToolsErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type ToolsReadToolsError =
+  ToolsReadToolsErrors[keyof ToolsReadToolsErrors];
+
+export type ToolsReadToolsResponses = {
+  /**
+   * Successful Response
+   */
+  200: ToolsPublic;
+};
+
+export type ToolsReadToolsResponse =
+  ToolsReadToolsResponses[keyof ToolsReadToolsResponses];
+
+export type ToolsCreateToolData = {
+  body: ToolCreate;
+  path?: never;
+  query?: never;
+  url: "/api/v1/tools/";
+};
+
+export type ToolsCreateToolErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type ToolsCreateToolError =
+  ToolsCreateToolErrors[keyof ToolsCreateToolErrors];
+
+export type ToolsCreateToolResponses = {
+  /**
+   * Successful Response
+   */
+  200: ToolPublic;
+};
+
+export type ToolsCreateToolResponse =
+  ToolsCreateToolResponses[keyof ToolsCreateToolResponses];
+
+export type ToolsReadToolByNameData = {
+  body?: never;
+  path: {
+    /**
+     * Tool Name
+     */
+    tool_name: string;
+  };
+  query?: never;
+  url: "/api/v1/tools/name/{tool_name}";
+};
+
+export type ToolsReadToolByNameErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type ToolsReadToolByNameError =
+  ToolsReadToolByNameErrors[keyof ToolsReadToolByNameErrors];
+
+export type ToolsReadToolByNameResponses = {
+  /**
+   * Successful Response
+   */
+  200: ToolPublic;
+};
+
+export type ToolsReadToolByNameResponse =
+  ToolsReadToolByNameResponses[keyof ToolsReadToolByNameResponses];
+
+export type ToolsDeleteToolData = {
+  body?: never;
+  path: {
+    /**
+     * Tool Id
+     */
+    tool_id: string;
+  };
+  query?: never;
+  url: "/api/v1/tools/{tool_id}";
+};
+
+export type ToolsDeleteToolErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type ToolsDeleteToolError =
+  ToolsDeleteToolErrors[keyof ToolsDeleteToolErrors];
+
+export type ToolsDeleteToolResponses = {
+  /**
+   * Successful Response
+   */
+  200: Message;
+};
+
+export type ToolsDeleteToolResponse =
+  ToolsDeleteToolResponses[keyof ToolsDeleteToolResponses];
+
+export type ToolsReadToolData = {
+  body?: never;
+  path: {
+    /**
+     * Tool Id
+     */
+    tool_id: string;
+  };
+  query?: never;
+  url: "/api/v1/tools/{tool_id}";
+};
+
+export type ToolsReadToolErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type ToolsReadToolError = ToolsReadToolErrors[keyof ToolsReadToolErrors];
+
+export type ToolsReadToolResponses = {
+  /**
+   * Successful Response
+   */
+  200: ToolPublic;
+};
+
+export type ToolsReadToolResponse =
+  ToolsReadToolResponses[keyof ToolsReadToolResponses];
+
+export type ToolsUpdateToolData = {
+  body: ToolUpdate;
+  path: {
+    /**
+     * Tool Id
+     */
+    tool_id: string;
+  };
+  query?: never;
+  url: "/api/v1/tools/{tool_id}";
+};
+
+export type ToolsUpdateToolErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type ToolsUpdateToolError =
+  ToolsUpdateToolErrors[keyof ToolsUpdateToolErrors];
+
+export type ToolsUpdateToolResponses = {
+  /**
+   * Successful Response
+   */
+  200: ToolPublic;
+};
+
+export type ToolsUpdateToolResponse =
+  ToolsUpdateToolResponses[keyof ToolsUpdateToolResponses];
+
+export type ToolsUnfavouriteToolData = {
+  body?: never;
+  path: {
+    /**
+     * Tool Id
+     */
+    tool_id: string;
+  };
+  query?: never;
+  url: "/api/v1/tools/{tool_id}/favourite";
+};
+
+export type ToolsUnfavouriteToolErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type ToolsUnfavouriteToolError =
+  ToolsUnfavouriteToolErrors[keyof ToolsUnfavouriteToolErrors];
+
+export type ToolsUnfavouriteToolResponses = {
+  /**
+   * Successful Response
+   */
+  200: Message;
+};
+
+export type ToolsUnfavouriteToolResponse =
+  ToolsUnfavouriteToolResponses[keyof ToolsUnfavouriteToolResponses];
+
+export type ToolsFavouriteToolData = {
+  body?: never;
+  path: {
+    /**
+     * Tool Id
+     */
+    tool_id: string;
+  };
+  query?: never;
+  url: "/api/v1/tools/{tool_id}/favourite";
+};
+
+export type ToolsFavouriteToolErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type ToolsFavouriteToolError =
+  ToolsFavouriteToolErrors[keyof ToolsFavouriteToolErrors];
+
+export type ToolsFavouriteToolResponses = {
+  /**
+   * Successful Response
+   */
+  200: Message;
+};
+
+export type ToolsFavouriteToolResponse =
+  ToolsFavouriteToolResponses[keyof ToolsFavouriteToolResponses];
+
+export type ToolsEnableToolData = {
+  body?: never;
+  path: {
+    /**
+     * Tool Id
+     */
+    tool_id: string;
+  };
+  query?: never;
+  url: "/api/v1/tools/{tool_id}/enable";
+};
+
+export type ToolsEnableToolErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type ToolsEnableToolError =
+  ToolsEnableToolErrors[keyof ToolsEnableToolErrors];
+
+export type ToolsEnableToolResponses = {
+  /**
+   * Successful Response
+   */
+  200: Message;
+};
+
+export type ToolsEnableToolResponse =
+  ToolsEnableToolResponses[keyof ToolsEnableToolResponses];
+
+export type ToolsDisableToolData = {
+  body?: never;
+  path: {
+    /**
+     * Tool Id
+     */
+    tool_id: string;
+  };
+  query?: never;
+  url: "/api/v1/tools/{tool_id}/disable";
+};
+
+export type ToolsDisableToolErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type ToolsDisableToolError =
+  ToolsDisableToolErrors[keyof ToolsDisableToolErrors];
+
+export type ToolsDisableToolResponses = {
+  /**
+   * Successful Response
+   */
+  200: Message;
+};
+
+export type ToolsDisableToolResponse =
+  ToolsDisableToolResponses[keyof ToolsDisableToolResponses];
+
+export type ToolsEnableLlmSummaryData = {
+  body?: never;
+  path: {
+    /**
+     * Tool Id
+     */
+    tool_id: string;
+  };
+  query?: never;
+  url: "/api/v1/tools/{tool_id}/enable_llm_summary";
+};
+
+export type ToolsEnableLlmSummaryErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type ToolsEnableLlmSummaryError =
+  ToolsEnableLlmSummaryErrors[keyof ToolsEnableLlmSummaryErrors];
+
+export type ToolsEnableLlmSummaryResponses = {
+  /**
+   * Successful Response
+   */
+  200: Message;
+};
+
+export type ToolsEnableLlmSummaryResponse =
+  ToolsEnableLlmSummaryResponses[keyof ToolsEnableLlmSummaryResponses];
+
+export type ToolsDisableLlmSummaryData = {
+  body?: never;
+  path: {
+    /**
+     * Tool Id
+     */
+    tool_id: string;
+  };
+  query?: never;
+  url: "/api/v1/tools/{tool_id}/disable_llm_summary";
+};
+
+export type ToolsDisableLlmSummaryErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type ToolsDisableLlmSummaryError =
+  ToolsDisableLlmSummaryErrors[keyof ToolsDisableLlmSummaryErrors];
+
+export type ToolsDisableLlmSummaryResponses = {
+  /**
+   * Successful Response
+   */
+  200: Message;
+};
+
+export type ToolsDisableLlmSummaryResponse =
+  ToolsDisableLlmSummaryResponses[keyof ToolsDisableLlmSummaryResponses];
+
+export type ToolsInstallToolData = {
+  body?: never;
+  path: {
+    /**
+     * Tool Id
+     */
+    tool_id: string;
+  };
+  query?: never;
+  url: "/api/v1/tools/{tool_id}/install";
+};
+
+export type ToolsInstallToolErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type ToolsInstallToolError =
+  ToolsInstallToolErrors[keyof ToolsInstallToolErrors];
+
+export type ToolsInstallToolResponses = {
+  /**
+   * Successful Response
+   */
+  200: Message;
+};
+
+export type ToolsInstallToolResponse =
+  ToolsInstallToolResponses[keyof ToolsInstallToolResponses];
+
+export type ToolsUninstallToolData = {
+  body?: never;
+  path: {
+    /**
+     * Tool Id
+     */
+    tool_id: string;
+  };
+  query?: never;
+  url: "/api/v1/tools/{tool_id}/uninstall";
+};
+
+export type ToolsUninstallToolErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type ToolsUninstallToolError =
+  ToolsUninstallToolErrors[keyof ToolsUninstallToolErrors];
+
+export type ToolsUninstallToolResponses = {
+  /**
+   * Successful Response
+   */
+  200: Message;
+};
+
+export type ToolsUninstallToolResponse =
+  ToolsUninstallToolResponses[keyof ToolsUninstallToolResponses];
+
+export type FilesDeleteFilesData = {
+  body?: never;
+  path?: never;
+  query?: {
+    /**
+     * Name
+     */
+    name?: string | null;
+    /**
+     * Types
+     */
+    types?: Array<FileTypeEnum>;
+    /**
+     * Top Level Only
+     */
+    top_level_only?: boolean;
+    /**
+     * Ids
+     */
+    ids?: Array<string> | null;
+  };
+  url: "/api/v1/files/";
+};
+
+export type FilesDeleteFilesErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type FilesDeleteFilesError =
+  FilesDeleteFilesErrors[keyof FilesDeleteFilesErrors];
+
+export type FilesDeleteFilesResponses = {
+  /**
+   * Response Files-Delete Files
+   * Successful Response
+   */
+  200: unknown;
+};
+
+export type FilesReadFilesData = {
+  body?: never;
+  path?: never;
+  query?: {
+    /**
+     * Skip
+     */
+    skip?: number;
+    /**
+     * Limit
+     */
+    limit?: number;
+    /**
+     * Order By
+     */
+    order_by?: string;
+    /**
+     * Name
+     */
+    name?: string | null;
+    /**
+     * Types
+     */
+    types?: Array<FileTypeEnum>;
+  };
+  url: "/api/v1/files/";
+};
+
+export type FilesReadFilesErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type FilesReadFilesError =
+  FilesReadFilesErrors[keyof FilesReadFilesErrors];
+
+export type FilesReadFilesResponses = {
+  /**
+   * Successful Response
+   */
+  200: FilesPublic;
+};
+
+export type FilesReadFilesResponse =
+  FilesReadFilesResponses[keyof FilesReadFilesResponses];
+
+export type FilesUploadFileData = {
+  body: BodyFilesUploadFile;
+  path?: never;
+  query?: never;
+  url: "/api/v1/files/";
+};
+
+export type FilesUploadFileErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type FilesUploadFileError =
+  FilesUploadFileErrors[keyof FilesUploadFileErrors];
+
+export type FilesUploadFileResponses = {
+  /**
+   * Successful Response
+   */
+  200: FilePublic;
+};
+
+export type FilesUploadFileResponse =
+  FilesUploadFileResponses[keyof FilesUploadFileResponses];
+
+export type FilesGetFilesAllowedTypesData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/v1/files/types";
+};
+
+export type FilesGetFilesAllowedTypesResponses = {
+  /**
+   * Response Files-Get Files Allowed Types
+   * Successful Response
+   */
+  200: {
+    [key: string]: FileTypeMetadata;
+  };
+};
+
+export type FilesGetFilesAllowedTypesResponse =
+  FilesGetFilesAllowedTypesResponses[keyof FilesGetFilesAllowedTypesResponses];
+
+export type FilesGetCurrentFileTypesData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/v1/files/types/current";
+};
+
+export type FilesGetCurrentFileTypesResponses = {
+  /**
+   * Response Files-Get Current File Types
+   * Successful Response
+   */
+  200: {
+    [key: string]: FileTypeMetadata;
+  };
+};
+
+export type FilesGetCurrentFileTypesResponse =
+  FilesGetCurrentFileTypesResponses[keyof FilesGetCurrentFileTypesResponses];
+
+export type FilesGetFilesStatsData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/v1/files/stats";
+};
+
+export type FilesGetFilesStatsResponses = {
+  /**
+   * Successful Response
+   */
+  200: FilesStatistics;
+};
+
+export type FilesGetFilesStatsResponse =
+  FilesGetFilesStatsResponses[keyof FilesGetFilesStatsResponses];
+
+export type FilesCreatePairData = {
+  body?: never;
+  path?: never;
+  query: {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Forward
+     */
+    forward: string;
+    /**
+     * Reverse
+     */
+    reverse: string;
+  };
+  url: "/api/v1/files/pairs";
+};
+
+export type FilesCreatePairErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type FilesCreatePairError =
+  FilesCreatePairErrors[keyof FilesCreatePairErrors];
+
+export type FilesCreatePairResponses = {
+  /**
+   * Successful Response
+   */
+  200: FilePublic;
+};
+
+export type FilesCreatePairResponse =
+  FilesCreatePairResponses[keyof FilesCreatePairResponses];
+
+export type FilesCreateGroupData = {
+  /**
+   * File Ids
+   */
+  body: Array<string>;
+  path?: never;
+  query: {
+    /**
+     * Name
+     */
+    name: string;
+  };
+  url: "/api/v1/files/groups";
+};
+
+export type FilesCreateGroupErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type FilesCreateGroupError =
+  FilesCreateGroupErrors[keyof FilesCreateGroupErrors];
+
+export type FilesCreateGroupResponses = {
+  /**
+   * Successful Response
+   */
+  200: FilePublic;
+};
+
+export type FilesCreateGroupResponse =
+  FilesCreateGroupResponses[keyof FilesCreateGroupResponses];
+
+export type FilesUngroupFileData = {
+  body?: never;
+  path: {
     /**
      * Id
      */
     id: string;
+  };
+  query?: never;
+  url: "/api/v1/files/{id}/ungroup";
+};
+
+export type FilesUngroupFileErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type FilesUngroupFileError =
+  FilesUngroupFileErrors[keyof FilesUngroupFileErrors];
+
+export type FilesUngroupFileResponses = {
+  /**
+   * Successful Response
+   */
+  200: Message;
+};
+
+export type FilesUngroupFileResponse =
+  FilesUngroupFileResponses[keyof FilesUngroupFileResponses];
+
+export type FilesDeleteFileData = {
+  body?: never;
+  path: {
+    /**
+     * Id
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/api/v1/files/{id}";
+};
+
+export type FilesDeleteFileErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type FilesDeleteFileError =
+  FilesDeleteFileErrors[keyof FilesDeleteFileErrors];
+
+export type FilesDeleteFileResponses = {
+  /**
+   * Response Files-Delete File
+   * Successful Response
+   */
+  200: unknown;
+};
+
+export type FilesReadFileData = {
+  body?: never;
+  path: {
+    /**
+     * Id
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/api/v1/files/{id}";
+};
+
+export type FilesReadFileErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type FilesReadFileError = FilesReadFileErrors[keyof FilesReadFileErrors];
+
+export type FilesReadFileResponses = {
+  /**
+   * Successful Response
+   */
+  200: FilePublic;
+};
+
+export type FilesReadFileResponse =
+  FilesReadFileResponses[keyof FilesReadFileResponses];
+
+export type FilesSaveFileData = {
+  body?: never;
+  path: {
+    /**
+     * Id
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/api/v1/files{id}/save";
+};
+
+export type FilesSaveFileErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type FilesSaveFileError = FilesSaveFileErrors[keyof FilesSaveFileErrors];
+
+export type FilesSaveFileResponses = {
+  /**
+   * Successful Response
+   */
+  200: FilePublic;
+};
+
+export type FilesSaveFileResponse =
+  FilesSaveFileResponses[keyof FilesSaveFileResponses];
+
+export type FilesCopyFileData = {
+  body?: never;
+  path: {
+    /**
+     * Id
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/api/v1/files/{id}/copy";
+};
+
+export type FilesCopyFileErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type FilesCopyFileError = FilesCopyFileErrors[keyof FilesCopyFileErrors];
+
+export type FilesCopyFileResponses = {
+  /**
+   * Successful Response
+   */
+  200: FilePublic;
+};
+
+export type FilesCopyFileResponse =
+  FilesCopyFileResponses[keyof FilesCopyFileResponses];
+
+export type FilesDownloadFileData = {
+  body?: never;
+  path: {
+    /**
+     * Id
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/api/v1/files/{id}/download";
+};
+
+export type FilesDownloadFileErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type FilesDownloadFileError =
+  FilesDownloadFileErrors[keyof FilesDownloadFileErrors];
+
+export type FilesDownloadFileResponses = {
+  /**
+   * Response Files-Download File
+   * Successful Response
+   */
+  200: unknown;
+};
+
+export type FilesGetDownloadTokenData = {
+  body?: never;
+  path: {
+    /**
+     * Id
+     */
+    id: string;
+  };
+  query?: {
+    /**
+     * Minutes
+     */
+    minutes?: number;
+  };
+  url: "/api/v1/files/{id}/token";
+};
+
+export type FilesGetDownloadTokenErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type FilesGetDownloadTokenError =
+  FilesGetDownloadTokenErrors[keyof FilesGetDownloadTokenErrors];
+
+export type FilesGetDownloadTokenResponses = {
+  /**
+   * Response Files-Get Download Token
+   * Successful Response
+   */
+  200: string;
+};
+
+export type FilesGetDownloadTokenResponse =
+  FilesGetDownloadTokenResponses[keyof FilesGetDownloadTokenResponses];
+
+export type FilesRenameFileData = {
+  body?: never;
+  path: {
+    /**
+     * Id
+     */
+    id: string;
+  };
+  query: {
+    /**
+     * Name
+     * New name for the file
+     */
+    name: string;
+  };
+  url: "/api/v1/files/{id}/rename";
+};
+
+export type FilesRenameFileErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type FilesRenameFileError =
+  FilesRenameFileErrors[keyof FilesRenameFileErrors];
+
+export type FilesRenameFileResponses = {
+  /**
+   * Successful Response
+   */
+  200: FilePublic;
+};
+
+export type FilesRenameFileResponse =
+  FilesRenameFileResponses[keyof FilesRenameFileResponses];
+
+export type FilesDownloadFileWithTokenData = {
+  body?: never;
+  path: {
+    /**
+     * Token
+     */
+    token: string;
+  };
+  query?: never;
+  url: "/api/v1/files/download/{token}";
+};
+
+export type FilesDownloadFileWithTokenErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type FilesDownloadFileWithTokenError =
+  FilesDownloadFileWithTokenErrors[keyof FilesDownloadFileWithTokenErrors];
+
+export type FilesDownloadFileWithTokenResponses = {
+  /**
+   * Response Files-Download File With Token
+   * Successful Response
+   */
+  200: unknown;
+};
+
+export type RunsDeleteRunsData = {
+  body?: never;
+  path?: never;
+  query?: {
     /**
      * Name
      */
@@ -626,2896 +3061,644 @@ export type RecentRun = {
     /**
      * Tool Name
      */
-    tool_name: string;
+    tool_name?: string | null;
     /**
-     * Owner Email
+     * Ids
      */
-    owner_email: string;
-    status: RunStatus;
-    /**
-     * Created At
-     */
-    created_at: string;
-    /**
-     * Started At
-     */
-    started_at?: string | null;
-    /**
-     * Finished At
-     */
-    finished_at?: string | null;
+    ids?: Array<string> | null;
+  };
+  url: "/api/v1/runs/";
 };
 
-/**
- * RunStatus
- */
-export type RunStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
-
-/**
- * RunsPublicMinimal
- */
-export type RunsPublicMinimal = {
-    /**
-     * Data
-     */
-    data: Array<RunPublicMinimal>;
-    /**
-     * Count
-     */
-    count: number;
+export type RunsDeleteRunsErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
 };
 
-/**
- * SetupFile
- */
-export type SetupFile = {
-    /**
-     * Name
-     */
-    name: string;
-    /**
-     * Content
-     */
-    content: string;
+export type RunsDeleteRunsError =
+  RunsDeleteRunsErrors[keyof RunsDeleteRunsErrors];
+
+export type RunsDeleteRunsResponses = {
+  /**
+   * Successful Response
+   */
+  200: Message;
 };
 
-/**
- * StatsResponse
- */
-export type StatsResponse = {
-    users: SummaryUserStats;
-    tools: SummaryToolStats;
-    runs: SummaryRunStats;
-    files: SummaryFileStats;
-};
+export type RunsDeleteRunsResponse =
+  RunsDeleteRunsResponses[keyof RunsDeleteRunsResponses];
 
-/**
- * SummaryFileStats
- */
-export type SummaryFileStats = {
+export type RunsReadRunsData = {
+  body?: never;
+  path?: never;
+  query?: {
     /**
-     * Total
+     * Skip
      */
-    total: number;
+    skip?: number;
     /**
-     * Total Size Gb
+     * Limit
      */
-    total_size_gb: number;
-};
-
-/**
- * SummaryRunStats
- */
-export type SummaryRunStats = {
+    limit?: number;
     /**
-     * Total
+     * Order By
      */
-    total: number;
-    /**
-     * Currently Running
-     */
-    currently_running: number;
-};
-
-/**
- * SummaryToolStats
- */
-export type SummaryToolStats = {
-    /**
-     * Total
-     */
-    total: number;
-    /**
-     * Enabled
-     */
-    enabled: number;
-};
-
-/**
- * SummaryUserStats
- */
-export type SummaryUserStats = {
-    /**
-     * Total
-     */
-    total: number;
-};
-
-/**
- * SystemStats
- */
-export type SystemStats = {
-    users: UserStats;
-    files: FileStats;
-    runs: RunStats;
-    tools: ToolStats;
-};
-
-/**
- * Target
- */
-export type Target = {
-    /**
-     * Path
-     */
-    path: string;
-    /**
-     * Target Type
-     */
-    target_type: string;
-    /**
-     * Required
-     */
-    required?: boolean;
-};
-
-/**
- * Token
- */
-export type Token = {
-    /**
-     * Access Token
-     */
-    access_token: string;
-    /**
-     * Token Type
-     */
-    token_type?: string;
-};
-
-/**
- * ToolBadge
- */
-export type ToolBadge = {
-    /**
-     * Badge
-     */
-    badge?: string | null;
-    /**
-     * Url
-     */
-    url?: string | null;
-};
-
-/**
- * ToolCreate
- */
-export type ToolCreate = {
-    /**
-     * Name
-     */
-    name: string;
-    /**
-     * Version
-     */
-    version?: string | null;
-    /**
-     * Image
-     */
-    image?: string | null;
-    /**
-     * Description
-     */
-    description?: string | null;
-    /**
-     * Explanation Of Results Markdown
-     */
-    explanation_of_results_markdown?: string | null;
-    /**
-     * Url
-     */
-    url?: string | null;
-    /**
-     * Github Repo
-     */
-    github_repo?: string | null;
-    /**
-     * Docs Url
-     */
-    docs_url?: string | null;
-    /**
-     * Paper Doi
-     */
-    paper_doi?: string | null;
-    /**
-     * License
-     */
-    license?: string | null;
-    /**
-     * Citation Markdown
-     */
-    citation_markdown?: string | null;
-    /**
-     * Badges
-     */
-    badges?: Array<ToolBadge> | null;
-    /**
-     * Tags
-     */
-    tags?: Array<string> | null;
-    /**
-     * Command
-     */
-    command: string;
-    conda_env?: CondaEnv | null;
-    /**
-     * Post Install
-     */
-    post_install?: string | null;
-    /**
-     * Setup Files
-     */
-    setup_files?: Array<SetupFile> | null;
-    /**
-     * Params
-     */
-    params?: Array<Param> | null;
-    /**
-     * Targets
-     */
-    targets?: Array<Target> | null;
-    /**
-     * Llm Summary Enabled
-     */
-    llm_summary_enabled?: boolean;
-};
-
-/**
- * ToolMinimalPublic
- */
-export type ToolMinimalPublic = {
-    /**
-     * Id
-     */
-    id: string;
-    /**
-     * Name
-     */
-    name: string;
-    /**
-     * Image
-     */
-    image?: string | null;
-    /**
-     * Description
-     */
-    description?: string | null;
-    /**
-     * Tags
-     */
-    tags?: Array<string> | null;
-    /**
-     * Params
-     */
-    params?: Array<Param> | null;
-    /**
-     * Favourited
-     */
-    favourited?: boolean;
-    /**
-     * Favourited Count
-     */
-    favourited_count?: number;
-    /**
-     * Run Count
-     */
-    run_count?: number;
-    /**
-     * Enabled
-     */
-    enabled?: boolean;
-    /**
-     * Llm Summary Enabled
-     */
-    llm_summary_enabled?: boolean;
-    /**
-     * Explanation Of Results Markdown
-     */
-    explanation_of_results_markdown?: string | null;
-};
-
-/**
- * ToolPublic
- */
-export type ToolPublic = {
-    /**
-     * Name
-     */
-    name: string;
-    /**
-     * Version
-     */
-    version?: string | null;
-    /**
-     * Image
-     */
-    image?: string | null;
-    /**
-     * Description
-     */
-    description?: string | null;
-    /**
-     * Explanation Of Results Markdown
-     */
-    explanation_of_results_markdown?: string | null;
-    /**
-     * Url
-     */
-    url?: string | null;
-    /**
-     * Github Repo
-     */
-    github_repo?: string | null;
-    /**
-     * Docs Url
-     */
-    docs_url?: string | null;
-    /**
-     * Paper Doi
-     */
-    paper_doi?: string | null;
-    /**
-     * License
-     */
-    license?: string | null;
-    /**
-     * Citation Markdown
-     */
-    citation_markdown?: string | null;
-    /**
-     * Badges
-     */
-    badges?: Array<ToolBadge> | null;
-    /**
-     * Tags
-     */
-    tags?: Array<string> | null;
-    /**
-     * Command
-     */
-    command: string;
-    conda_env?: CondaEnv | null;
-    /**
-     * Post Install
-     */
-    post_install?: string | null;
-    /**
-     * Setup Files
-     */
-    setup_files?: Array<SetupFile> | null;
-    /**
-     * Params
-     */
-    params?: Array<Param> | null;
-    /**
-     * Targets
-     */
-    targets?: Array<Target> | null;
-    /**
-     * Llm Summary Enabled
-     */
-    llm_summary_enabled?: boolean;
-    /**
-     * Favourited
-     */
-    favourited?: boolean;
-    status: ToolStatus;
-    /**
-     * Installation Log
-     */
-    installation_log?: string | null;
-    /**
-     * Favourited Count
-     */
-    favourited_count?: number;
-    /**
-     * Run Count
-     */
-    run_count?: number;
-    /**
-     * Enabled
-     */
-    enabled?: boolean;
-    /**
-     * Conda Env Pinned
-     */
-    conda_env_pinned?: string | null;
-    /**
-     * Id
-     */
-    id: string;
-    /**
-     * Created At
-     */
-    created_at: string;
-};
-
-/**
- * ToolStats
- */
-export type ToolStats = {
-    /**
-     * Total
-     */
-    total: number;
-    /**
-     * Enabled
-     */
-    enabled: number;
-    /**
-     * Disabled
-     */
-    disabled: number;
-    /**
-     * By Status
-     */
-    by_status: {
-        [key: string]: number;
-    };
-    /**
-     * Most Popular
-     */
-    most_popular: Array<CountItem>;
-    /**
-     * Most Favourited
-     */
-    most_favourited: Array<CountItem>;
-};
-
-/**
- * ToolDetailStats
- */
-export type ToolDetailStats = {
-    tool: ToolPublic;
-    runs: RunStats;
-    top_users: Array<UserUsage>;
-    recent_runs: Array<RecentRun>;
-};
-
-/**
- * ToolStatus
- */
-export type ToolStatus = 'uninstalled' | 'uninstalling' | 'installed' | 'install_queued' | 'installing' | 'failed';
-
-/**
- * ToolUpdate
- */
-export type ToolUpdate = {
+    order_by?: string;
     /**
      * Name
      */
     name?: string | null;
     /**
-     * Version
+     * Tool Name
      */
-    version?: string | null;
+    tool_name?: string | null;
     /**
-     * Image
+     * Statuses
      */
-    image?: string | null;
-    /**
-     * Description
-     */
-    description?: string | null;
-    /**
-     * Explanation Of Results Markdown
-     */
-    explanation_of_results_markdown?: string | null;
-    /**
-     * Url
-     */
-    url?: string | null;
-    /**
-     * Github Repo
-     */
-    github_repo?: string | null;
-    /**
-     * Docs Url
-     */
-    docs_url?: string | null;
-    /**
-     * Paper Doi
-     */
-    paper_doi?: string | null;
-    /**
-     * License
-     */
-    license?: string | null;
-    /**
-     * Citation Markdown
-     */
-    citation_markdown?: string | null;
-    /**
-     * Badges
-     */
-    badges?: Array<ToolBadge> | null;
-    /**
-     * Tags
-     */
-    tags?: Array<string> | null;
-    /**
-     * Command
-     */
-    command?: string | null;
-    conda_env?: CondaEnv | null;
-    /**
-     * Post Install
-     */
-    post_install?: string | null;
-    /**
-     * Setup Files
-     */
-    setup_files?: Array<SetupFile> | null;
-    /**
-     * Params
-     */
-    params?: Array<Param> | null;
-    /**
-     * Targets
-     */
-    targets?: Array<Target> | null;
-    /**
-     * Llm Summary Enabled
-     */
-    llm_summary_enabled?: boolean;
-    /**
-     * Favourited Count
-     */
-    favourited_count?: number;
-    /**
-     * Run Count
-     */
-    run_count?: number;
-    /**
-     * Enabled
-     */
-    enabled?: boolean;
-    status?: ToolStatus | null;
-    /**
-     * Installation Log
-     */
-    installation_log?: string | null;
-};
-
-/**
- * ToolsOrderBy
- */
-export type ToolsOrderBy = 'created_at' | 'run_count';
-
-/**
- * ToolsPublic
- */
-export type ToolsPublic = {
-    /**
-     * Data
-     */
-    data: Array<ToolMinimalPublic>;
-    /**
-     * Count
-     */
-    count: number;
-};
-
-/**
- * UpdatePassword
- */
-export type UpdatePassword = {
-    /**
-     * Current Password
-     */
-    current_password: string;
-    /**
-     * New Password
-     */
-    new_password: string;
-};
-
-/**
- * UserCreate
- */
-export type UserCreate = {
-    /**
-     * Email
-     */
-    email: string;
-    /**
-     * Is Active
-     */
-    is_active?: boolean;
-    /**
-     * Is Superuser
-     */
-    is_superuser?: boolean;
-    /**
-     * Full Name
-     */
-    full_name?: string | null;
-    /**
-     * Max Runs
-     */
-    max_runs?: number;
-    /**
-     * Max Storage
-     */
-    max_storage?: number;
-    /**
-     * Max Storage Files
-     */
-    max_storage_files?: number;
-    /**
-     * Password
-     */
-    password: string;
-};
-
-/**
- * UserPublic
- */
-export type UserPublic = {
-    /**
-     * Email
-     */
-    email: string;
-    /**
-     * Is Active
-     */
-    is_active?: boolean;
-    /**
-     * Is Superuser
-     */
-    is_superuser?: boolean;
-    /**
-     * Full Name
-     */
-    full_name?: string | null;
-    /**
-     * Max Runs
-     */
-    max_runs?: number;
-    /**
-     * Max Storage
-     */
-    max_storage?: number;
-    /**
-     * Max Storage Files
-     */
-    max_storage_files?: number;
-    /**
-     * Id
-     */
-    id: string;
-    /**
-     * Created At
-     */
-    created_at: string;
-};
-
-/**
- * UserRegister
- */
-export type UserRegister = {
-    /**
-     * Email
-     */
-    email: string;
-    /**
-     * Password
-     */
-    password: string;
-    /**
-     * Full Name
-     */
-    full_name?: string | null;
-};
-
-/**
- * UserStats
- */
-export type UserStats = {
-    /**
-     * Total
-     */
-    total: number;
-    /**
-     * Active
-     */
-    active: number;
-    /**
-     * Superusers
-     */
-    superusers: number;
-    /**
-     * Active Last 30 Days
-     */
-    active_last_30_days: number;
-};
-
-/**
- * UserDetailStats
- */
-export type UserDetailStats = {
-    user: UserPublic;
-    runs: RunStats;
-    files: FileStats;
-    top_tools: Array<CountItem>;
-    recent_runs: Array<RecentRun>;
-};
-
-/**
- * UserUsage
- */
-export type UserUsage = {
-    /**
-     * Id
-     */
-    id: string;
-    /**
-     * Email
-     */
-    email: string;
-    /**
-     * Full Name
-     */
-    full_name?: string | null;
-    /**
-     * Count
-     */
-    count: number;
-};
-
-/**
- * UserUpdate
- */
-export type UserUpdate = {
-    /**
-     * Email
-     */
-    email?: string | null;
-    /**
-     * Is Active
-     */
-    is_active?: boolean;
-    /**
-     * Is Superuser
-     */
-    is_superuser?: boolean;
-    /**
-     * Full Name
-     */
-    full_name?: string | null;
-    /**
-     * Max Runs
-     */
-    max_runs?: number;
-    /**
-     * Max Storage
-     */
-    max_storage?: number;
-    /**
-     * Max Storage Files
-     */
-    max_storage_files?: number;
-    /**
-     * Password
-     */
-    password?: string | null;
-};
-
-/**
- * UserUpdateMe
- */
-export type UserUpdateMe = {
-    /**
-     * Full Name
-     */
-    full_name?: string | null;
-    /**
-     * Email
-     */
-    email?: string | null;
-};
-
-/**
- * UsersPublic
- */
-export type UsersPublic = {
-    /**
-     * Data
-     */
-    data: Array<UserPublic>;
-    /**
-     * Count
-     */
-    count: number;
-};
-
-/**
- * ValidationError
- */
-export type ValidationError = {
-    /**
-     * Location
-     */
-    loc: Array<string | number>;
-    /**
-     * Message
-     */
-    msg: string;
-    /**
-     * Error Type
-     */
-    type: string;
-    /**
-     * Input
-     */
-    input?: unknown;
-    /**
-     * Context
-     */
-    ctx?: {
-        [key: string]: unknown;
-    };
-};
-
-export type LoginLoginAccessTokenData = {
-    body: BodyLoginLoginAccessToken;
-    path?: never;
-    query?: never;
-    url: '/api/v1/login/access-token';
-};
-
-export type LoginLoginAccessTokenErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type LoginLoginAccessTokenError = LoginLoginAccessTokenErrors[keyof LoginLoginAccessTokenErrors];
-
-export type LoginLoginAccessTokenResponses = {
-    /**
-     * Successful Response
-     */
-    200: Token;
-};
-
-export type LoginLoginAccessTokenResponse = LoginLoginAccessTokenResponses[keyof LoginLoginAccessTokenResponses];
-
-export type LoginTestTokenData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v1/login/test-token';
-};
-
-export type LoginTestTokenResponses = {
-    /**
-     * Successful Response
-     */
-    200: UserPublic;
-};
-
-export type LoginTestTokenResponse = LoginTestTokenResponses[keyof LoginTestTokenResponses];
-
-export type LoginRecoverPasswordData = {
-    body?: never;
-    path: {
-        /**
-         * Email
-         */
-        email: string;
-    };
-    query?: never;
-    url: '/api/v1/password-recovery/{email}';
-};
-
-export type LoginRecoverPasswordErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type LoginRecoverPasswordError = LoginRecoverPasswordErrors[keyof LoginRecoverPasswordErrors];
-
-export type LoginRecoverPasswordResponses = {
-    /**
-     * Successful Response
-     */
-    200: Message;
-};
-
-export type LoginRecoverPasswordResponse = LoginRecoverPasswordResponses[keyof LoginRecoverPasswordResponses];
-
-export type LoginResetPasswordData = {
-    body: NewPassword;
-    path?: never;
-    query?: never;
-    url: '/api/v1/reset-password/';
-};
-
-export type LoginResetPasswordErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type LoginResetPasswordError = LoginResetPasswordErrors[keyof LoginResetPasswordErrors];
-
-export type LoginResetPasswordResponses = {
-    /**
-     * Successful Response
-     */
-    200: Message;
-};
-
-export type LoginResetPasswordResponse = LoginResetPasswordResponses[keyof LoginResetPasswordResponses];
-
-export type LoginRecoverPasswordHtmlContentData = {
-    body?: never;
-    path: {
-        /**
-         * Email
-         */
-        email: string;
-    };
-    query?: never;
-    url: '/api/v1/password-recovery-html-content/{email}';
-};
-
-export type LoginRecoverPasswordHtmlContentErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type LoginRecoverPasswordHtmlContentError = LoginRecoverPasswordHtmlContentErrors[keyof LoginRecoverPasswordHtmlContentErrors];
-
-export type LoginRecoverPasswordHtmlContentResponses = {
-    /**
-     * Successful Response
-     */
-    200: string;
-};
-
-export type LoginRecoverPasswordHtmlContentResponse = LoginRecoverPasswordHtmlContentResponses[keyof LoginRecoverPasswordHtmlContentResponses];
-
-export type UsersReadUsersData = {
-    body?: never;
-    path?: never;
-    query?: {
-        /**
-         * Skip
-         */
-        skip?: number;
-        /**
-         * Limit
-         */
-        limit?: number;
-    };
-    url: '/api/v1/users/';
-};
-
-export type UsersReadUsersErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type UsersReadUsersError = UsersReadUsersErrors[keyof UsersReadUsersErrors];
-
-export type UsersReadUsersResponses = {
-    /**
-     * Successful Response
-     */
-    200: UsersPublic;
-};
-
-export type UsersReadUsersResponse = UsersReadUsersResponses[keyof UsersReadUsersResponses];
-
-export type UsersCreateUserData = {
-    body: UserCreate;
-    path?: never;
-    query?: never;
-    url: '/api/v1/users/';
-};
-
-export type UsersCreateUserErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type UsersCreateUserError = UsersCreateUserErrors[keyof UsersCreateUserErrors];
-
-export type UsersCreateUserResponses = {
-    /**
-     * Successful Response
-     */
-    200: UserPublic;
-};
-
-export type UsersCreateUserResponse = UsersCreateUserResponses[keyof UsersCreateUserResponses];
-
-export type UsersDeleteUserMeData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v1/users/me';
-};
-
-export type UsersDeleteUserMeResponses = {
-    /**
-     * Successful Response
-     */
-    200: Message;
-};
-
-export type UsersDeleteUserMeResponse = UsersDeleteUserMeResponses[keyof UsersDeleteUserMeResponses];
-
-export type UsersReadUserMeData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v1/users/me';
-};
-
-export type UsersReadUserMeResponses = {
-    /**
-     * Successful Response
-     */
-    200: UserPublic;
-};
-
-export type UsersReadUserMeResponse = UsersReadUserMeResponses[keyof UsersReadUserMeResponses];
-
-export type UsersUpdateUserMeData = {
-    body: UserUpdateMe;
-    path?: never;
-    query?: never;
-    url: '/api/v1/users/me';
-};
-
-export type UsersUpdateUserMeErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type UsersUpdateUserMeError = UsersUpdateUserMeErrors[keyof UsersUpdateUserMeErrors];
-
-export type UsersUpdateUserMeResponses = {
-    /**
-     * Successful Response
-     */
-    200: UserPublic;
-};
-
-export type UsersUpdateUserMeResponse = UsersUpdateUserMeResponses[keyof UsersUpdateUserMeResponses];
-
-export type UsersUpdatePasswordMeData = {
-    body: UpdatePassword;
-    path?: never;
-    query?: never;
-    url: '/api/v1/users/me/password';
-};
-
-export type UsersUpdatePasswordMeErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type UsersUpdatePasswordMeError = UsersUpdatePasswordMeErrors[keyof UsersUpdatePasswordMeErrors];
-
-export type UsersUpdatePasswordMeResponses = {
-    /**
-     * Successful Response
-     */
-    200: Message;
-};
-
-export type UsersUpdatePasswordMeResponse = UsersUpdatePasswordMeResponses[keyof UsersUpdatePasswordMeResponses];
-
-export type UsersRegisterUserData = {
-    body: UserRegister;
-    path?: never;
-    query?: never;
-    url: '/api/v1/users/signup';
-};
-
-export type UsersRegisterUserErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type UsersRegisterUserError = UsersRegisterUserErrors[keyof UsersRegisterUserErrors];
-
-export type UsersRegisterUserResponses = {
-    /**
-     * Successful Response
-     */
-    200: UserPublic;
-};
-
-export type UsersRegisterUserResponse = UsersRegisterUserResponses[keyof UsersRegisterUserResponses];
-
-export type UsersActivateAccountData = {
-    body?: never;
-    path?: never;
-    query: {
-        /**
-         * Token
-         */
-        token: string;
-    };
-    url: '/api/v1/users/activate';
-};
-
-export type UsersActivateAccountErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type UsersActivateAccountError = UsersActivateAccountErrors[keyof UsersActivateAccountErrors];
-
-export type UsersActivateAccountResponses = {
-    /**
-     * Successful Response
-     */
-    200: Message;
-};
-
-export type UsersActivateAccountResponse = UsersActivateAccountResponses[keyof UsersActivateAccountResponses];
-
-export type UsersDeleteUserData = {
-    body?: never;
-    path: {
-        /**
-         * User Id
-         */
-        user_id: string;
-    };
-    query?: never;
-    url: '/api/v1/users/{user_id}';
-};
-
-export type UsersDeleteUserErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type UsersDeleteUserError = UsersDeleteUserErrors[keyof UsersDeleteUserErrors];
-
-export type UsersDeleteUserResponses = {
-    /**
-     * Successful Response
-     */
-    200: Message;
-};
-
-export type UsersDeleteUserResponse = UsersDeleteUserResponses[keyof UsersDeleteUserResponses];
-
-export type UsersReadUserByIdData = {
-    body?: never;
-    path: {
-        /**
-         * User Id
-         */
-        user_id: string;
-    };
-    query?: never;
-    url: '/api/v1/users/{user_id}';
-};
-
-export type UsersReadUserByIdErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type UsersReadUserByIdError = UsersReadUserByIdErrors[keyof UsersReadUserByIdErrors];
-
-export type UsersReadUserByIdResponses = {
-    /**
-     * Successful Response
-     */
-    200: UserPublic;
-};
-
-export type UsersReadUserByIdResponse = UsersReadUserByIdResponses[keyof UsersReadUserByIdResponses];
-
-export type UsersUpdateUserData = {
-    body: UserUpdate;
-    path: {
-        /**
-         * User Id
-         */
-        user_id: string;
-    };
-    query?: never;
-    url: '/api/v1/users/{user_id}';
-};
-
-export type UsersUpdateUserErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type UsersUpdateUserError = UsersUpdateUserErrors[keyof UsersUpdateUserErrors];
-
-export type UsersUpdateUserResponses = {
-    /**
-     * Successful Response
-     */
-    200: UserPublic;
-};
-
-export type UsersUpdateUserResponse = UsersUpdateUserResponses[keyof UsersUpdateUserResponses];
-
-export type UtilsTestEmailData = {
-    body?: never;
-    path?: never;
-    query: {
-        /**
-         * Email To
-         */
-        email_to: string;
-    };
-    url: '/api/v1/utils/test-email/';
-};
-
-export type UtilsTestEmailErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type UtilsTestEmailError = UtilsTestEmailErrors[keyof UtilsTestEmailErrors];
-
-export type UtilsTestEmailResponses = {
-    /**
-     * Successful Response
-     */
-    201: Message;
-};
-
-export type UtilsTestEmailResponse = UtilsTestEmailResponses[keyof UtilsTestEmailResponses];
-
-export type UtilsHealthCheckData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v1/utils/health-check/';
-};
-
-export type UtilsHealthCheckResponses = {
-    /**
-     * Response Utils-Health Check
-     * Successful Response
-     */
-    200: boolean;
-};
-
-export type UtilsHealthCheckResponse = UtilsHealthCheckResponses[keyof UtilsHealthCheckResponses];
-
-export type UtilsMaxUploadSizeData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v1/utils/max-upload-size/';
-};
-
-export type UtilsMaxUploadSizeResponses = {
-    /**
-     * Response Utils-Max Upload Size
-     * Successful Response
-     */
-    200: number;
-};
-
-export type UtilsMaxUploadSizeResponse = UtilsMaxUploadSizeResponses[keyof UtilsMaxUploadSizeResponses];
-
-export type ToolsReadToolsData = {
-    body?: never;
-    path?: never;
-    query?: {
-        /**
-         * Skip
-         */
-        skip?: number;
-        /**
-         * Limit
-         */
-        limit?: number;
-        order_by?: ToolsOrderBy;
-        /**
-         * Show Favourites
-         */
-        show_favourites?: boolean;
-        /**
-         * Search
-         */
-        search?: string;
-    };
-    url: '/api/v1/tools/';
-};
-
-export type ToolsReadToolsErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ToolsReadToolsError = ToolsReadToolsErrors[keyof ToolsReadToolsErrors];
-
-export type ToolsReadToolsResponses = {
-    /**
-     * Successful Response
-     */
-    200: ToolsPublic;
-};
-
-export type ToolsReadToolsResponse = ToolsReadToolsResponses[keyof ToolsReadToolsResponses];
-
-export type ToolsCreateToolData = {
-    body: ToolCreate;
-    path?: never;
-    query?: never;
-    url: '/api/v1/tools/';
-};
-
-export type ToolsCreateToolErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ToolsCreateToolError = ToolsCreateToolErrors[keyof ToolsCreateToolErrors];
-
-export type ToolsCreateToolResponses = {
-    /**
-     * Successful Response
-     */
-    200: ToolPublic;
-};
-
-export type ToolsCreateToolResponse = ToolsCreateToolResponses[keyof ToolsCreateToolResponses];
-
-export type ToolsReadToolByNameData = {
-    body?: never;
-    path: {
-        /**
-         * Tool Name
-         */
-        tool_name: string;
-    };
-    query?: never;
-    url: '/api/v1/tools/name/{tool_name}';
-};
-
-export type ToolsReadToolByNameErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ToolsReadToolByNameError = ToolsReadToolByNameErrors[keyof ToolsReadToolByNameErrors];
-
-export type ToolsReadToolByNameResponses = {
-    /**
-     * Successful Response
-     */
-    200: ToolPublic;
-};
-
-export type ToolsReadToolByNameResponse = ToolsReadToolByNameResponses[keyof ToolsReadToolByNameResponses];
-
-export type ToolsDeleteToolData = {
-    body?: never;
-    path: {
-        /**
-         * Tool Id
-         */
-        tool_id: string;
-    };
-    query?: never;
-    url: '/api/v1/tools/{tool_id}';
-};
-
-export type ToolsDeleteToolErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ToolsDeleteToolError = ToolsDeleteToolErrors[keyof ToolsDeleteToolErrors];
-
-export type ToolsDeleteToolResponses = {
-    /**
-     * Successful Response
-     */
-    200: Message;
-};
-
-export type ToolsDeleteToolResponse = ToolsDeleteToolResponses[keyof ToolsDeleteToolResponses];
-
-export type ToolsReadToolData = {
-    body?: never;
-    path: {
-        /**
-         * Tool Id
-         */
-        tool_id: string;
-    };
-    query?: never;
-    url: '/api/v1/tools/{tool_id}';
-};
-
-export type ToolsReadToolErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ToolsReadToolError = ToolsReadToolErrors[keyof ToolsReadToolErrors];
-
-export type ToolsReadToolResponses = {
-    /**
-     * Successful Response
-     */
-    200: ToolPublic;
-};
-
-export type ToolsReadToolResponse = ToolsReadToolResponses[keyof ToolsReadToolResponses];
-
-export type ToolsUpdateToolData = {
-    body: ToolUpdate;
-    path: {
-        /**
-         * Tool Id
-         */
-        tool_id: string;
-    };
-    query?: never;
-    url: '/api/v1/tools/{tool_id}';
-};
-
-export type ToolsUpdateToolErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ToolsUpdateToolError = ToolsUpdateToolErrors[keyof ToolsUpdateToolErrors];
-
-export type ToolsUpdateToolResponses = {
-    /**
-     * Successful Response
-     */
-    200: ToolPublic;
-};
-
-export type ToolsUpdateToolResponse = ToolsUpdateToolResponses[keyof ToolsUpdateToolResponses];
-
-export type ToolsUnfavouriteToolData = {
-    body?: never;
-    path: {
-        /**
-         * Tool Id
-         */
-        tool_id: string;
-    };
-    query?: never;
-    url: '/api/v1/tools/{tool_id}/favourite';
-};
-
-export type ToolsUnfavouriteToolErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ToolsUnfavouriteToolError = ToolsUnfavouriteToolErrors[keyof ToolsUnfavouriteToolErrors];
-
-export type ToolsUnfavouriteToolResponses = {
-    /**
-     * Successful Response
-     */
-    200: Message;
-};
-
-export type ToolsUnfavouriteToolResponse = ToolsUnfavouriteToolResponses[keyof ToolsUnfavouriteToolResponses];
-
-export type ToolsFavouriteToolData = {
-    body?: never;
-    path: {
-        /**
-         * Tool Id
-         */
-        tool_id: string;
-    };
-    query?: never;
-    url: '/api/v1/tools/{tool_id}/favourite';
-};
-
-export type ToolsFavouriteToolErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ToolsFavouriteToolError = ToolsFavouriteToolErrors[keyof ToolsFavouriteToolErrors];
-
-export type ToolsFavouriteToolResponses = {
-    /**
-     * Successful Response
-     */
-    200: Message;
-};
-
-export type ToolsFavouriteToolResponse = ToolsFavouriteToolResponses[keyof ToolsFavouriteToolResponses];
-
-export type ToolsEnableToolData = {
-    body?: never;
-    path: {
-        /**
-         * Tool Id
-         */
-        tool_id: string;
-    };
-    query?: never;
-    url: '/api/v1/tools/{tool_id}/enable';
-};
-
-export type ToolsEnableToolErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ToolsEnableToolError = ToolsEnableToolErrors[keyof ToolsEnableToolErrors];
-
-export type ToolsEnableToolResponses = {
-    /**
-     * Successful Response
-     */
-    200: Message;
-};
-
-export type ToolsEnableToolResponse = ToolsEnableToolResponses[keyof ToolsEnableToolResponses];
-
-export type ToolsDisableToolData = {
-    body?: never;
-    path: {
-        /**
-         * Tool Id
-         */
-        tool_id: string;
-    };
-    query?: never;
-    url: '/api/v1/tools/{tool_id}/disable';
-};
-
-export type ToolsDisableToolErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ToolsDisableToolError = ToolsDisableToolErrors[keyof ToolsDisableToolErrors];
-
-export type ToolsDisableToolResponses = {
-    /**
-     * Successful Response
-     */
-    200: Message;
-};
-
-export type ToolsDisableToolResponse = ToolsDisableToolResponses[keyof ToolsDisableToolResponses];
-
-export type ToolsEnableLlmSummaryData = {
-    body?: never;
-    path: {
-        /**
-         * Tool Id
-         */
-        tool_id: string;
-    };
-    query?: never;
-    url: '/api/v1/tools/{tool_id}/enable_llm_summary';
-};
-
-export type ToolsEnableLlmSummaryErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ToolsEnableLlmSummaryError = ToolsEnableLlmSummaryErrors[keyof ToolsEnableLlmSummaryErrors];
-
-export type ToolsEnableLlmSummaryResponses = {
-    /**
-     * Successful Response
-     */
-    200: Message;
-};
-
-export type ToolsEnableLlmSummaryResponse = ToolsEnableLlmSummaryResponses[keyof ToolsEnableLlmSummaryResponses];
-
-export type ToolsDisableLlmSummaryData = {
-    body?: never;
-    path: {
-        /**
-         * Tool Id
-         */
-        tool_id: string;
-    };
-    query?: never;
-    url: '/api/v1/tools/{tool_id}/disable_llm_summary';
-};
-
-export type ToolsDisableLlmSummaryErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ToolsDisableLlmSummaryError = ToolsDisableLlmSummaryErrors[keyof ToolsDisableLlmSummaryErrors];
-
-export type ToolsDisableLlmSummaryResponses = {
-    /**
-     * Successful Response
-     */
-    200: Message;
-};
-
-export type ToolsDisableLlmSummaryResponse = ToolsDisableLlmSummaryResponses[keyof ToolsDisableLlmSummaryResponses];
-
-export type ToolsInstallToolData = {
-    body?: never;
-    path: {
-        /**
-         * Tool Id
-         */
-        tool_id: string;
-    };
-    query?: never;
-    url: '/api/v1/tools/{tool_id}/install';
-};
-
-export type ToolsInstallToolErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ToolsInstallToolError = ToolsInstallToolErrors[keyof ToolsInstallToolErrors];
-
-export type ToolsInstallToolResponses = {
-    /**
-     * Successful Response
-     */
-    200: Message;
-};
-
-export type ToolsInstallToolResponse = ToolsInstallToolResponses[keyof ToolsInstallToolResponses];
-
-export type ToolsUninstallToolData = {
-    body?: never;
-    path: {
-        /**
-         * Tool Id
-         */
-        tool_id: string;
-    };
-    query?: never;
-    url: '/api/v1/tools/{tool_id}/uninstall';
-};
-
-export type ToolsUninstallToolErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ToolsUninstallToolError = ToolsUninstallToolErrors[keyof ToolsUninstallToolErrors];
-
-export type ToolsUninstallToolResponses = {
-    /**
-     * Successful Response
-     */
-    200: Message;
-};
-
-export type ToolsUninstallToolResponse = ToolsUninstallToolResponses[keyof ToolsUninstallToolResponses];
-
-export type FilesDeleteFilesData = {
-    body?: never;
-    path?: never;
-    query?: {
-        /**
-         * Name
-         */
-        name?: string | null;
-        /**
-         * Types
-         */
-        types?: Array<FileTypeEnum>;
-        /**
-         * Top Level Only
-         */
-        top_level_only?: boolean;
-        /**
-         * Ids
-         */
-        ids?: Array<string> | null;
-    };
-    url: '/api/v1/files/';
-};
-
-export type FilesDeleteFilesErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type FilesDeleteFilesError = FilesDeleteFilesErrors[keyof FilesDeleteFilesErrors];
-
-export type FilesDeleteFilesResponses = {
-    /**
-     * Response Files-Delete Files
-     * Successful Response
-     */
-    200: unknown;
-};
-
-export type FilesReadFilesData = {
-    body?: never;
-    path?: never;
-    query?: {
-        /**
-         * Skip
-         */
-        skip?: number;
-        /**
-         * Limit
-         */
-        limit?: number;
-        /**
-         * Order By
-         */
-        order_by?: string;
-        /**
-         * Name
-         */
-        name?: string | null;
-        /**
-         * Types
-         */
-        types?: Array<FileTypeEnum>;
-    };
-    url: '/api/v1/files/';
-};
-
-export type FilesReadFilesErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type FilesReadFilesError = FilesReadFilesErrors[keyof FilesReadFilesErrors];
-
-export type FilesReadFilesResponses = {
-    /**
-     * Successful Response
-     */
-    200: FilesPublic;
-};
-
-export type FilesReadFilesResponse = FilesReadFilesResponses[keyof FilesReadFilesResponses];
-
-export type FilesUploadFileData = {
-    body: BodyFilesUploadFile;
-    path?: never;
-    query?: never;
-    url: '/api/v1/files/';
-};
-
-export type FilesUploadFileErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type FilesUploadFileError = FilesUploadFileErrors[keyof FilesUploadFileErrors];
-
-export type FilesUploadFileResponses = {
-    /**
-     * Successful Response
-     */
-    200: FilePublic;
-};
-
-export type FilesUploadFileResponse = FilesUploadFileResponses[keyof FilesUploadFileResponses];
-
-export type FilesGetFilesAllowedTypesData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v1/files/types';
-};
-
-export type FilesGetFilesAllowedTypesResponses = {
-    /**
-     * Response Files-Get Files Allowed Types
-     * Successful Response
-     */
-    200: {
-        [key: string]: FileTypeMetadata;
-    };
-};
-
-export type FilesGetFilesAllowedTypesResponse = FilesGetFilesAllowedTypesResponses[keyof FilesGetFilesAllowedTypesResponses];
-
-export type FilesGetCurrentFileTypesData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v1/files/types/current';
-};
-
-export type FilesGetCurrentFileTypesResponses = {
-    /**
-     * Response Files-Get Current File Types
-     * Successful Response
-     */
-    200: {
-        [key: string]: FileTypeMetadata;
-    };
-};
-
-export type FilesGetCurrentFileTypesResponse = FilesGetCurrentFileTypesResponses[keyof FilesGetCurrentFileTypesResponses];
-
-export type FilesGetFilesStatsData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v1/files/stats';
-};
-
-export type FilesGetFilesStatsResponses = {
-    /**
-     * Successful Response
-     */
-    200: FilesStatistics;
-};
-
-export type FilesGetFilesStatsResponse = FilesGetFilesStatsResponses[keyof FilesGetFilesStatsResponses];
-
-export type FilesCreatePairData = {
-    body?: never;
-    path?: never;
-    query: {
-        /**
-         * Name
-         */
-        name: string;
-        /**
-         * Forward
-         */
-        forward: string;
-        /**
-         * Reverse
-         */
-        reverse: string;
-    };
-    url: '/api/v1/files/pairs';
-};
-
-export type FilesCreatePairErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type FilesCreatePairError = FilesCreatePairErrors[keyof FilesCreatePairErrors];
-
-export type FilesCreatePairResponses = {
-    /**
-     * Successful Response
-     */
-    200: FilePublic;
-};
-
-export type FilesCreatePairResponse = FilesCreatePairResponses[keyof FilesCreatePairResponses];
-
-export type FilesCreateGroupData = {
-    /**
-     * File Ids
-     */
-    body: Array<string>;
-    path?: never;
-    query: {
-        /**
-         * Name
-         */
-        name: string;
-    };
-    url: '/api/v1/files/groups';
-};
-
-export type FilesCreateGroupErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type FilesCreateGroupError = FilesCreateGroupErrors[keyof FilesCreateGroupErrors];
-
-export type FilesCreateGroupResponses = {
-    /**
-     * Successful Response
-     */
-    200: FilePublic;
-};
-
-export type FilesCreateGroupResponse = FilesCreateGroupResponses[keyof FilesCreateGroupResponses];
-
-export type FilesUngroupFileData = {
-    body?: never;
-    path: {
-        /**
-         * Id
-         */
-        id: string;
-    };
-    query?: never;
-    url: '/api/v1/files/{id}/ungroup';
-};
-
-export type FilesUngroupFileErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type FilesUngroupFileError = FilesUngroupFileErrors[keyof FilesUngroupFileErrors];
-
-export type FilesUngroupFileResponses = {
-    /**
-     * Successful Response
-     */
-    200: Message;
-};
-
-export type FilesUngroupFileResponse = FilesUngroupFileResponses[keyof FilesUngroupFileResponses];
-
-export type FilesDeleteFileData = {
-    body?: never;
-    path: {
-        /**
-         * Id
-         */
-        id: string;
-    };
-    query?: never;
-    url: '/api/v1/files/{id}';
-};
-
-export type FilesDeleteFileErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type FilesDeleteFileError = FilesDeleteFileErrors[keyof FilesDeleteFileErrors];
-
-export type FilesDeleteFileResponses = {
-    /**
-     * Response Files-Delete File
-     * Successful Response
-     */
-    200: unknown;
-};
-
-export type FilesReadFileData = {
-    body?: never;
-    path: {
-        /**
-         * Id
-         */
-        id: string;
-    };
-    query?: never;
-    url: '/api/v1/files/{id}';
-};
-
-export type FilesReadFileErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type FilesReadFileError = FilesReadFileErrors[keyof FilesReadFileErrors];
-
-export type FilesReadFileResponses = {
-    /**
-     * Successful Response
-     */
-    200: FilePublic;
-};
-
-export type FilesReadFileResponse = FilesReadFileResponses[keyof FilesReadFileResponses];
-
-export type FilesSaveFileData = {
-    body?: never;
-    path: {
-        /**
-         * Id
-         */
-        id: string;
-    };
-    query?: never;
-    url: '/api/v1/files{id}/save';
-};
-
-export type FilesSaveFileErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type FilesSaveFileError = FilesSaveFileErrors[keyof FilesSaveFileErrors];
-
-export type FilesSaveFileResponses = {
-    /**
-     * Successful Response
-     */
-    200: FilePublic;
-};
-
-export type FilesSaveFileResponse = FilesSaveFileResponses[keyof FilesSaveFileResponses];
-
-export type FilesCopyFileData = {
-    body?: never;
-    path: {
-        /**
-         * Id
-         */
-        id: string;
-    };
-    query?: never;
-    url: '/api/v1/files/{id}/copy';
-};
-
-export type FilesCopyFileErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type FilesCopyFileError = FilesCopyFileErrors[keyof FilesCopyFileErrors];
-
-export type FilesCopyFileResponses = {
-    /**
-     * Successful Response
-     */
-    200: FilePublic;
-};
-
-export type FilesCopyFileResponse = FilesCopyFileResponses[keyof FilesCopyFileResponses];
-
-export type FilesDownloadFileData = {
-    body?: never;
-    path: {
-        /**
-         * Id
-         */
-        id: string;
-    };
-    query?: never;
-    url: '/api/v1/files/{id}/download';
-};
-
-export type FilesDownloadFileErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type FilesDownloadFileError = FilesDownloadFileErrors[keyof FilesDownloadFileErrors];
-
-export type FilesDownloadFileResponses = {
-    /**
-     * Response Files-Download File
-     * Successful Response
-     */
-    200: unknown;
-};
-
-export type FilesGetDownloadTokenData = {
-    body?: never;
-    path: {
-        /**
-         * Id
-         */
-        id: string;
-    };
-    query?: {
-        /**
-         * Minutes
-         */
-        minutes?: number;
-    };
-    url: '/api/v1/files/{id}/token';
-};
-
-export type FilesGetDownloadTokenErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type FilesGetDownloadTokenError = FilesGetDownloadTokenErrors[keyof FilesGetDownloadTokenErrors];
-
-export type FilesGetDownloadTokenResponses = {
-    /**
-     * Response Files-Get Download Token
-     * Successful Response
-     */
-    200: string;
-};
-
-export type FilesGetDownloadTokenResponse = FilesGetDownloadTokenResponses[keyof FilesGetDownloadTokenResponses];
-
-export type FilesRenameFileData = {
-    body?: never;
-    path: {
-        /**
-         * Id
-         */
-        id: string;
-    };
-    query: {
-        /**
-         * Name
-         * New name for the file
-         */
-        name: string;
-    };
-    url: '/api/v1/files/{id}/rename';
-};
-
-export type FilesRenameFileErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type FilesRenameFileError = FilesRenameFileErrors[keyof FilesRenameFileErrors];
-
-export type FilesRenameFileResponses = {
-    /**
-     * Successful Response
-     */
-    200: FilePublic;
-};
-
-export type FilesRenameFileResponse = FilesRenameFileResponses[keyof FilesRenameFileResponses];
-
-export type FilesDownloadFileWithTokenData = {
-    body?: never;
-    path: {
-        /**
-         * Token
-         */
-        token: string;
-    };
-    query?: never;
-    url: '/api/v1/files/download/{token}';
-};
-
-export type FilesDownloadFileWithTokenErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type FilesDownloadFileWithTokenError = FilesDownloadFileWithTokenErrors[keyof FilesDownloadFileWithTokenErrors];
-
-export type FilesDownloadFileWithTokenResponses = {
-    /**
-     * Response Files-Download File With Token
-     * Successful Response
-     */
-    200: unknown;
-};
-
-export type RunsDeleteRunsData = {
-    body?: never;
-    path?: never;
-    query?: {
-        /**
-         * Name
-         */
-        name?: string | null;
-        /**
-         * Tool Name
-         */
-        tool_name?: string | null;
-        /**
-         * Ids
-         */
-        ids?: Array<string> | null;
-    };
-    url: '/api/v1/runs/';
-};
-
-export type RunsDeleteRunsErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type RunsDeleteRunsError = RunsDeleteRunsErrors[keyof RunsDeleteRunsErrors];
-
-export type RunsDeleteRunsResponses = {
-    /**
-     * Successful Response
-     */
-    200: Message;
-};
-
-export type RunsDeleteRunsResponse = RunsDeleteRunsResponses[keyof RunsDeleteRunsResponses];
-
-export type RunsReadRunsData = {
-    body?: never;
-    path?: never;
-    query?: {
-        /**
-         * Skip
-         */
-        skip?: number;
-        /**
-         * Limit
-         */
-        limit?: number;
-        /**
-         * Order By
-         */
-        order_by?: string;
-        /**
-         * Name
-         */
-        name?: string | null;
-        /**
-         * Tool Name
-         */
-        tool_name?: string | null;
-        /**
-         * Statuses
-         */
-        statuses?: Array<RunStatus>;
-    };
-    url: '/api/v1/runs/';
+    statuses?: Array<RunStatus>;
+  };
+  url: "/api/v1/runs/";
 };
 
 export type RunsReadRunsErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
 };
 
 export type RunsReadRunsError = RunsReadRunsErrors[keyof RunsReadRunsErrors];
 
 export type RunsReadRunsResponses = {
-    /**
-     * Successful Response
-     */
-    200: RunsPublicMinimal;
+  /**
+   * Successful Response
+   */
+  200: RunsPublicMinimal;
 };
 
-export type RunsReadRunsResponse = RunsReadRunsResponses[keyof RunsReadRunsResponses];
+export type RunsReadRunsResponse =
+  RunsReadRunsResponses[keyof RunsReadRunsResponses];
 
 export type RunsCreateRunData = {
-    body: BodyRunsCreateRun;
-    path?: never;
-    query: {
-        /**
-         * Tool Id
-         */
-        tool_id: string;
-        /**
-         * Email On Completion
-         */
-        email_on_completion?: boolean;
-        /**
-         * Name
-         */
-        name?: string;
-    };
-    url: '/api/v1/runs/';
+  body: BodyRunsCreateRun;
+  path?: never;
+  query: {
+    /**
+     * Tool Id
+     */
+    tool_id: string;
+    /**
+     * Email On Completion
+     */
+    email_on_completion?: boolean;
+    /**
+     * Name
+     */
+    name?: string;
+  };
+  url: "/api/v1/runs/";
 };
 
 export type RunsCreateRunErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
 };
 
 export type RunsCreateRunError = RunsCreateRunErrors[keyof RunsCreateRunErrors];
 
 export type RunsCreateRunResponses = {
-    /**
-     * Successful Response
-     */
-    200: RunPublic;
+  /**
+   * Successful Response
+   */
+  200: RunPublic;
 };
 
-export type RunsCreateRunResponse = RunsCreateRunResponses[keyof RunsCreateRunResponses];
+export type RunsCreateRunResponse =
+  RunsCreateRunResponses[keyof RunsCreateRunResponses];
 
 export type RunsReadRunToolNamesData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v1/runs/tools';
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/v1/runs/tools";
 };
 
 export type RunsReadRunToolNamesResponses = {
-    /**
-     * Response Runs-Read Run Tool Names
-     * Successful Response
-     */
-    200: Array<string>;
+  /**
+   * Response Runs-Read Run Tool Names
+   * Successful Response
+   */
+  200: Array<string>;
 };
 
-export type RunsReadRunToolNamesResponse = RunsReadRunToolNamesResponses[keyof RunsReadRunToolNamesResponses];
+export type RunsReadRunToolNamesResponse =
+  RunsReadRunToolNamesResponses[keyof RunsReadRunToolNamesResponses];
 
 export type RunsCancelRunsData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v1/runs/cancel';
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/v1/runs/cancel";
 };
 
 export type RunsCancelRunsResponses = {
-    /**
-     * Successful Response
-     */
-    200: Message;
+  /**
+   * Successful Response
+   */
+  200: Message;
 };
 
-export type RunsCancelRunsResponse = RunsCancelRunsResponses[keyof RunsCancelRunsResponses];
+export type RunsCancelRunsResponse =
+  RunsCancelRunsResponses[keyof RunsCancelRunsResponses];
 
 export type RunsReadActiveRunsData = {
-    body?: never;
-    path?: never;
-    query?: {
-        /**
-         * Skip
-         */
-        skip?: number;
-        /**
-         * Limit
-         */
-        limit?: number;
-    };
-    url: '/api/v1/runs/active';
+  body?: never;
+  path?: never;
+  query?: {
+    /**
+     * Skip
+     */
+    skip?: number;
+    /**
+     * Limit
+     */
+    limit?: number;
+  };
+  url: "/api/v1/runs/active";
 };
 
 export type RunsReadActiveRunsErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
 };
 
-export type RunsReadActiveRunsError = RunsReadActiveRunsErrors[keyof RunsReadActiveRunsErrors];
+export type RunsReadActiveRunsError =
+  RunsReadActiveRunsErrors[keyof RunsReadActiveRunsErrors];
 
 export type RunsReadActiveRunsResponses = {
-    /**
-     * Successful Response
-     */
-    200: RunsPublicMinimal;
+  /**
+   * Successful Response
+   */
+  200: RunsPublicMinimal;
 };
 
-export type RunsReadActiveRunsResponse = RunsReadActiveRunsResponses[keyof RunsReadActiveRunsResponses];
+export type RunsReadActiveRunsResponse =
+  RunsReadActiveRunsResponses[keyof RunsReadActiveRunsResponses];
 
 export type RunsDeleteRunData = {
-    body?: never;
-    path: {
-        /**
-         * Id
-         */
-        id: string;
-    };
-    query?: never;
-    url: '/api/v1/runs/{id}';
+  body?: never;
+  path: {
+    /**
+     * Id
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/api/v1/runs/{id}";
 };
 
 export type RunsDeleteRunErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
 };
 
 export type RunsDeleteRunError = RunsDeleteRunErrors[keyof RunsDeleteRunErrors];
 
 export type RunsDeleteRunResponses = {
-    /**
-     * Successful Response
-     */
-    200: Message;
+  /**
+   * Successful Response
+   */
+  200: Message;
 };
 
-export type RunsDeleteRunResponse = RunsDeleteRunResponses[keyof RunsDeleteRunResponses];
+export type RunsDeleteRunResponse =
+  RunsDeleteRunResponses[keyof RunsDeleteRunResponses];
 
 export type RunsReadRunData = {
-    body?: never;
-    path: {
-        /**
-         * Id
-         */
-        id: string;
-    };
-    query?: never;
-    url: '/api/v1/runs/{id}';
+  body?: never;
+  path: {
+    /**
+     * Id
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/api/v1/runs/{id}";
 };
 
 export type RunsReadRunErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
 };
 
 export type RunsReadRunError = RunsReadRunErrors[keyof RunsReadRunErrors];
 
 export type RunsReadRunResponses = {
-    /**
-     * Successful Response
-     */
-    200: RunPublic;
+  /**
+   * Successful Response
+   */
+  200: RunPublic;
 };
 
-export type RunsReadRunResponse = RunsReadRunResponses[keyof RunsReadRunResponses];
+export type RunsReadRunResponse =
+  RunsReadRunResponses[keyof RunsReadRunResponses];
 
 export type RunsCancelRunData = {
-    body?: never;
-    path: {
-        /**
-         * Id
-         */
-        id: string;
-    };
-    query?: never;
-    url: '/api/v1/runs/{id}/cancel';
+  body?: never;
+  path: {
+    /**
+     * Id
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/api/v1/runs/{id}/cancel";
 };
 
 export type RunsCancelRunErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
 };
 
 export type RunsCancelRunError = RunsCancelRunErrors[keyof RunsCancelRunErrors];
 
 export type RunsCancelRunResponses = {
-    /**
-     * Successful Response
-     */
-    200: RunPublic;
+  /**
+   * Successful Response
+   */
+  200: RunPublic;
 };
 
-export type RunsCancelRunResponse = RunsCancelRunResponses[keyof RunsCancelRunResponses];
+export type RunsCancelRunResponse =
+  RunsCancelRunResponses[keyof RunsCancelRunResponses];
 
 export type RunsRenameRunData = {
-    body?: never;
-    path: {
-        /**
-         * Id
-         */
-        id: string;
-    };
-    query: {
-        /**
-         * Name
-         */
-        name: string;
-    };
-    url: '/api/v1/runs/{id}/rename';
+  body?: never;
+  path: {
+    /**
+     * Id
+     */
+    id: string;
+  };
+  query: {
+    /**
+     * Name
+     */
+    name: string;
+  };
+  url: "/api/v1/runs/{id}/rename";
 };
 
 export type RunsRenameRunErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
 };
 
 export type RunsRenameRunError = RunsRenameRunErrors[keyof RunsRenameRunErrors];
 
 export type RunsRenameRunResponses = {
-    /**
-     * Successful Response
-     */
-    200: RunPublic;
+  /**
+   * Successful Response
+   */
+  200: RunPublic;
 };
 
-export type RunsRenameRunResponse = RunsRenameRunResponses[keyof RunsRenameRunResponses];
+export type RunsRenameRunResponse =
+  RunsRenameRunResponses[keyof RunsRenameRunResponses];
 
 export type RunsToggleRunSharingData = {
-    body?: never;
-    path: {
-        /**
-         * Id
-         */
-        id: string;
-    };
-    query: {
-        /**
-         * Shared
-         */
-        shared: boolean;
-    };
-    url: '/api/v1/runs/{id}/share';
+  body?: never;
+  path: {
+    /**
+     * Id
+     */
+    id: string;
+  };
+  query: {
+    /**
+     * Shared
+     */
+    shared: boolean;
+  };
+  url: "/api/v1/runs/{id}/share";
 };
 
 export type RunsToggleRunSharingErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
 };
 
-export type RunsToggleRunSharingError = RunsToggleRunSharingErrors[keyof RunsToggleRunSharingErrors];
+export type RunsToggleRunSharingError =
+  RunsToggleRunSharingErrors[keyof RunsToggleRunSharingErrors];
 
 export type RunsToggleRunSharingResponses = {
-    /**
-     * Successful Response
-     */
-    200: RunPublic;
+  /**
+   * Successful Response
+   */
+  200: RunPublic;
 };
 
-export type RunsToggleRunSharingResponse = RunsToggleRunSharingResponses[keyof RunsToggleRunSharingResponses];
+export type RunsToggleRunSharingResponse =
+  RunsToggleRunSharingResponses[keyof RunsToggleRunSharingResponses];
 
 export type LlmGenerateRunSummaryData = {
-    body?: never;
-    path: {
-        /**
-         * Run Id
-         */
-        run_id: string;
-    };
-    query?: {
-        audience?: Audience;
-    };
-    url: '/api/v1/llm/summary/{run_id}';
+  body?: never;
+  path: {
+    /**
+     * Run Id
+     */
+    run_id: string;
+  };
+  query?: {
+    audience?: Audience;
+  };
+  url: "/api/v1/llm/summary/{run_id}";
 };
 
 export type LlmGenerateRunSummaryErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
 };
 
-export type LlmGenerateRunSummaryError = LlmGenerateRunSummaryErrors[keyof LlmGenerateRunSummaryErrors];
+export type LlmGenerateRunSummaryError =
+  LlmGenerateRunSummaryErrors[keyof LlmGenerateRunSummaryErrors];
 
 export type LlmGenerateRunSummaryResponses = {
-    /**
-     * Response Llm-Generate Run Summary
-     * Successful Response
-     */
-    200: string;
+  /**
+   * Response Llm-Generate Run Summary
+   * Successful Response
+   */
+  200: string;
 };
 
-export type LlmGenerateRunSummaryResponse = LlmGenerateRunSummaryResponses[keyof LlmGenerateRunSummaryResponses];
+export type LlmGenerateRunSummaryResponse =
+  LlmGenerateRunSummaryResponses[keyof LlmGenerateRunSummaryResponses];
 
 export type SettingsReadAppSettingsData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v1/settings/';
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/v1/settings/";
 };
 
 export type SettingsReadAppSettingsResponses = {
-    /**
-     * Successful Response
-     */
-    200: AppSettingPublic;
+  /**
+   * Successful Response
+   */
+  200: AppSettingPublic;
 };
 
-export type SettingsReadAppSettingsResponse = SettingsReadAppSettingsResponses[keyof SettingsReadAppSettingsResponses];
+export type SettingsReadAppSettingsResponse =
+  SettingsReadAppSettingsResponses[keyof SettingsReadAppSettingsResponses];
 
 export type SettingsReadQueueStatusData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v1/settings/queue';
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/v1/settings/queue";
 };
 
 export type SettingsReadQueueStatusResponses = {
-    /**
-     * Successful Response
-     */
-    200: QueuePublicStatus;
+  /**
+   * Successful Response
+   */
+  200: QueuePublicStatus;
 };
 
-export type SettingsReadQueueStatusResponse = SettingsReadQueueStatusResponses[keyof SettingsReadQueueStatusResponses];
+export type SettingsReadQueueStatusResponse =
+  SettingsReadQueueStatusResponses[keyof SettingsReadQueueStatusResponses];
 
 export type SettingsUpdateAppSettingsData = {
-    body: AppSettingUpdate;
-    path?: never;
-    query?: never;
-    url: '/api/v1/settings/';
+  body: AppSettingUpdate;
+  path?: never;
+  query?: never;
+  url: "/api/v1/settings/";
 };
 
 export type SettingsUpdateAppSettingsErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
 };
 
-export type SettingsUpdateAppSettingsError = SettingsUpdateAppSettingsErrors[keyof SettingsUpdateAppSettingsErrors];
+export type SettingsUpdateAppSettingsError =
+  SettingsUpdateAppSettingsErrors[keyof SettingsUpdateAppSettingsErrors];
 
 export type SettingsUpdateAppSettingsResponses = {
-    /**
-     * Successful Response
-     */
-    200: AppSettingPublic;
+  /**
+   * Successful Response
+   */
+  200: AppSettingPublic;
 };
 
-export type SettingsUpdateAppSettingsResponse = SettingsUpdateAppSettingsResponses[keyof SettingsUpdateAppSettingsResponses];
+export type SettingsUpdateAppSettingsResponse =
+  SettingsUpdateAppSettingsResponses[keyof SettingsUpdateAppSettingsResponses];
 
 export type StatsGetSystemStatsData = {
-    body?: never;
-    path?: never;
-    query?: {
-        /**
-         * Start
-         */
-        start?: string | null;
-        /**
-         * End
-         */
-        end?: string | null;
-    };
-    url: '/api/v1/stats/stats';
+  body?: never;
+  path?: never;
+  query?: {
+    /**
+     * Start
+     */
+    start?: string | null;
+    /**
+     * End
+     */
+    end?: string | null;
+  };
+  url: "/api/v1/stats/stats";
 };
 
 export type StatsGetSystemStatsResponses = {
-    /**
-     * Successful Response
-     */
-    200: SystemStats;
+  /**
+   * Successful Response
+   */
+  200: SystemStats;
 };
 
-export type StatsGetSystemStatsResponse = StatsGetSystemStatsResponses[keyof StatsGetSystemStatsResponses];
+export type StatsGetSystemStatsResponse =
+  StatsGetSystemStatsResponses[keyof StatsGetSystemStatsResponses];
 
 export type StatsGetUserDetailStatsData = {
-    body?: never;
-    path: {
-        /**
-         * User Id
-         */
-        user_id: string;
-    };
-    query?: {
-        /**
-         * Start
-         */
-        start?: string | null;
-        /**
-         * End
-         */
-        end?: string | null;
-    };
-    url: '/api/v1/stats/users/{user_id}';
+  body?: never;
+  path: {
+    /**
+     * User Id
+     */
+    user_id: string;
+  };
+  query?: {
+    /**
+     * Start
+     */
+    start?: string | null;
+    /**
+     * End
+     */
+    end?: string | null;
+  };
+  url: "/api/v1/stats/users/{user_id}";
 };
 
 export type StatsGetUserDetailStatsErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
 };
 
-export type StatsGetUserDetailStatsError = StatsGetUserDetailStatsErrors[keyof StatsGetUserDetailStatsErrors];
+export type StatsGetUserDetailStatsError =
+  StatsGetUserDetailStatsErrors[keyof StatsGetUserDetailStatsErrors];
 
 export type StatsGetUserDetailStatsResponses = {
-    /**
-     * Successful Response
-     */
-    200: UserDetailStats;
+  /**
+   * Successful Response
+   */
+  200: UserDetailStats;
 };
 
-export type StatsGetUserDetailStatsResponse = StatsGetUserDetailStatsResponses[keyof StatsGetUserDetailStatsResponses];
+export type StatsGetUserDetailStatsResponse =
+  StatsGetUserDetailStatsResponses[keyof StatsGetUserDetailStatsResponses];
 
 export type StatsGetToolDetailStatsData = {
-    body?: never;
-    path: {
-        /**
-         * Tool Id
-         */
-        tool_id: string;
-    };
-    query?: {
-        /**
-         * Start
-         */
-        start?: string | null;
-        /**
-         * End
-         */
-        end?: string | null;
-    };
-    url: '/api/v1/stats/tools/{tool_id}';
+  body?: never;
+  path: {
+    /**
+     * Tool Id
+     */
+    tool_id: string;
+  };
+  query?: {
+    /**
+     * Start
+     */
+    start?: string | null;
+    /**
+     * End
+     */
+    end?: string | null;
+  };
+  url: "/api/v1/stats/tools/{tool_id}";
 };
 
 export type StatsGetToolDetailStatsErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
 };
 
-export type StatsGetToolDetailStatsError = StatsGetToolDetailStatsErrors[keyof StatsGetToolDetailStatsErrors];
+export type StatsGetToolDetailStatsError =
+  StatsGetToolDetailStatsErrors[keyof StatsGetToolDetailStatsErrors];
 
 export type StatsGetToolDetailStatsResponses = {
-    /**
-     * Successful Response
-     */
-    200: ToolDetailStats;
+  /**
+   * Successful Response
+   */
+  200: ToolDetailStats;
 };
 
-export type StatsGetToolDetailStatsResponse = StatsGetToolDetailStatsResponses[keyof StatsGetToolDetailStatsResponses];
+export type StatsGetToolDetailStatsResponse =
+  StatsGetToolDetailStatsResponses[keyof StatsGetToolDetailStatsResponses];
 
 export type StatsGetStatsSummaryData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v1/stats/stats/summary';
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/v1/stats/stats/summary";
 };
 
 export type StatsGetStatsSummaryResponses = {
-    /**
-     * Successful Response
-     */
-    200: StatsResponse;
+  /**
+   * Successful Response
+   */
+  200: StatsResponse;
 };
 
-export type StatsGetStatsSummaryResponse = StatsGetStatsSummaryResponses[keyof StatsGetStatsSummaryResponses];
+export type StatsGetStatsSummaryResponse =
+  StatsGetStatsSummaryResponses[keyof StatsGetStatsSummaryResponses];
 
 export type AdminReadQueueStatusData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v1/admin/queue';
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/v1/admin/queue";
 };
 
 export type AdminReadQueueStatusResponses = {
-    /**
-     * Successful Response
-     */
-    200: QueueStatus;
+  /**
+   * Successful Response
+   */
+  200: QueueStatus;
 };
 
-export type AdminReadQueueStatusResponse = AdminReadQueueStatusResponses[keyof AdminReadQueueStatusResponses];
+export type AdminReadQueueStatusResponse =
+  AdminReadQueueStatusResponses[keyof AdminReadQueueStatusResponses];
 
 export type AdminPauseQueueData = {
-    body: QueuePauseRequest;
-    path?: never;
-    query?: never;
-    url: '/api/v1/admin/queue/pause';
+  body: QueuePauseRequest;
+  path?: never;
+  query?: never;
+  url: "/api/v1/admin/queue/pause";
 };
 
 export type AdminPauseQueueErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
 };
 
-export type AdminPauseQueueError = AdminPauseQueueErrors[keyof AdminPauseQueueErrors];
+export type AdminPauseQueueError =
+  AdminPauseQueueErrors[keyof AdminPauseQueueErrors];
 
 export type AdminPauseQueueResponses = {
-    /**
-     * Successful Response
-     */
-    200: QueueStatus;
+  /**
+   * Successful Response
+   */
+  200: QueueStatus;
 };
 
-export type AdminPauseQueueResponse = AdminPauseQueueResponses[keyof AdminPauseQueueResponses];
+export type AdminPauseQueueResponse =
+  AdminPauseQueueResponses[keyof AdminPauseQueueResponses];
 
 export type AdminResumeQueueData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v1/admin/queue/resume';
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/v1/admin/queue/resume";
 };
 
 export type AdminResumeQueueResponses = {
-    /**
-     * Successful Response
-     */
-    200: QueueStatus;
+  /**
+   * Successful Response
+   */
+  200: QueueStatus;
 };
 
-export type AdminResumeQueueResponse = AdminResumeQueueResponses[keyof AdminResumeQueueResponses];
+export type AdminResumeQueueResponse =
+  AdminResumeQueueResponses[keyof AdminResumeQueueResponses];
 
 export type ClientOptions = {
-    baseURL: `${string}://${string}` | (string & {});
+  baseURL: `${string}://${string}` | (string & {});
 };

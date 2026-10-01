@@ -33,7 +33,9 @@ RUN_SORT_COLUMNS = {
     "finished_at": Run.finished_at,
     "name": Run.name,
     "runtime": func.coalesce(
-        func.extract("epoch", func.coalesce(Run.finished_at, func.now()) - Run.started_at),
+        func.extract(
+            "epoch", func.coalesce(Run.finished_at, func.now()) - Run.started_at
+        ),
         0,
     ),
     "started_at": Run.started_at,
@@ -110,7 +112,9 @@ def _parse_visibility_condition_value(
         if isinstance(value, list):
             return [parse_scalar(item) for item in value]
         if isinstance(value, str):
-            return [parse_scalar(item.strip()) for item in value.split(",") if item.strip()]
+            return [
+                parse_scalar(item.strip()) for item in value.split(",") if item.strip()
+            ]
         return [parse_scalar(value)]
 
     if value is None:
@@ -118,7 +122,9 @@ def _parse_visibility_condition_value(
     return parse_scalar(value)
 
 
-def _is_visible_if_match(*, dependency_value: Any, operator: ParamVisibilityOperator, expected_value: Any) -> bool:
+def _is_visible_if_match(
+    *, dependency_value: Any, operator: ParamVisibilityOperator, expected_value: Any
+) -> bool:
     if operator == ParamVisibilityOperator.truthy:
         return bool(dependency_value)
     if operator == ParamVisibilityOperator.falsy:
@@ -151,7 +157,9 @@ def _is_visible_if_match(*, dependency_value: Any, operator: ParamVisibilityOper
     return False
 
 
-def _build_visible_param_lookup(tool_params: list[Param], params: dict[str, Any]) -> dict[str, bool]:
+def _build_visible_param_lookup(
+    tool_params: list[Param], params: dict[str, Any]
+) -> dict[str, bool]:
     params_by_name = {param.name: param for param in tool_params}
     raw_values = dict(params)
     visibility_cache: dict[str, bool] = {}
@@ -183,7 +191,9 @@ def _build_visible_param_lookup(tool_params: list[Param], params: dict[str, Any]
                 else:
                     visible = is_visible(condition_param_name)
                     if visible:
-                        dependency_value = raw_values.get(condition_param_name, dependency.default)
+                        dependency_value = raw_values.get(
+                            condition_param_name, dependency.default
+                        )
                         expected_value = _parse_visibility_condition_value(
                             value=param.visible_if_value,
                             dependency=dependency,
@@ -221,13 +231,15 @@ def read_runs(
     """
 
     # Parse the order_by string to determine the column and direction
-    descending = order_by.startswith('-')
+    descending = order_by.startswith("-")
     column_name = order_by[1:] if descending else order_by
 
     # Validate and obtain the actual column object from the Run model
     column = RUN_SORT_COLUMNS.get(column_name)
     if column is None:
-        raise HTTPException(status_code=400, detail=f"Invalid column name: {column_name}")
+        raise HTTPException(
+            status_code=400, detail=f"Invalid column name: {column_name}"
+        )
     order_expression = desc(column) if descending else column
 
     # Build the query based on user role
@@ -268,7 +280,14 @@ def read_run_tool_names(session: SessionDep, current_user: CurrentUser) -> Any:
 
 @router.post("/", response_model=RunPublic)
 async def create_run(
-    *, session: SessionDep, current_user: CurrentUser, tool_id: uuid.UUID, params: dict, tags: list[str] = None, email_on_completion: bool = False, name: str = None
+    *,
+    session: SessionDep,
+    current_user: CurrentUser,
+    tool_id: uuid.UUID,
+    params: dict,
+    tags: list[str] = None,
+    email_on_completion: bool = False,
+    name: str = None,
 ) -> Any:
     """
     Create and run a run of a specific tool, validating against predefined tool parameters.
@@ -294,7 +313,10 @@ async def create_run(
     count = session.exec(count_statement).one()
     print(f"User {current_user.id} has {count} active runs")
     if count >= current_user.max_runs:
-        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="You have reached the maximum number of active Runs. Please wait for some to finish!")
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="You have reached the maximum number of active Runs. Please wait for some to finish!",
+        )
 
     files = []
     tool_params = [Param(**param) for param in (tool.params or [])]
@@ -305,7 +327,9 @@ async def create_run(
             normalized_params.pop(param.name, None)
             continue
 
-        if param.name not in normalized_params or is_missing_param_value(normalized_params[param.name]):
+        if param.name not in normalized_params or is_missing_param_value(
+            normalized_params[param.name]
+        ):
             if param.required:
                 raise HTTPException(
                     status_code=400, detail=f"Missing required parameter: {param.name}"
@@ -316,11 +340,13 @@ async def create_run(
             file_ids = normalized_params[param.name]
             if not isinstance(file_ids, list):
                 raise HTTPException(
-                    status_code=400, detail=f"For parameter `{param.name}`, expected list of file ids, got {file_ids}"
+                    status_code=400,
+                    detail=f"For parameter `{param.name}`, expected list of file ids, got {file_ids}",
                 )
             if not param.multiple and len(file_ids) != 1:
                 raise HTTPException(
-                    status_code=400, detail=f"For parameter `{param.name}`, expected list with a single file, got {len(file_ids)}"
+                    status_code=400,
+                    detail=f"For parameter `{param.name}`, expected list with a single file, got {len(file_ids)}",
                 )
             file_names = []
             for file_id in file_ids:
@@ -337,15 +363,21 @@ async def create_run(
                     )
                 if file.owner_id != current_user.id and not current_user.is_superuser:
                     raise HTTPException(
-                        status_code=403, detail="Not enough permissions to use this file"
+                        status_code=403,
+                        detail="Not enough permissions to use this file",
                     )
-                if param.allowed_file_types and file.file_type not in param.allowed_file_types:
+                if (
+                    param.allowed_file_types
+                    and file.file_type not in param.allowed_file_types
+                ):
                     raise HTTPException(
-                        status_code=400, detail=f"File type not allowed: {file.file_type}"
+                        status_code=400,
+                        detail=f"File type not allowed: {file.file_type}",
                     )
                 if not param.multiple and file.is_group:
                     raise HTTPException(
-                        status_code=400, detail=f"Parameter `{param.name}` does not allow multiple files, but a group was provided"
+                        status_code=400,
+                        detail=f"Parameter `{param.name}` does not allow multiple files, but a group was provided",
                     )
                 if file.children:
                     # if the file has children, add them all (don't add the parent)
@@ -374,31 +406,36 @@ async def create_run(
         elif param.param_type == "bool":
             if not isinstance(normalized_params[param.name], bool):
                 raise HTTPException(
-                    status_code=400, detail=f"For parameter `{param.name}`, expected bool, got {normalized_params[param.name]}"
+                    status_code=400,
+                    detail=f"For parameter `{param.name}`, expected bool, got {normalized_params[param.name]}",
                 )
         elif param.param_type == "int":
             try:
                 normalized_params[param.name] = int(normalized_params[param.name])
             except ValueError:
                 raise HTTPException(
-                    status_code=400, detail=f"For parameter `{param.name}`, expected int, got {normalized_params[param.name]}"
+                    status_code=400,
+                    detail=f"For parameter `{param.name}`, expected int, got {normalized_params[param.name]}",
                 )
         elif param.param_type == "float":
             try:
                 normalized_params[param.name] = float(normalized_params[param.name])
             except ValueError:
                 raise HTTPException(
-                    status_code=400, detail=f"For parameter `{param.name}`, expected float, got {normalized_params[param.name]}"
+                    status_code=400,
+                    detail=f"For parameter `{param.name}`, expected float, got {normalized_params[param.name]}",
                 )
         elif param.param_type == "str":
             if not isinstance(normalized_params[param.name], str):
                 raise HTTPException(
-                    status_code=400, detail=f"For parameter `{param.name}`, expected str, got {normalized_params[param.name]}"
+                    status_code=400,
+                    detail=f"For parameter `{param.name}`, expected str, got {normalized_params[param.name]}",
                 )
         elif param.param_type == "enum":
             if normalized_params[param.name] not in param.options:
                 raise HTTPException(
-                    status_code=400, detail=f"For parameter `{param.name}`, expected one of {', '.join(param.options)}, got {normalized_params[param.name]}"
+                    status_code=400,
+                    detail=f"For parameter `{param.name}`, expected one of {', '.join(param.options)}, got {normalized_params[param.name]}",
                 )
         else:
             raise HTTPException(
@@ -411,9 +448,7 @@ async def create_run(
         try:
             escaped_params[k] = escape(v)
         except Exception:
-            raise HTTPException(
-                status_code=400, detail=f"Invalid parameter value: {v}"
-            )
+            raise HTTPException(status_code=400, detail=f"Invalid parameter value: {v}")
 
     # create command
     env = JinjaEnvironment()
@@ -450,10 +485,9 @@ async def create_run(
     session.add(tool)
     session.commit()
 
-    await manager.broadcast(json.dumps({
-        "toolname": tool.name,
-        "param_count": len(params)
-    }), "stream")
+    await manager.broadcast(
+        json.dumps({"toolname": tool.name, "param_count": len(params)}), "stream"
+    )
 
     return run
 
@@ -464,7 +498,11 @@ def cancel_runs(session: SessionDep, current_user: CurrentUser) -> Any:
     Cancel all active runs with status pending or running.
     """
     # Select runs based on user permissions and status
-    statement = select(Run).where(Run.owner_id == current_user.id).where(Run.status.in_(["pending", "running"]))
+    statement = (
+        select(Run)
+        .where(Run.owner_id == current_user.id)
+        .where(Run.status.in_(["pending", "running"]))
+    )
 
     runs: list[Run] = session.exec(statement).all()
 
@@ -508,8 +546,12 @@ def delete_runs(
     run_ids = [run.id for run in runs]
 
     # Query associated files
-    files_to_preserve = session.query(File).filter(File.run_id.in_(run_ids), File.saved).all()
-    files_to_delete = session.query(File).filter(File.run_id.in_(run_ids), ~File.saved).all()
+    files_to_preserve = (
+        session.query(File).filter(File.run_id.in_(run_ids), File.saved).all()
+    )
+    files_to_delete = (
+        session.query(File).filter(File.run_id.in_(run_ids), ~File.saved).all()
+    )
 
     # Detach preserved files
     for file in files_to_preserve:
@@ -533,8 +575,6 @@ def delete_runs(
             deleted_files_count += 1
 
     return Message(message=f"Deleted {len(runs)} runs and {deleted_files_count} files.")
-
-
 
 
 @router.get("/active", response_model=RunsPublicMinimal)
@@ -562,6 +602,7 @@ def read_active_runs(
 
     return RunsPublicMinimal(data=runs, count=count)
 
+
 @router.get("/{id}", response_model=RunPublic)
 def read_run(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
     """
@@ -580,6 +621,7 @@ def read_run(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> A
 
     return run_data
 
+
 @router.patch("/{id}/cancel", response_model=RunPublic)
 def cancel_run(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
     """
@@ -596,6 +638,7 @@ def cancel_run(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) ->
     session.add(run)
     session.commit()
     return run
+
 
 @router.patch("/{id}/rename", response_model=RunPublic)
 def rename_run(
@@ -621,6 +664,7 @@ def rename_run(
 
     return run
 
+
 @router.delete("/{id}", response_model=Message)
 def delete_run(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
     """
@@ -637,7 +681,9 @@ def delete_run(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) ->
 
     # Check if the run is active
     if run.status in ["running", "pending"]:
-        raise HTTPException(status_code=400, detail="Run is active and cannot be deleted")
+        raise HTTPException(
+            status_code=400, detail="Run is active and cannot be deleted"
+        )
     # Separate files into those to preserve and those to delete
 
     files_to_preserve = []
@@ -667,6 +713,7 @@ def delete_run(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) ->
             deleted_files_count += 1
 
     return Message(message=f"Deleted run {id} and {deleted_files_count} files")
+
 
 @router.patch("/{id}/share", response_model=RunPublic)
 def toggle_run_sharing(

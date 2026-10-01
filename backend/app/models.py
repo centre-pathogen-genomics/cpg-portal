@@ -19,12 +19,17 @@ from sqlmodel import (
 
 # Link tables for many-to-many relationships
 class UserFavouriteToolsLink(SQLModel, table=True):
-    user_id: uuid.UUID  | None = Field(default=None, foreign_key="user.id", primary_key=True)
-    tool_id: uuid.UUID  | None = Field(default=None, foreign_key="tool.id", primary_key=True)
+    user_id: uuid.UUID | None = Field(
+        default=None, foreign_key="user.id", primary_key=True
+    )
+    tool_id: uuid.UUID | None = Field(
+        default=None, foreign_key="tool.id", primary_key=True
+    )
 
 
 def _utcnow_naive() -> datetime:
     return datetime.now(UTC).replace(tzinfo=None)
+
 
 # Shared properties
 class UserBase(SQLModel):
@@ -33,7 +38,9 @@ class UserBase(SQLModel):
     is_superuser: bool = False
     full_name: str | None = Field(default=None, max_length=255)
     max_runs: int = 10
-    max_storage: int = Field(default=1024 * 1024 * 1024 * 25, sa_column=Column(BigInteger(), nullable=False)) # 25 GB
+    max_storage: int = Field(
+        default=1024 * 1024 * 1024 * 25, sa_column=Column(BigInteger(), nullable=False)
+    )  # 25 GB
     max_storage_files: int = 300
 
 
@@ -64,19 +71,16 @@ class UpdatePassword(SQLModel):
     new_password: str = Field(min_length=8, max_length=40)
 
 
-
 # Database model, database table inferred from class name
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
     created_at: datetime = Field(default_factory=_utcnow_naive, nullable=False)
     favourite_tools: list[Tool] = Relationship(
-        back_populates="favourited_by",
-        link_model=UserFavouriteToolsLink
+        back_populates="favourited_by", link_model=UserFavouriteToolsLink
     )
     files: list[File] = Relationship(back_populates="owner")
     runs: list[Run] = Relationship(back_populates="owner")
-
 
 
 # Properties to return via API, id is always required
@@ -88,6 +92,7 @@ class UserPublic(UserBase):
 class UsersPublic(SQLModel):
     data: list[UserPublic]
     count: int
+
 
 # Generic message
 class Message(SQLModel):
@@ -140,8 +145,10 @@ class SetupFile(SQLModel):
     name: str
     content: str
 
+
 # This literal type is used in DB to prevent hardcoding file types in the DB
 FileType = str  # Simplified for now - was: Literal[file_types.types]
+
 
 class Target(SQLModel):
     path: str
@@ -186,6 +193,7 @@ class Param(SQLModel):
     visible_if_operator: ParamVisibilityOperator = ParamVisibilityOperator.equals
     visible_if_value: int | float | str | bool | list[str] | None = None
 
+
 class ToolStatus(StrEnum):
     uninstalled = "uninstalled"
     uninstalling = "uninstalling"
@@ -198,13 +206,16 @@ class ToolStatus(StrEnum):
 class CondaEnvPipDependency(SQLModel):
     pip: list[str]
 
+
 class CondaEnv(SQLModel):
     channels: list[str] = Field(default_factory=list)
     dependencies: list[str | CondaEnvPipDependency] = Field(default_factory=list)
 
+
 class ToolBadge(SQLModel):
     badge: str | None = None
     url: str | None = None
+
 
 # Shared properties
 class ToolBase(SQLModel):
@@ -214,7 +225,7 @@ class ToolBase(SQLModel):
     description: str | None = None
     explanation_of_results_markdown: str | None = None
     url: str | None = None
-    github_repo: str | None = None # :name/:repo
+    github_repo: str | None = None  # :name/:repo
     docs_url: str | None = None
     paper_doi: str | None = None
     license: str | None = None
@@ -222,16 +233,22 @@ class ToolBase(SQLModel):
     badges: list[ToolBadge] | None = None
     tags: list[str] | None = None
     command: str
-    conda_env: CondaEnv | None = None # dependencies: [python=3.9, bokeh=2.4.2, conda-forge::numpy=1.21.*, nodejs=16.13.*, flask, pip, {pip: [Flask-Testing]}]
-    post_install: str | None = None  # command -v hello-world >/dev/null 2>&1 || snk install wytamma/hello-world
+    conda_env: CondaEnv | None = (
+        None  # dependencies: [python=3.9, bokeh=2.4.2, conda-forge::numpy=1.21.*, nodejs=16.13.*, flask, pip, {pip: [Flask-Testing]}]
+    )
+    post_install: str | None = (
+        None  # command -v hello-world >/dev/null 2>&1 || snk install wytamma/hello-world
+    )
     setup_files: list[SetupFile] | None = None
     params: list[Param] | None = None
     targets: list[Target] | None = None
     llm_summary_enabled: bool = False
 
+
 # Properties to receive on Tool creation
 class ToolCreate(ToolBase):
     name: str
+
 
 # Properties to receive on Tool update
 class ToolUpdate(ToolBase):
@@ -243,6 +260,7 @@ class ToolUpdate(ToolBase):
     status: ToolStatus | None = None
     installation_log: str | None = None
 
+
 # Database model, database table inferred from class name
 class Tool(ToolBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -252,18 +270,22 @@ class Tool(ToolBase, table=True):
     run_count: int = 0
     enabled: bool = False
     tags: list[str] | None = Field(default_factory=list, sa_column=Column(JSON))
-    status: ToolStatus = Field(default=ToolStatus.uninstalled, sa_column=Column(Enum(ToolStatus)))
+    status: ToolStatus = Field(
+        default=ToolStatus.uninstalled, sa_column=Column(Enum(ToolStatus))
+    )
     installation_log: str | None = None
     conda_env: CondaEnv | None = Field(default=None, sa_column=Column(JSON))
     conda_env_pinned: str | None = None
-    setup_files: list[SetupFile] | None = Field(default_factory=list, sa_column=Column(JSON))
+    setup_files: list[SetupFile] | None = Field(
+        default_factory=list, sa_column=Column(JSON)
+    )
     params: list[Param] | None = Field(default_factory=list, sa_column=Column(JSON))
     targets: list[Target] | None = Field(default_factory=list, sa_column=Column(JSON))
     runs: list[Run] = Relationship(
         back_populates="tool",
         sa_relationship=RelationshipProperty(
             "Run", cascade="all, delete, delete-orphan"
-        )
+        ),
     )
     favourited_by: list[User] = Relationship(
         back_populates="favourite_tools", link_model=UserFavouriteToolsLink
@@ -282,6 +304,7 @@ class ToolPublic(ToolBase):
     conda_env_pinned: str | None = None
     id: uuid.UUID
 
+
 class ToolMinimalPublic(SQLModel):
     id: uuid.UUID
     name: str
@@ -296,9 +319,11 @@ class ToolMinimalPublic(SQLModel):
     llm_summary_enabled: bool = False
     explanation_of_results_markdown: str | None = None
 
+
 class ToolsPublic(SQLModel):
     data: list[ToolMinimalPublic]
     count: int
+
 
 class RunStatus(StrEnum):
     pending = "pending"
@@ -326,7 +351,9 @@ class Run(RunBase, table=True):
     status: RunStatus = Field(sa_column=Column(Enum(RunStatus)))
     tags: list[str] | None = Field(default_factory=list, sa_column=Column(JSON))
     params: dict = Field(default_factory=dict, sa_column=Column(JSON))
-    input_file_ids: list[uuid.UUID] | None = Field(default_factory=list, sa_column=Column(JSON))
+    input_file_ids: list[uuid.UUID] | None = Field(
+        default_factory=list, sa_column=Column(JSON)
+    )
     files: list[File] = Relationship(
         back_populates="run",
         sa_relationship=RelationshipProperty(
@@ -356,7 +383,9 @@ class RunPublicMinimal(SQLModel):
     created_at: datetime
     started_at: datetime | None = None
     finished_at: datetime | None = None
-    owner_name: str | None = None  # Full name of the run owner, only shown for shared runs
+    owner_name: str | None = (
+        None  # Full name of the run owner, only shown for shared runs
+    )
 
 
 class FileBase(SQLModel):
@@ -371,30 +400,32 @@ class FileBase(SQLModel):
 class File(FileBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     file_type: FileType = Field(sa_column=Column(String, nullable=False))
-    size: int | None = Field(default=None, sa_column=Column(BigInteger(), nullable=True))
+    size: int | None = Field(
+        default=None, sa_column=Column(BigInteger(), nullable=True)
+    )
     location: str | None = None
     tags: list[str] | None = Field(default_factory=list, sa_column=Column(JSON))
     is_group: bool = False
 
     parent_id: uuid.UUID | None = Field(
-        foreign_key='file.id',  # notice the lowercase "n" to refer to the database table name
+        foreign_key="file.id",  # notice the lowercase "n" to refer to the database table name
         default=None,
-        nullable=True
+        nullable=True,
     )
     # SQLAlchemy resolves this self-reference by name; PEP 604 unions are not
     # accepted here by its relationship mapper.
     parent: Optional["File"] = Relationship(  # noqa: UP037, UP045
-        back_populates='children',
+        back_populates="children",
         sa_relationship_kwargs={
-            "remote_side": 'File.id'  # notice the uppercase "F" to refer to this table class
-        }
+            "remote_side": "File.id"  # notice the uppercase "F" to refer to this table class
+        },
     )
     children: list[File] = Relationship(
-        back_populates='parent',
+        back_populates="parent",
         sa_relationship_kwargs={
             "order_by": "File.created_at"  # Orders the children by created_at
-                                           # This ensure pairs are ordered correctly e.g. R1, R2
-        }
+            # This ensure pairs are ordered correctly e.g. R1, R2
+        },
     )
     owner_id: uuid.UUID = Field(foreign_key="user.id", nullable=False)
     owner: User = Relationship(back_populates="files")
@@ -420,9 +451,11 @@ class FilesPublic(SQLModel):
     data: list[FilePublic]
     count: int
 
+
 class FilesStatistics(SQLModel):
     count: int
     total_size: int
+
 
 class RunPublic(RunPublicMinimal):
     stdout: str | None = None
