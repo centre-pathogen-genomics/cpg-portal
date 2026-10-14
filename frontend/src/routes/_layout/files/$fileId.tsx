@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import type { FilePublic } from "../../../client"
 import { readFileOptions } from "../../../client/@tanstack/react-query.gen"
 import DeleteFileButton from "../../../components/Files/DeleteFileButton"
+import DownloadAllFilesButton from "../../../components/Files/DownloadAllFilesButton"
 import DownloadFileButton from "../../../components/Files/DownloadFileButton"
 import EditableFileName from "../../../components/Files/EditableFileName"
 import FileRenderer from "../../../components/Render/FileRenderer"
@@ -142,7 +143,11 @@ function FileDetailContent() {
           </Link>
         )}
         <div className="flex gap-2">
-          <DownloadFileButton file={file} size="sm" />
+          {file.is_group ? (
+            <DownloadAllFilesButton files={[file]} zipFileName={file.name} />
+          ) : (
+            <DownloadFileButton file={file} size="sm" />
+          )}
           <DeleteFileButton file={file} />
         </div>
       </div>

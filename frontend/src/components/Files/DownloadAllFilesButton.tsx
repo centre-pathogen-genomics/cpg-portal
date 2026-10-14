@@ -49,7 +49,7 @@ function DownloadAllFilesButton({
     if (fileIds.length === 0) {
       showToast(
         "No files to download",
-        "This run has no downloadable files.",
+        "There are no downloadable files.",
         "warning",
       );
       return;

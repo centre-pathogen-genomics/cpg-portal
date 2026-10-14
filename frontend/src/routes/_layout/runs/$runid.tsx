@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { readRunOptions } from "../../../client/@tanstack/react-query.gen";
 import AISummaryButton from "../../../components/AI/AISummary";
 import ReactMarkdown from "../../../components/Common/Markdown";
-import DownloadAllFilesButton from "../../../components/Runs/DownloadAllFilesButton";
+import DownloadAllFilesButton from "../../../components/Files/DownloadAllFilesButton";
 import FileRenderer from "../../../components/Render/FileRenderer";
 import CancelRunButton from "../../../components/Runs/CancelRunButton";
 import DeleteRunButton from "../../../components/Runs/DeleteRunButton";
