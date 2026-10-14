@@ -13,7 +13,12 @@ jupyterlite-pyodide-kernel==0.6.1
 jupyterlite-javascript-kernel==0.3.0
 
 # R kernel (optional)
-jupyterlite-webr==0.6.0
+# Patched build of jupyterlite-webr 0.6.0 bundling the webr 0.6.0 JS client.
+# PyPI's jupyterlite-webr==0.6.0 bundles webr 0.5.1, which cannot talk to the
+# webR v0.6.0 runtime ("Cannot read properties of undefined (reading 'output')").
+# Replace with the PyPI release once upstream publishes the fix.
+# Path is relative to the working directory: run pip from frontend/jupyterlite.
+./vendor/jupyterlite_webr-0.6.0+webr060-py3-none-any.whl
 
 # Language support (optional)
 jupyterlab-language-pack-fr-FR
