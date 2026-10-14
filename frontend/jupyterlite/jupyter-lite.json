@@ -7,6 +7,12 @@
       "@jupyterlab/drawio-extension",
       "jupyterlab-kernel-spy",
       "jupyterlab-tour"
-    ]
+    ],
+    "litePluginSettings": {
+      "@r-wasm/webr-kernel-extension:kernel": {
+        "baseUrl": "https://webr.r-wasm.org/v0.6.0/",
+        "repoUrl": "https://repo.r-wasm.org/"
+      }
+    }
   }
 }

@@ -21,15 +21,15 @@ RUN bun run build
 # Stage 1, build the JupyterLite static app from source.
 FROM python:3.10-slim AS jupyterlite-build
 
-WORKDIR /app
+WORKDIR /app/frontend/jupyterlite
 
 COPY ./frontend/jupyterlite/requirements.txt /app/frontend/jupyterlite/requirements.txt
+# Patched jupyterlite-webr wheel referenced (relative to cwd) from requirements.txt
+COPY ./frontend/jupyterlite/vendor/ /app/frontend/jupyterlite/vendor/
 
-RUN pip install --default-timeout=100 --no-cache-dir -r /app/frontend/jupyterlite/requirements.txt
+RUN pip install --default-timeout=100 --no-cache-dir -r requirements.txt
 
 COPY ./frontend/jupyterlite/ /app/frontend/jupyterlite/
-
-WORKDIR /app/frontend/jupyterlite
 
 RUN jupyter lite build --output-dir /app/dist/
 

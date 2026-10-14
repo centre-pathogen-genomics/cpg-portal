@@ -13,7 +13,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Testing 
+## Testing
 
 Remember you'll need to set the API URL to localhost:8000 for testing
 
@@ -21,6 +21,15 @@ Remember you'll need to set the API URL to localhost:8000 for testing
 source .venv/bin/activate
 jupyter lite build
 ```
+
+This writes the site to `frontend/public/wasm/jupyterlite` (see `output_dir` in
+`jupyter_lite_config.json`). That directory is git-ignored and is what `bun run dev`
+serves at `/wasm/jupyterlite/`, so run the build once before using JupyterLite in the dev
+server (it returns 404 until then) and again after changing `requirements.txt` or the config.
+Production images build JupyterLite in their own Docker stage and don't use this directory.
+
+`requirements.txt` installs the R kernel from the patched wheel in `vendor/`. Run `pip`
+from this directory so the relative path resolves.
 
 # Hosting
 

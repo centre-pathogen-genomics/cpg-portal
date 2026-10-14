@@ -8,4 +8,6 @@
 **/__pycache__
 **/.pytest_cache
 **/.ruff_cache
+# Generated locally by `jupyter lite build`; the image builds JupyterLite in its own stage
+frontend/public/wasm
 PAPER.md
