@@ -19,7 +19,7 @@ declare module "@phylocanvas/phylocanvas.gl" {
     [key: string]: unknown;
   }
 
-  export default class PhylocanvasGL {
+  export class PhylocanvasGL {
     constructor(view?: HTMLElement | null, props?: PhylocanvasProps);
     setProps(props: PhylocanvasProps): void;
     destroy(): void;

@@ -39,6 +39,7 @@
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "cmdk": "^1.1.1",
+        "deck.gl": "8.3.10",
         "form-data": "4.0.6",
         "lucide-react": "^1.17.0",
         "next-themes": "^0.4.6",
@@ -134,27 +135,27 @@
 
     "@biomejs/cli-win32-x64": ["@biomejs/cli-win32-x64@2.4.16", "", { "os": "win32", "cpu": "x64" }, "sha512-Kp85jgoBHa05gix6UIRjfCDiUV3w/8VIdZ247VyyO2gEjaw12WEVhdIjlxp/AMzXxqxQwbxNTDVZ3Mwd2RG5rw=="],
 
-    "@deck.gl/aggregation-layers": ["@deck.gl/aggregation-layers@8.9.36", "", { "dependencies": { "@babel/runtime": "^7.0.0", "@luma.gl/constants": "^8.5.21", "@luma.gl/shadertools": "^8.5.21", "@math.gl/web-mercator": "^3.6.2", "d3-hexbin": "^0.2.1" }, "peerDependencies": { "@deck.gl/core": "^8.0.0", "@deck.gl/layers": "^8.0.0", "@luma.gl/core": "^8.0.0" } }, "sha512-EwUJ1bwhhAG6LF9hAdZDaIAwIFDUGC8XpQgHmitTLohciVrIp70p9zpgHNNU6oPy+iQvccmWctLcSC9TpgjsIg=="],
+    "@deck.gl/aggregation-layers": ["@deck.gl/aggregation-layers@8.3.10", "", { "dependencies": { "@luma.gl/shadertools": "^8.3.1", "@math.gl/web-mercator": "^3.3.0", "d3-hexbin": "^0.2.1" }, "peerDependencies": { "@deck.gl/core": "^8.0.0", "@deck.gl/layers": "^8.0.0" } }, "sha512-kofvSAbk9llQLel5xtQCBPqVW67Qv/v7UcbFd7FNmhNO0VhOJ0cIiCISb99cm2fmJs6xSjcC/SgrgHKomPtGdw=="],
 
-    "@deck.gl/carto": ["@deck.gl/carto@8.9.36", "", { "dependencies": { "@babel/runtime": "^7.0.0", "@loaders.gl/gis": "^3.4.13", "@loaders.gl/loader-utils": "^3.4.13", "@loaders.gl/mvt": "^3.4.13", "@loaders.gl/tiles": "^3.4.13", "@luma.gl/constants": "^8.5.21", "@math.gl/web-mercator": "^3.6.2", "cartocolor": "^4.0.2", "d3-array": "^3.2.0", "d3-color": "^3.1.0", "d3-format": "^3.1.0", "d3-scale": "^4.0.0", "h3-js": "^3.7.0", "moment-timezone": "^0.5.33", "pbf": "^3.2.1", "quadbin": "^0.1.9" }, "peerDependencies": { "@deck.gl/aggregation-layers": "^8.0.0", "@deck.gl/core": "^8.0.0", "@deck.gl/extensions": "^8.0.0", "@deck.gl/geo-layers": "^8.0.0", "@deck.gl/layers": "^8.0.0", "@loaders.gl/core": "^3.4.13" } }, "sha512-lm05nWciAX6SikbjETgPexnjDA1KoyDadi5VOk3RazYUUMw55s6Qc84qKSyXK263Rg58eOGl4K4pyCPRdphFog=="],
+    "@deck.gl/carto": ["@deck.gl/carto@8.3.10", "", { "dependencies": { "@loaders.gl/loader-utils": "^2.3.0", "@loaders.gl/mvt": "^2.3.0", "@loaders.gl/tiles": "^2.3.0", "@math.gl/web-mercator": "^3.3.0" }, "peerDependencies": { "@deck.gl/core": "^8.0.0", "@deck.gl/geo-layers": "^8.0.0", "@deck.gl/layers": "^8.0.0", "@loaders.gl/core": "^2.3.0" } }, "sha512-KOWkDtkFmFwW23avZb00KIfal6u0Cqi+YKNsuf5l/ovFQ/B/DvLeoA8O5C3zYb6HoS1RGyQgSNMrw01mV4QvZA=="],
 
-    "@deck.gl/core": ["@deck.gl/core@8.9.36", "", { "dependencies": { "@babel/runtime": "^7.0.0", "@loaders.gl/core": "^3.4.13", "@loaders.gl/images": "^3.4.13", "@luma.gl/constants": "^8.5.21", "@luma.gl/core": "^8.5.21", "@luma.gl/webgl": "^8.5.21", "@math.gl/core": "^3.6.2", "@math.gl/sun": "^3.6.2", "@math.gl/web-mercator": "^3.6.2", "@probe.gl/env": "^3.5.0", "@probe.gl/log": "^3.5.0", "@probe.gl/stats": "^3.5.0", "gl-matrix": "^3.0.0", "math.gl": "^3.6.2", "mjolnir.js": "^2.7.0" } }, "sha512-mkIv4/fY1jE+iehqSJzUQi75l9cgfx2ZBa1s1AifgLu0TCkCZgRgISV3UnDBECDCmTZ9Cqk+oKq3OGay3Bz1RQ=="],
+    "@deck.gl/core": ["@deck.gl/core@8.3.10", "", { "dependencies": { "@loaders.gl/core": "^2.3.0", "@loaders.gl/images": "^2.3.0", "@luma.gl/core": "^8.3.1", "@math.gl/web-mercator": "^3.3.0", "gl-matrix": "^3.0.0", "math.gl": "^3.3.0", "mjolnir.js": "^2.3.0", "probe.gl": "^3.2.1" } }, "sha512-LS+rra19iUjZWutWO3exrTwo3H/6lF6OD2tbQ+DV9keW2Oy9x1PVL5hPlU+mYIc/QOlN7n+Oc8CaxILz84heRg=="],
 
-    "@deck.gl/extensions": ["@deck.gl/extensions@8.9.36", "", { "dependencies": { "@babel/runtime": "^7.0.0", "@luma.gl/shadertools": "^8.5.21" }, "peerDependencies": { "@deck.gl/core": "^8.0.0", "@luma.gl/constants": "^8.0.0", "@luma.gl/core": "^8.0.0", "@math.gl/core": "^3.6.2", "@math.gl/web-mercator": "^3.6.2", "gl-matrix": "^3.0.0" } }, "sha512-BoHjJOK9Ue/zH+YkXiFli7ebS+I21fyL4YeCUzw2a6OOo36SZV/4S0gZSSkaaltO72aZsDsvduWPAbmXY2slqA=="],
+    "@deck.gl/extensions": ["@deck.gl/extensions@8.3.10", "", { "dependencies": { "@luma.gl/shadertools": "^8.3.1" }, "peerDependencies": { "@deck.gl/core": "^8.0.0", "gl-matrix": "^3.0.0" } }, "sha512-AtwV17h1R315SLgIDrgQnmwIA6fOqlNX2fyJKl451OUxXEkRJUV2bYDlVryjo1DC3ZFa6apkwVYMy9jx8g2wsA=="],
 
-    "@deck.gl/geo-layers": ["@deck.gl/geo-layers@8.9.36", "", { "dependencies": { "@babel/runtime": "^7.0.0", "@loaders.gl/3d-tiles": "^3.4.13", "@loaders.gl/gis": "^3.4.13", "@loaders.gl/loader-utils": "^3.4.13", "@loaders.gl/mvt": "^3.4.13", "@loaders.gl/schema": "^3.4.13", "@loaders.gl/terrain": "^3.4.13", "@loaders.gl/tiles": "^3.4.13", "@loaders.gl/wms": "^3.4.13", "@luma.gl/constants": "^8.5.21", "@luma.gl/experimental": "^8.5.21", "@math.gl/core": "^3.6.2", "@math.gl/culling": "^3.6.2", "@math.gl/web-mercator": "^3.6.2", "@types/geojson": "^7946.0.8", "h3-js": "^3.7.0", "long": "^3.2.0" }, "peerDependencies": { "@deck.gl/core": "^8.0.0", "@deck.gl/extensions": "^8.0.0", "@deck.gl/layers": "^8.0.0", "@deck.gl/mesh-layers": "^8.0.0", "@loaders.gl/core": "^3.4.13", "@luma.gl/core": "^8.0.0" } }, "sha512-OmJhbRpNK2MPVfEWqWR45Q1e8Sz90fGuFOkcl8Ecl6HZJV7IWcAlnybtaAeJNWO2OohN2TI53UdRKUNGFYS4AQ=="],
+    "@deck.gl/geo-layers": ["@deck.gl/geo-layers@8.3.10", "", { "dependencies": { "@loaders.gl/3d-tiles": "^2.3.0", "@loaders.gl/loader-utils": "^2.3.0", "@loaders.gl/mvt": "^2.3.0", "@loaders.gl/terrain": "^2.3.0", "@loaders.gl/tiles": "^2.3.0", "@math.gl/culling": "^3.3.0", "@math.gl/web-mercator": "^3.3.0", "h3-js": "^3.6.0", "long": "^3.2.0", "math.gl": "^3.3.0" }, "peerDependencies": { "@deck.gl/core": "^8.0.0", "@deck.gl/layers": "^8.0.0", "@deck.gl/mesh-layers": "^8.0.0", "@loaders.gl/core": "^2.3.0" } }, "sha512-6E0h/vdo6waReL8v6W4sMFcvrLhAsAi89Zrn2uke8VXvba6LpRyZbVpkLHjIsgaIlMWLkt9Fy7MnZZycg5UGtQ=="],
 
-    "@deck.gl/google-maps": ["@deck.gl/google-maps@8.9.36", "", { "dependencies": { "@babel/runtime": "^7.0.0" }, "peerDependencies": { "@deck.gl/core": "^8.0.0", "@luma.gl/constants": "^8.5.0", "@luma.gl/core": "^8.5.0", "@math.gl/core": "^3.6.0" } }, "sha512-/qqQY3J3eNWO5Yw3Lt0uLLmc+r28xbMrNwNR0rMVwbLzKWlMfWjxMV+MgcO6hW/wWeB0v/mxEjykuW4YO2MvPA=="],
+    "@deck.gl/google-maps": ["@deck.gl/google-maps@8.3.10", "", { "peerDependencies": { "@deck.gl/core": "^8.0.0" } }, "sha512-SYJF3GWUkz0xTqAUKDZ4Ily3Ayd30tz7RAQTr3oeopmfT1jBJuvVz/hkyKy8j6pgWcqud0LOdBoG53lZBU11ig=="],
 
-    "@deck.gl/json": ["@deck.gl/json@8.9.36", "", { "dependencies": { "@babel/runtime": "^7.0.0", "d3-dsv": "^1.0.8", "expression-eval": "^2.0.0" }, "peerDependencies": { "@deck.gl/core": "^8.0.0" } }, "sha512-DTZBD5TgvJxgUO5vk7wT2gHMt2uw1A/51f7K/tzBbJyACue8kLwFMNm/VXWojrxjAZZslETdT0Et+U4jN+jFBQ=="],
+    "@deck.gl/json": ["@deck.gl/json@8.3.10", "", { "dependencies": { "d3-dsv": "^1.0.8", "expression-eval": "^2.0.0" }, "peerDependencies": { "@deck.gl/core": "^8.0.0" } }, "sha512-Hoe5//1bA3sxqePU9uSsI/boI05aHF4zukvN1c8dyC1Y+I3bSBRlZUjjQQphSe+GpbbfZ9X++HXrTMNtoM9TPQ=="],
 
-    "@deck.gl/layers": ["@deck.gl/layers@8.9.36", "", { "dependencies": { "@babel/runtime": "^7.0.0", "@loaders.gl/images": "^3.4.13", "@loaders.gl/schema": "^3.4.13", "@luma.gl/constants": "^8.5.21", "@mapbox/tiny-sdf": "^2.0.5", "@math.gl/core": "^3.6.2", "@math.gl/polygon": "^3.6.2", "@math.gl/web-mercator": "^3.6.2", "earcut": "^2.2.4" }, "peerDependencies": { "@deck.gl/core": "^8.0.0", "@loaders.gl/core": "^3.4.13", "@luma.gl/core": "^8.0.0" } }, "sha512-sr/QKELXZ4W0ZHb12QC2+EV1bZJOM6cU6kAfOJD5jOVixOcyccr+FnPPGn39VK9cl/VFY0S339ZPs9reyhDFVg=="],
+    "@deck.gl/layers": ["@deck.gl/layers@8.3.10", "", { "dependencies": { "@loaders.gl/images": "^2.3.0", "@mapbox/tiny-sdf": "^1.1.0", "@math.gl/polygon": "^3.3.0", "earcut": "^2.0.6" }, "peerDependencies": { "@deck.gl/core": "^8.0.0", "@loaders.gl/core": "^2.3.0" } }, "sha512-FeHfWHhwGxZuAgdncoaUP72V+y0XFzsZEXlXk0nVxzrDMSNjo0rGCah5bS3Xk3zNOqW19+HmUXuO0547HDnxFA=="],
 
-    "@deck.gl/mapbox": ["@deck.gl/mapbox@8.9.36", "", { "dependencies": { "@babel/runtime": "^7.0.0", "@types/mapbox-gl": "^2.6.3" }, "peerDependencies": { "@deck.gl/core": "^8.0.0" } }, "sha512-JUMkxHsaV5/FhKx68cp87vcHTdYTqS1fWpytN7I1B0p1gxhd37iYNU/FtEg3Pxs5ce9zLkjVepF6PALVWnDlGw=="],
+    "@deck.gl/mapbox": ["@deck.gl/mapbox@8.3.10", "", { "peerDependencies": { "@deck.gl/core": "^8.0.0" } }, "sha512-hktM5LhG485by+CqY326m17la+NuHqxThWgDqaHL2xacn2hGQsw0H8uU6XvDp+MFO3qcyJ8jl5rbTP3PDnXsYQ=="],
 
-    "@deck.gl/mesh-layers": ["@deck.gl/mesh-layers@8.9.36", "", { "dependencies": { "@babel/runtime": "^7.0.0", "@loaders.gl/gltf": "^3.4.13", "@luma.gl/constants": "^8.5.21", "@luma.gl/experimental": "^8.5.21", "@luma.gl/shadertools": "^8.5.21" }, "peerDependencies": { "@deck.gl/core": "^8.0.0", "@luma.gl/core": "^8.0.0" } }, "sha512-xQ+OSdU3z3HIgaHJfxbcNIxmWYPUBMJZAM+fAbynojGVzGYLJo2MUjUJLtCsw0Ejs3YtnocyuFRM+zObB0I3jw=="],
+    "@deck.gl/mesh-layers": ["@deck.gl/mesh-layers@8.3.10", "", { "dependencies": { "@luma.gl/experimental": "^8.3.1", "@luma.gl/shadertools": "^8.3.1" }, "peerDependencies": { "@deck.gl/core": "^8.0.0" } }, "sha512-Rb1GuK7ghqX1+ROoXLt8lpLQOUhpjdg+4g5tejtTP/ISAl49/ye9G90sqNkWPv4JysJ2O8AfQLO42AF2xKGtWg=="],
 
-    "@deck.gl/react": ["@deck.gl/react@8.9.36", "", { "dependencies": { "@babel/runtime": "^7.0.0" }, "peerDependencies": { "@deck.gl/core": "^8.0.0", "@types/react": ">= 16.3", "react": ">=16.3", "react-dom": ">=16.3" } }, "sha512-/WIvHK0aJwppLnpA6GZrOhfanx5WVWihx/o6U88kX53VsyJQMZU10+EXKc1FkI3nd5/jsLbLc8fC0dUtiXiSVw=="],
+    "@deck.gl/react": ["@deck.gl/react@8.3.10", "", { "dependencies": { "prop-types": "^15.6.0" }, "peerDependencies": { "@deck.gl/core": "^8.0.0", "react": ">=16.3", "react-dom": ">=16.3" } }, "sha512-zBtwH1lsyupf1piOmj2Xq8ENnBFp7SQ3YnuIi8oJr7FVbUogvprxr67gaPlXJUuVGbtaNgTH9Y6q+YAWq0H3OA=="],
 
     "@emnapi/core": ["@emnapi/core@1.10.0", "", { "dependencies": { "@emnapi/wasi-threads": "1.2.1", "tslib": "^2.4.0" } }, "sha512-yq6OkJ4p82CAfPl0u9mQebQHKPJkY7WrIuk205cTYnYe+k2Z8YBh11FrbRG/H6ihirqcacOgl2BIO8oyMQLeXw=="],
 
@@ -244,37 +245,33 @@
 
     "@lattice-automation/react-resize-detector": ["@lattice-automation/react-resize-detector@12.3.0", "", { "dependencies": { "es-toolkit": "^1.39.6" }, "peerDependencies": { "react": "^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-ATMPq6i6NimrWsarZ/j9ytgqqlmHeITzrpjruRj8BRkAzZlH1t/qOLoMGxJLOLoOOKsvOdy98qDD3IWs900zXQ=="],
 
-    "@loaders.gl/3d-tiles": ["@loaders.gl/3d-tiles@3.4.15", "", { "dependencies": { "@loaders.gl/draco": "3.4.15", "@loaders.gl/gltf": "3.4.15", "@loaders.gl/loader-utils": "3.4.15", "@loaders.gl/math": "3.4.15", "@loaders.gl/tiles": "3.4.15", "@math.gl/core": "^3.5.1", "@math.gl/geospatial": "^3.5.1", "long": "^5.2.1" }, "peerDependencies": { "@loaders.gl/core": "^3.4.0" } }, "sha512-JR67bEfLrD7Lzb6pWyEIRg2L6W3n6y43DKcWofRLpwPqLA7qHuY7SlO7E72Lz7Tniye8VhawqY1wO8gCx8T72Q=="],
+    "@loaders.gl/3d-tiles": ["@loaders.gl/3d-tiles@2.3.13", "", { "dependencies": { "@loaders.gl/core": "2.3.13", "@loaders.gl/draco": "2.3.13", "@loaders.gl/gltf": "2.3.13", "@loaders.gl/loader-utils": "2.3.13", "@loaders.gl/math": "2.3.13", "@loaders.gl/tiles": "2.3.13", "@math.gl/core": "^3.3.0", "@math.gl/geospatial": "^3.3.0", "@probe.gl/stats": "^3.3.0" } }, "sha512-WccDTlv/AJo5GJFEa6MIjk1H0294hTs8zhmEDq5mmdQ4B7la+4aWKmIfJmgCcIv8vWUkzQIuRIHTgxi0ShmUTw=="],
 
-    "@loaders.gl/core": ["@loaders.gl/core@3.4.15", "", { "dependencies": { "@babel/runtime": "^7.3.1", "@loaders.gl/loader-utils": "3.4.15", "@loaders.gl/worker-utils": "3.4.15", "@probe.gl/log": "^3.5.0" } }, "sha512-rPOOTuusWlRRNMWg7hymZBoFmPCXWThsA5ZYRfqqXnsgVeQIi8hzcAhJ7zDUIFAd/OSR8ravtqb0SH+3k6MOFQ=="],
+    "@loaders.gl/core": ["@loaders.gl/core@2.3.13", "", { "dependencies": { "@babel/runtime": "^7.3.1", "@loaders.gl/loader-utils": "2.3.13" } }, "sha512-Hjm8eJjS/OUnaHrOSgXtE+qDg5V4Do0jIpp2u0Dv3CMxPrtd2TpwkDfAyZWmmbZew9rzqPoAVMINejS/ItWUeg=="],
 
-    "@loaders.gl/draco": ["@loaders.gl/draco@3.4.15", "", { "dependencies": { "@babel/runtime": "^7.3.1", "@loaders.gl/loader-utils": "3.4.15", "@loaders.gl/schema": "3.4.15", "@loaders.gl/worker-utils": "3.4.15", "draco3d": "1.5.5" } }, "sha512-SStmyP0ZnS4JbWZb2NhrfiHW65uy3pVTTzQDTgXfkR5cD9oDAEu4nCaHbQ8x38/m39FHliCPgS9b1xWvLKQo8w=="],
+    "@loaders.gl/draco": ["@loaders.gl/draco@2.3.13", "", { "dependencies": { "@babel/runtime": "^7.3.1", "@loaders.gl/loader-utils": "2.3.13", "draco3d": "^1.3.6" } }, "sha512-rePkoM/xpvNyjO2vvBRQ39Aa3tCpBFCWf/jheka4bFXnLJzy8X7ZGNXojZEsrdT0lAiHM+QrCeAWvtyDEujURA=="],
 
     "@loaders.gl/gis": ["@loaders.gl/gis@3.4.15", "", { "dependencies": { "@loaders.gl/loader-utils": "3.4.15", "@loaders.gl/schema": "3.4.15", "@mapbox/vector-tile": "^1.3.1", "@math.gl/polygon": "^3.5.1", "pbf": "^3.2.1" } }, "sha512-h+LJI35P6ze8DFPSUylTKuml0l4HIfHMczML6u+ZXG6E2w5tbdM3Eh5AzHjXGQPuwUnaYPn3Mq/2t2N1rz98pg=="],
 
     "@loaders.gl/gltf": ["@loaders.gl/gltf@3.4.15", "", { "dependencies": { "@loaders.gl/draco": "3.4.15", "@loaders.gl/images": "3.4.15", "@loaders.gl/loader-utils": "3.4.15", "@loaders.gl/textures": "3.4.15", "@math.gl/core": "^3.5.1" } }, "sha512-Y6kMNPLiHQPr6aWQw/4BMTxgPHWx3fcib4LPpZCbhyfM8PRn6pOqATVngUXdoOf5XY0QtdKVld6N1kxlr4pJtw=="],
 
-    "@loaders.gl/images": ["@loaders.gl/images@3.4.15", "", { "dependencies": { "@loaders.gl/loader-utils": "3.4.15" } }, "sha512-QpjYhEetHabY/z9mWZYJXZZp4XJAxa38f9Ii/DjPlnJErepzY5GLBUTDHMu4oZ6n99gGImtuGFicDnFV6mb60g=="],
+    "@loaders.gl/images": ["@loaders.gl/images@2.3.13", "", { "dependencies": { "@loaders.gl/loader-utils": "2.3.13" } }, "sha512-BBgLf17udhRnYwvsObAOM7jEeLBaeU3di1NyLhpTMa7WbG3jAnDlmy1BRue8wYfgVpWnmk18YubZtX6vCRrJnA=="],
 
-    "@loaders.gl/loader-utils": ["@loaders.gl/loader-utils@3.4.15", "", { "dependencies": { "@babel/runtime": "^7.3.1", "@loaders.gl/worker-utils": "3.4.15", "@probe.gl/stats": "^3.5.0" } }, "sha512-uUx6tCaky6QgCRkqCNuuXiUfpTzKV+ZlJOf6C9bKp62lpvFOv9AwqoXmL23j8nfsENdlzsX3vPhc3en6QQyksA=="],
+    "@loaders.gl/loader-utils": ["@loaders.gl/loader-utils@2.3.13", "", { "dependencies": { "@babel/runtime": "^7.3.1", "@probe.gl/stats": "^3.3.0" } }, "sha512-vXzH5CWG8pWjUEb7hUr6CM4ERj4NVRpA60OxvVv/OaZZ7hNN63+9/tSUA5IXD9QArWPWrFBnKnvE+5gg4WNqTg=="],
 
-    "@loaders.gl/math": ["@loaders.gl/math@3.4.15", "", { "dependencies": { "@loaders.gl/images": "3.4.15", "@loaders.gl/loader-utils": "3.4.15", "@math.gl/core": "^3.5.1" } }, "sha512-zTN8BUU/1fcppyVc8WzvdZcCyNGVYmNinxcn/A+a7mi1ug4OBGwEsZOj09Wjg0/s52c/cAL3h9ylPIZdjntscQ=="],
+    "@loaders.gl/math": ["@loaders.gl/math@2.3.13", "", { "dependencies": { "@loaders.gl/images": "2.3.13", "@loaders.gl/loader-utils": "2.3.13", "@math.gl/core": "^3.3.0" } }, "sha512-ewlpk+5NR+DWSDx7OIptcd+KaPRmwgOlSg/54p+pjw1oO0rqs7y8tv7s+KfYJX66rN7i9MiBaJ0JwfC0lrB09A=="],
 
-    "@loaders.gl/mvt": ["@loaders.gl/mvt@3.4.15", "", { "dependencies": { "@loaders.gl/gis": "3.4.15", "@loaders.gl/loader-utils": "3.4.15", "@loaders.gl/schema": "3.4.15", "@math.gl/polygon": "^3.5.1", "pbf": "^3.2.1" } }, "sha512-Q8e1ZyfNkJtPF/C4WSZ2qhWDEbzOvquP7OyG1NzQ2cp8R6eUfbexu48IgcnL/oAu8VPql3zIxQ+bQUyDReyN5g=="],
+    "@loaders.gl/mvt": ["@loaders.gl/mvt@2.3.13", "", { "dependencies": { "@loaders.gl/gis": "2.3.13", "@loaders.gl/loader-utils": "2.3.13", "@mapbox/point-geometry": "~0.1.0", "@mapbox/vector-tile": "^1.3.1", "pbf": "^3.2.1" } }, "sha512-Zi1Gc6XzxTY05tVbxMITvy6zUiBhMpMWvhPkaCcOfktblDMnhQTkIb9fVnhv7ioe4hId4rvuXDIUXhtrBTJEKQ=="],
 
     "@loaders.gl/schema": ["@loaders.gl/schema@3.4.15", "", { "dependencies": { "@types/geojson": "^7946.0.7" } }, "sha512-8oRtstz0IsqES7eZd2jQbmCnmExCMtL8T6jWd1+BfmnuyZnQ0B6TNccy++NHtffHdYuzEoQgSELwcdmhSApYew=="],
 
-    "@loaders.gl/terrain": ["@loaders.gl/terrain@3.4.15", "", { "dependencies": { "@babel/runtime": "^7.3.1", "@loaders.gl/images": "3.4.15", "@loaders.gl/loader-utils": "3.4.15", "@loaders.gl/schema": "3.4.15", "@mapbox/martini": "^0.2.0" } }, "sha512-ouv41J84uOnLEtXLM+iPEPFfeq7aRgIOls6esdvhBx2/dXJRNkt8Mx0wShXAi8VNHz77D+gZFrKARa7wqjmftg=="],
+    "@loaders.gl/terrain": ["@loaders.gl/terrain@2.3.13", "", { "dependencies": { "@babel/runtime": "^7.3.1", "@loaders.gl/loader-utils": "2.3.13", "@mapbox/martini": "^0.2.0" } }, "sha512-sZi/CMcNxKbcv7F8pk0PLX5P0o11Sy8DzOk4MB0mRe4XM1ITeiaXf8L6JZkOC3HBdBOzNlId6N3f32fK9OHPnw=="],
 
     "@loaders.gl/textures": ["@loaders.gl/textures@3.4.15", "", { "dependencies": { "@loaders.gl/images": "3.4.15", "@loaders.gl/loader-utils": "3.4.15", "@loaders.gl/schema": "3.4.15", "@loaders.gl/worker-utils": "3.4.15", "ktx-parse": "^0.0.4", "texture-compressor": "^1.0.2" } }, "sha512-QHnmxBYtLvTdG1uMz2KWcxVY8KPb1+XyPJUoZV9GMcQkulz+CwFB8BaX8nROfMDz9KKYoPfksCzjig0LZ0WBJQ=="],
 
-    "@loaders.gl/tiles": ["@loaders.gl/tiles@3.4.15", "", { "dependencies": { "@loaders.gl/loader-utils": "3.4.15", "@loaders.gl/math": "3.4.15", "@math.gl/core": "^3.5.1", "@math.gl/culling": "^3.5.1", "@math.gl/geospatial": "^3.5.1", "@math.gl/web-mercator": "^3.5.1", "@probe.gl/stats": "^3.5.0" }, "peerDependencies": { "@loaders.gl/core": "^3.4.0" } }, "sha512-o85aRSXq+YeVSK2ndW9aBwTMi5FhEsQ7k18J4DG+T5Oc+zz3tKui5X1SuBDiKbQN+kYtFpj0oYO1QG3ndNI6jg=="],
-
-    "@loaders.gl/wms": ["@loaders.gl/wms@3.4.15", "", { "dependencies": { "@babel/runtime": "^7.3.1", "@loaders.gl/images": "3.4.15", "@loaders.gl/loader-utils": "3.4.15", "@loaders.gl/schema": "3.4.15", "@loaders.gl/xml": "3.4.15", "@turf/rewind": "^5.1.5", "deep-strict-equal": "^0.2.0", "lerc": "^4.0.1" } }, "sha512-zY++Oxx+cNGF9ptuSTFxCmEnpRbR5VZYjvyLraylaRbuynZv+JiWrehymFzEfq3hJcQ/cGvIjaG6rSVtPuqCIA=="],
+    "@loaders.gl/tiles": ["@loaders.gl/tiles@2.3.13", "", { "dependencies": { "@loaders.gl/core": "2.3.13", "@loaders.gl/loader-utils": "2.3.13", "@loaders.gl/math": "2.3.13", "@math.gl/core": "^3.3.0", "@math.gl/culling": "^3.3.0", "@math.gl/geospatial": "^3.3.0", "@math.gl/web-mercator": "^3.3.0", "@probe.gl/stats": "^3.3.0" } }, "sha512-3ZSlMgcPTo5lCnvKw/is5dvTayzvX+wi6n1u4lEe4gt8Ml9KYp/e45hOqp6qXR6SckO2+ohBXOzQP2e8ZhRxXQ=="],
 
     "@loaders.gl/worker-utils": ["@loaders.gl/worker-utils@3.4.15", "", { "dependencies": { "@babel/runtime": "^7.3.1" } }, "sha512-zUUepOYRYmcYIcr/c4Mchox9h5fBFNkD81rsGnLlZyq19QvyHzN+93SVxrLc078gw93t2RKrVcOOZY13zT3t1w=="],
-
-    "@loaders.gl/xml": ["@loaders.gl/xml@3.4.15", "", { "dependencies": { "@babel/runtime": "^7.3.1", "@loaders.gl/loader-utils": "3.4.15", "@loaders.gl/schema": "3.4.15", "fast-xml-parser": "^4.2.5" } }, "sha512-iMWHaDzYSe8JoS8W5k9IbxQ6S3VHPr7M+UBejIVeYGCp1jzWF0ri498olwJWWDRvg4kqAWolrkj8Pcgkg8Jf8A=="],
 
     "@luma.gl/constants": ["@luma.gl/constants@8.5.21", "", {}, "sha512-aJxayGxTT+IRd1vfpcgD/cKSCiVJjBNiuiChS96VulrmCvkzUOLvYXr42y5qKB4RyR7vOIda5uQprNzoHrhQAA=="],
 
@@ -296,7 +293,7 @@
 
     "@mapbox/tile-cover": ["@mapbox/tile-cover@3.0.1", "", { "dependencies": { "tilebelt": "^1.0.1" } }, "sha512-R8aoFY/87HWBOL9E2eBqzOY2lpfWYXCcTNgBpIxAv67rqQeD4IfnHD0iPXg/Z1cqXrklegEYZCp/7ZR/RsWqBQ=="],
 
-    "@mapbox/tiny-sdf": ["@mapbox/tiny-sdf@2.3.0", "", {}, "sha512-gBvcNDBBB66bgQYvnaJ6Jk+VCaMmVq5+IZR2kWPisT88Z8s0kBQt6hfVi8QgRW8Vpg0UWZzBA4ZSyzHHC+VeRA=="],
+    "@mapbox/tiny-sdf": ["@mapbox/tiny-sdf@1.2.5", "", {}, "sha512-cD8A/zJlm6fdJOk6DqPUV8mcpyJkRz2x2R+/fYcWDYG3oWbG7/L7Yl/WqQ1VZCjnL9OTIMAn6c+BC5Eru4sQEw=="],
 
     "@mapbox/vector-tile": ["@mapbox/vector-tile@1.3.1", "", { "dependencies": { "@mapbox/point-geometry": "~0.1.0" } }, "sha512-MCEddb8u44/xfQ3oD+Srl/tNcQoqTw3goGk2oLsrFxOTc3dUp+kAnby3PvAeeBYSMSjSPD1nd1AJA6W49WnoUw=="],
 
@@ -582,18 +579,6 @@
 
     "@tanstack/virtual-file-routes": ["@tanstack/virtual-file-routes@1.162.0", "", {}, "sha512-uhOeFyxLcU41HzvrxsGpiWdcMbScY1EDgbZ5K7DVRMYInbLYWAC0EA/kx9wXAoSM8q82bUG2hRl8+EAjE6XAbA=="],
 
-    "@turf/boolean-clockwise": ["@turf/boolean-clockwise@5.1.5", "", { "dependencies": { "@turf/helpers": "^5.1.5", "@turf/invariant": "^5.1.5" } }, "sha512-FqbmEEOJ4rU4/2t7FKx0HUWmjFEVqR+NJrFP7ymGSjja2SQ7Q91nnBihGuT+yuHHl6ElMjQ3ttsB/eTmyCycxA=="],
-
-    "@turf/clone": ["@turf/clone@5.1.5", "", { "dependencies": { "@turf/helpers": "^5.1.5" } }, "sha512-//pITsQ8xUdcQ9pVb4JqXiSqG4dos5Q9N4sYFoWghX21tfOV2dhc5TGqYOhnHrQS7RiKQL1vQ48kIK34gQ5oRg=="],
-
-    "@turf/helpers": ["@turf/helpers@5.1.5", "", {}, "sha512-/lF+JR+qNDHZ8bF9d+Cp58nxtZWJ3sqFe6n3u3Vpj+/0cqkjk4nXKYBSY0azm+GIYB5mWKxUXvuP/m0ZnKj1bw=="],
-
-    "@turf/invariant": ["@turf/invariant@5.2.0", "", { "dependencies": { "@turf/helpers": "^5.1.5" } }, "sha512-28RCBGvCYsajVkw2EydpzLdcYyhSA77LovuOvgCJplJWaNVyJYH6BOR3HR9w50MEkPqb/Vc/jdo6I6ermlRtQA=="],
-
-    "@turf/meta": ["@turf/meta@5.2.0", "", { "dependencies": { "@turf/helpers": "^5.1.5" } }, "sha512-ZjQ3Ii62X9FjnK4hhdsbT+64AYRpaI8XMBMcyftEOGSmPMUVnkbvuv3C9geuElAXfQU7Zk1oWGOcrGOD9zr78Q=="],
-
-    "@turf/rewind": ["@turf/rewind@5.1.5", "", { "dependencies": { "@turf/boolean-clockwise": "^5.1.5", "@turf/clone": "^5.1.5", "@turf/helpers": "^5.1.5", "@turf/invariant": "^5.1.5", "@turf/meta": "^5.1.5" } }, "sha512-Gdem7JXNu+G4hMllQHXRFRihJl3+pNl7qY+l4qhQFxq+hiU1cQoVFnyoleIqWKIrdK/i2YubaSwc3SCM7N5mMw=="],
-
     "@tybys/wasm-util": ["@tybys/wasm-util@0.10.2", "", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-RoBvJ2X0wuKlWFIjrwffGw1IqZHKQqzIchKaadZZfnNpsAYp2mM0h36JtPCjNDAHGgYez/15uMBpfGwchhiMgg=="],
 
     "@types/debug": ["@types/debug@4.1.13", "", { "dependencies": { "@types/ms": "*" } }, "sha512-KSVgmQmzMwPlmtljOomayoR89W4FynCAi3E8PPs7vmDVPe84hT+vGPKkJfThkmXs0x0jAaa9U8uW8bbfyS2fWw=="],
@@ -676,8 +661,6 @@
 
     "browserslist": ["browserslist@4.28.1", "", { "dependencies": { "baseline-browser-mapping": "^2.9.0", "caniuse-lite": "^1.0.30001759", "electron-to-chromium": "^1.5.263", "node-releases": "^2.0.27", "update-browserslist-db": "^1.2.0" }, "bin": "cli.js" }, "sha512-ZC5Bd0LgJXgwGqUknZY/vkUQ04r8NXnJZ3yYi4vDmSiZmC/pdSN0NbNRPxZpbtO4uAfDUAFffO8IZoM3Gj8IkA=="],
 
-    "buf-compare": ["buf-compare@1.0.1", "", {}, "sha512-Bvx4xH00qweepGc43xFvMs5BKASXTbHaHm6+kDYIK9p/4iFwjATQkmPKHQSgJZzKbAymhztRbXUf1Nqhzl73/Q=="],
-
     "buffer": ["buffer@6.0.3", "", { "dependencies": { "base64-js": "^1.3.1", "ieee754": "^1.2.1" } }, "sha512-FTiCpNxtwiZZHEZbcbTIcZjERVICn9yq/pDFkTl95/AxzD1naBctN7YO68riM/gLSDY7sdrMby8hofADYuuqOA=="],
 
     "bundle-name": ["bundle-name@4.1.0", "", { "dependencies": { "run-applescript": "^7.0.0" } }, "sha512-tjwM5exMg6BGRI+kNmTntNsvdZS1X8BFYS6tnJ2hdH0kVxM6/eVZ2xy+FqStSWvYmtfFMDLIxurorHwDKfDz5Q=="],
@@ -734,8 +717,6 @@
 
     "copy-to-clipboard": ["copy-to-clipboard@3.3.3", "", { "dependencies": { "toggle-selection": "^1.0.6" } }, "sha512-2KV8NhB5JqC3ky0r9PMCAZKbUHSwtEo4CwCs0KXgruG43gX5PMqDEBbVU4OUzw2MuAWUfsuFmWvEKG5QRfSnJA=="],
 
-    "core-assert": ["core-assert@0.2.1", "", { "dependencies": { "buf-compare": "^1.0.0", "is-error": "^2.2.0" } }, "sha512-IG97qShIP+nrJCXMCgkNZgH7jZQ4n8RpPyPeXX++T6avR/KhLhgLiHKoEn5Rc1KjfycSfA9DMa6m+4C4eguHhw=="],
-
     "cssesc": ["cssesc@3.0.0", "", { "bin": { "cssesc": "bin/cssesc" } }, "sha512-/Tb/JcjK111nNScGob5MNtsntNM1aCNUDipB/TkwZFhyDrrE47SOx/18wF2bbjgc3ZzCSKW1T5nt5EbFoAz/Vg=="],
 
     "csstype": ["csstype@3.2.3", "", {}, "sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ=="],
@@ -782,11 +763,9 @@
 
     "debug": ["debug@4.4.3", "", { "dependencies": { "ms": "^2.1.3" } }, "sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA=="],
 
-    "deck.gl": ["deck.gl@8.9.36", "", { "dependencies": { "@babel/runtime": "^7.0.0", "@deck.gl/aggregation-layers": "8.9.36", "@deck.gl/carto": "8.9.36", "@deck.gl/core": "8.9.36", "@deck.gl/extensions": "8.9.36", "@deck.gl/geo-layers": "8.9.36", "@deck.gl/google-maps": "8.9.36", "@deck.gl/json": "8.9.36", "@deck.gl/layers": "8.9.36", "@deck.gl/mapbox": "8.9.36", "@deck.gl/mesh-layers": "8.9.36", "@deck.gl/react": "8.9.36" } }, "sha512-2LzolV1oNL4f5Q73JvgjsCCzwEMBaJWo1gTT1OWUE2l/7wMuXSdFfYRI45ewH8YaB+vh90d1G8N7kfmSysKabA=="],
+    "deck.gl": ["deck.gl@8.3.10", "", { "dependencies": { "@deck.gl/aggregation-layers": "8.3.10", "@deck.gl/carto": "8.3.10", "@deck.gl/core": "8.3.10", "@deck.gl/extensions": "8.3.10", "@deck.gl/geo-layers": "8.3.10", "@deck.gl/google-maps": "8.3.10", "@deck.gl/json": "8.3.10", "@deck.gl/layers": "8.3.10", "@deck.gl/mapbox": "8.3.10", "@deck.gl/mesh-layers": "8.3.10", "@deck.gl/react": "8.3.10" } }, "sha512-xFDfiWZiQJWv2R7fPZJ9+m4pAy5jwmKJTerNSaomNW9LPuJCJiXbJohbEKcZ7QnLbhngm2Qrw2JiFbELzYFNGg=="],
 
     "decode-named-character-reference": ["decode-named-character-reference@1.3.0", "", { "dependencies": { "character-entities": "^2.0.0" } }, "sha512-GtpQYB283KrPp6nRw50q3U9/VfOutZOe103qlN7BPP6Ad27xYnOIWv4lPzo8HCAL+mMZofJ9KEy30fq6MfaK6Q=="],
-
-    "deep-strict-equal": ["deep-strict-equal@0.2.0", "", { "dependencies": { "core-assert": "^0.2.0" } }, "sha512-3daSWyvZ/zwJvuMGlzG1O+Ow0YSadGfb3jsh9xoCutv2tWyB9dA4YvR9L9/fSdDZa2dByYQe+TqapSGUrjnkoA=="],
 
     "default-browser": ["default-browser@5.4.0", "", { "dependencies": { "bundle-name": "^4.1.0", "default-browser-id": "^5.0.0" } }, "sha512-XDuvSq38Hr1MdN47EDvYtx3U0MTqpCEn+F6ft8z2vYDzMrvQhVp0ui9oQdqW3MvK3vqUETglt1tVGgjLuJ5izg=="],
 
@@ -950,8 +929,6 @@
 
     "is-docker": ["is-docker@3.0.0", "", { "bin": "cli.js" }, "sha512-eljcgEDlEns/7AXFosB5K/2nCM4P7FQPkGc/DWLy5rmFEWvZayGrik1d9/QIY5nJ4f9YsVvBkA6kJpHn9rISdQ=="],
 
-    "is-error": ["is-error@2.2.2", "", {}, "sha512-IOQqts/aHWbiisY5DuPJQ0gcbvaLFCa7fBa9xoLfxBZvQ+ZI/Zh9xoI7Gk+G64N0FdK4AbibytHht2tWgpJWLg=="],
-
     "is-hexadecimal": ["is-hexadecimal@1.0.4", "", {}, "sha512-gyPJuv83bHMpocVYoqof5VDiZveEoGoFL8m3BXNb2VW8Xs+rz9kqO8LOQ5DH6EsuvilT1ApazU0pyl+ytbPtlw=="],
 
     "is-inside-container": ["is-inside-container@1.0.0", "", { "dependencies": { "is-docker": "^3.0.0" }, "bin": "cli.js" }, "sha512-KIYLCCJghfHZxqjYBE7rEy0OBuTd5xCHS7tHVgvCLkx7StIoaxwNW3hCALgEUjFfeRk+MG/Qxmp/vtETEF3tRA=="],
@@ -985,8 +962,6 @@
     "json5": ["json5@2.2.3", "", { "bin": "lib/cli.js" }, "sha512-XmOWe7eyHYH14cLdVPoyg+GOH3rYX++KpzrylJwSW98t3Nk+U8XOl8FWKOgwtzdb8lXGf6zYwDUzeHMWfxasyg=="],
 
     "ktx-parse": ["ktx-parse@0.0.4", "", {}, "sha512-LY3nrmfXl+wZZdPxgJ3ZmLvG+wkOZZP3/dr4RbQj1Pk3Qwz44esOOSFFVQJcNWpXAtiNIC66WgXufX/SYgYz6A=="],
-
-    "lerc": ["lerc@4.2.0", "", {}, "sha512-5TeQPWq2xnHjaxkTrskOG+Ove9pWRGFMKlofBx2hPORFHmIMhyoYWC5zMUJ9mibq0e5tqTZR/dvyAMZ3F6yCqw=="],
 
     "lightningcss": ["lightningcss@1.32.0", "", { "dependencies": { "detect-libc": "^2.0.3" }, "optionalDependencies": { "lightningcss-android-arm64": "1.32.0", "lightningcss-darwin-arm64": "1.32.0", "lightningcss-darwin-x64": "1.32.0", "lightningcss-freebsd-x64": "1.32.0", "lightningcss-linux-arm-gnueabihf": "1.32.0", "lightningcss-linux-arm64-gnu": "1.32.0", "lightningcss-linux-arm64-musl": "1.32.0", "lightningcss-linux-x64-gnu": "1.32.0", "lightningcss-linux-x64-musl": "1.32.0", "lightningcss-win32-arm64-msvc": "1.32.0", "lightningcss-win32-x64-msvc": "1.32.0" } }, "sha512-NXYBzinNrblfraPGyrbPoD19C1h9lfI/1mzgWYvXUTe414Gz/X1FD2XBZSZM7rRTrMA8JL3OtAaGifrIKhQ5yQ=="],
 
@@ -1195,6 +1170,8 @@
     "prettier": ["prettier@3.8.0", "", { "bin": "bin/prettier.cjs" }, "sha512-yEPsovQfpxYfgWNhCfECjG5AQaO+K3dp6XERmOepyPDVqcJm+bjyCVO3pmU+nAPe0N5dDvekfGezt/EIiRe1TA=="],
 
     "prismjs": ["prismjs@1.30.0", "", {}, "sha512-DEvV2ZF2r2/63V+tK8hQvrR2ZGn10srHbXviTlcv7Kpzw8jWiNTqbVgjO3IY8RxrrOUF8VPMQQFysYYYv0YZxw=="],
+
+    "probe.gl": ["probe.gl@3.6.0", "", { "dependencies": { "@babel/runtime": "^7.0.0", "@probe.gl/env": "3.6.0", "@probe.gl/log": "3.6.0", "@probe.gl/stats": "3.6.0" } }, "sha512-19JydJWI7+DtR4feV+pu4Mn1I5TAc0xojuxVgZdXIyfmTLfUaFnk4OloWK1bKbPtkgGKLr2lnbnCXmpZEcEp9g=="],
 
     "prop-types": ["prop-types@15.8.1", "", { "dependencies": { "loose-envify": "^1.4.0", "object-assign": "^4.1.1", "react-is": "^16.13.1" } }, "sha512-oj87CgZICdulUohogVAR7AjlC0327U4el4L6eAvOqCeudMDVU0NThNaV+b9Df4dXgSP1gXMTnPdhfe/2qDH5cg=="],
 
@@ -1482,11 +1459,27 @@
 
     "@deck.gl/layers/earcut": ["earcut@2.2.4", "", {}, "sha512-/pjZsA1b4RPHbeWZQn66SWS8nZZWLQQ23oE3Eam7aroEFGEvwKAsJfZ9ytiEMycfzXWpca4FA9QIOehf7PocBQ=="],
 
-    "@loaders.gl/3d-tiles/long": ["long@5.3.2", "", {}, "sha512-mNAgZ1GmyNhD7AuqnTG3/VQ26o760+ZYBPKjPvugO8+nLbYfX6TVpJPseBvopbdY+qpZ/lKUnmEc1LeZYS3QAA=="],
+    "@loaders.gl/3d-tiles/@loaders.gl/gltf": ["@loaders.gl/gltf@2.3.13", "", { "dependencies": { "@loaders.gl/core": "2.3.13", "@loaders.gl/draco": "2.3.13", "@loaders.gl/images": "2.3.13", "@loaders.gl/loader-utils": "2.3.13" }, "bin": { "glbdump": "bin/glbdump.js" } }, "sha512-V/GUMe1Gm8cEfKnp899l0Nu6rKycEbLidO9WYhlwbB5avcwrxltWRqoWvQKFKNCqJyH5neJbl8vDmaaeeELD3w=="],
 
-    "@loaders.gl/xml/fast-xml-parser": ["fast-xml-parser@4.5.7", "", { "dependencies": { "strnum": "^1.0.5" }, "bin": { "fxparser": "src/cli/cli.js" } }, "sha512-a6Qh1RMCNbSrU1+sAyAAZH3rTe+OaWJbNZIq0S+ifZciUUOQtlVxBJwoTUE2bYhysmG/RYyI5WJFIKdBahJdrQ=="],
+    "@loaders.gl/gis/@loaders.gl/loader-utils": ["@loaders.gl/loader-utils@3.4.15", "", { "dependencies": { "@babel/runtime": "^7.3.1", "@loaders.gl/worker-utils": "3.4.15", "@probe.gl/stats": "^3.5.0" } }, "sha512-uUx6tCaky6QgCRkqCNuuXiUfpTzKV+ZlJOf6C9bKp62lpvFOv9AwqoXmL23j8nfsENdlzsX3vPhc3en6QQyksA=="],
+
+    "@loaders.gl/gltf/@loaders.gl/draco": ["@loaders.gl/draco@3.4.15", "", { "dependencies": { "@babel/runtime": "^7.3.1", "@loaders.gl/loader-utils": "3.4.15", "@loaders.gl/schema": "3.4.15", "@loaders.gl/worker-utils": "3.4.15", "draco3d": "1.5.5" } }, "sha512-SStmyP0ZnS4JbWZb2NhrfiHW65uy3pVTTzQDTgXfkR5cD9oDAEu4nCaHbQ8x38/m39FHliCPgS9b1xWvLKQo8w=="],
+
+    "@loaders.gl/gltf/@loaders.gl/images": ["@loaders.gl/images@3.4.15", "", { "dependencies": { "@loaders.gl/loader-utils": "3.4.15" } }, "sha512-QpjYhEetHabY/z9mWZYJXZZp4XJAxa38f9Ii/DjPlnJErepzY5GLBUTDHMu4oZ6n99gGImtuGFicDnFV6mb60g=="],
+
+    "@loaders.gl/gltf/@loaders.gl/loader-utils": ["@loaders.gl/loader-utils@3.4.15", "", { "dependencies": { "@babel/runtime": "^7.3.1", "@loaders.gl/worker-utils": "3.4.15", "@probe.gl/stats": "^3.5.0" } }, "sha512-uUx6tCaky6QgCRkqCNuuXiUfpTzKV+ZlJOf6C9bKp62lpvFOv9AwqoXmL23j8nfsENdlzsX3vPhc3en6QQyksA=="],
+
+    "@loaders.gl/mvt/@loaders.gl/gis": ["@loaders.gl/gis@2.3.13", "", { "dependencies": { "@loaders.gl/loader-utils": "2.3.13", "@mapbox/vector-tile": "^1.3.1", "pbf": "^3.2.1" } }, "sha512-i+hot7QeW53GhRwnvF5H65lsZYv4/ESbFuGtNy5TKivPaTIqn1oIFtLOku9Ntw5xTfky9qNNlbMPcsDMoniavQ=="],
+
+    "@loaders.gl/textures/@loaders.gl/images": ["@loaders.gl/images@3.4.15", "", { "dependencies": { "@loaders.gl/loader-utils": "3.4.15" } }, "sha512-QpjYhEetHabY/z9mWZYJXZZp4XJAxa38f9Ii/DjPlnJErepzY5GLBUTDHMu4oZ6n99gGImtuGFicDnFV6mb60g=="],
+
+    "@loaders.gl/textures/@loaders.gl/loader-utils": ["@loaders.gl/loader-utils@3.4.15", "", { "dependencies": { "@babel/runtime": "^7.3.1", "@loaders.gl/worker-utils": "3.4.15", "@probe.gl/stats": "^3.5.0" } }, "sha512-uUx6tCaky6QgCRkqCNuuXiUfpTzKV+ZlJOf6C9bKp62lpvFOv9AwqoXmL23j8nfsENdlzsX3vPhc3en6QQyksA=="],
+
+    "@luma.gl/experimental/@loaders.gl/images": ["@loaders.gl/images@3.4.15", "", { "dependencies": { "@loaders.gl/loader-utils": "3.4.15" } }, "sha512-QpjYhEetHabY/z9mWZYJXZZp4XJAxa38f9Ii/DjPlnJErepzY5GLBUTDHMu4oZ6n99gGImtuGFicDnFV6mb60g=="],
 
     "@luma.gl/experimental/earcut": ["earcut@2.2.4", "", {}, "sha512-/pjZsA1b4RPHbeWZQn66SWS8nZZWLQQ23oE3Eam7aroEFGEvwKAsJfZ9ytiEMycfzXWpca4FA9QIOehf7PocBQ=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl": ["deck.gl@8.8.27", "", { "dependencies": { "@deck.gl/aggregation-layers": "8.8.27", "@deck.gl/carto": "8.8.27", "@deck.gl/core": "8.8.27", "@deck.gl/extensions": "8.8.27", "@deck.gl/geo-layers": "8.8.27", "@deck.gl/google-maps": "8.8.27", "@deck.gl/json": "8.8.27", "@deck.gl/layers": "8.8.27", "@deck.gl/mapbox": "8.8.27", "@deck.gl/mesh-layers": "8.8.27", "@deck.gl/react": "8.8.27" } }, "sha512-g5kmks8q+7xO5dzRajYgZ7Gvzg5VWJJsY79XkMo/lChp80Ha6mofTuhv0RLQgt0JyB3rEuZCVqrXcZDa92sWVQ=="],
 
     "@tailwindcss/oxide-wasm32-wasi/@emnapi/core": ["@emnapi/core@1.11.1", "", { "dependencies": { "@emnapi/wasi-threads": "1.2.2", "tslib": "^2.4.0" }, "bundled": true }, "sha512-RSvbQmHzdKzNsLYa/wHrbc3KN4sYLKAdPZxqiM2HATqv/SBk2/ENSHpvXGaLOMcsAyz0poEGqkmmKYG3OWiJEQ=="],
 
@@ -1592,7 +1585,29 @@
 
     "vfile-message/@types/unist": ["@types/unist@3.0.3", "", {}, "sha512-ko/gIFJRv177XgZsZcBwnqJN5x/Gien8qNOn0D5bQU/zAzVf9Zt3BlcUiLqhV9y4ARk0GbT3tnUiPNgnTXzc/Q=="],
 
-    "@loaders.gl/xml/fast-xml-parser/strnum": ["strnum@1.1.2", "", {}, "sha512-vrN+B7DBIoTTZjnPNewwhx6cBA/H+IS7rfW68n7XxC1y7uoiGQBxaKzqucGUgavX15dJgiGztLJ8vxuEzwqBdA=="],
+    "@luma.gl/experimental/@loaders.gl/images/@loaders.gl/loader-utils": ["@loaders.gl/loader-utils@3.4.15", "", { "dependencies": { "@babel/runtime": "^7.3.1", "@loaders.gl/worker-utils": "3.4.15", "@probe.gl/stats": "^3.5.0" } }, "sha512-uUx6tCaky6QgCRkqCNuuXiUfpTzKV+ZlJOf6C9bKp62lpvFOv9AwqoXmL23j8nfsENdlzsX3vPhc3en6QQyksA=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/aggregation-layers": ["@deck.gl/aggregation-layers@8.8.27", "", { "dependencies": { "@luma.gl/constants": "^8.5.16", "@luma.gl/shadertools": "^8.5.16", "@math.gl/web-mercator": "^3.6.2", "d3-hexbin": "^0.2.1" }, "peerDependencies": { "@deck.gl/core": "^8.0.0", "@deck.gl/layers": "^8.0.0", "@luma.gl/core": "^8.0.0" } }, "sha512-oGjpu+tER+EQOnTL6U2f3flWUoRNn4ouhETXc19i7zakV+8Av5jsdjy+zVY0tswCFFnHSCFd3qE/zZgOmqiTcw=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/carto": ["@deck.gl/carto@8.8.27", "", { "dependencies": { "@loaders.gl/gis": "^3.2.10", "@loaders.gl/loader-utils": "^3.2.10", "@loaders.gl/mvt": "^3.2.10", "@loaders.gl/tiles": "^3.2.10", "@luma.gl/constants": "^8.5.16", "@math.gl/web-mercator": "^3.6.2", "cartocolor": "^4.0.2", "d3-array": "^3.2.0", "d3-color": "^3.1.0", "d3-format": "^3.1.0", "d3-scale": "^4.0.0", "h3-js": "^3.7.0", "moment-timezone": "^0.5.33", "pbf": "^3.2.1", "quadbin": "^0.1.2" }, "peerDependencies": { "@deck.gl/aggregation-layers": "^8.0.0", "@deck.gl/core": "^8.0.0", "@deck.gl/extensions": "^8.0.0", "@deck.gl/geo-layers": "^8.0.0", "@deck.gl/layers": "^8.0.0", "@loaders.gl/core": "^3.0.0" } }, "sha512-rwtvVLk8tXEUvSBNn8mFRLLboDeIRHDBx3kzv7skxkaa5nt8RaOcvlFA0T2H2jISvfFbVg2RTD3pquQEVXfNHQ=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/core": ["@deck.gl/core@8.8.27", "", { "dependencies": { "@loaders.gl/core": "^3.2.10", "@loaders.gl/images": "^3.2.10", "@luma.gl/constants": "^8.5.16", "@luma.gl/core": "^8.5.16", "@math.gl/core": "^3.6.2", "@math.gl/sun": "^3.6.2", "@math.gl/web-mercator": "^3.6.2", "@probe.gl/env": "^3.5.0", "@probe.gl/log": "^3.5.0", "@probe.gl/stats": "^3.5.0", "gl-matrix": "^3.0.0", "math.gl": "^3.6.2", "mjolnir.js": "^2.7.0" } }, "sha512-Gk9YrGGSoFL4TmP0v9GyOXReZMTBrUIU5+g6Ff4gnR6onBVLd+/XNd+IwdBPS85LlnT+/NOGNEG51qsVFrxReg=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/extensions": ["@deck.gl/extensions@8.8.27", "", { "dependencies": { "@luma.gl/shadertools": "^8.5.16" }, "peerDependencies": { "@deck.gl/core": "^8.0.0", "@luma.gl/constants": "^8.0.0", "@luma.gl/core": "^8.0.0", "gl-matrix": "^3.0.0" } }, "sha512-gjLHHuwoBt9dK8/iOBEgBzAtfqVZ4l7nh0aFcft/jemlusb7iNSuCz2UUYx2lUDl9IBFzkEeo1aayJCkSiEkfw=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/geo-layers": ["@deck.gl/geo-layers@8.8.27", "", { "dependencies": { "@loaders.gl/3d-tiles": "^3.2.10", "@loaders.gl/gis": "^3.2.10", "@loaders.gl/loader-utils": "^3.2.10", "@loaders.gl/mvt": "^3.2.10", "@loaders.gl/schema": "^3.2.10", "@loaders.gl/terrain": "^3.2.10", "@loaders.gl/tiles": "^3.2.10", "@luma.gl/constants": "^8.5.16", "@luma.gl/experimental": "^8.5.16", "@math.gl/core": "^3.6.2", "@math.gl/culling": "^3.6.2", "@math.gl/web-mercator": "^3.6.2", "@types/geojson": "^7946.0.8", "h3-js": "^3.7.0", "long": "^3.2.0" }, "peerDependencies": { "@deck.gl/core": "^8.0.0", "@deck.gl/extensions": "^8.0.0", "@deck.gl/layers": "^8.0.0", "@deck.gl/mesh-layers": "^8.0.0", "@loaders.gl/core": "^3.0.0", "@luma.gl/core": "^8.0.0" } }, "sha512-7tYe+fJAoo0W9t3rvek/+QeK90DBpUVnO7+9+dYND+Ge9Cok0c5gf9CB4WZ/Qlemmk1eOavdha9FsGejhpnx2A=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/google-maps": ["@deck.gl/google-maps@8.8.27", "", { "peerDependencies": { "@deck.gl/core": "^8.0.0", "@luma.gl/constants": "^8.5.16", "@luma.gl/core": "^8.5.16", "@math.gl/core": "^3.6.0" } }, "sha512-8PFscqGsNW7QqunmXJ//lm7iIW9PueRQ7i5oXgA/3MEnKEXzXUSoRW8YRqdiiG731cob2BqEHCfEgEDLlN5EDg=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/json": ["@deck.gl/json@8.8.27", "", { "dependencies": { "d3-dsv": "^1.0.8", "expression-eval": "^2.0.0" }, "peerDependencies": { "@deck.gl/core": "^8.0.0" } }, "sha512-h63e+he/uIzUKsMI0xDk51wtt2Bm56Xlhmsb+/y570izoL8z7leiNHXZ2DQWpqtYV9tu00QlyG+/cgLKDbgCTQ=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/layers": ["@deck.gl/layers@8.8.27", "", { "dependencies": { "@loaders.gl/images": "^3.2.10", "@loaders.gl/schema": "^3.2.10", "@luma.gl/constants": "^8.5.16", "@mapbox/tiny-sdf": "^1.1.0", "@math.gl/core": "^3.6.2", "@math.gl/polygon": "^3.6.2", "@math.gl/web-mercator": "^3.6.2", "earcut": "^2.0.6" }, "peerDependencies": { "@deck.gl/core": "^8.0.0", "@loaders.gl/core": "^3.0.0", "@luma.gl/core": "^8.0.0" } }, "sha512-B6X0bxAGhXx2i1cgqYZf+Q28ataZQ1ZOaQnm0mk12YcB/QlJ6sjX28Gk4T8kpF1ai/DYSED/Fcb4C3D0JhR9IQ=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/mapbox": ["@deck.gl/mapbox@8.8.27", "", { "dependencies": { "@types/mapbox-gl": "^2.6.3" }, "peerDependencies": { "@deck.gl/core": "^8.0.0" } }, "sha512-DOzcCkUWS9coJ23HijBMb7Gr6wMdvBy+J0OiZVAXY36Z0N0cl/daDiaG2ecHtaGhn6tVw+j4AkJ8l+z4X0ZOrw=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/mesh-layers": ["@deck.gl/mesh-layers@8.8.27", "", { "dependencies": { "@loaders.gl/gltf": "^3.2.10", "@luma.gl/constants": "^8.5.16", "@luma.gl/experimental": "^8.5.16", "@luma.gl/shadertools": "^8.5.16" }, "peerDependencies": { "@deck.gl/core": "^8.0.0", "@luma.gl/core": "^8.0.0" } }, "sha512-gjT8YdRig36Qgd8iAmonsE8BTKZxEj+66XvDKBwm4bBt+eO4DXsB9HvvSAQdw8+m5EeqB+ct7PQt16gfQnUaBg=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/react": ["@deck.gl/react@8.8.27", "", { "peerDependencies": { "@deck.gl/core": "^8.0.0", "@types/react": ">= 16.3", "react": ">=16.3", "react-dom": ">=16.3" } }, "sha512-rb8Py6gpy9VeORUhLKXl0wrb7RqfQ6RGyP98X8Ydosv/rFPsOwqHAvzZudQH8lWkv8YJ4VF+G4ZvH0/YnirIMg=="],
 
     "@tanstack/router-utils/tinyglobby/picomatch": ["picomatch@4.0.3", "", {}, "sha512-5gTmgEY/sqK6gFXLIsQNH19lWb4ebPDLA4SdLP7dsWkIXHWlG66oPuVvXSGFPppYZz8ZDZq0dYYrbHfBCVUb1Q=="],
 
@@ -1614,6 +1629,62 @@
 
     "vega-loader/d3-dsv/iconv-lite": ["iconv-lite@0.6.3", "", { "dependencies": { "safer-buffer": ">= 2.1.2 < 3.0.0" } }, "sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw=="],
 
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/carto/@loaders.gl/core": ["@loaders.gl/core@3.4.15", "", { "dependencies": { "@babel/runtime": "^7.3.1", "@loaders.gl/loader-utils": "3.4.15", "@loaders.gl/worker-utils": "3.4.15", "@probe.gl/log": "^3.5.0" } }, "sha512-rPOOTuusWlRRNMWg7hymZBoFmPCXWThsA5ZYRfqqXnsgVeQIi8hzcAhJ7zDUIFAd/OSR8ravtqb0SH+3k6MOFQ=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/carto/@loaders.gl/loader-utils": ["@loaders.gl/loader-utils@3.4.15", "", { "dependencies": { "@babel/runtime": "^7.3.1", "@loaders.gl/worker-utils": "3.4.15", "@probe.gl/stats": "^3.5.0" } }, "sha512-uUx6tCaky6QgCRkqCNuuXiUfpTzKV+ZlJOf6C9bKp62lpvFOv9AwqoXmL23j8nfsENdlzsX3vPhc3en6QQyksA=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/carto/@loaders.gl/mvt": ["@loaders.gl/mvt@3.4.15", "", { "dependencies": { "@loaders.gl/gis": "3.4.15", "@loaders.gl/loader-utils": "3.4.15", "@loaders.gl/schema": "3.4.15", "@math.gl/polygon": "^3.5.1", "pbf": "^3.2.1" } }, "sha512-Q8e1ZyfNkJtPF/C4WSZ2qhWDEbzOvquP7OyG1NzQ2cp8R6eUfbexu48IgcnL/oAu8VPql3zIxQ+bQUyDReyN5g=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/carto/@loaders.gl/tiles": ["@loaders.gl/tiles@3.4.15", "", { "dependencies": { "@loaders.gl/loader-utils": "3.4.15", "@loaders.gl/math": "3.4.15", "@math.gl/core": "^3.5.1", "@math.gl/culling": "^3.5.1", "@math.gl/geospatial": "^3.5.1", "@math.gl/web-mercator": "^3.5.1", "@probe.gl/stats": "^3.5.0" }, "peerDependencies": { "@loaders.gl/core": "^3.4.0" } }, "sha512-o85aRSXq+YeVSK2ndW9aBwTMi5FhEsQ7k18J4DG+T5Oc+zz3tKui5X1SuBDiKbQN+kYtFpj0oYO1QG3ndNI6jg=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/core/@loaders.gl/core": ["@loaders.gl/core@3.4.15", "", { "dependencies": { "@babel/runtime": "^7.3.1", "@loaders.gl/loader-utils": "3.4.15", "@loaders.gl/worker-utils": "3.4.15", "@probe.gl/log": "^3.5.0" } }, "sha512-rPOOTuusWlRRNMWg7hymZBoFmPCXWThsA5ZYRfqqXnsgVeQIi8hzcAhJ7zDUIFAd/OSR8ravtqb0SH+3k6MOFQ=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/core/@loaders.gl/images": ["@loaders.gl/images@3.4.15", "", { "dependencies": { "@loaders.gl/loader-utils": "3.4.15" } }, "sha512-QpjYhEetHabY/z9mWZYJXZZp4XJAxa38f9Ii/DjPlnJErepzY5GLBUTDHMu4oZ6n99gGImtuGFicDnFV6mb60g=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/geo-layers/@loaders.gl/3d-tiles": ["@loaders.gl/3d-tiles@3.4.15", "", { "dependencies": { "@loaders.gl/draco": "3.4.15", "@loaders.gl/gltf": "3.4.15", "@loaders.gl/loader-utils": "3.4.15", "@loaders.gl/math": "3.4.15", "@loaders.gl/tiles": "3.4.15", "@math.gl/core": "^3.5.1", "@math.gl/geospatial": "^3.5.1", "long": "^5.2.1" }, "peerDependencies": { "@loaders.gl/core": "^3.4.0" } }, "sha512-JR67bEfLrD7Lzb6pWyEIRg2L6W3n6y43DKcWofRLpwPqLA7qHuY7SlO7E72Lz7Tniye8VhawqY1wO8gCx8T72Q=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/geo-layers/@loaders.gl/core": ["@loaders.gl/core@3.4.15", "", { "dependencies": { "@babel/runtime": "^7.3.1", "@loaders.gl/loader-utils": "3.4.15", "@loaders.gl/worker-utils": "3.4.15", "@probe.gl/log": "^3.5.0" } }, "sha512-rPOOTuusWlRRNMWg7hymZBoFmPCXWThsA5ZYRfqqXnsgVeQIi8hzcAhJ7zDUIFAd/OSR8ravtqb0SH+3k6MOFQ=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/geo-layers/@loaders.gl/loader-utils": ["@loaders.gl/loader-utils@3.4.15", "", { "dependencies": { "@babel/runtime": "^7.3.1", "@loaders.gl/worker-utils": "3.4.15", "@probe.gl/stats": "^3.5.0" } }, "sha512-uUx6tCaky6QgCRkqCNuuXiUfpTzKV+ZlJOf6C9bKp62lpvFOv9AwqoXmL23j8nfsENdlzsX3vPhc3en6QQyksA=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/geo-layers/@loaders.gl/mvt": ["@loaders.gl/mvt@3.4.15", "", { "dependencies": { "@loaders.gl/gis": "3.4.15", "@loaders.gl/loader-utils": "3.4.15", "@loaders.gl/schema": "3.4.15", "@math.gl/polygon": "^3.5.1", "pbf": "^3.2.1" } }, "sha512-Q8e1ZyfNkJtPF/C4WSZ2qhWDEbzOvquP7OyG1NzQ2cp8R6eUfbexu48IgcnL/oAu8VPql3zIxQ+bQUyDReyN5g=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/geo-layers/@loaders.gl/terrain": ["@loaders.gl/terrain@3.4.15", "", { "dependencies": { "@babel/runtime": "^7.3.1", "@loaders.gl/images": "3.4.15", "@loaders.gl/loader-utils": "3.4.15", "@loaders.gl/schema": "3.4.15", "@mapbox/martini": "^0.2.0" } }, "sha512-ouv41J84uOnLEtXLM+iPEPFfeq7aRgIOls6esdvhBx2/dXJRNkt8Mx0wShXAi8VNHz77D+gZFrKARa7wqjmftg=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/geo-layers/@loaders.gl/tiles": ["@loaders.gl/tiles@3.4.15", "", { "dependencies": { "@loaders.gl/loader-utils": "3.4.15", "@loaders.gl/math": "3.4.15", "@math.gl/core": "^3.5.1", "@math.gl/culling": "^3.5.1", "@math.gl/geospatial": "^3.5.1", "@math.gl/web-mercator": "^3.5.1", "@probe.gl/stats": "^3.5.0" }, "peerDependencies": { "@loaders.gl/core": "^3.4.0" } }, "sha512-o85aRSXq+YeVSK2ndW9aBwTMi5FhEsQ7k18J4DG+T5Oc+zz3tKui5X1SuBDiKbQN+kYtFpj0oYO1QG3ndNI6jg=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/layers/@loaders.gl/core": ["@loaders.gl/core@3.4.15", "", { "dependencies": { "@babel/runtime": "^7.3.1", "@loaders.gl/loader-utils": "3.4.15", "@loaders.gl/worker-utils": "3.4.15", "@probe.gl/log": "^3.5.0" } }, "sha512-rPOOTuusWlRRNMWg7hymZBoFmPCXWThsA5ZYRfqqXnsgVeQIi8hzcAhJ7zDUIFAd/OSR8ravtqb0SH+3k6MOFQ=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/layers/@loaders.gl/images": ["@loaders.gl/images@3.4.15", "", { "dependencies": { "@loaders.gl/loader-utils": "3.4.15" } }, "sha512-QpjYhEetHabY/z9mWZYJXZZp4XJAxa38f9Ii/DjPlnJErepzY5GLBUTDHMu4oZ6n99gGImtuGFicDnFV6mb60g=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/layers/earcut": ["earcut@2.2.4", "", {}, "sha512-/pjZsA1b4RPHbeWZQn66SWS8nZZWLQQ23oE3Eam7aroEFGEvwKAsJfZ9ytiEMycfzXWpca4FA9QIOehf7PocBQ=="],
+
     "mdast-util-mdx-jsx/parse-entities/is-alphanumerical/is-alphabetical": ["is-alphabetical@2.0.1", "", {}, "sha512-FWyyY60MeTNyeSRpkM2Iry0G9hpr7/9kD40mD/cGQEuilcZYS4okz8SN2Q6rLCJ8gbCt6fN+rC+6tMGS99LaxQ=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/carto/@loaders.gl/tiles/@loaders.gl/math": ["@loaders.gl/math@3.4.15", "", { "dependencies": { "@loaders.gl/images": "3.4.15", "@loaders.gl/loader-utils": "3.4.15", "@math.gl/core": "^3.5.1" } }, "sha512-zTN8BUU/1fcppyVc8WzvdZcCyNGVYmNinxcn/A+a7mi1ug4OBGwEsZOj09Wjg0/s52c/cAL3h9ylPIZdjntscQ=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/core/@loaders.gl/core/@loaders.gl/loader-utils": ["@loaders.gl/loader-utils@3.4.15", "", { "dependencies": { "@babel/runtime": "^7.3.1", "@loaders.gl/worker-utils": "3.4.15", "@probe.gl/stats": "^3.5.0" } }, "sha512-uUx6tCaky6QgCRkqCNuuXiUfpTzKV+ZlJOf6C9bKp62lpvFOv9AwqoXmL23j8nfsENdlzsX3vPhc3en6QQyksA=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/core/@loaders.gl/images/@loaders.gl/loader-utils": ["@loaders.gl/loader-utils@3.4.15", "", { "dependencies": { "@babel/runtime": "^7.3.1", "@loaders.gl/worker-utils": "3.4.15", "@probe.gl/stats": "^3.5.0" } }, "sha512-uUx6tCaky6QgCRkqCNuuXiUfpTzKV+ZlJOf6C9bKp62lpvFOv9AwqoXmL23j8nfsENdlzsX3vPhc3en6QQyksA=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/geo-layers/@loaders.gl/3d-tiles/@loaders.gl/draco": ["@loaders.gl/draco@3.4.15", "", { "dependencies": { "@babel/runtime": "^7.3.1", "@loaders.gl/loader-utils": "3.4.15", "@loaders.gl/schema": "3.4.15", "@loaders.gl/worker-utils": "3.4.15", "draco3d": "1.5.5" } }, "sha512-SStmyP0ZnS4JbWZb2NhrfiHW65uy3pVTTzQDTgXfkR5cD9oDAEu4nCaHbQ8x38/m39FHliCPgS9b1xWvLKQo8w=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/geo-layers/@loaders.gl/3d-tiles/@loaders.gl/math": ["@loaders.gl/math@3.4.15", "", { "dependencies": { "@loaders.gl/images": "3.4.15", "@loaders.gl/loader-utils": "3.4.15", "@math.gl/core": "^3.5.1" } }, "sha512-zTN8BUU/1fcppyVc8WzvdZcCyNGVYmNinxcn/A+a7mi1ug4OBGwEsZOj09Wjg0/s52c/cAL3h9ylPIZdjntscQ=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/geo-layers/@loaders.gl/3d-tiles/long": ["long@5.3.2", "", {}, "sha512-mNAgZ1GmyNhD7AuqnTG3/VQ26o760+ZYBPKjPvugO8+nLbYfX6TVpJPseBvopbdY+qpZ/lKUnmEc1LeZYS3QAA=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/geo-layers/@loaders.gl/terrain/@loaders.gl/images": ["@loaders.gl/images@3.4.15", "", { "dependencies": { "@loaders.gl/loader-utils": "3.4.15" } }, "sha512-QpjYhEetHabY/z9mWZYJXZZp4XJAxa38f9Ii/DjPlnJErepzY5GLBUTDHMu4oZ6n99gGImtuGFicDnFV6mb60g=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/geo-layers/@loaders.gl/tiles/@loaders.gl/math": ["@loaders.gl/math@3.4.15", "", { "dependencies": { "@loaders.gl/images": "3.4.15", "@loaders.gl/loader-utils": "3.4.15", "@math.gl/core": "^3.5.1" } }, "sha512-zTN8BUU/1fcppyVc8WzvdZcCyNGVYmNinxcn/A+a7mi1ug4OBGwEsZOj09Wjg0/s52c/cAL3h9ylPIZdjntscQ=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/layers/@loaders.gl/core/@loaders.gl/loader-utils": ["@loaders.gl/loader-utils@3.4.15", "", { "dependencies": { "@babel/runtime": "^7.3.1", "@loaders.gl/worker-utils": "3.4.15", "@probe.gl/stats": "^3.5.0" } }, "sha512-uUx6tCaky6QgCRkqCNuuXiUfpTzKV+ZlJOf6C9bKp62lpvFOv9AwqoXmL23j8nfsENdlzsX3vPhc3en6QQyksA=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/layers/@loaders.gl/images/@loaders.gl/loader-utils": ["@loaders.gl/loader-utils@3.4.15", "", { "dependencies": { "@babel/runtime": "^7.3.1", "@loaders.gl/worker-utils": "3.4.15", "@probe.gl/stats": "^3.5.0" } }, "sha512-uUx6tCaky6QgCRkqCNuuXiUfpTzKV+ZlJOf6C9bKp62lpvFOv9AwqoXmL23j8nfsENdlzsX3vPhc3en6QQyksA=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/carto/@loaders.gl/tiles/@loaders.gl/math/@loaders.gl/images": ["@loaders.gl/images@3.4.15", "", { "dependencies": { "@loaders.gl/loader-utils": "3.4.15" } }, "sha512-QpjYhEetHabY/z9mWZYJXZZp4XJAxa38f9Ii/DjPlnJErepzY5GLBUTDHMu4oZ6n99gGImtuGFicDnFV6mb60g=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/geo-layers/@loaders.gl/3d-tiles/@loaders.gl/math/@loaders.gl/images": ["@loaders.gl/images@3.4.15", "", { "dependencies": { "@loaders.gl/loader-utils": "3.4.15" } }, "sha512-QpjYhEetHabY/z9mWZYJXZZp4XJAxa38f9Ii/DjPlnJErepzY5GLBUTDHMu4oZ6n99gGImtuGFicDnFV6mb60g=="],
+
+    "@phylocanvas/phylocanvas.gl/deck.gl/@deck.gl/geo-layers/@loaders.gl/tiles/@loaders.gl/math/@loaders.gl/images": ["@loaders.gl/images@3.4.15", "", { "dependencies": { "@loaders.gl/loader-utils": "3.4.15" } }, "sha512-QpjYhEetHabY/z9mWZYJXZZp4XJAxa38f9Ii/DjPlnJErepzY5GLBUTDHMu4oZ6n99gGImtuGFicDnFV6mb60g=="],
   }
 }

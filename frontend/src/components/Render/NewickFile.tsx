@@ -1,4 +1,4 @@
-import PhylocanvasGL, { TreeTypes } from "@phylocanvas/phylocanvas.gl";
+import { PhylocanvasGL, TreeTypes } from "@phylocanvas/phylocanvas.gl";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useTheme } from "@/components/theme-provider";
@@ -22,6 +22,7 @@ const colourFromShade = (shade: number) => [shade, shade, shade, 255];
 const NewickFile = ({ fileId, height = 500 }: NewickFileProps) => {
   const { resolvedTheme } = useTheme();
   const containerRef = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const treeRef = useRef<PhylocanvasGL | null>(null);
   const [treeType, setTreeType] = useState<string>(TreeTypes.Rectangular);
   const [error, setError] = useState<string | null>(null);
@@ -47,19 +48,22 @@ const NewickFile = ({ fileId, height = 500 }: NewickFileProps) => {
   // Create the tree when the newick data changes, and tear it down on cleanup.
   useEffect(() => {
     const container = containerRef.current;
-    if (!container || !newick) return;
+    const wrapper = wrapperRef.current;
+    if (!container || !wrapper || !newick) return;
 
     let tree: PhylocanvasGL;
     try {
       tree = new PhylocanvasGL(container, {
         source: newick,
-        size: { width: container.clientWidth, height },
+        size: { width: Math.floor(wrapper.clientWidth), height },
         interactive: true,
         showLabels: true,
         showLeafLabels: true,
         type: displayOptions.current.treeType,
         fontColour: colourFromShade(displayOptions.current.shade),
         fillColour: colourFromShade(displayOptions.current.shade),
+        strokeColour: colourFromShade(displayOptions.current.shade),
+        backgroundColour: null,
       });
     } catch (e) {
       console.error("Newick parsing failed:", e);
@@ -69,14 +73,16 @@ const NewickFile = ({ fileId, height = 500 }: NewickFileProps) => {
     setError(null);
     treeRef.current = tree;
 
+    let lastWidth = Math.floor(wrapper.clientWidth);
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        tree.setProps({
-          size: { width: entry.contentRect.width, height },
-        });
+        const width = Math.floor(entry.contentRect.width);
+        if (width < 1 || width === lastWidth) continue;
+        lastWidth = width;
+        tree.setProps({ size: { width, height } });
       }
     });
-    resizeObserver.observe(container);
+    resizeObserver.observe(wrapper);
 
     return () => {
       resizeObserver.disconnect();
@@ -91,6 +97,7 @@ const NewickFile = ({ fileId, height = 500 }: NewickFileProps) => {
       type: treeType,
       fontColour: colourFromShade(shade),
       fillColour: colourFromShade(shade),
+      strokeColour: colourFromShade(shade),
     });
   }, [treeType, shade]);
 
@@ -116,10 +123,17 @@ const NewickFile = ({ fileId, height = 500 }: NewickFileProps) => {
         ))}
       </select>
       <div
-        ref={containerRef}
-        className="relative w-full overflow-hidden rounded-md border"
+        ref={wrapperRef}
+        className="relative w-full rounded-md ring-1 ring-border"
         style={{ height: `${height}px` }}
-      />
+      >
+        {/* The canvas lives in an absolutely positioned child so it can never
+            influence the size of the wrapper we observe (avoids resize loops). */}
+        <div
+          ref={containerRef}
+          className="absolute inset-0 overflow-hidden rounded-md"
+        />
+      </div>
     </div>
   );
 };
