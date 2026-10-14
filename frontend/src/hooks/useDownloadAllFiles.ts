@@ -1,15 +1,8 @@
-import { Download } from "lucide-react";
-import { useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
-import useCustomToast from "@/hooks/useCustomToast";
-import type { FilePublic } from "../../client";
+import { useState } from "react";
+import type { FilePublic } from "../client";
+import useCustomToast from "./useCustomToast";
 
-interface DownloadAllFilesButtonProps {
-  files: FilePublic[];
-  zipFileName?: string | null;
-}
-
-function buildZipFileName(rawName?: string | null): string {
+export function buildZipFileName(rawName?: string | null): string {
   if (!rawName) {
     return "files.zip";
   }
@@ -24,32 +17,31 @@ function buildZipFileName(rawName?: string | null): string {
     : `${sanitized}.zip`;
 }
 
-function DownloadAllFilesButton({
-  files,
-  zipFileName,
-}: DownloadAllFilesButtonProps) {
+/** Expands groups into their children, returning the ids of the real files. */
+export function getDownloadableFileIds(files: FilePublic[]): string[] {
+  return files.flatMap((file) =>
+    file.children && file.children.length > 0
+      ? file.children.map((child) => child.id)
+      : [file.id],
+  );
+}
+
+export function useDownloadAllFiles() {
   const [isDownloading, setIsDownloading] = useState(false);
   const showToast = useCustomToast();
-  const requestedZipFileName = useMemo(
-    () => buildZipFileName(zipFileName),
-    [zipFileName],
-  );
-  const fileIds = useMemo(
-    () =>
-      files.flatMap((file) =>
-        file.children && file.children.length > 0
-          ? file.children.map((child) => child.id)
-          : [file.id],
-      ),
-    [files],
-  );
 
-  const handleDownloadAll = async () => {
+  const downloadAll = async (
+    files: FilePublic[],
+    zipFileName?: string | null,
+  ) => {
+    const fileIds = getDownloadableFileIds(files);
+    const requestedZipFileName = buildZipFileName(zipFileName);
     const accessToken = localStorage.getItem("access_token");
+
     if (fileIds.length === 0) {
       showToast(
         "No files to download",
-        "This run has no downloadable files.",
+        "There are no downloadable files.",
         "warning",
       );
       return;
@@ -112,16 +104,5 @@ function DownloadAllFilesButton({
     }
   };
 
-  return (
-    <Button
-      size="sm"
-      variant="outline"
-      disabled={isDownloading || fileIds.length === 0}
-      onClick={() => void handleDownloadAll()}
-    >
-      <Download /> {isDownloading ? "Downloading..." : "Download All"}
-    </Button>
-  );
+  return { downloadAll, isDownloading };
 }
-
-export default DownloadAllFilesButton;

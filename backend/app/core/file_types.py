@@ -10,241 +10,202 @@ class FileTypeMetadata(BaseModel):
     file_format: str
     mime_types: list[str]
 
+
 class FileTypes:
     # Class-level dictionary of allowed file types with their metadata.
     allowed: ClassVar[dict[str, FileTypeMetadata]] = {
         "bam": FileTypeMetadata(
-            extensions=[".bam"],
-            file_format="binary",
-            mime_types=["application/x-bam"]
+            extensions=[".bam"], file_format="binary", mime_types=["application/x-bam"]
         ),
         "beast": FileTypeMetadata(
             extensions=[".trees"],
             file_format="text",
-            mime_types=["application/x-beast-trees"]
+            mime_types=["application/x-beast-trees"],
         ),
         "bed": FileTypeMetadata(
-            extensions=[".bed"],
-            file_format="text",
-            mime_types=["text/bed"]
+            extensions=[".bed"], file_format="text", mime_types=["text/bed"]
         ),
-
         "csv": FileTypeMetadata(
-            extensions=[".csv"],
-            file_format="text",
-            mime_types=["text/csv"]
+            extensions=[".csv"], file_format="text", mime_types=["text/csv"]
         ),
         "docx": FileTypeMetadata(
             extensions=[".docx"],
             file_format="binary",
-            mime_types=["application/vnd.openxmlformats-officedocument.wordprocessingml.document"]
+            mime_types=[
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            ],
         ),
         "fasta": FileTypeMetadata(
             extensions=[".fasta", ".fa", ".fna", ".ffn", ".frn", ".faa"],
             file_format="text",
-            mime_types=["text/x-fasta"]
+            mime_types=["text/x-fasta"],
         ),
         "fasta.gz": FileTypeMetadata(
-            extensions=[".fasta.gz", ".fa.gz", ".fna.gz", ".ffn.gz", ".frn.gz", ".faa.gz"],
+            extensions=[
+                ".fasta.gz",
+                ".fa.gz",
+                ".fna.gz",
+                ".ffn.gz",
+                ".frn.gz",
+                ".faa.gz",
+            ],
             file_format="binary",
-            mime_types=["application/gzip"]
+            mime_types=["application/gzip"],
         ),
         "fastq": FileTypeMetadata(
-            extensions=[".fastq", ".fq"],
-            file_format="text",
-            mime_types=["text/plain"]
+            extensions=[".fastq", ".fq"], file_format="text", mime_types=["text/plain"]
         ),
         "fastq.gz": FileTypeMetadata(
             extensions=[".fastq.gz", ".fq.gz"],
             file_format="binary",
-            mime_types=["application/gzip"]
+            mime_types=["application/gzip"],
         ),
         "geojson": FileTypeMetadata(
             extensions=[".geojson"],
             file_format="json",
-            mime_types=["application/geo+json"]
+            mime_types=["application/geo+json"],
         ),
         "gff": FileTypeMetadata(
-            extensions=[".gff", ".gff3"],
-            file_format="text",
-            mime_types=["text/gff"]
+            extensions=[".gff", ".gff3"], file_format="text", mime_types=["text/gff"]
         ),
         "genbank": FileTypeMetadata(
             extensions=[".gb", ".gbk", ".genbank"],
             file_format="text",
-            mime_types=["text/x-genbank"]
+            mime_types=["text/x-genbank"],
         ),
         "graphml": FileTypeMetadata(
             extensions=[".graphml"],
             file_format="text",
-            mime_types=["application/graphml+xml"]
+            mime_types=["application/graphml+xml"],
         ),
         "gzip": FileTypeMetadata(
             extensions=[".tgz", ".gz", ".gzip"],
             file_format="binary",
-            mime_types=["application/gzip"]
+            mime_types=["application/gzip"],
         ),
         "hdf5": FileTypeMetadata(
             extensions=[".h5", ".hdf5"],
             file_format="binary",
-            mime_types=["application/x-hdf5"]
+            mime_types=["application/x-hdf5"],
         ),
         "hs": FileTypeMetadata(
-            extensions=[".hs"],
-            file_format="text",
-            mime_types=["text/x-haskell"]
+            extensions=[".hs"], file_format="text", mime_types=["text/x-haskell"]
         ),
         "html": FileTypeMetadata(
-            extensions=[".html"],
-            file_format="text",
-            mime_types=["text/html"]
+            extensions=[".html"], file_format="text", mime_types=["text/html"]
         ),
         "iqtree": FileTypeMetadata(
-            extensions=[".iqtree"],
-            file_format="text",
-            mime_types=["text/plain"]
+            extensions=[".iqtree"], file_format="text", mime_types=["text/plain"]
         ),
         "jpeg": FileTypeMetadata(
             extensions=[".jpeg", ".jpg"],
             file_format="binary",
-            mime_types=["image/jpeg"]
+            mime_types=["image/jpeg"],
         ),
         "json": FileTypeMetadata(
-            extensions=[".json"],
-            file_format="json",
-            mime_types=["application/json"]
+            extensions=[".json"], file_format="json", mime_types=["application/json"]
         ),
         "jsonl": FileTypeMetadata(
-            extensions=[".jsonl"],
-            file_format="text",
-            mime_types=["application/jsonl"]
+            extensions=[".jsonl"], file_format="text", mime_types=["application/jsonl"]
         ),
         "log": FileTypeMetadata(
-            extensions=[".log"],
-            file_format="text",
-            mime_types=["text/plain"]
+            extensions=[".log"], file_format="text", mime_types=["text/plain"]
         ),
         "md": FileTypeMetadata(
             extensions=[".md", ".markdown"],
             file_format="text",
-            mime_types=["text/markdown"]
+            mime_types=["text/markdown"],
         ),
         "newick": FileTypeMetadata(
-            extensions=[".nwk", ".newick"],
+            extensions=[".nwk", ".newick", ".treefile"],
             file_format="text",
-            mime_types=["text/x-newick"]
+            mime_types=["text/x-newick"],
         ),
         "nexus": FileTypeMetadata(
             extensions=[".nex", ".nexus"],
             file_format="text",
-            mime_types=["text/x-nexus"]
+            mime_types=["text/x-nexus"],
         ),
         "pdb": FileTypeMetadata(
-            extensions=[".pdb"],
-            file_format="text",
-            mime_types=["chemical/x-pdb"]
+            extensions=[".pdb"], file_format="text", mime_types=["chemical/x-pdb"]
         ),
         "pdf": FileTypeMetadata(
-            extensions=[".pdf"],
-            file_format="binary",
-            mime_types=["application/pdf"]
+            extensions=[".pdf"], file_format="binary", mime_types=["application/pdf"]
         ),
         "phy": FileTypeMetadata(
-            extensions=[".phy"],
-            file_format="text",
-            mime_types=["text/x-phy"]
+            extensions=[".phy"], file_format="text", mime_types=["text/x-phy"]
         ),
         "text": FileTypeMetadata(
-            extensions=[".txt"],
-            file_format="text",
-            mime_types=["text/plain"]
+            extensions=[".txt"], file_format="text", mime_types=["text/plain"]
         ),
         "png": FileTypeMetadata(
-            extensions=[".png"],
-            file_format="binary",
-            mime_types=["image/png"]
+            extensions=[".png"], file_format="binary", mime_types=["image/png"]
         ),
         "rmd": FileTypeMetadata(
-            extensions=[".rmd"],
-            file_format="text",
-            mime_types=["text/x-rmarkdown"]
+            extensions=[".rmd"], file_format="text", mime_types=["text/x-rmarkdown"]
         ),
         "sam": FileTypeMetadata(
-            extensions=[".sam"],
-            file_format="text",
-            mime_types=["text/plain"]
+            extensions=[".sam"], file_format="text", mime_types=["text/plain"]
         ),
         "svg": FileTypeMetadata(
-            extensions=[".svg"],
-            file_format="text",
-            mime_types=["image/svg+xml"]
+            extensions=[".svg"], file_format="text", mime_types=["image/svg+xml"]
         ),
         "tiff": FileTypeMetadata(
             extensions=[".tiff", ".tif"],
             file_format="binary",
-            mime_types=["image/tiff"]
+            mime_types=["image/tiff"],
         ),
         "toml": FileTypeMetadata(
-            extensions=[".toml"],
-            file_format="text",
-            mime_types=["application/toml"]
+            extensions=[".toml"], file_format="text", mime_types=["application/toml"]
         ),
         "tsv": FileTypeMetadata(
             extensions=[".tsv"],
             file_format="text",
-            mime_types=["text/tab-separated-values"]
+            mime_types=["text/tab-separated-values"],
         ),
         "vega": FileTypeMetadata(
             extensions=[".vg", ".vega", ".vg.json"],
             file_format="json",
-            mime_types=["application/json"]
+            mime_types=["application/json"],
         ),
         "vega-lite": FileTypeMetadata(
             extensions=[".vl", ".vega-lite", ".vl.json"],
             file_format="json",
-            mime_types=["application/json"]
+            mime_types=["application/json"],
         ),
         "vcf": FileTypeMetadata(
-            extensions=[".vcf"],
-            file_format="text",
-            mime_types=["text/x-vcf"]
+            extensions=[".vcf"], file_format="text", mime_types=["text/x-vcf"]
         ),
         "vcf.gz": FileTypeMetadata(
             extensions=[".vcf.gz"],
             file_format="binary",
-            mime_types=["application/gzip"]
+            mime_types=["application/gzip"],
         ),
         "xlsx": FileTypeMetadata(
             extensions=[".xlsx"],
             file_format="binary",
-            mime_types=["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"]
+            mime_types=[
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            ],
         ),
         "xml": FileTypeMetadata(
-            extensions=[".xml"],
-            file_format="text",
-            mime_types=["application/xml"]
+            extensions=[".xml"], file_format="text", mime_types=["application/xml"]
         ),
         "yaml": FileTypeMetadata(
             extensions=[".yaml", ".yml"],
             file_format="text",
-            mime_types=["application/x-yaml"]
+            mime_types=["application/x-yaml"],
         ),
         "zip": FileTypeMetadata(
-            extensions=[".zip"],
-            file_format="binary",
-            mime_types=["application/zip"]
+            extensions=[".zip"], file_format="binary", mime_types=["application/zip"]
         ),
     }
     # special types
     allowed["pair"] = FileTypeMetadata(
-            extensions=[],
-            file_format="array",
-            mime_types=[]
+        extensions=[], file_format="array", mime_types=[]
     )
     allowed["unknown"] = FileTypeMetadata(
-            extensions=[],
-            file_format="text",
-            mime_types=[]
+        extensions=[], file_format="text", mime_types=[]
     )
 
     # Class-level variable to store the list file types.
@@ -280,5 +241,8 @@ class FileTypes:
                 return self.extension_to_type[ext]
         return "unknown"
 
+
 file_types = FileTypes()
-FileTypeEnum = Enum("FileTypeEnum", {file_type.upper(): file_type for file_type in file_types.types})
+FileTypeEnum = Enum(
+    "FileTypeEnum", {file_type.upper(): file_type for file_type in file_types.types}
+)
