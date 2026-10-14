@@ -57,6 +57,7 @@ import CreateGroupButton from "../../../components/Files/CreateGroupButton"
 import StorageStats from "../../../components/Files/StorageStats"
 import FileUpload from "../../../components/Files/UploadFileButtonWithProgress"
 import useCustomToast from "../../../hooks/useCustomToast"
+import { useDownloadAllFiles } from "../../../hooks/useDownloadAllFiles"
 import { useVisibleIds } from "../../../hooks/useVisibleIds"
 import { humanReadableDate, humanReadableFileSize } from "../../../utils"
 
@@ -103,10 +104,7 @@ function FileActionsMenu({ file }: FileActionsMenuProps) {
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
   const isGroup = file.is_group && file.children && file.children.length > 0
-  const fileIds =
-    file.children && file.children.length > 0
-      ? file.children.map((child) => child.id)
-      : [file.id]
+  const { downloadAll } = useDownloadAllFiles()
 
   const ungroupMutation = useMutation({
     mutationFn: () => FilesService.ungroupFile({ path: { id: file.id } }),
@@ -155,8 +153,12 @@ function FileActionsMenu({ file }: FileActionsMenuProps) {
   })
 
   const downloadFiles = async () => {
-    const urls = await Promise.all(fileIds.map(getDownloadUrl))
-    urls.forEach((url) => window.open(url, "_blank"))
+    if (isGroup) {
+      await downloadAll([file], file.name)
+      return
+    }
+    const url = await getDownloadUrl(file.id)
+    window.open(url, "_blank")
   }
   const showRename = () => {
     setRenameValue(file.name)
