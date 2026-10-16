@@ -43,3 +43,29 @@ You need to set HEADERS for jupyterlite to work the best. This is an example of 
     </Location>
 </IfModule>
 ```
+
+## The DRIVEFS relay service worker
+
+The R kernel (webR) mounts an Emscripten `DRIVEFS` at `/drive`. Every file
+operation is a synchronous POST to `<origin>/api/drive`; a service worker is
+supposed to intercept it and serve the file from the page's own JupyterLite
+storage, so nothing ever hits the server. JupyterLite's own
+`service-worker.js` does this, but it only works once it *controls* the page.
+On a first ever visit to an origin (or after a JupyterLite upgrade, which
+unregisters all workers), the page loads before any worker controls it and the
+drive requests fall through to the server with a 404 until the page is
+reloaded.
+
+To make the first visit work, the portal registers a root-scoped relay worker,
+`/drive-relay-sw.js` (see `frontend/src/main.tsx`), before the user opens the
+JupyterLite tab. Because it is scoped to `/`, the tab is controlled from
+document start and the relay forwards `/api/drive` requests to the JupyterLite
+page over the same `sw-api.v1` BroadcastChannel protocol JupyterLite uses.
+
+Service workers are only available on secure origins (`https://`, or
+`localhost`). Serving the portal over plain `http` on a LAN hostname will make
+every `/api/drive` request 404 — use TLS.
+
+Opening the JupyterLite URL directly in a browser that has never loaded the
+portal (no service workers registered for the origin at all) still has the
+original first-visit gap: reload the page once and drive access works.

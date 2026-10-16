@@ -55,6 +55,14 @@ declare module "@tanstack/react-router" {
   }
 }
 
+// Root-scoped relay for the webR DRIVEFS /api/drive requests made by the
+// JupyterLite R kernel (see frontend/public/drive-relay-sw.js). Registered from
+// the portal so a whole-origin service worker exists to intercept the kernel's
+// filesystem requests before they hit the backend. Registration is idempotent.
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/drive-relay-sw.js").catch(console.warn)
+}
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
