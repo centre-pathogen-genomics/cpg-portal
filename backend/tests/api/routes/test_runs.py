@@ -399,6 +399,90 @@ def test_create_run_rejects_required_empty_values(db: Session) -> None:
         assert exc_info.value.detail == "Missing required parameter: sample"
 
 
+def test_create_run_rejects_path_traversal_params(db: Session) -> None:
+    owner = create_random_user(db)
+    tool = _create_tool(db=db, owner=owner)
+    tool.params = [{"name": "output_file", "param_type": "str", "required": True}]
+    db.add(tool)
+    db.commit()
+    db.refresh(tool)
+
+    bad_params = [
+        {"output_file": "../../../../../../etc/passwd"},
+        {"output_file": "sub/out.txt"},
+        {"output_file": ".."},
+        {"output_file": "..\\out.txt"},
+        # undeclared params are validated too
+        {"output_file": "ok.txt", "undeclared": "../secret"},
+    ]
+    for params in bad_params:
+        with pytest.raises(HTTPException) as exc_info:
+            asyncio.run(
+                create_run(
+                    session=db,
+                    current_user=owner,
+                    tool_id=tool.id,
+                    params=params,
+                    tags=[],
+                )
+            )
+        assert exc_info.value.status_code == 400
+        assert "not allowed" in exc_info.value.detail
+
+
+def test_process_targets_ignores_files_outside_tmp_dir(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from app import tasks
+
+    tmp_dir = tmp_path / "run"
+    tmp_dir.mkdir()
+    (tmp_dir / "out.txt").write_text("ok")
+    (tmp_path / "secret.txt").write_text("secret")
+
+    saved: list[str] = []
+
+    def _fake_save_file(*, name, **kwargs):  # noqa: ANN003
+        saved.append(name)
+        return SimpleNamespace(name=name)
+
+    monkeypatch.setattr(tasks, "save_file", _fake_save_file)
+
+    def _run(target_path: str, params: dict, *, required: bool = False):
+        return SimpleNamespace(
+            tool=SimpleNamespace(
+                targets=[
+                    {
+                        "path": target_path,
+                        "target_type": "txt",
+                        "required": required,
+                    }
+                ]
+            ),
+            params=params,
+            stdout="",
+            files=[],
+            owner_id=None,
+            tags=[],
+        )
+
+    # param value is escaped before rendering, so `..` segments can't survive
+    tasks.process_targets(
+        None, _run("{{ output_file }}", {"output_file": "../secret.txt"}), tmp_dir
+    )
+    assert saved == []
+
+    # a pattern that itself escapes the run dir is filtered out by containment
+    tasks.process_targets(None, _run("../secret.txt", {}), tmp_dir)
+    assert saved == []
+
+    # normal matches inside the run dir still work
+    tasks.process_targets(
+        None, _run("{{ output_file }}", {"output_file": "out.txt"}), tmp_dir
+    )
+    assert saved == ["out.txt"]
+
+
 def test_create_run_skips_hidden_params(db: Session) -> None:
     owner = create_random_user(db)
     tool = _create_tool(db=db, owner=owner)
