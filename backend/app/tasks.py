@@ -20,7 +20,7 @@ from app.core.config import settings
 from app.crud import save_file
 from app.models import File, Run, RunStatus, SetupFile, Target, Tool, ToolStatus
 from app.tkq import broker
-from app.utils import generate_run_finished_email, send_email
+from app.utils import escape, generate_run_finished_email, send_email
 from app.wsmanager import manager
 
 SessionDep = Annotated[Session, TaskiqDepends(get_db)]
@@ -248,12 +248,21 @@ def process_targets(session, run, tmp_dir):
             target = Target(**target_data)
             print(f"Formatting target path: {target.path}")
 
-            # Render the template path
+            # Render the template path with the same escaped values the
+            # command was rendered with, so user input can't inject path parts
             template = env.from_string(target.path)
-            rendered_path = template.render(**run.params)
+            escaped_params = {k: escape(v) for k, v in (run.params or {}).items()}
+            rendered_path = template.render(**escaped_params)
 
-            # Get matching file paths
-            matched_files = list((tmp_dir).glob(rendered_path))
+            # Get matching file paths, ignoring anything that resolves outside
+            # the run's tmp dir (e.g. `..` segments or symlinks)
+            tmp_root = tmp_dir.resolve()
+            matched_files = []
+            for match in tmp_dir.glob(rendered_path):
+                if match.resolve().is_relative_to(tmp_root):
+                    matched_files.append(match)
+                else:
+                    print(f"Skipping target outside run directory: {match}")
 
             if target.required and not matched_files:
                 print(f"No files matched for required target pattern: {rendered_path}")

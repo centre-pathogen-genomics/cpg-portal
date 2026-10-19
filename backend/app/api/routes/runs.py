@@ -23,7 +23,7 @@ from app.models import (
     Tool,
 )
 from app.tasks import run_tool
-from app.utils import escape, flatten
+from app.utils import escape, flatten, validate_param_value
 from app.wsmanager import manager
 
 router = APIRouter()
@@ -317,6 +317,16 @@ async def create_run(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="You have reached the maximum number of active Runs. Please wait for some to finish!",
         )
+
+    # reject path traversal in user supplied values (including undeclared params)
+    for param_name, param_value in params.items():
+        try:
+            validate_param_value(param_value)
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid value for parameter `{param_name}`: path separators ('/', '\\') and '..' are not allowed",
+            )
 
     files = []
     tool_params = [Param(**param) for param in (tool.params or [])]

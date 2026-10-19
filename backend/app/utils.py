@@ -85,9 +85,7 @@ def generate_reset_password_email(email_to: str, email: str, token: str) -> Emai
     return EmailData(html_content=html_content, subject=subject)
 
 
-def generate_new_account_email(
-    email_to: str, username: str, token: str
-) -> EmailData:
+def generate_new_account_email(email_to: str, username: str, token: str) -> EmailData:
     project_name = settings.PROJECT_NAME
     subject = f"{project_name} - New account for user {username}"
     link = f"{settings.FRONTEND_HOST}/reset-password?token={token}"
@@ -168,7 +166,10 @@ def sanitise_shell_input(input_string: str) -> str:
     Sanitise input string to allow only allowed characters.
     Any other character is removed.
     """
-    return re.sub(r'[^a-zA-Z0-9\-_\.\+]', '_', input_string)  # replace invalid characters with "_"
+    return re.sub(
+        r"[^a-zA-Z0-9\-_\.\+]", "_", input_string
+    )  # replace invalid characters with "_"
+
 
 def escape(value):
     if isinstance(value, list):
@@ -185,6 +186,22 @@ def escape(value):
         return None
     else:
         raise Exception(f"Unknown parameter type: {type(value)}")
+
+
+def validate_param_value(value) -> None:
+    """
+    Reject string parameter values that could be used for path traversal.
+
+    Raises ValueError if the value (or any string nested in a list) contains a
+    path separator, a NUL byte, or is a parent-directory reference.
+    """
+    if isinstance(value, list):
+        for item in value:
+            validate_param_value(item)
+    elif isinstance(value, str):
+        if "/" in value or "\\" in value or "\x00" in value or value == "..":
+            raise ValueError("Path separators and traversal sequences are not allowed")
+
 
 def flatten(lst: list) -> list:
     """Recursively flattens a nested list."""
