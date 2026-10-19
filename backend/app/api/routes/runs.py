@@ -318,8 +318,19 @@ async def create_run(
             detail="You have reached the maximum number of active Runs. Please wait for some to finish!",
         )
 
-    # reject path traversal in user supplied values (including undeclared params)
+    files = []
+    tool_params = [Param(**param) for param in (tool.params or [])]
+
+    # Reject path traversal in free-form user supplied values, including params
+    # the tool doesn't declare. enum values (checked against the tool's options,
+    # and which may legitimately contain "/") and file params (checked as file
+    # ids) are validated separately below.
+    validated_elsewhere = {
+        p.name for p in tool_params if p.param_type in ("enum", "file")
+    }
     for param_name, param_value in params.items():
+        if param_name in validated_elsewhere:
+            continue
         try:
             validate_param_value(param_value)
         except ValueError:
@@ -328,8 +339,6 @@ async def create_run(
                 detail=f"Invalid value for parameter `{param_name}`: path separators ('/', '\\') and '..' are not allowed",
             )
 
-    files = []
-    tool_params = [Param(**param) for param in (tool.params or [])]
     visible_params = _build_visible_param_lookup(tool_params, params)
     normalized_params = dict(params)
     for param in tool_params:

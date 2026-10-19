@@ -430,6 +430,41 @@ def test_create_run_rejects_path_traversal_params(db: Session) -> None:
         assert "not allowed" in exc_info.value.detail
 
 
+def test_create_run_allows_slashes_in_enum_values(db: Session) -> None:
+    owner = create_random_user(db)
+    tool = _create_tool(db=db, owner=owner)
+    tool.params = [
+        {
+            "name": "scheme_name",
+            "param_type": "enum",
+            "required": True,
+            "options": ["artic-sars-cov-2/400/v4.0.0"],
+        },
+        {"name": "label", "param_type": "str"},
+    ]
+    db.add(tool)
+    db.commit()
+    db.refresh(tool)
+
+    monkeypatch = pytest.MonkeyPatch()
+    monkeypatch.setattr("app.api.routes.runs.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
+    try:
+        run = asyncio.run(
+            create_run(
+                session=db,
+                current_user=owner,
+                tool_id=tool.id,
+                params={"scheme_name": "artic-sars-cov-2/400/v4.0.0", "label": "ok"},
+                tags=[],
+            )
+        )
+    finally:
+        monkeypatch.undo()
+
+    assert run.params["scheme_name"] == "artic-sars-cov-2/400/v4.0.0"
+
+
 def test_process_targets_ignores_files_outside_tmp_dir(
     tmp_path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
