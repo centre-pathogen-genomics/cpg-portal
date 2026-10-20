@@ -1,3 +1,4 @@
+import secrets
 import uuid
 from datetime import UTC, datetime
 from enum import StrEnum
@@ -29,6 +30,11 @@ class UserFavouriteToolsLink(SQLModel, table=True):
 
 def _utcnow_naive() -> datetime:
     return datetime.now(UTC).replace(tzinfo=None)
+
+
+def new_token_version() -> int:
+    """Random (not sequential) so a forged access token cannot guess it."""
+    return secrets.randbits(31)
 
 
 # Shared properties
@@ -76,11 +82,39 @@ class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
     created_at: datetime = Field(default_factory=_utcnow_naive, nullable=False)
+    # Embedded in access tokens. Changing it revokes every outstanding session.
+    token_version: int = Field(default_factory=new_token_version, nullable=False)
     favourite_tools: list[Tool] = Relationship(
         back_populates="favourited_by", link_model=UserFavouriteToolsLink
     )
     files: list[File] = Relationship(back_populates="owner")
     runs: list[Run] = Relationship(back_populates="owner")
+
+
+class AuthTokenPurpose(StrEnum):
+    ACTIVATE = "activate"
+    RESET = "reset"
+
+
+class AuthToken(SQLModel, table=True):
+    """
+    Single-use, server-side token for account activation and password reset.
+
+    The emailed token is random and only its SHA-256 is stored here, so there is
+    no signature to forge: leaking SECRET_KEY (or reading this table) does not
+    let anyone activate an account or reset a password.
+    """
+
+    __tablename__ = "auth_token"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    user_id: uuid.UUID = Field(
+        foreign_key="user.id", nullable=False, index=True, ondelete="CASCADE"
+    )
+    purpose: str = Field(max_length=32, nullable=False)
+    token_hash: str = Field(max_length=64, nullable=False, unique=True, index=True)
+    expires_at: datetime = Field(nullable=False)
+    created_at: datetime = Field(default_factory=_utcnow_naive, nullable=False)
 
 
 # Properties to return via API, id is always required
@@ -134,6 +168,7 @@ class Token(SQLModel):
 # Contents of JWT token
 class TokenPayload(SQLModel):
     sub: str | None = None
+    ver: int | None = None
 
 
 class NewPassword(SQLModel):

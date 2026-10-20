@@ -21,6 +21,7 @@ optional_oauth2 = OAuth2PasswordBearer(
     auto_error=False,
 )
 
+
 def get_db() -> Generator[Session]:
     with Session(engine) as session:
         yield session
@@ -36,7 +37,7 @@ def get_current_user(session: SessionDep, token: TokenDep) -> User:
             token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
         )
         token_data = TokenPayload(**payload)
-    except (InvalidTokenError, ValidationError):
+    except InvalidTokenError, ValidationError:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Could not validate credentials",
@@ -47,9 +48,17 @@ def get_current_user(session: SessionDep, token: TokenDep) -> User:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
         )
+    # Tokens without a version (old, or minted by something other than login) and
+    # tokens from before a password reset / deactivation are rejected.
+    if token_data.ver is None or token_data.ver != user.token_version:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+        )
     if not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
     return user
+
 
 def get_current_user_or_anonymous(
     session: SessionDep,
@@ -71,7 +80,10 @@ def get_current_user_or_anonymous(
         # other errors (404, 400) bubble up
         raise
 
-def get_current_user_from_query(session: SessionDep, token: Annotated[str | None, Query()] = None) -> User:
+
+def get_current_user_from_query(
+    session: SessionDep, token: Annotated[str | None, Query()] = None
+) -> User:
     if token is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -101,7 +113,7 @@ def get_file(session: SessionDep, token: str) -> User:
             token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
         )
         token_data = TokenPayload(**payload)
-    except (InvalidTokenError, ValidationError):
+    except InvalidTokenError, ValidationError:
         raise HTTPException(
             status_code=403,
             detail="Could not validate credentials",
@@ -110,5 +122,6 @@ def get_file(session: SessionDep, token: str) -> User:
     if not file_metadata:
         raise HTTPException(status_code=404, detail="File not found")
     return file_metadata
+
 
 FileDep = Annotated[File, Depends(get_file)]

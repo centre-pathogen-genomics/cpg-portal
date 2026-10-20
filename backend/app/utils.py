@@ -1,17 +1,13 @@
 import logging
 import re
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from shlex import quote
 from typing import Any
 
 import emails  # type: ignore
-import jwt
 from jinja2 import Template
-from jwt.exceptions import InvalidTokenError
 
-from app.core import security
 from app.core.config import settings
 from app.models import RunStatus
 
@@ -136,29 +132,6 @@ def generate_run_finished_email(
         },
     )
     return EmailData(html_content=html_content, subject=subject)
-
-
-def generate_token_from_email(email: str) -> str:
-    delta = timedelta(hours=settings.EMAIL_RESET_TOKEN_EXPIRE_HOURS)
-    now = datetime.now(UTC)
-    expires = now + delta
-    exp = expires.timestamp()
-    encoded_jwt = jwt.encode(
-        {"exp": exp, "nbf": now, "sub": email},
-        settings.SECRET_KEY,
-        algorithm=security.ALGORITHM,
-    )
-    return encoded_jwt
-
-
-def verify_email_token(token: str) -> str | None:
-    try:
-        decoded_token = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
-        )
-        return str(decoded_token["sub"])
-    except InvalidTokenError:
-        return None
 
 
 def sanitise_shell_input(input_string: str) -> str:

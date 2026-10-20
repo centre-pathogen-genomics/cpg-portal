@@ -10,12 +10,10 @@ from app.api.deps import CurrentUser, SessionDep, get_current_active_superuser
 from app.core import security
 from app.core.config import settings
 from app.core.security import get_password_hash
-from app.models import Message, NewPassword, Token, UserPublic
+from app.models import AuthTokenPurpose, Message, NewPassword, Token, UserPublic
 from app.utils import (
     generate_reset_password_email,
-    generate_token_from_email,
     send_email,
-    verify_email_token,
 )
 
 router = APIRouter()
@@ -38,7 +36,9 @@ def login_access_token(
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     return Token(
         access_token=security.create_access_token(
-            user.id, expires_delta=access_token_expires
+            user.id,
+            expires_delta=access_token_expires,
+            token_version=user.token_version,
         )
     )
 
@@ -58,8 +58,11 @@ def recover_password(email: str, session: SessionDep) -> Message:
     """
     user = crud.get_user_by_email(session=session, email=email)
 
-    if user:
-        password_reset_token = generate_token_from_email(email=email)
+    # inactive accounts cannot reset (activation comes first), so no link for them
+    if user and user.is_active:
+        password_reset_token = crud.create_auth_token(
+            session=session, user=user, purpose=AuthTokenPurpose.RESET
+        )
         email_data = generate_reset_password_email(
             email_to=user.email, email=email, token=password_reset_token
         )
@@ -76,21 +79,20 @@ def recover_password(email: str, session: SessionDep) -> Message:
 @router.post("/reset-password/")
 def reset_password(session: SessionDep, body: NewPassword) -> Message:
     """
-    Reset password
+    Reset password.
+
+    The token is random, single-use and stored server-side (hashed): it cannot be
+    forged from the signing key, replayed, or swapped in from another flow.
+    Resetting also revokes every existing session and outstanding link.
     """
-    email = verify_email_token(token=body.token)
-    if not email:
+    user = crud.consume_auth_token(
+        session=session, token=body.token, purpose=AuthTokenPurpose.RESET
+    )
+    # same response for unknown / expired / replayed / wrong-purpose / inactive
+    if not user or not user.is_active:
         raise HTTPException(status_code=400, detail="Invalid token")
-    user = crud.get_user_by_email(session=session, email=email)
-    if not user:
-        raise HTTPException(
-            status_code=404,
-            detail="The user with this email does not exist in the system.",
-        )
-    elif not user.is_active:
-        raise HTTPException(status_code=400, detail="Inactive user")
-    hashed_password = get_password_hash(password=body.new_password)
-    user.hashed_password = hashed_password
+    crud.revoke_user_access(session=session, user=user)
+    user.hashed_password = get_password_hash(password=body.new_password)
     session.add(user)
     session.commit()
     return Message(message="Password updated successfully")
@@ -112,7 +114,9 @@ def recover_password_html_content(email: str, session: SessionDep) -> Any:
             status_code=404,
             detail="The user with this username does not exist in the system.",
         )
-    password_reset_token = generate_token_from_email(email=email)
+    password_reset_token = crud.create_auth_token(
+        session=session, user=user, purpose=AuthTokenPurpose.RESET
+    )
     email_data = generate_reset_password_email(
         email_to=user.email, email=email, token=password_reset_token
     )

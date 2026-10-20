@@ -13,6 +13,7 @@ from app.api.deps import (
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
 from app.models import (
+    AuthTokenPurpose,
     Message,
     UpdatePassword,
     User,
@@ -26,9 +27,7 @@ from app.models import (
 from app.utils import (
     generate_account_activation_email,
     generate_new_account_email,
-    generate_token_from_email,
     send_email,
-    verify_email_token,
 )
 
 router = APIRouter()
@@ -69,7 +68,9 @@ def create_user(*, session: SessionDep, user_in: UserCreate) -> Any:
 
     user = crud.create_user(session=session, user_create=user_in)
     if settings.emails_enabled and user_in.email:
-        password_reset_token = generate_token_from_email(email=user_in.email)
+        password_reset_token = crud.create_auth_token(
+            session=session, user=user, purpose=AuthTokenPurpose.RESET
+        )
         email_data = generate_new_account_email(
             email_to=user_in.email, username=user_in.email, token=password_reset_token
         )
@@ -168,7 +169,9 @@ def register_user(session: SessionDep, user_in: UserRegister) -> Any:
     user = crud.create_user(session=session, user_create=user_create)
 
     if settings.emails_enabled and user.email:
-        activation_token = generate_token_from_email(email=user.email)
+        activation_token = crud.create_auth_token(
+            session=session, user=user, purpose=AuthTokenPurpose.ACTIVATE
+        )
         email_data = generate_account_activation_email(
             email_to=user.email,
             username=user.email,
@@ -187,18 +190,16 @@ def register_user(session: SessionDep, user_in: UserRegister) -> Any:
 def activate_account(token: str, session: SessionDep) -> Message:
     """
     Activate user account from confirmation email token.
+
+    The token is random, single-use and stored server-side (hashed), so it
+    cannot be forged and a replay (or a token from the password-reset flow)
+    is rejected.
     """
-    try:
-        email = verify_email_token(token)
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid or expired token")
-
-    user = crud.get_user_by_email(session=session, email=email)
+    user = crud.consume_auth_token(
+        session=session, token=token, purpose=AuthTokenPurpose.ACTIVATE
+    )
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    if user.is_active:
-        return Message(message="User already activated.")
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
 
     user.is_active = True
     session.add(user)
