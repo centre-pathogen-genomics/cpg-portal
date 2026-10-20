@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, status
 from fastapi.responses import FileResponse
 from jwt.exceptions import InvalidTokenError
 from sqlalchemy import and_, desc
+from sqlalchemy.orm import selectinload
 from sqlmodel import func, select
 from starlette.background import BackgroundTask
 
@@ -113,8 +114,17 @@ def read_files(
     # Build the query based on user role
     query_base = select(File).where(base_where)
 
-    # Apply ordering, pagination and execute
-    files_query = query_base.order_by(order_expression).offset(skip).limit(limit)
+    # Apply ordering, pagination and execute. Children (pairs/groups) are
+    # eager-loaded in a single extra query: serialising FilePublic would
+    # otherwise lazy-load them once per file (N+1).
+    files_query = (
+        query_base.order_by(order_expression)
+        .offset(skip)
+        .limit(limit)
+        # SQLModel types relationship attributes as their Python value
+        # (list[File]), which SQLAlchemy's loader options do not accept.
+        .options(selectinload(File.children))  # type: ignore[arg-type]
+    )
     files = session.exec(files_query).all()
 
     return FilesPublic(data=files, count=count)

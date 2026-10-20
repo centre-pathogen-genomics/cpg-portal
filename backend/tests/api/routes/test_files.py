@@ -1,7 +1,10 @@
+import uuid
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import pytest
 from fastapi import HTTPException
+from sqlalchemy import event
 from sqlmodel import Session
 
 from app.api.routes.files import (
@@ -189,6 +192,70 @@ def test_read_files_rejects_unknown_sort_column(db: Session) -> None:
 
     assert exc_info.value.status_code == 400
     assert exc_info.value.detail == "Invalid column name: owner_id"
+
+
+def test_read_files_loads_children_without_per_file_queries(db: Session) -> None:
+    """Serialising top-level files must not query children once per file (N+1)."""
+    owner = create_random_user(db)
+    prefix = random_lower_string()
+    expected_children: dict[uuid.UUID, list[uuid.UUID]] = {}
+    parent_count = 6
+
+    for index in range(parent_count):
+        created_at = _utc_now()
+        parent = _create_saved_file(
+            db=db,
+            owner=owner,
+            name=f"{prefix}-pair-{index}",
+            size=2,
+            created_at=created_at,
+            file_type="pair",
+        )
+        children = [
+            _create_saved_file(
+                db=db,
+                owner=owner,
+                name=f"{prefix}-{index}_R{read}.fastq",
+                size=1,
+                created_at=created_at + timedelta(seconds=read),
+                file_type="fastq",
+                parent_id=parent.id,
+            )
+            for read in (1, 2)
+        ]
+        expected_children[parent.id] = [child.id for child in children]
+
+    statements: list[str] = []
+
+    def _record_statement(
+        _conn: Any,
+        _cursor: Any,
+        statement: str,
+        _parameters: Any,
+        _context: Any,
+        _executemany: bool,
+    ) -> None:
+        statements.append(statement)
+
+    engine = db.get_bind()
+    event.listen(engine, "before_cursor_execute", _record_statement)
+    try:
+        result = read_files(
+            session=db,
+            current_user=owner,
+            name=prefix,
+            order_by="name",
+            types=[],
+        )
+    finally:
+        event.remove(engine, "before_cursor_execute", _record_statement)
+
+    assert result.count == parent_count
+    # Budget: current_user refresh, count, page, one batched children query.
+    # Lazy loading children per file would add one query per parent.
+    assert len(statements) <= 5, statements
+    for item in result.data:
+        assert [child.id for child in item.children or []] == expected_children[item.id]
 
 
 def test_delete_files_filters_by_ids(db: Session) -> None:
