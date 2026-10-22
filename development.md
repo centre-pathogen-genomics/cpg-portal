@@ -34,6 +34,24 @@ To check the logs of a specific service, add the name of the service, e.g.:
 docker compose logs backend
 ```
 
+## Tool sandbox
+
+Tool commands are executed inside an Apptainer container (`backend/app/sandbox.py`),
+which is why the local `worker` service is privileged. The first `docker compose
+watch` builds the sandbox image into the `app-sandbox-data` volume and later
+starts reuse it. Rebuild it after editing `backend/container/runtime.def`:
+
+```bash
+docker compose exec worker bash scripts/build_sandbox_image.sh
+```
+
+Set `SANDBOX_FORCE_REBUILD=true` to rebuild an existing image, and
+`SANDBOX_ENABLED=false` in `.env` to run tool commands directly on the worker.
+Sandboxed runs have no network access unless `SANDBOX_NETWORK=internet` (public
+addresses only) or `SANDBOX_NETWORK=host` is set in `.env`. Reference data
+mounted in the worker at `SANDBOX_DATA_PATH` (`/DB` by default, as the httpOnly
+stack does) is available to runs read-only.
+
 ## Mailcatcher
 
 Mailcatcher is a simple SMTP server that catches all emails sent by the backend during local development. Instead of sending real emails, they are captured and displayed in a web interface.

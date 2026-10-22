@@ -41,6 +41,18 @@ class Settings(BaseSettings):
     TMP_PATH: str = "/tmp/cpg-portal"
     MAX_FILE_UPLOAD_SIZE: int = 1024 * 1024 * 1024  # 1 GB
 
+    # Tool runs are executed inside an Apptainer container, see app/sandbox.py.
+    # SANDBOX_NETWORK is one of "none" (own namespace, loopback only),
+    # "internet" (own namespace with internet access, private networks blocked)
+    # or "host" (the worker's network namespace).
+    SANDBOX_ENABLED: bool = True
+    SANDBOX_IMAGE: str = "/apptainer/runtime.sif"
+    SANDBOX_NETWORK: Literal["none", "internet", "host"] = "none"
+    SANDBOX_DNS: str = "1.1.1.1"
+    # Reference data mounted read-only into every run, at the same path it has
+    # on the worker (the ./DB directory of the httpOnly stack).
+    SANDBOX_DATA_PATH: str = "/DB"
+
     @computed_field  # type: ignore[prop-decorator]
     @property
     def server_host(self) -> str:

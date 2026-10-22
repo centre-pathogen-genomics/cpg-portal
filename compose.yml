@@ -1,5 +1,4 @@
 services:
-
   db:
     image: postgres:12
     restart: always
@@ -23,7 +22,16 @@ services:
     image: nats:2.11-alpine
     hostname: nats
     restart: always
-    command: ["-m", "8222"]
+    # Authenticated with a single user: anything on the Docker network can reach
+    # the port, so it must not accept unauthenticated clients (see the tool
+    # sandbox in deployment.md).
+    command:
+      - -m
+      - "8222"
+      - --user
+      - ${NATS_USER:?Variable not set}
+      - --pass
+      - ${NATS_PASSWORD:?Variable not set}
     healthcheck:
       test: ["CMD", "wget", "http://localhost:8222/healthz", "-q", "-O", "-"]
       interval: 5s
@@ -34,8 +42,15 @@ services:
     image: redis:8.2-alpine
     hostname: redis
     restart: always
+    command:
+      - redis-server
+      - --requirepass
+      - ${REDIS_PASSWORD:?Variable not set}
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:?Variable not set}
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test:
+        ["CMD-SHELL", 'redis-cli --no-auth-warning -a "$$REDIS_PASSWORD" ping']
       interval: 1s
       timeout: 3s
       retries: 50
@@ -64,10 +79,16 @@ services:
       - traefik.http.services.${STACK_NAME?Variable not set}-adminer.loadbalancer.server.port=8080
 
   prestart:
-    image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}'
+    image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}"
     build:
       context: .
       dockerfile: backend/Dockerfile
+    volumes:
+      - app-sandbox-data:/apptainer
+    # Building the sandbox image runs a %post section in a user namespace, which
+    # the default seccomp profile of Docker blocks.
+    security_opt:
+      - seccomp:unconfined
     networks:
       - traefik-public
       - default
@@ -97,13 +118,14 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
       - SENTRY_DSN=${SENTRY_DSN}
 
-  backend:
-    &backend
-    image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}'
+  backend: &backend
+    image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}"
     restart: always
     volumes:
       - app-storage-data:/storage
       - app-conda-data:/conda
+      - app-sandbox-data:/apptainer
+      - ./DB:/DB # Mount the DB folder to share external databases with the backend container.
     networks:
       - traefik-public
       - default
@@ -138,9 +160,17 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
       - SENTRY_DSN=${SENTRY_DSN}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - REDIS_URI=redis://:${REDIS_PASSWORD:?Variable not set}@redis/
+      - NATS_URIS=nats://${NATS_USER:?Variable not set}:${NATS_PASSWORD:?Variable not set}@nats:4222/
 
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/utils/health-check/"]
+      test:
+        [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8000/api/v1/utils/health-check/",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -172,13 +202,16 @@ services:
     labels: []
     healthcheck:
       disable: true
+    # Apptainer needs SYS_ADMIN and the loop devices to create the container
+    # that tool commands run in; that container itself runs without privileges
+    # and only sees the paths mounted by app/sandbox.py.
+    privileged: true
     command:
-      - taskiq
-      - worker
-      - app.tkq:broker
-      - app.tasks
-      - --max-async-tasks
-      - ${MAX_TASKS_PER_WORKER?Variable not set}
+      # Applies the sandbox network rules (SANDBOX_NETWORK=internet) before
+      # starting, see scripts/sandbox_network_setup.sh.
+      - bash
+      - -c
+      - "scripts/sandbox_network_setup.sh && exec taskiq worker app.tkq:broker app.tasks --max-async-tasks ${MAX_TASKS_PER_WORKER?Variable not set}"
     depends_on:
       db:
         condition: service_healthy
@@ -190,7 +223,7 @@ services:
         condition: service_healthy
 
   frontend:
-    image: '${DOCKER_IMAGE_FRONTEND?Variable not set}:${TAG-latest}'
+    image: "${DOCKER_IMAGE_FRONTEND?Variable not set}:${TAG-latest}"
     restart: always
     networks:
       - traefik-public
@@ -223,6 +256,7 @@ volumes:
   app-db-data:
   app-storage-data:
   app-conda-data:
+  app-sandbox-data:
 
 networks:
   traefik-public:

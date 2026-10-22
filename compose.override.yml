@@ -1,5 +1,4 @@
 services:
-
   # Local services are available on their ports, but also available on:
   # http://api.localhost.tiangolo.com: backend
   # http://dashboard.localhost.tiangolo.com: frontend
@@ -90,13 +89,9 @@ services:
   worker:
     restart: "no"
     command:
-      - taskiq
-      - worker
-      - app.tkq:broker
-      - app.tasks
-      - --reload
-      - --max-async-tasks
-      - ${MAX_TASKS_PER_WORKER?Variable not set}
+      - bash
+      - -c
+      - "scripts/sandbox_network_setup.sh && exec taskiq worker app.tkq:broker app.tasks --reload --max-async-tasks ${MAX_TASKS_PER_WORKER?Variable not set}"
 
   nats:
     restart: "no"

@@ -27,9 +27,25 @@ RUN curl -fsSLO "https://github.com/conda-forge/miniforge/releases/latest/downlo
     conda clean --all --yes && \
     conda config --set auto_activate_base false
 
+# Apptainer is used by the worker to run tool commands inside a container, see
+# app/sandbox.py. The unprivileged installation is relocatable and available for
+# every architecture, unlike the .deb packages.
+ARG APPTAINER_VERSION=1.5.4
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends cpio iptables rpm2cpio && \
+    rm -rf /var/lib/apt/lists/* && \
+    curl -fsSL "https://raw.githubusercontent.com/apptainer/apptainer/v${APPTAINER_VERSION}/tools/install-unprivileged.sh" -o /tmp/install-unprivileged.sh && \
+    bash /tmp/install-unprivileged.sh -v "${APPTAINER_VERSION}" /opt/apptainer && \
+    rm /tmp/install-unprivileged.sh
+
+# Tool runs get their own network namespace; apptainer sets it up from the CNI
+# configurations in this directory. "loopback" is the default, "internet" is
+# masqueraded and restricted to public addresses by scripts/sandbox_network_setup.sh.
+COPY ./backend/container/loopback.conf ./backend/container/internet.conf /etc/apptainer/network/
+
 # Place executables in the environment at the front of the path
 # Ref: https://docs.astral.sh/uv/guides/integration/docker/#using-the-environment
-ENV PATH="/app/.venv/bin:$PATH"
+ENV PATH="/opt/apptainer/bin:/app/.venv/bin:$PATH"
 
 # Install dependencies
 # Ref: https://docs.astral.sh/uv/guides/integration/docker/#intermediate-layers
@@ -39,6 +55,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-install-workspace --package app
 
 COPY ./backend/scripts /app/backend/scripts
+COPY ./backend/container /app/backend/container
 
 COPY ./backend/pyproject.toml ./backend/alembic.ini /app/backend/
 

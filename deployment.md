@@ -173,6 +173,20 @@ Set the `BACKEND_CORS_ORIGINS` to include your domain:
 export BACKEND_CORS_ORIGINS="https://dashboard.${DOMAIN?Variable not set},https://api.${DOMAIN?Variable not set}"
 ```
 
+Set the credentials of Redis and NATS, which carry the task queue and the live
+output of runs. Anything on the Docker network can reach those ports, so a
+compromised tool run could otherwise read them (see the tool sandbox section):
+
+```bash
+export NATS_USER=portal
+export REDIS_PASSWORD="changethis"
+export NATS_PASSWORD="changethis"
+```
+
+Docker Compose builds `REDIS_URI` and `NATS_URIS` from these, so the services and
+the backend always use the same credentials. Use the `python` command above to
+generate secure values.
+
 You can set several other environment variables:
 
 * `PROJECT_NAME`: The name of the project, used in the API for the docs and emails.
@@ -187,6 +201,9 @@ You can set several other environment variables:
 * `POSTGRES_PORT`: The port of the PostgreSQL server. You can leave the default. You normally wouldn't need to change this unless you are using a third-party provider.
 * `POSTGRES_USER`: The Postgres user, you can leave the default.
 * `POSTGRES_DB`: The database name to use for this application. You can leave the default of `app`.
+* `REDIS_PASSWORD`: Password of the Redis service, compose uses it to build `REDIS_URI`.
+* `NATS_USER`, `NATS_PASSWORD`: Credentials of the NATS service, compose uses them to build `NATS_URIS`.
+* `SANDBOX_ENABLED`, `SANDBOX_IMAGE`, `SANDBOX_NETWORK`, `SANDBOX_DNS`, `SANDBOX_DATA_PATH`: See the tool sandbox section.
 * `SENTRY_DSN`: The DSN for Sentry, if you are using it.
 
 ## GitHub Actions Environment Variables
@@ -207,6 +224,76 @@ docker compose -f compose.yml up -d
 ```
 
 For production you wouldn't want to have the overrides in `compose.override.yml`, that's why we explicitly specify `compose.yml` as the file to use.
+
+## Tool Sandbox (Apptainer)
+
+Tool commands are arbitrary pipelines defined by tool authors, so the worker
+does not execute them directly. Every run is executed inside an
+[Apptainer](https://apptainer.org/) container that only sees the run's working
+directory (read-write), its input files (read-only), a scratch directory
+(read-write, used as `/tmp`) and the tool's conda environment (read-only). See
+`backend/app/sandbox.py`.
+
+The reference data directory (`SANDBOX_DATA_PATH`, `/DB` by default, i.e. the
+`./DB` directory of the httpOnly stack) is mounted read-only into every run at
+the same path, so tools can read curated databases without copying them. Keep
+secrets out of it.
+
+Nothing else is visible: a tool command has to work with its inputs, the
+reference data, files it creates in the working directory, and its conda
+environment. Tools that reach for other paths fail at runtime.
+
+`SANDBOX_NETWORK` in `.env` decides what a run can reach:
+
+* `none` (default): its own network namespace with a loopback interface only, so
+  it cannot reach the database, redis, nats, other containers or the internet.
+* `internet`: its own network namespace, masqueraded out of the worker so it can
+  download from the internet, while every private address is dropped. Tools like
+  "Download Genome" (NCBI Datasets) work; the database, redis and nats stay out
+  of reach. `SANDBOX_DNS` (default `1.1.1.1`) is the resolver runs use, and it
+  stays reachable even when it lives on a private address.
+* `host`: the worker's network namespace, i.e. everything the worker can reach.
+  Only useful for debugging a tool.
+
+The worker applies the `internet` rules before it starts, from
+`scripts/sandbox_network_setup.sh` in its command. They match traffic from the
+sandbox subnet only, so the worker keeps its own access to the database, redis
+and nats while a run is in progress.
+
+Whichever mode you use, the neighbouring services are the next line of defence:
+Postgres, Redis and NATS all require credentials that are not part of a run's
+environment (see [Required Environment Variables](#required-environment-variables)).
+Prefer fetching reference data while a tool is installed, or placing it in a
+read-only volume, over giving runs network access.
+
+This requires:
+
+* The `worker` service to be privileged (`privileged: true` in `compose.yml`):
+  Apptainer needs `SYS_ADMIN` and the loop devices of the host to create the
+  container. The container it creates runs without privileges, with a read-only
+  root filesystem, private namespaces and a cleaned environment, so it cannot
+  see the worker's filesystem, `/storage`, or the worker's environment variables.
+* A sandbox image in the `app-sandbox-data` volume. The `prestart` service builds
+  it on the first `docker compose up` if it is missing. Rebuild it after changing
+  `backend/container/runtime.def`:
+
+```bash
+docker compose -f compose.yml exec worker bash scripts/build_sandbox_image.sh
+```
+
+Until the image exists, runs fail with `Sandbox image '/apptainer/runtime.sif'
+was not found`. `SANDBOX_ENABLED=false` in `.env` runs tool commands directly on
+the worker again (not recommended), and `SANDBOX_IMAGE` points the worker at a
+different image, e.g. one pulled from a registry with `apptainer pull`.
+
+The build runs its `%post` section inside a user namespace, so the host has to
+allow unprivileged user namespaces. On hosts where AppArmor restricts them, e.g.
+Ubuntu 24.04 and later, add `apparmor=unconfined` to `security_opt` of the
+`prestart` service.
+
+Tools that need system packages which are neither in the sandbox image nor in
+their conda environment fail at runtime; add them to
+`backend/container/runtime.def` and rebuild.
 
 ## Continuous Deployment (CD)
 
@@ -308,6 +395,8 @@ The current Github Actions workflows expect these secrets:
 * `FIRST_SUPERUSER`
 * `FIRST_SUPERUSER_PASSWORD`
 * `POSTGRES_PASSWORD`
+* `REDIS_PASSWORD`
+* `NATS_PASSWORD`
 * `SECRET_KEY`
 * `LATEST_CHANGES`
 * `SMOKESHOW_AUTH_KEY`

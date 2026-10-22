@@ -1,0 +1,53 @@
+# Base image for tool runs, built by scripts/build_sandbox_image.sh.
+#
+# Tool commands run inside a container created from this image, with their conda
+# environment, input files and working directory bind mounted from the worker
+# (see app/sandbox.py). Everything a tool needs at runtime therefore either
+# comes from its conda environment or has to be listed below.
+#
+# Keep the base distribution recent enough for the glibc of the conda
+# environments built on the worker: conda-forge builds against glibc 2.17, so
+# any current Debian release works.
+Bootstrap: docker
+From: debian:trixie-slim
+
+%post
+    # APT::Sandbox::User keeps apt from dropping to the _apt user, which needs
+    # setgroups and therefore fails in the user namespace of an unprivileged
+    # build.
+    apt-get -o APT::Sandbox::User=root update
+    apt-get -o APT::Sandbox::User=root install -y --no-install-recommends \
+        bzip2 \
+        ca-certificates \
+        coreutils \
+        curl \
+        diffutils \
+        file \
+        findutils \
+        gawk \
+        git \
+        grep \
+        gzip \
+        less \
+        libgomp1 \
+        pigz \
+        procps \
+        python3 \
+        tar \
+        tzdata \
+        unzip \
+        wget \
+        xz-utils \
+        zip \
+        zstd
+    rm -rf /var/lib/apt/lists/*
+    # Bind mount targets of a run, pre-created so that apptainer does not have
+    # to create them inside the read-only container filesystem.
+    mkdir -p /work /tmp /inputs /conda
+
+%environment
+    export LC_ALL=C.UTF-8
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+%runscript
+    exec /bin/bash "$@"
