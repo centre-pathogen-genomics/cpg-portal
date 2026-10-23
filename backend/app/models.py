@@ -44,6 +44,9 @@ class UserBase(SQLModel):
     is_superuser: bool = False
     full_name: str | None = Field(default=None, max_length=255)
     max_runs: int = 10
+    # Highest number of CPUs (threads) a single run of this user may ask for,
+    # capped further by the tool's own cpus_max.
+    max_cpus: int = 4
     max_storage: int = Field(
         default=1024 * 1024 * 1024 * 25, sa_column=Column(BigInteger(), nullable=False)
     )  # 25 GB
@@ -278,6 +281,11 @@ class ToolBase(SQLModel):
     params: list[Param] | None = None
     targets: list[Target] | None = None
     llm_summary_enabled: bool = False
+    # CPUs (threads) a run of this tool may reserve: users pick 1..max_cpus,
+    # capped further by their own max_cpus, defaulting to default_cpus. The
+    # value is handed to the container as `apptainer exec --cpus`.
+    max_cpus: int = 1
+    default_cpus: int = 1
 
 
 # Properties to receive on Tool creation
@@ -353,6 +361,10 @@ class ToolMinimalPublic(SQLModel):
     enabled: bool = False
     llm_summary_enabled: bool = False
     explanation_of_results_markdown: str | None = None
+    # The run form needs the threads a tool allows, and it is opened from the
+    # tool cards as well as the tool page.
+    max_cpus: int = 1
+    default_cpus: int = 1
 
 
 class ToolsPublic(SQLModel):
@@ -371,6 +383,9 @@ class RunStatus(StrEnum):
 class RunBase(SQLModel):
     taskiq_id: str
     name: str | None = None
+    # CPUs (threads) reserved for this run, 1 up to min(tool.max_cpus, the
+    # owner's max_cpus), defaulting to the tool's default_cpus.
+    cpus: int = 1
     status: RunStatus
     llm_summary: str | None = None
     email_on_completion: bool = False
@@ -412,6 +427,7 @@ class RunPublicMinimal(SQLModel):
     name: str | None = None
     tool: ToolMinimalPublic
     params: dict
+    cpus: int = 1
     status: RunStatus
     shared: bool = False
     tags: list[str] | None = None

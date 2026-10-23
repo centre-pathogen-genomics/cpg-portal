@@ -151,6 +151,8 @@ const formSchema = z.object({
   setup_files: z.array(setupFileSchema),
   params: z.array(paramSchema),
   targets: z.array(targetSchema),
+  max_cpus: z.number().int().min(1),
+  default_cpus: z.number().int().min(1),
   llm_summary_enabled: z.boolean(),
   favourited_count: z.number().int().min(0),
   run_count: z.number().int().min(0),
@@ -265,6 +267,8 @@ function defaultValues(tool: ToolPublic): ToolFormData {
     enabled: tool.enabled ?? false,
     status: tool.status,
     installation_log: tool.installation_log ?? "",
+    max_cpus: tool.max_cpus ?? 1,
+    default_cpus: tool.default_cpus ?? 1,
   };
 }
 
@@ -343,6 +347,8 @@ function buildToolUpdate(data: ToolFormData): ToolUpdate {
       .filter((badge) => badge.badge || badge.url),
     tags: listValues(data.tags),
     command: data.command.trim(),
+    max_cpus: data.max_cpus,
+    default_cpus: data.default_cpus,
     conda_env: condaEnv,
     post_install: nullIfBlank(data.post_install),
     setup_files: data.setup_files.map<SetupFile>((file) => ({
@@ -762,6 +768,52 @@ function ExecutionTab({ control }: { control: Control<ToolFormData> }) {
           <CardTitle>Execution</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <FormField
+              control={control}
+              name="max_cpus"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Max CPUs</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={1}
+                      {...field}
+                      onChange={(event) =>
+                        field.onChange(
+                          Number.parseInt(event.target.value, 10) || 0,
+                        )
+                      }
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={control}
+              name="default_cpus"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Default CPUs</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={1}
+                      {...field}
+                      onChange={(event) =>
+                        field.onChange(
+                          Number.parseInt(event.target.value, 10) || 0,
+                        )
+                      }
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
           <TextField
             control={control}
             name="command"

@@ -49,10 +49,13 @@ INTERNET_NETWORK = "internet"
 
 NETWORK_MODES = ("none", "internet", "host")
 
-# Written by scripts/sandbox_network_setup.sh once the rules for the "internet"
-# mode are in place, and checked here so a worker started without them cannot
-# hand out a run that reaches the private networks.
+# Written by scripts/sandbox_setup.sh once the rules for the "internet" mode are
+# in place, and checked here so a worker started without them cannot hand out a
+# run that reaches the private networks.
 NETWORK_READY_FILE = "/run/sandbox-network-ready"
+
+# Same for the cgroup delegation that lets apptainer limit a run to its CPUs.
+CGROUPS_READY_FILE = "/run/sandbox-cgroups-ready"
 
 
 class SandboxError(Exception):
@@ -92,6 +95,15 @@ def check_sandbox_image(image: str) -> None:
         )
 
 
+def check_sandbox_limits() -> None:
+    """Raise :class:`SandboxError` if runs cannot be limited to their CPUs."""
+    if not Path(CGROUPS_READY_FILE).exists():
+        raise SandboxError(
+            "This worker cannot limit runs to their CPUs, the cgroup rules are "
+            "applied by `scripts/sandbox_setup.sh` when the worker starts"
+        )
+
+
 def check_sandbox_network(network: str) -> None:
     """Raise :class:`SandboxError` if ``network`` is not usable as requested."""
     if network != "internet":
@@ -113,6 +125,7 @@ def sandbox_exec_command(
     input_files: Mapping[str, Path],
     conda_prefix: Path | None,
     data_path: Path | None,
+    cpus: int,
     network: str,
     dns: str,
     command: str,
@@ -128,6 +141,10 @@ def sandbox_exec_command(
         "exec",
         "--containall",
         "--no-privs",
+        # The run only gets the CPUs it reserved, the scheduler hands the rest
+        # to other runs.
+        "--cpus",
+        str(cpus),
     ]
     if network == "none":
         argv += ["--net", f"--network={LOOPBACK_NETWORK}"]

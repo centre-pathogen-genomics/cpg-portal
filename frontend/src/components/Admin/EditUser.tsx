@@ -54,6 +54,10 @@ const formSchema = z
       .number()
       .int()
       .min(1, { message: "Max storage files must be at least 1" }),
+    max_cpus: z
+      .number()
+      .int()
+      .min(1, { message: "Max CPUs must be at least 1" }),
     is_superuser: z.boolean().optional(),
     is_active: z.boolean().optional(),
   })
@@ -84,6 +88,7 @@ const EditUser = ({ user, onSuccess }: EditUserProps) => {
       max_runs: user.max_runs ?? 10,
       max_storage: user.max_storage ?? 25 * 1024 * 1024 * 1024,
       max_storage_files: user.max_storage_files ?? 300,
+      max_cpus: user.max_cpus ?? 4,
       is_superuser: user.is_superuser,
       is_active: user.is_active,
     },
@@ -269,6 +274,29 @@ const EditUser = ({ user, onSuccess }: EditUserProps) => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Max Storage Files</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min={1}
+                        step={1}
+                        {...field}
+                        onChange={(event) =>
+                          field.onChange(event.target.valueAsNumber)
+                        }
+                        required
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="max_cpus"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Max CPUs</FormLabel>
                     <FormControl>
                       <Input
                         type="number"

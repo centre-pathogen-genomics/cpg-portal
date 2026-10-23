@@ -97,6 +97,18 @@ cd backend
 fastapi dev app/main.py
 ```
 
+## Tests
+
+The backend tests run against their own `app_test` database, which they create
+and migrate on the first run. They never write to the development database: a
+run left behind there keeps holding the CPUs it asked for in the worker's
+scheduler, so enough runs from a test session block the development queue.
+
+```bash
+cd backend
+uv run pytest
+```
+
 ## Docker Compose in `localhost.tiangolo.com`
 
 When you start the Docker Compose stack, it uses `localhost` by default, with different ports for each service (backend, frontend, adminer, etc).

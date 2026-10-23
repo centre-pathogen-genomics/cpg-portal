@@ -30,7 +30,7 @@ def test_queue_pause_and_resume_endpoints(monkeypatch, db: Session) -> None:
     async def fake_kiq(*args, **kwargs):  # noqa: ARG001
         return SimpleNamespace(task_id="task-id")
 
-    monkeypatch.setattr("app.api.routes.admin.run_tool.kiq", fake_kiq)
+    monkeypatch.setattr("app.tasks.run_tool.kiq", fake_kiq)
 
     pause_data = pause_queue(
         session=db,
@@ -64,7 +64,7 @@ def test_queue_pause_keeps_new_runs_pending_without_dispatch(monkeypatch, db: Se
     async def fake_broadcast(*args, **kwargs):  # noqa: ARG001
         return None
 
-    monkeypatch.setattr("app.api.routes.runs.run_tool.kiq", fake_kiq)
+    monkeypatch.setattr("app.tasks.run_tool.kiq", fake_kiq)
     monkeypatch.setattr("app.api.routes.runs.manager.broadcast", fake_broadcast)
     before_count = db.exec(select(func.count()).select_from(Run)).one()
 
@@ -137,7 +137,7 @@ def test_queue_resume_dispatches_held_pending_runs(monkeypatch, db: Session) -> 
         dispatched_run_ids.append(run_id)
         return SimpleNamespace(task_id="task-id")
 
-    monkeypatch.setattr("app.api.routes.admin.run_tool.kiq", fake_kiq)
+    monkeypatch.setattr("app.tasks.run_tool.kiq", fake_kiq)
 
     resume_data = asyncio.run(resume_queue(session=db))
     db.refresh(run)
@@ -199,7 +199,7 @@ def test_queue_resume_allows_run_creation(monkeypatch, db: Session) -> None:
     async def fake_broadcast(*args, **kwargs):  # noqa: ARG001
         return None
 
-    monkeypatch.setattr("app.api.routes.runs.run_tool.kiq", fake_kiq)
+    monkeypatch.setattr("app.tasks.run_tool.kiq", fake_kiq)
     monkeypatch.setattr("app.api.routes.runs.manager.broadcast", fake_broadcast)
 
     run = asyncio.run(

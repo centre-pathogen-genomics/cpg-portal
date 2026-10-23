@@ -8,7 +8,12 @@ import {
   HiOutlineStatusOnline,
   HiOutlineTag,
 } from "react-icons/hi"
-import { HiCalendarDays, HiOutlineClock, HiOutlineUser } from "react-icons/hi2"
+import {
+  HiCalendarDays,
+  HiOutlineClock,
+  HiOutlineCpuChip,
+  HiOutlineUser,
+} from "react-icons/hi2"
 import { IoIosCheckmarkCircleOutline, IoIosCopy } from "react-icons/io"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
@@ -75,6 +80,11 @@ function RunMetadata({ run }: { run: RunPublic }) {
       icon: <HiOutlineTag />,
       title: "Parameters",
       value: <Parameters params={run.params} />,
+    },
+    {
+      icon: <HiOutlineCpuChip />,
+      title: "Threads",
+      value: `${run.cpus}`,
     },
     {
       icon: <HiCalendarDays />,

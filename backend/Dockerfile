@@ -38,6 +38,12 @@ RUN apt-get update && \
     bash /tmp/install-unprivileged.sh -v "${APPTAINER_VERSION}" /opt/apptainer && \
     rm /tmp/install-unprivileged.sh
 
+# Tool runs are limited to the CPUs they reserved, which apptainer applies with
+# cgroups. The worker container has no systemd, so apptainer manages them
+# through cgroupfs instead (see scripts/sandbox_setup.sh).
+RUN /opt/apptainer/bin/apptainer config global --set "systemd cgroups" no && \
+    /opt/apptainer/bin/apptainer config global --get "systemd cgroups"
+
 # Tool runs get their own network namespace; apptainer sets it up from the CNI
 # configurations in this directory. "loopback" is the default, "internet" is
 # masqueraded and restricted to public addresses by scripts/sandbox_network_setup.sh.

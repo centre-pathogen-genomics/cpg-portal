@@ -65,6 +65,7 @@ def test_sandbox_exec_command_only_mounts_the_run(tmp_path: Path) -> None:
         input_files={location.name: location},
         conda_prefix=conda_prefix,
         data_path=data_path,
+        cpus=4,
         network="none",
         dns="1.1.1.1",
         command="samtools view sample.bam",
@@ -88,6 +89,8 @@ def test_sandbox_exec_command_only_mounts_the_run(tmp_path: Path) -> None:
     assert f"{conda_prefix}:{conda_prefix}:ro" in argv
     # Reference data is mounted read-only at its own path.
     assert f"{data_path}:{data_path}:ro" in argv
+    # The run only gets the CPUs the scheduler handed it.
+    assert argv[argv.index("--cpus") + 1] == "4"
     assert argv[-4:] == [
         "/apptainer/runtime.sif",
         "/bin/bash",
@@ -107,6 +110,7 @@ def test_sandbox_exec_command_without_conda_environment(tmp_path: Path) -> None:
         input_files={},
         conda_prefix=None,
         data_path=None,
+        cpus=2,
         network="internet",
         dns="9.9.9.9",
         command="echo hello",
@@ -130,6 +134,7 @@ def test_sandbox_exec_command_with_host_network(tmp_path: Path) -> None:
         input_files={},
         conda_prefix=None,
         data_path=None,
+        cpus=1,
         network="host",
         dns="1.1.1.1",
         command="echo hello",
@@ -150,6 +155,7 @@ def test_sandbox_exec_command_rejects_unknown_network(tmp_path: Path) -> None:
             input_files={},
             conda_prefix=None,
             data_path=None,
+            cpus=1,
             network="bridge",
             dns="1.1.1.1",
             command="echo hello",
@@ -165,6 +171,18 @@ def test_sandbox_data_path(monkeypatch, tmp_path: Path) -> None:
     data.mkdir()
     monkeypatch.setattr(settings, "SANDBOX_DATA_PATH", str(data))
     assert sandbox_data_path() == data
+
+
+def test_check_sandbox_limits(monkeypatch, tmp_path: Path) -> None:
+    monkeypatch.setattr(sandbox, "CGROUPS_READY_FILE", str(tmp_path / "missing"))
+
+    with pytest.raises(sandbox.SandboxError, match="limit runs to their CPUs"):
+        sandbox.check_sandbox_limits()
+
+    ready = tmp_path / "ready"
+    ready.touch()
+    monkeypatch.setattr(sandbox, "CGROUPS_READY_FILE", str(ready))
+    sandbox.check_sandbox_limits()
 
 
 def test_check_sandbox_network(monkeypatch, tmp_path: Path) -> None:
@@ -217,12 +235,16 @@ def test_build_run_argv_uses_a_sandbox(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr(settings, "SANDBOX_ENABLED", True)
     monkeypatch.setattr(settings, "SANDBOX_IMAGE", str(image))
     monkeypatch.setattr(settings, "SANDBOX_NETWORK", "none")
+    cgroups_ready = tmp_path / "cgroups-ready"
+    cgroups_ready.touch()
+    monkeypatch.setattr(sandbox, "CGROUPS_READY_FILE", str(cgroups_ready))
 
     argv = build_run_argv(
         command="echo hello",
         conda_prefix=None,
         dirs=dirs,
         input_files={},
+        cpus=1,
     )
 
     assert argv[0] == "apptainer"
@@ -242,12 +264,16 @@ def test_build_run_argv_with_sandbox_network(monkeypatch, tmp_path: Path) -> Non
     ready = tmp_path / "ready"
     ready.touch()
     monkeypatch.setattr(sandbox, "NETWORK_READY_FILE", str(ready))
+    cgroups_ready = tmp_path / "cgroups-ready"
+    cgroups_ready.touch()
+    monkeypatch.setattr(sandbox, "CGROUPS_READY_FILE", str(cgroups_ready))
 
     argv = build_run_argv(
         command="echo hello",
         conda_prefix=None,
         dirs=dirs,
         input_files={},
+        cpus=1,
     )
 
     assert argv[argv.index("--net") + 1] == f"--network={sandbox.INTERNET_NETWORK}"
@@ -263,6 +289,7 @@ def test_build_run_argv_without_sandbox(monkeypatch, tmp_path: Path) -> None:
         conda_prefix=None,
         dirs=dirs,
         input_files={},
+        cpus=1,
     )
 
     assert argv == ["/bin/bash", "-c", "set -euo pipefail; echo hello"]

@@ -14,6 +14,8 @@ interface RunToolModalProps {
   onClose: () => void
   toolId: string
   params: Param[]
+  maxCpus?: number
+  defaultCpus?: number
 }
 
 const RunToolModal = ({
@@ -21,13 +23,21 @@ const RunToolModal = ({
   onClose,
   toolId,
   params,
+  maxCpus,
+  defaultCpus,
 }: RunToolModalProps) => (
   <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
     <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
       <DialogHeader>
         <DialogTitle>Configure Tool</DialogTitle>
       </DialogHeader>
-      <RunToolForm toolId={toolId} params={params} onSuccess={onClose} />
+      <RunToolForm
+        toolId={toolId}
+        params={params}
+        onSuccess={onClose}
+        maxCpus={maxCpus}
+        defaultCpus={defaultCpus}
+      />
       <DialogFooter>
         <Button onClick={onClose} variant="outline">
           Cancel

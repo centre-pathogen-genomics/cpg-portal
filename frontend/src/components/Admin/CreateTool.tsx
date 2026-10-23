@@ -42,6 +42,8 @@ const formSchema = z.object({
   name: z.string().trim().min(1, "Name is required"),
   command: z.string().trim().min(1, "Command is required"),
   description: z.string().optional(),
+  max_cpus: z.number().int().min(1),
+  default_cpus: z.number().int().min(1),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -68,6 +70,8 @@ const CreateTool = ({ variant = "dialog" }: CreateToolProps) => {
       name: "",
       command: "",
       description: "",
+      max_cpus: 1,
+      default_cpus: 1,
     },
   });
 
@@ -94,6 +98,8 @@ const CreateTool = ({ variant = "dialog" }: CreateToolProps) => {
       name: data.name.trim(),
       command: data.command.trim(),
       description: data.description?.trim() || null,
+      max_cpus: data.max_cpus,
+      default_cpus: data.default_cpus,
     };
     mutation.mutate({ body });
   };
@@ -182,6 +188,53 @@ const CreateTool = ({ variant = "dialog" }: CreateToolProps) => {
                   </FormItem>
                 )}
               />
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="max_cpus"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Max CPUs</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min={1}
+                          {...field}
+                          onChange={(event) =>
+                            field.onChange(
+                              Number.parseInt(event.target.value, 10) || 0,
+                            )
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="default_cpus"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Default CPUs</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min={1}
+                          {...field}
+                          onChange={(event) =>
+                            field.onChange(
+                              Number.parseInt(event.target.value, 10) || 0,
+                            )
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <FormField
                 control={form.control}

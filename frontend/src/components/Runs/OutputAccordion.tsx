@@ -44,7 +44,8 @@ const OutputAccordionItem = ({
   )
   const [currentStatus, setCurrentStatus] = useState(status)
   const lineCount = output?.trim().split("\n").length || 0
-  const active = currentStatus === "running" || currentStatus === "pending"
+  const queued = currentStatus === "pending"
+  const active = currentStatus === "running" || queued
 
   useEffect(() => {
     setOutput((previous) => {
@@ -97,6 +98,8 @@ const OutputAccordionItem = ({
             follow
             maxHeight="500px"
           />
+        ) : queued ? (
+          <p>Waiting for run to start...</p>
         ) : active ? (
           <p>Running...</p>
         ) : (

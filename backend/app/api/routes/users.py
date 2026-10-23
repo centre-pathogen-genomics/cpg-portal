@@ -40,13 +40,19 @@ router = APIRouter()
 )
 def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
     """
-    Retrieve users.
+    Retrieve users, newest first.
+
+    The order matters to the admin table: it asks for a page of users and
+    filters them in the browser, so without it a new account can fall outside
+    the page and be impossible to find.
     """
 
     count_statement = select(func.count()).select_from(User)
     count = session.exec(count_statement).one()
 
-    statement = select(User).offset(skip).limit(limit)
+    statement = (
+        select(User).order_by(User.created_at.desc()).offset(skip).limit(limit)
+    )
     users = session.exec(statement).all()
 
     return UsersPublic(data=users, count=count)

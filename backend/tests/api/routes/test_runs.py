@@ -447,7 +447,7 @@ def test_create_run_allows_slashes_in_enum_values(db: Session) -> None:
     db.refresh(tool)
 
     monkeypatch = pytest.MonkeyPatch()
-    monkeypatch.setattr("app.api.routes.runs.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
     monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
     try:
         run = asyncio.run(
@@ -477,7 +477,7 @@ def test_process_targets_ignores_files_outside_tmp_dir(
 
     saved: list[str] = []
 
-    def _fake_save_file(*, name, **kwargs):  # noqa: ANN003
+    def _fake_save_file(*, name, **kwargs):  # noqa: ANN003, ARG001
         saved.append(name)
         return SimpleNamespace(name=name)
 
@@ -537,7 +537,7 @@ def test_create_run_skips_hidden_params(db: Session) -> None:
     db.refresh(tool)
 
     monkeypatch = pytest.MonkeyPatch()
-    monkeypatch.setattr("app.api.routes.runs.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
     monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
     try:
         run = asyncio.run(
@@ -616,7 +616,7 @@ def test_create_run_flattens_group_children_when_pairs_are_allowed(
     db.commit()
     db.refresh(group)
 
-    monkeypatch.setattr("app.api.routes.runs.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
     monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
 
     run = asyncio.run(
@@ -665,7 +665,7 @@ def test_create_run_preserves_pair_children_when_pairs_are_allowed(
     db.commit()
     db.refresh(pair)
 
-    monkeypatch.setattr("app.api.routes.runs.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
     monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
 
     run = asyncio.run(
@@ -679,3 +679,180 @@ def test_create_run_preserves_pair_children_when_pairs_are_allowed(
     )
 
     assert run.params["reads"] == [["sample_R1.fastq.gz", "sample_R2.fastq.gz"]]
+
+
+async def _fake_broadcast(*args, **kwargs):  # noqa: ANN002, ANN003, ARG001
+    return None
+
+
+def _tool_with_threads(
+    db: Session, owner: User, *, max_cpus: int, default_cpus: int
+) -> Tool:
+    tool = _create_tool(db=db, owner=owner)
+    tool.max_cpus = max_cpus
+    tool.default_cpus = default_cpus
+    db.add(tool)
+    db.commit()
+    db.refresh(tool)
+    return tool
+
+
+def test_create_run_validates_threads(db: Session, monkeypatch) -> None:
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
+    owner = create_random_user(db)
+    owner.max_cpus = 4
+    db.add(owner)
+    db.commit()
+    tool = _tool_with_threads(db, owner, max_cpus=8, default_cpus=2)
+
+    # The user's own limit (4) caps the tool's limit (8).
+    run = asyncio.run(
+        create_run(
+            session=db,
+            current_user=owner,
+            tool_id=tool.id,
+            params={},
+            tags=[],
+            cpus=4,
+        )
+    )
+    assert run.cpus == 4
+
+    # One thread is always allowed, above the user's limit is not.
+    one = asyncio.run(
+        create_run(
+            session=db,
+            current_user=owner,
+            tool_id=tool.id,
+            params={},
+            tags=[],
+            cpus=1,
+        )
+    )
+    assert one.cpus == 1
+
+    for cpus in (0, 5):
+        with pytest.raises(HTTPException) as exc_info:
+            asyncio.run(
+                create_run(
+                    session=db,
+                    current_user=owner,
+                    tool_id=tool.id,
+                    params={},
+                    tags=[],
+                    cpus=cpus,
+                )
+            )
+        assert exc_info.value.status_code == 400
+        assert "between 1 and 4" in exc_info.value.detail
+
+
+def test_create_run_defaults_threads_to_the_tool_default(db: Session, monkeypatch) -> None:
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
+    owner = create_random_user(db)
+    tool = _tool_with_threads(db, owner, max_cpus=3, default_cpus=3)
+
+    run = asyncio.run(
+        create_run(
+            session=db,
+            current_user=owner,
+            tool_id=tool.id,
+            params={},
+            tags=[],
+        )
+    )
+
+    assert run.cpus == 3
+
+
+def test_create_run_threads_when_the_user_limit_is_below_the_tool(
+    db: Session, monkeypatch
+) -> None:
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
+    owner = create_random_user(db)
+    owner.max_cpus = 2
+    db.add(owner)
+    db.commit()
+    tool = _tool_with_threads(db, owner, max_cpus=16, default_cpus=4)
+
+    # The tool's default is clamped to what the user may use.
+    defaulted = asyncio.run(
+        create_run(
+            session=db,
+            current_user=owner,
+            tool_id=tool.id,
+            params={},
+            tags=[],
+        )
+    )
+    assert defaulted.cpus == 2
+
+    with pytest.raises(HTTPException) as exc_info:
+        asyncio.run(
+            create_run(
+                session=db,
+                current_user=owner,
+                tool_id=tool.id,
+                params={},
+                tags=[],
+                cpus=4,
+            )
+        )
+
+    assert exc_info.value.status_code == 400
+    assert "between 1 and 2" in exc_info.value.detail
+
+
+def test_create_run_threads_of_an_admin_are_not_capped(
+    db: Session, monkeypatch
+) -> None:
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
+    owner = create_random_user(db)
+    owner.max_cpus = 2
+    owner.is_superuser = True
+    db.add(owner)
+    db.commit()
+    tool = _tool_with_threads(db, owner, max_cpus=8, default_cpus=4)
+
+    run = asyncio.run(
+        create_run(
+            session=db,
+            current_user=owner,
+            tool_id=tool.id,
+            params={},
+            tags=[],
+            cpus=8,
+        )
+    )
+
+    assert run.cpus == 8
+
+
+def test_create_run_names_unnamed_runs(db: Session, monkeypatch) -> None:
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
+    owner = create_random_user(db)
+    tool = _create_tool(db=db, owner=owner)
+    today = datetime.now(UTC).strftime("%Y%m%d")
+
+    def run(name: str | None = None):
+        return asyncio.run(
+            create_run(
+                session=db,
+                current_user=owner,
+                tool_id=tool.id,
+                params={},
+                tags=[],
+                name=name,
+            )
+        )
+
+    assert run().name == f"{tool.name}-{today}-001"
+    assert run().name == f"{tool.name}-{today}-002"
+    # A blank name is a missing name, and a given name is kept as it is.
+    assert run("   ").name == f"{tool.name}-{today}-003"
+    assert run("my own name").name == "my own name"

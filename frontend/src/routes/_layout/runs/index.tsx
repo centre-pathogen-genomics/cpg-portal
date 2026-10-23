@@ -302,6 +302,7 @@ function RunsTable({
               <TableHead>Tags</TableHead>
               <TableHead>{renderSortableHeading("created_at")}</TableHead>
               <TableHead>{renderSortableHeading("runtime")}</TableHead>
+              <TableHead>Threads</TableHead>
               <TableHead></TableHead>
             </TableRow>
           </TableHeader>
@@ -309,7 +310,7 @@ function RunsTable({
             {isLoading ? (
               new Array(pageSize).fill(null).map((_, row) => (
                 <TableRow key={row}>
-                  {new Array(9).fill(null).map((_, cell) => (
+                  {new Array(10).fill(null).map((_, cell) => (
                     <TableCell key={cell}>
                       <Skeleton className="h-5" />
                     </TableCell>
@@ -318,7 +319,7 @@ function RunsTable({
               ))
             ) : isError ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-destructive">
+                <TableCell colSpan={10} className="text-destructive">
                   Error: {(error as Error).message}
                 </TableCell>
               </TableRow>
@@ -377,6 +378,7 @@ function RunsTable({
                       status={run.status}
                     />
                   </TableCell>
+                  <TableCell>{run.cpus}</TableCell>
                   <TableCell
                     data-run-actions-cell
                     onMouseDown={(event) => event.stopPropagation()}
@@ -390,7 +392,7 @@ function RunsTable({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={9} className="h-24 text-center">
+                <TableCell colSpan={10} className="h-24 text-center">
                   No runs found.
                 </TableCell>
               </TableRow>

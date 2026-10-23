@@ -12,8 +12,8 @@ import {
   CalendarDays,
   Database,
   Eye,
-  type LucideIcon,
   LoaderCircle,
+  type LucideIcon,
   MoreVertical,
   Pause,
   Play,
@@ -34,10 +34,10 @@ import {
   UsersService,
 } from "@/client"
 import {
-  getToolDetailStatsOptions,
   getSystemStatsOptions,
-  getUserDetailStatsOptions,
   getSystemStatsQueryKey,
+  getToolDetailStatsOptions,
+  getUserDetailStatsOptions,
   pauseQueueMutation,
   readAppSettingsOptions,
   readAppSettingsQueryKey,
@@ -77,7 +77,9 @@ import useAuth from "@/hooks/useAuth"
 import useCustomToast from "@/hooks/useCustomToast"
 
 function getUsersQueryOptions() {
-  return readUsersOptions({ query: { skip: 0, limit: 1000 } })
+  // The table filters and searches in the browser, so it needs the whole user
+  // list. Past ~10k accounts this has to become a server-side search.
+  return readUsersOptions({ query: { skip: 0, limit: 10000 } })
 }
 
 export const Route = createFileRoute("/_layout/admin")({
@@ -226,11 +228,11 @@ function buildStatsQuery(startDate: string, endDate: string) {
 
 function formatDateTimeLocal(date: Date) {
   const pad = (value: number) => value.toString().padStart(2, "0")
-  return [
-    date.getFullYear(),
-    pad(date.getMonth() + 1),
-    pad(date.getDate()),
-  ].join("-") + `T${pad(date.getHours())}:${pad(date.getMinutes())}`
+  return (
+    [date.getFullYear(), pad(date.getMonth() + 1), pad(date.getDate())].join(
+      "-",
+    ) + `T${pad(date.getHours())}:${pad(date.getMinutes())}`
+  )
 }
 
 function formatDateTime(value?: string | null) {
@@ -249,7 +251,9 @@ function UsersTableContent({
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<UserStatusFilter>("all")
   const [deleteVisibleOpen, setDeleteVisibleOpen] = useState(false)
-  const [visibleTableUsers, setVisibleTableUsers] = useState<UserTableData[]>([])
+  const [visibleTableUsers, setVisibleTableUsers] = useState<UserTableData[]>(
+    [],
+  )
   const { data: users } = useSuspenseQuery(getUsersQueryOptions())
   const tableData: UserTableData[] = useMemo(
     () =>
@@ -267,12 +271,9 @@ function UsersTableContent({
       if (!query) return true
       const role = user.is_superuser ? "superuser" : "user"
       const status = user.is_active ? "active" : "inactive"
-      return [
-        user.full_name ?? "",
-        user.email,
-        role,
-        status,
-      ].some((value) => value.toLowerCase().includes(query))
+      return [user.full_name ?? "", user.email, role, status].some((value) =>
+        value.toLowerCase().includes(query),
+      )
     })
   }, [search, statusFilter, tableData])
   const deletableVisibleUsers = visibleTableUsers.filter(
@@ -663,19 +664,13 @@ function DetailPanel({
             label="Average Runtime"
             value={`${toolData.runs.average_runtime_minutes.toFixed(1)} min`}
           />
-          <StatValue
-            label="Running"
-            value={toolData.runs.currently_running}
-          />
+          <StatValue label="Running" value={toolData.runs.currently_running} />
         </div>
         <div>
           <h3 className="text-sm font-semibold">Top Users</h3>
           <div className="mt-3 space-y-2">
             {toolData.top_users.map((user) => (
-              <div
-                key={user.id}
-                className="flex justify-between gap-3 text-sm"
-              >
+              <div key={user.id} className="flex justify-between gap-3 text-sm">
                 <span>{user.full_name || user.email}</span>
                 <Badge variant="secondary" className="rounded">
                   {user.count}
@@ -777,8 +772,7 @@ function LlmSettingsPanel() {
 function AdminDashboard() {
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
-  const [quickDateFilter, setQuickDateFilter] =
-    useState<QuickDateFilter>("all")
+  const [quickDateFilter, setQuickDateFilter] = useState<QuickDateFilter>("all")
   const [selection, setSelection] = useState<DrilldownSelection | null>(null)
   const statsQuery = buildStatsQuery(startDate, endDate)
   const {

@@ -91,7 +91,7 @@ services:
     command:
       - bash
       - -c
-      - "scripts/sandbox_network_setup.sh && exec taskiq worker app.tkq:broker app.tasks --reload --max-async-tasks ${MAX_TASKS_PER_WORKER?Variable not set}"
+      - "scripts/sandbox_setup.sh && exec taskiq worker app.tkq:broker app.tasks --reload --max-async-tasks ${MAX_TASKS_PER_WORKER?Variable not set}"
 
   nats:
     restart: "no"

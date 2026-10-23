@@ -466,6 +466,8 @@ function Tool() {
           toolId={tool.id}
           params={tool.params || []}
           isDisabled={anonymous}
+          maxCpus={tool.max_cpus}
+          defaultCpus={tool.default_cpus}
           onSuccess={(run) =>
             navigate({
               to: "/runs/$runid",

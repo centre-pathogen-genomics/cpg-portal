@@ -7,7 +7,7 @@ from sqlmodel import SQLModel, func, select
 from app.api.deps import SessionDep, get_current_active_superuser
 from app.core.app_settings import get_or_create_app_settings
 from app.models import Run, RunStatus
-from app.tasks import run_tool
+from app.scheduling import dispatch_pending_runs, reserved_cpus, total_cpus
 
 router = APIRouter(
     dependencies=[Depends(get_current_active_superuser)],
@@ -20,6 +20,9 @@ class QueueStatus(SQLModel):
     queue_pause_reason: str | None = None
     pending_runs: int
     running_runs: int
+    # CPUs the worker hands out, and how many of them runs hold right now.
+    total_cpus: int = 0
+    reserved_cpus: int = 0
 
 
 class QueuePauseRequest(SQLModel):
@@ -40,21 +43,9 @@ def _queue_status(session: SessionDep) -> QueueStatus:
         queue_pause_reason=app_settings.queue_pause_reason,
         pending_runs=_active_run_count(session, RunStatus.pending),
         running_runs=_active_run_count(session, RunStatus.running),
+        total_cpus=total_cpus(),
+        reserved_cpus=reserved_cpus(session),
     )
-
-
-async def _dispatch_pending_runs(session: SessionDep) -> None:
-    pending_runs = session.exec(
-        select(Run)
-        .where(Run.status == RunStatus.pending)
-        .where(Run.taskiq_id.is_(None))
-        .where(Run.command.is_not(None))
-    ).all()
-    for run in pending_runs:
-        taskiq_task = await run_tool.kiq(run.id, run.command)
-        run.taskiq_id = taskiq_task.task_id
-        session.add(run)
-    session.commit()
 
 
 @router.get("/queue", response_model=QueueStatus)
@@ -84,5 +75,7 @@ async def resume_queue(session: SessionDep) -> QueueStatus:
     app_settings.queue_pause_reason = None
     session.add(app_settings)
     session.commit()
-    await _dispatch_pending_runs(session)
+    # Runs queued while the queue was paused, and whatever else is waiting for
+    # CPUs to free up.
+    await dispatch_pending_runs(session)
     return _queue_status(session)

@@ -49,6 +49,9 @@ class Settings(BaseSettings):
     SANDBOX_IMAGE: str = "/apptainer/runtime.sif"
     SANDBOX_NETWORK: Literal["none", "internet", "host"] = "none"
     SANDBOX_DNS: str = "1.1.1.1"
+    # CPUs the worker hands out to runs; runs wait in the queue until the CPUs
+    # they asked for are free. 0 detects the CPUs available to the worker.
+    TOTAL_CPUS: int = 0
     # Reference data mounted read-only into every run, at the same path it has
     # on the worker (the ./DB directory of the httpOnly stack).
     SANDBOX_DATA_PATH: str = "/DB"

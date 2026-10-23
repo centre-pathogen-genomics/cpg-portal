@@ -1,6 +1,6 @@
 import { X } from "lucide-react"
 import type React from "react"
-import { useRef, useState } from "react"
+import { useRef } from "react"
 import { Input } from "@/components/ui/input"
 
 interface InputTagProps {
@@ -14,7 +14,6 @@ export default function InputTag({
   setTags,
   isDisabled = false,
 }: InputTagProps) {
-  const [sizeInput, setSizeInput] = useState<number>(1)
   const refInput = useRef<HTMLInputElement>(null)
 
   // Function to add a new tag from the input field
@@ -25,15 +24,7 @@ export default function InputTag({
     if (newText.length > 0) {
       setTags((prev) => [...prev, newText])
       refInput.current.value = "" // Reset input field
-      setSizeInput(1)
     }
-  }
-
-  // Handle input changes and dynamically adjust input width
-  const handleChangeInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    e.preventDefault()
-    const value = e.target.value
-    setSizeInput(value.length > 0 ? value.length : 1)
   }
 
   // Handle key events for adding/removing tags
@@ -68,30 +59,26 @@ export default function InputTag({
   }
 
   return (
-    <div className="flex w-full justify-end">
-      <div className="flex">
-        {tags.map((text, i) => (
-          <span
-            key={`${i}_${text}`}
-            className="my-1 mr-1 inline-flex items-center rounded-md bg-cyan-100 px-2 py-1 text-sm text-cyan-800"
+    <div className="flex w-full flex-wrap items-center gap-2">
+      {tags.map((text, i) => (
+        <span
+          key={`${i}_${text}`}
+          className="inline-flex items-center rounded-md bg-cyan-100 px-2 py-1 text-sm text-cyan-800"
+        >
+          {text}
+          <button
+            type="button"
+            aria-label={`Remove ${text}`}
+            onClick={() => handleDelItem(i)}
           >
-            {text}
-            <button
-              type="button"
-              aria-label={`Remove ${text}`}
-              onClick={() => handleDelItem(i)}
-            >
-              <X className="ml-1 size-3" />
-            </button>
-          </span>
-        ))}
-      </div>
+            <X className="ml-1 size-3" />
+          </button>
+        </span>
+      ))}
       <Input
-        className="max-w-full md:max-w-[200px]"
+        className="min-w-0 flex-1"
         ref={refInput}
-        placeholder="Add tags to run"
-        size={sizeInput}
-        onChange={handleChangeInput}
+        placeholder="Add a tag and press Enter"
         onKeyDown={handleKeyDown} // Attach key event handler here
         onBlur={addTag} // Add remaining input text as a tag on blur
         disabled={isDisabled} // Disable input if prop is true

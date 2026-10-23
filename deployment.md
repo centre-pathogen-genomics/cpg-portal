@@ -204,6 +204,7 @@ You can set several other environment variables:
 * `REDIS_PASSWORD`: Password of the Redis service, compose uses it to build `REDIS_URI`.
 * `NATS_USER`, `NATS_PASSWORD`: Credentials of the NATS service, compose uses them to build `NATS_URIS`.
 * `SANDBOX_ENABLED`, `SANDBOX_IMAGE`, `SANDBOX_NETWORK`, `SANDBOX_DNS`, `SANDBOX_DATA_PATH`: See the tool sandbox section.
+* `TOTAL_CPUS`: CPUs the worker hands out to runs, `0` detects them. See the threads section.
 * `SENTRY_DSN`: The DSN for Sentry, if you are using it.
 
 ## GitHub Actions Environment Variables
@@ -256,7 +257,7 @@ environment. Tools that reach for other paths fail at runtime.
   Only useful for debugging a tool.
 
 The worker applies the `internet` rules before it starts, from
-`scripts/sandbox_network_setup.sh` in its command. They match traffic from the
+`scripts/sandbox_setup.sh` in its command. They match traffic from the
 sandbox subnet only, so the worker keeps its own access to the database, redis
 and nats while a run is in progress.
 
@@ -294,6 +295,31 @@ Ubuntu 24.04 and later, add `apparmor=unconfined` to `security_opt` of the
 Tools that need system packages which are neither in the sandbox image nor in
 their conda environment fail at runtime; add them to
 `backend/container/runtime.def` and rebuild.
+
+## Threads and CPU Scheduling
+
+Every run reserves a number of CPUs (threads), and the worker only hands out
+`TOTAL_CPUS` of them (`0` detects the CPUs available to the worker):
+
+* each tool has `max_cpus` (the most a run of that tool may use) and
+  `default_cpus` (used when the user picks nothing),
+* each user has `max_cpus`, a limit per job,
+* a run may ask for 1 up to `min(tool.max_cpus, user.max_cpus)` threads, and gets
+  `min(tool.default_cpus, that maximum)` when it asks for nothing,
+* runs stay `pending` until the CPUs they asked for are free: three runs of 5
+  threads on a 10 CPU worker start two and leave the third queued until one of
+  them finishes,
+* each container gets exactly those CPUs through `apptainer exec --cpus N`.
+
+`scripts/sandbox_setup.sh`, which the worker runs before it starts, delegates
+the container's cgroup controllers so apptainer can apply that limit (the worker
+container has no systemd, and the image sets `systemd cgroups = no`). A worker
+started without it fails runs with "This worker cannot limit runs to their CPUs"
+instead of running them unlimited.
+
+Existing tools and users start at one and four threads; raise them per tool and
+per user, for example with `PATCH /api/v1/tools/{id}` and
+`PATCH /api/v1/users/{id}`.
 
 ## Continuous Deployment (CD)
 

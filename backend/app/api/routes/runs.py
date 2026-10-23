@@ -1,15 +1,15 @@
 import json
 import uuid
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, status
 from jinja2 import Environment as JinjaEnvironment
 from sqlalchemy import and_, desc
-from sqlmodel import func, select
+from sqlmodel import Session, func, select
 
 from app.api.deps import CurrentUser, SessionDep
-from app.core.app_settings import get_or_create_app_settings
 from app.core.file_types import FileTypeEnum
 from app.models import (
     File,
@@ -22,7 +22,7 @@ from app.models import (
     RunStatus,
     Tool,
 )
-from app.tasks import run_tool
+from app.scheduling import dispatch_pending_runs
 from app.utils import escape, flatten, validate_param_value
 from app.wsmanager import manager
 
@@ -278,6 +278,19 @@ def read_run_tool_names(session: SessionDep, current_user: CurrentUser) -> Any:
     return session.exec(statement).all()
 
 
+def default_run_name(session: Session, tool: Tool) -> str:
+    """Name for a run that was left unnamed, e.g. ``Sleep-20261023-001``."""
+    now = datetime.now(UTC)
+    midnight = now.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
+    runs_today = session.exec(
+        select(func.count())
+        .select_from(Run)
+        .where(Run.tool_id == tool.id)
+        .where(Run.created_at >= midnight)
+    ).one()
+    return f"{tool.name}-{now:%Y%m%d}-{runs_today + 1:03d}"
+
+
 @router.post("/", response_model=RunPublic)
 async def create_run(
     *,
@@ -288,6 +301,7 @@ async def create_run(
     tags: list[str] = None,
     email_on_completion: bool = False,
     name: str = None,
+    cpus: int | None = None,
 ) -> Any:
     """
     Create and run a run of a specific tool, validating against predefined tool parameters.
@@ -302,6 +316,20 @@ async def create_run(
         raise HTTPException(status_code=404, detail="Tool not found")
     if not current_user.is_superuser and not tool.enabled:
         raise HTTPException(status_code=403, detail="Tool is disabled")
+
+    # Threads: at least one, up to the tool's max_cpus, capped by the user's own
+    # max_cpus (administrators are not capped), defaulting to what the tool asks
+    # for.
+    max_cpus = tool.max_cpus
+    if not current_user.is_superuser:
+        max_cpus = min(tool.max_cpus, current_user.max_cpus)
+    if cpus is None:
+        cpus = min(tool.default_cpus, max_cpus)
+    if not 1 <= cpus <= max_cpus:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Threads must be between 1 and {max_cpus} for this tool",
+        )
 
     # check the user que limit
     count_statement = (
@@ -479,25 +507,23 @@ async def create_run(
     # create a run
     run = Run(
         tool_id=tool_id,
-        name=name,
+        name=(name or "").strip() or default_run_name(session, tool),
         owner_id=current_user.id,
         status="pending",
+        cpus=cpus,
         params=normalized_params,
         input_file_ids=[str(file.id) for file in files],
         command=cmd,
         tags=tags,
+        email_on_completion=email_on_completion,
     )
     session.add(run)
     session.commit()
     session.refresh(run)
 
-    app_settings = get_or_create_app_settings(session)
-    if not app_settings.queue_paused:
-        taskiq_task = await run_tool.kiq(run.id, cmd)
-        run.taskiq_id = taskiq_task.task_id
-    run.email_on_completion = email_on_completion
-    session.add(run)
-    session.commit()
+    # Starts this run, or leaves it pending until the CPUs it asked for are free
+    # (see app/scheduling.py).
+    await dispatch_pending_runs(session)
     session.refresh(run)
 
     tool.run_count += 1

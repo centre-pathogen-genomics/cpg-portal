@@ -26,7 +26,7 @@ def test_recover_interrupted_tasks_requeues_and_marks_interrupted(
         install_task_ids.append(tool_id)
         return SimpleNamespace(task_id=f"install-task-{tool_id}")
 
-    monkeypatch.setattr(lifetime.run_tool, "kiq", fake_run_kiq)
+    monkeypatch.setattr("app.tasks.run_tool.kiq", fake_run_kiq)
     monkeypatch.setattr(lifetime.install_tool, "kiq", fake_install_kiq)
 
     app_settings = get_or_create_app_settings(db)
@@ -97,7 +97,9 @@ def test_recover_interrupted_tasks_requeues_and_marks_interrupted(
     db.refresh(installing_tool)
 
     assert pending_run.id in run_task_ids
-    assert install_task_ids == [queued_tool.id]
+    # Membership, not equality: recovery restarts every queued install in the
+    # database, and the suite reuses one database across tests.
+    assert queued_tool.id in install_task_ids
     assert pending_run.status == RunStatus.pending
     assert pending_run.taskiq_id == f"run-task-{pending_run.id}"
     assert running_run.status == RunStatus.cancelled
@@ -126,7 +128,7 @@ def test_recover_interrupted_tasks_does_not_requeue_pending_runs_when_paused(
     async def fake_install_kiq(tool_id: uuid.UUID):
         return SimpleNamespace(task_id=f"install-task-{tool_id}")
 
-    monkeypatch.setattr(lifetime.run_tool, "kiq", fake_run_kiq)
+    monkeypatch.setattr("app.tasks.run_tool.kiq", fake_run_kiq)
     monkeypatch.setattr(lifetime.install_tool, "kiq", fake_install_kiq)
 
     app_settings = get_or_create_app_settings(db)

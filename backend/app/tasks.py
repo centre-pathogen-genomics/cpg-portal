@@ -22,6 +22,7 @@ from app.core.app_settings import get_or_create_app_settings
 from app.core.config import settings
 from app.crud import save_file
 from app.models import File, Run, RunStatus, SetupFile, Target, Tool, ToolStatus
+from app.scheduling import dispatch_pending_runs
 from app.tkq import broker
 from app.utils import escape, generate_run_finished_email, send_email
 from app.wsmanager import manager
@@ -278,12 +279,14 @@ def build_run_argv(
     conda_prefix: Path | None,
     dirs: RunDirs,
     input_files: dict[str, Path],
+    cpus: int,
 ) -> list[str]:
     """Build the argv of the process that executes the command of a run."""
     shell_command = f"set -euo pipefail; {command}"
     if not settings.SANDBOX_ENABLED:
         return ["/bin/bash", "-c", shell_command]
     sandbox.check_sandbox_image(settings.SANDBOX_IMAGE)
+    sandbox.check_sandbox_limits()
     sandbox.check_sandbox_network(settings.SANDBOX_NETWORK)
     return sandbox.sandbox_exec_command(
         image=settings.SANDBOX_IMAGE,
@@ -293,6 +296,7 @@ def build_run_argv(
         input_files=input_files,
         conda_prefix=conda_prefix,
         data_path=sandbox_data_path(),
+        cpus=cpus,
         network=settings.SANDBOX_NETWORK,
         dns=settings.SANDBOX_DNS,
         command=shell_command,
@@ -427,6 +431,7 @@ async def run_tool(
                     conda_prefix=conda_prefix,
                     dirs=dirs,
                     input_files=input_files,
+                    cpus=run.cpus,
                 )
                 returncode, stdout = await run_command_in_subprocess(
                     session, run_id, argv, dirs.work
@@ -460,6 +465,12 @@ async def run_tool(
     except Exception as e:
         update_run(session, run, RunStatus.failed, f"An unexpected error occurred: {e}")
         return False
+    finally:
+        # The CPUs of this run are free again, so start what is waiting for them.
+        try:
+            await dispatch_pending_runs(session)
+        except Exception as e:
+            print(f"Error dispatching pending runs: {e}")
 
 
 @broker.task

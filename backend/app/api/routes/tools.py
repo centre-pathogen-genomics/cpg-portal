@@ -238,6 +238,15 @@ def unfavourite_tool(
     return Message(message="Tool removed from favourites successfully")
 
 
+def _validate_cpus(max_cpus: int, default_cpus: int) -> None:
+    """Runs pick 1..max_cpus threads, so the default has to fit in there."""
+    if max_cpus < 1 or not 1 <= default_cpus <= max_cpus:
+        raise HTTPException(
+            status_code=422,
+            detail="Threads must satisfy 1 <= default_cpus <= max_cpus",
+        )
+
+
 @router.post("/", response_model=ToolPublic)
 def create_tool(
     *,
@@ -248,6 +257,7 @@ def create_tool(
     """
     Create new tool along with its params.
     """
+    _validate_cpus(tool_in.max_cpus, tool_in.default_cpus)
     tool = Tool(**tool_in.dict())
     session.add(tool)
     session.commit()
@@ -417,6 +427,10 @@ def update_tool(
     if not tool:
         raise HTTPException(status_code=404, detail="Tool not found")
     tool_data = tool_in.dict(exclude_unset=True)
+    _validate_cpus(
+        tool_data.get("max_cpus", tool.max_cpus),
+        tool_data.get("default_cpus", tool.default_cpus),
+    )
     for key, value in tool_data.items():
         setattr(tool, key, value)
     session.add(tool)

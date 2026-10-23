@@ -215,10 +215,10 @@ services:
     privileged: true
     command:
       # Applies the sandbox network rules (SANDBOX_NETWORK=internet) before
-      # starting, see scripts/sandbox_network_setup.sh.
+      # starting, see scripts/sandbox_setup.sh.
       - bash
       - -c
-      - "scripts/sandbox_network_setup.sh && exec taskiq worker app.tkq:broker app.tasks --max-async-tasks ${MAX_TASKS_PER_WORKER?Variable not set}"
+      - "scripts/sandbox_setup.sh && exec taskiq worker app.tkq:broker app.tasks --max-async-tasks ${MAX_TASKS_PER_WORKER?Variable not set}"
     depends_on:
       db:
         condition: service_healthy

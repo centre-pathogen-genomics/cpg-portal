@@ -20,7 +20,9 @@ const EmailOnFinished = ({
         checked={emailOnFinished}
         onCheckedChange={(checked) => setEmailOnFinished(checked === true)}
       />
-      <Label htmlFor="email-on-finished">Email me when finished</Label>
+      <Label htmlFor="email-on-finished">
+        Send an email when the run finishes
+      </Label>
     </div>
   )
 }
