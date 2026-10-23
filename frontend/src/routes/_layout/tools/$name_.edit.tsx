@@ -14,7 +14,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
   type Control,
   Controller,
@@ -87,6 +87,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
+import CommandField from "../../../components/Tools/CommandField"
 
 const paramTypes = ParamTypeSchema.enum as unknown as ParamType[]
 const paramVisibilityOperators =
@@ -1016,6 +1017,17 @@ function ParamVisibilityFields({
 function InputsTab({ control }: { control: Control<ToolFormData> }) {
   const params = useFieldArray({ control, name: "params" })
   const setupFiles = useFieldArray({ control, name: "setup_files" })
+  const watchedParams = useWatch({ control, name: "params" }) ?? []
+  const commandParams = useMemo(
+    () =>
+      watchedParams.map((param) => ({
+        ...param,
+        allowed_file_types: (param.allowed_file_types ?? []).map(
+          (item) => item.value,
+        ),
+      })),
+    [watchedParams],
+  )
   return (
     <TabsContent value="inputs" className="space-y-6">
       <Card className="rounded-md">
@@ -1023,11 +1035,22 @@ function InputsTab({ control }: { control: Control<ToolFormData> }) {
           <CardTitle>Execution</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <TextField
+          <FormField
             control={control}
             name="command"
-            label="Command"
-            multiline
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Command</FormLabel>
+                <FormControl>
+                  <CommandField
+                    value={String(field.value ?? "")}
+                    onChange={field.onChange}
+                    params={commandParams}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
           />
           <div className="grid gap-4 md:grid-cols-3">
             <FormField
