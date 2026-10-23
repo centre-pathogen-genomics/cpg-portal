@@ -14,8 +14,9 @@ interface RunToolModalProps {
   onClose: () => void
   toolId: string
   params: Param[]
-  maxCpus?: number
-  defaultCpus?: number
+  minCpus?: number | null
+  maxCpus?: number | null
+  defaultCpus?: number | null
 }
 
 const RunToolModal = ({
@@ -23,6 +24,7 @@ const RunToolModal = ({
   onClose,
   toolId,
   params,
+  minCpus,
   maxCpus,
   defaultCpus,
 }: RunToolModalProps) => (
@@ -35,6 +37,7 @@ const RunToolModal = ({
         toolId={toolId}
         params={params}
         onSuccess={onClose}
+        minCpus={minCpus}
         maxCpus={maxCpus}
         defaultCpus={defaultCpus}
       />

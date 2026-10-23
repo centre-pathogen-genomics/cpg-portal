@@ -21,6 +21,8 @@ import { cn } from "@/lib/utils"
 export interface MultiSelectOption {
   label: string
   value: string
+  /** Files this option stands for, e.g. a group of two. Defaults to one. */
+  unitCount?: number
 }
 
 interface MultiSelectProps {
@@ -51,6 +53,11 @@ function MultiSelect({
   const [open, setOpen] = useState(false)
   const selectedOptions = options.filter((option) =>
     value.includes(option.value),
+  )
+  // A group counts as the files it holds, so the summary reads in files.
+  const selectedUnits = selectedOptions.reduce(
+    (total, option) => total + (option.unitCount ?? 1),
+    0,
   )
 
   const toggleValue = (optionValue: string) => {
@@ -85,7 +92,7 @@ function MultiSelect({
                 ? "Loading files..."
                 : value.length === 0
                   ? placeholder
-                  : `${value.length} ${value.length === 1 ? "file" : "files"} selected`}
+                  : `${selectedUnits} ${selectedUnits === 1 ? "file" : "files"} selected`}
             </span>
             <ChevronsUpDown className="text-muted-foreground opacity-60" />
           </Button>
@@ -124,7 +131,7 @@ function MultiSelect({
             {value.length > 0 && (
               <div className="flex items-center justify-between border-t px-2 py-1.5">
                 <span className="text-xs text-muted-foreground">
-                  {value.length} selected
+                  {selectedUnits} selected
                 </span>
                 <Button
                   type="button"

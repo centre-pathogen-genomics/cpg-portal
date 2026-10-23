@@ -5,7 +5,7 @@ from sqlmodel import Session, func, select
 
 from app.api.routes.admin import QueuePauseRequest, pause_queue, resume_queue
 from app.api.routes.runs import create_run
-from app.api.routes.settings import read_queue_status
+from app.api.routes.settings import read_queue_drain_status
 from app.core.app_settings import get_or_create_app_settings
 from app.models import Run, Tool, ToolStatus, User
 from app.tasks import run_tool
@@ -99,7 +99,9 @@ def test_user_visible_queue_status_returns_pause_reason(db: Session) -> None:
     db.commit()
 
     try:
-        status = read_queue_status(session=db, _current_user=create_random_user(db))
+        status = read_queue_drain_status(
+            session=db, _current_user=create_random_user(db)
+        )
     finally:
         app_settings.queue_paused = False
         app_settings.queue_pause_reason = None

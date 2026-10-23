@@ -223,6 +223,10 @@ class Param(SQLModel):
     param_type: ParamType
     allowed_file_types: list[FileType] | None = None
     multiple: bool = False
+    # CPUs one value of this parameter needs, e.g. a file that is processed
+    # with two threads. Zero takes this parameter out of the default above, for
+    # a tool with several file parameters where only some of them scale.
+    cpus_per_file: int = 1
     description: str | None = None
     default: int | float | str | bool | None = None
     options: list[str] | None = None
@@ -281,11 +285,16 @@ class ToolBase(SQLModel):
     params: list[Param] | None = None
     targets: list[Target] | None = None
     llm_summary_enabled: bool = False
-    # CPUs (threads) a run of this tool may reserve: users pick 1..max_cpus,
-    # capped further by their own max_cpus, defaulting to default_cpus. The
-    # value is handed to the container as `apptainer exec --cpus`.
-    max_cpus: int = 1
-    default_cpus: int = 1
+    # CPUs (threads) a run of this tool may reserve: users pick
+    # min_cpus..max_cpus, capped further by their own max_cpus, defaulting to
+    # default_cpus. A missing maximum means the tool does not care and the
+    # user's own limit is the maximum, a missing default means the tool's
+    # minimum. A tool whose minimum equals its maximum needs a fixed number of
+    # threads, so the run form does not offer the choice at all. The value is
+    # handed to the container as `apptainer exec --cpus`.
+    min_cpus: int = 1
+    max_cpus: int | None = None
+    default_cpus: int | None = None
 
 
 # Properties to receive on Tool creation
@@ -363,8 +372,9 @@ class ToolMinimalPublic(SQLModel):
     explanation_of_results_markdown: str | None = None
     # The run form needs the threads a tool allows, and it is opened from the
     # tool cards as well as the tool page.
-    max_cpus: int = 1
-    default_cpus: int = 1
+    min_cpus: int = 1
+    max_cpus: int | None = None
+    default_cpus: int | None = None
 
 
 class ToolsPublic(SQLModel):
@@ -434,6 +444,7 @@ class RunPublicMinimal(SQLModel):
     created_at: datetime
     started_at: datetime | None = None
     finished_at: datetime | None = None
+    owner_id: uuid.UUID  # Who owns the run, so the UI can tell their own
     owner_name: str | None = (
         None  # Full name of the run owner, only shown for shared runs
     )

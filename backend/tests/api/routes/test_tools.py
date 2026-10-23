@@ -57,7 +57,9 @@ def test_install_tool_sets_install_queued(monkeypatch, db: Session) -> None:
     "status",
     [ToolStatus.install_queued, ToolStatus.installing],
 )
-def test_install_tool_rejects_install_in_progress(status: ToolStatus, db: Session) -> None:
+def test_install_tool_rejects_install_in_progress(
+    status: ToolStatus, db: Session
+) -> None:
     tool = _create_tool(db=db, status=status)
 
     with pytest.raises(HTTPException) as exc_info:
@@ -80,12 +82,13 @@ def test_create_tool_keeps_the_threads_range(db: Session) -> None:
         tool_in=ToolCreate(
             name=f"tool-{random_lower_string()}",
             command="echo hello",
+            min_cpus=3,
             max_cpus=8,
-            default_cpus=2,
+            default_cpus=4,
         ),
     )
 
-    assert (tool.max_cpus, tool.default_cpus) == (8, 2)
+    assert (tool.min_cpus, tool.max_cpus, tool.default_cpus) == (3, 8, 4)
 
 
 def test_create_tool_rejects_an_unusable_threads_range(db: Session) -> None:
@@ -102,7 +105,25 @@ def test_create_tool_rejects_an_unusable_threads_range(db: Session) -> None:
         )
 
     assert exc_info.value.status_code == 422
-    assert "1 <= default_cpus <= max_cpus" in exc_info.value.detail
+    assert "Threads must satisfy default_cpus <= max_cpus" in exc_info.value.detail
+
+
+def test_create_tool_rejects_a_minimum_above_the_default(db: Session) -> None:
+    with pytest.raises(HTTPException) as exc_info:
+        tools_routes.create_tool(
+            session=db,
+            current_user=create_random_user(db),
+            tool_in=ToolCreate(
+                name=f"tool-{random_lower_string()}",
+                command="echo hello",
+                min_cpus=5,
+                max_cpus=8,
+                default_cpus=2,
+            ),
+        )
+
+    assert exc_info.value.status_code == 422
+    assert "Threads must satisfy min_cpus <= default_cpus" in exc_info.value.detail
 
 
 def test_update_tool_rejects_a_default_above_the_maximum(db: Session) -> None:
@@ -112,10 +133,11 @@ def test_update_tool_rejects_a_default_above_the_maximum(db: Session) -> None:
         tools_routes.update_tool(
             session=db,
             tool_id=tool.id,
-            tool_in=ToolUpdate(default_cpus=8),
+            tool_in=ToolUpdate(max_cpus=1, default_cpus=8),
         )
 
     assert exc_info.value.status_code == 422
+    assert "Threads must satisfy default_cpus <= max_cpus" in exc_info.value.detail
     # The rejected update leaves the tool untouched.
     db.refresh(tool)
-    assert (tool.max_cpus, tool.default_cpus) == (1, 1)
+    assert (tool.min_cpus, tool.max_cpus, tool.default_cpus) == (1, None, None)

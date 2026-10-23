@@ -1,29 +1,31 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Suspense, useState } from "react";
-import { ErrorBoundary } from "react-error-boundary";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { readRunOptions } from "../../../client/@tanstack/react-query.gen";
-import AISummaryButton from "../../../components/AI/AISummary";
-import ReactMarkdown from "../../../components/Common/Markdown";
-import DownloadAllFilesButton from "../../../components/Files/DownloadAllFilesButton";
-import FileRenderer from "../../../components/Render/FileRenderer";
-import CancelRunButton from "../../../components/Runs/CancelRunButton";
-import DeleteRunButton from "../../../components/Runs/DeleteRunButton";
-import EditRunName from "../../../components/Runs/EditableRunName";
-import OutputAccordion from "../../../components/Runs/OutputAccordion";
-import OutputFile from "../../../components/Runs/OutputFile";
-import RunMetadata from "../../../components/Runs/RunMetadata";
-import ShareRunButton from "../../../components/Runs/ShareRunButton";
+import { useSuspenseQuery } from "@tanstack/react-query"
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
+import { Suspense, useState } from "react"
+import { ErrorBoundary } from "react-error-boundary"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { readRunOptions } from "../../../client/@tanstack/react-query.gen"
+import AISummaryButton from "../../../components/AI/AISummary"
+import ReactMarkdown from "../../../components/Common/Markdown"
+import DownloadAllFilesButton from "../../../components/Files/DownloadAllFilesButton"
+import FileRenderer from "../../../components/Render/FileRenderer"
+import CancelRunButton from "../../../components/Runs/CancelRunButton"
+import DeleteRunButton from "../../../components/Runs/DeleteRunButton"
+import EditRunName from "../../../components/Runs/EditableRunName"
+import OutputAccordion from "../../../components/Runs/OutputAccordion"
+import OutputFile from "../../../components/Runs/OutputFile"
+import RunMetadata from "../../../components/Runs/RunMetadata"
+import ShareRunButton from "../../../components/Runs/ShareRunButton"
+import useAuth from "../../../hooks/useAuth"
 
 export const Route = createFileRoute("/_layout/runs/$runid")({
   component: Run,
-});
+})
 
 function RunDetail() {
-  const { runid } = Route.useParams();
-  const navigate = useNavigate({ from: Route.fullPath });
+  const { runid } = Route.useParams()
+  const navigate = useNavigate({ from: Route.fullPath })
+  const { user } = useAuth()
   const { data: run } = useSuspenseQuery({
     ...readRunOptions({ path: { id: runid } }),
     refetchInterval: (query) =>
@@ -31,16 +33,16 @@ function RunDetail() {
         ? 3000
         : false,
     refetchIntervalInBackground: true,
-  });
+  })
   const [llmSummary, setLlmSummary] = useState<string | null>(
     run.llm_summary || null,
-  );
+  )
+  // Sharing a run lets others read it, so ownership decides what is shown.
+  const isOwner = run.owner_id === user?.id
   const fileTabs =
-    run.files?.filter((file) => file.size && file.size < 500000) || [];
+    run.files?.filter((file) => file.size && file.size < 500000) || []
   const firstTab =
-    run.tool.llm_summary_enabled && llmSummary
-      ? "llm_summary"
-      : fileTabs[0]?.id;
+    run.tool.llm_summary_enabled && llmSummary ? "llm_summary" : fileTabs[0]?.id
 
   return (
     <div className="w-full max-w-5xl justify-self-center overflow-x-hidden px-2">
@@ -52,19 +54,20 @@ function RunDetail() {
           ← Back to My Runs
         </Link>
         <div className="flex items-center gap-2">
-          {!run.owner_name && <ShareRunButton run={run} />}
-          {["running", "pending"].includes(run.status) ? (
-            <CancelRunButton run_id={run.id} />
-          ) : (
-            <DeleteRunButton
-              run_id={run.id}
-              onDelete={() => navigate({ to: "/runs" })}
-            />
-          )}
+          {isOwner && <ShareRunButton run={run} />}
+          {isOwner &&
+            (["running", "pending"].includes(run.status) ? (
+              <CancelRunButton run_id={run.id} />
+            ) : (
+              <DeleteRunButton
+                run_id={run.id}
+                onDelete={() => navigate({ to: "/runs" })}
+              />
+            ))}
         </div>
       </div>
       <div className="mt-1 mb-2 flex items-start border-b">
-        <EditRunName run={run} editable={!run.owner_name} />
+        <EditRunName run={run} editable={isOwner} />
       </div>
       <div className="my-4">
         <RunMetadata run={run} />
@@ -81,7 +84,7 @@ function RunDetail() {
           <div className="mb-4 flex flex-nowrap overflow-x-auto">
             {run.files.map((file) => (
               <div key={file.id} className="mr-2 mb-2">
-                <OutputFile file={file} copyFile={!!run.owner_name} />
+                <OutputFile file={file} copyFile={!isOwner} />
               </div>
             ))}
           </div>
@@ -89,14 +92,9 @@ function RunDetail() {
             <>
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-lg font-semibold">Results</h2>
-                {run.tool.llm_summary_enabled &&
-                  !llmSummary &&
-                  !run.owner_name && (
-                    <AISummaryButton
-                      runId={run.id}
-                      onGenerated={setLlmSummary}
-                    />
-                  )}
+                {run.tool.llm_summary_enabled && !llmSummary && isOwner && (
+                  <AISummaryButton runId={run.id} onGenerated={setLlmSummary} />
+                )}
               </div>
               <Tabs defaultValue={firstTab} className="overflow-y-auto">
                 <TabsList className="h-auto w-full justify-start rounded-none border-b bg-transparent p-0">
@@ -134,7 +132,7 @@ function RunDetail() {
       )}
       <OutputAccordion run={run} />
     </div>
-  );
+  )
 }
 
 function Run() {
@@ -152,7 +150,7 @@ function Run() {
         </ErrorBoundary>
       </Suspense>
     </div>
-  );
+  )
 }
 
-export default Run;
+export default Run

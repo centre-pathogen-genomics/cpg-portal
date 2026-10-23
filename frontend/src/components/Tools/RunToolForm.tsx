@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query"
 import { ChevronDown, HelpCircle, LoaderCircle } from "lucide-react"
 import { useMemo, useState } from "react"
 import { type SubmitHandler, useForm } from "react-hook-form"
@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
+  type FilePublic,
   FilesService,
   type FileTypeEnum,
   type Param,
@@ -40,6 +41,8 @@ import EmailOnFinished from "./EmailOnFinished"
 
 interface FileParamProps {
   param: Param
+  data: FilePublic[]
+  isLoading: boolean
   values: string[]
   updateValues: (update: (values: string[]) => string[]) => void
   setIsLoading: (loading: boolean) => void
@@ -48,23 +51,17 @@ interface FileParamProps {
 
 const FileParam = ({
   param,
+  data,
+  isLoading,
   values,
   updateValues,
   setIsLoading,
   disabled,
 }: FileParamProps) => {
-  const types = param.allowed_file_types?.map((type) => type as FileTypeEnum)
-  const { data = [], isLoading } = useQuery({
-    enabled: !disabled,
-    queryKey: ["files", param.name],
-    queryFn: () =>
-      FilesService.readFiles({ query: { types } }).then(
-        ({ data }) => data?.data || [],
-      ),
-  })
-
-  const fileLabel = (file: (typeof data)[number]) =>
-    `${file.name} (${file.file_type}${file.is_group ? ", group" : ""})`
+  const fileLabel = (file: FilePublic) =>
+    `${file.name} (${file.file_type}${
+      file.is_group ? `, group of size ${file.children?.length ?? 0}` : ""
+    })`
 
   return (
     <div className="flex flex-col gap-2">
@@ -74,6 +71,8 @@ const FileParam = ({
           options={data.map((file) => ({
             label: fileLabel(file),
             value: file.id,
+            // A group stands for the files it holds, a pair for one unit.
+            unitCount: file.is_group ? (file.children?.length ?? 1) : 1,
           }))}
           value={values}
           onValueChange={(nextValues) => updateValues(() => nextValues)}
@@ -124,8 +123,9 @@ interface RunToolFormProps {
   params: Param[]
   onSuccess?: (run: RunPublic) => void
   isDisabled?: boolean
-  maxCpus?: number
-  defaultCpus?: number
+  minCpus?: number | null
+  maxCpus?: number | null
+  defaultCpus?: number | null
 }
 
 function isEmptyValue(value: unknown) {
@@ -294,11 +294,15 @@ const THREADS_STORAGE_PREFIX = "CPG_PORTAL_RUN_THREADS_"
 
 // The threads picked for a tool are remembered per browser, clamped to what is
 // allowed right now (the limits may have changed since).
-function readStoredThreads(key: string, max: number): number | null {
+function readStoredThreads(
+  key: string,
+  min: number,
+  max: number,
+): number | null {
   try {
     const stored = Number(window.localStorage.getItem(key))
     if (!Number.isInteger(stored) || stored < 1) return null
-    return Math.min(stored, max)
+    return Math.min(Math.max(stored, min), max)
   } catch {
     return null
   }
@@ -317,6 +321,7 @@ const RunToolForm = ({
   params,
   onSuccess,
   isDisabled = false,
+  minCpus,
   maxCpus,
   defaultCpus,
 }: RunToolFormProps) => {
@@ -329,24 +334,31 @@ const RunToolForm = ({
   const [emailOnFinished, setEmailOnFinished] = useState(false)
   const [runName, setRunName] = useState<string | null>(null)
 
-  // Administrators get the tool's whole range, everyone else is capped by their
-  // own max_cpus.
+  // A tool that needs a fixed number of threads does not offer the choice at
+  // all. A tool without a maximum leaves the user's own limit as the maximum,
+  // and a tool without a default starts at its minimum.
+  const minThreads = Math.max(1, minCpus ?? 1)
+  const toolMax = maxCpus ?? user?.max_cpus ?? 1
+  const fixedThreads = maxCpus != null && minThreads === maxCpus
   const effectiveMax = user?.is_superuser
-    ? Math.max(1, maxCpus ?? 1)
-    : Math.max(1, Math.min(maxCpus ?? 1, user?.max_cpus ?? maxCpus ?? 1))
-  const defaultThreads = Math.min(defaultCpus ?? 1, effectiveMax)
+    ? Math.max(minThreads, toolMax)
+    : Math.max(minThreads, Math.min(toolMax, user?.max_cpus ?? toolMax))
   // Whether the user's own limit is what caps the tool's range.
   const cappedByUser =
-    !user?.is_superuser && (user?.max_cpus ?? maxCpus ?? 1) < (maxCpus ?? 1)
+    !user?.is_superuser && (user?.max_cpus ?? toolMax) < toolMax
   const threadOptions = useMemo(
-    () => Array.from({ length: effectiveMax }, (_, index) => index + 1),
-    [effectiveMax],
+    () =>
+      Array.from(
+        { length: effectiveMax - minThreads + 1 },
+        (_, index) => minThreads + index,
+      ),
+    [effectiveMax, minThreads],
   )
 
   const threadsKey = `${THREADS_STORAGE_PREFIX}${toolId}`
-  const [threads, setThreads] = useState<number | null>(() =>
-    readStoredThreads(threadsKey, effectiveMax),
-  )
+  // Only a pick made on this page counts as an override; a remembered one is
+  // just the starting point, and the files decide when they have a say.
+  const [threads, setThreads] = useState<number | null>(null)
   const chooseThreads = (value: number) => {
     setThreads(value)
     storeThreads(threadsKey, value)
@@ -373,6 +385,62 @@ const RunToolForm = ({
     criteriaMode: "all",
     defaultValues: defaults,
   })
+
+  // The file pickers and the threads default both need the files a tool's file
+  // parameters may choose from, so they are loaded here.
+  const fileParams = params.filter((param) => param.param_type === "file")
+  const fileQueries = useQueries({
+    queries: fileParams.map((param) => ({
+      enabled: !isDisabled,
+      queryKey: ["files", param.name],
+      queryFn: () =>
+        FilesService.readFiles({
+          query: {
+            types: param.allowed_file_types?.map(
+              (type) => type as FileTypeEnum,
+            ),
+          },
+        }).then(({ data }) => data?.data || []),
+    })),
+  })
+  const fileQueriesByParam = new Map(
+    fileParams.map((param, index) => [param.name, fileQueries[index]]),
+  )
+
+  // Tools that take a batch of input files usually want a thread per file, or
+  // the CPUs the tool asked for per file, so that is the default when the tool
+  // has not named one. A parameter with zero CPUs per file does not scale at
+  // all, for tools where only some file parameters should, a group of files
+  // counts as the files it holds, and a pair stays one unit of work.
+  const chosenFileCount = params.reduce((count, param) => {
+    if (!param.multiple || param.param_type !== "file") return count
+    const configured = param.cpus_per_file ?? 1
+    if (configured <= 0) return count
+    const files = fileQueriesByParam.get(param.name)?.data ?? []
+    const byId = new Map(files.map((file) => [file.id, file]))
+    const chosen = (getValues(param.name) as string[] | undefined) ?? []
+    const units = chosen.reduce((total, id) => {
+      const file = byId.get(id)
+      return total + (file?.is_group ? (file.children?.length ?? 1) : 1)
+    }, 0)
+    return count + units * configured
+  }, 0)
+  const defaultThreads = Math.max(
+    minThreads,
+    Math.min(defaultCpus ?? (chosenFileCount || minThreads), effectiveMax),
+  )
+  const storedThreads = useMemo(
+    () => readStoredThreads(threadsKey, minThreads, effectiveMax),
+    [threadsKey, minThreads, effectiveMax],
+  )
+  // A pick made here wins, then the default the chosen files imply, then the
+  // threads this browser used for the tool last time.
+  const threadsToUse = fixedThreads
+    ? minThreads
+    : (threads ??
+      (chosenFileCount > 0
+        ? defaultThreads
+        : (storedThreads ?? defaultThreads)))
 
   const formValues = watch()
   const visibleParams = useMemo(
@@ -417,7 +485,7 @@ const RunToolForm = ({
         tool_id: toolId,
         email_on_completion: emailOnFinished,
         name: runName ?? undefined,
-        cpus: threads ?? undefined,
+        cpus: threadsToUse,
       },
     })
   }
@@ -507,6 +575,10 @@ const RunToolForm = ({
                 param={param}
                 disabled={isDisabled}
                 setIsLoading={setIsLoading}
+                data={fileQueriesByParam.get(param.name)?.data ?? []}
+                isLoading={
+                  fileQueriesByParam.get(param.name)?.isLoading ?? false
+                }
                 values={(watch(param.name) as string[] | undefined) || []}
                 updateValues={(update) => {
                   clearErrors(param.name)
@@ -563,67 +635,75 @@ const RunToolForm = ({
       </h2>
       {settingsOpen && (
         <div id="CPG_PORTAL_RUN_SETTINGS" className="flex flex-col gap-4">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-1">
-                <Label htmlFor="CPG_PORTAL_RUN_THREADS">CPU threads</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      className="text-muted-foreground size-5"
-                      aria-label="What are threads?"
-                    >
-                      <HelpCircle className="size-4" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80">
-                    <PopoverHeader>
-                      <PopoverTitle>CPU threads</PopoverTitle>
-                      <PopoverDescription>
-                        The CPUs reserved for this run.
-                      </PopoverDescription>
-                    </PopoverHeader>
-                    <ul className="text-muted-foreground mt-2 list-disc space-y-1 pl-4 text-sm">
-                      <li>{`This tool allows 1–${maxCpus ?? 1} threads.`}</li>
-                      {cappedByUser && (
-                        <li>{`Your own limit is ${user?.max_cpus} threads per run.`}</li>
-                      )}
-                      <li>
-                        A run starts as soon as that many CPUs are free, and
-                        waits in the queue until then.
-                      </li>
-                      <li>
-                        More threads usually finish sooner, but may wait longer
-                        to start.
-                      </li>
-                    </ul>
-                  </PopoverContent>
-                </Popover>
+          {!fixedThreads && (
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-1">
+                  <Label htmlFor="CPG_PORTAL_RUN_THREADS">CPU threads</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        className="text-muted-foreground size-5"
+                        aria-label="What are threads?"
+                      >
+                        <HelpCircle className="size-4" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80">
+                      <PopoverHeader>
+                        <PopoverTitle>CPU threads</PopoverTitle>
+                        <PopoverDescription>
+                          The CPUs reserved for this run.
+                        </PopoverDescription>
+                      </PopoverHeader>
+                      <ul className="text-muted-foreground mt-2 list-disc space-y-1 pl-4 text-sm">
+                        <li>
+                          {maxCpus == null
+                            ? `This tool needs at least ${minThreads} threads.`
+                            : `This tool allows ${minThreads}–${maxCpus} threads.`}
+                        </li>
+                        {cappedByUser && (
+                          <li>{`Your own limit is ${user?.max_cpus} threads per run.`}</li>
+                        )}
+                        <li>
+                          A run starts as soon as that many CPUs are free, and
+                          waits in the queue until then.
+                        </li>
+                        <li>
+                          More threads usually finish sooner, but may wait
+                          longer to start.
+                        </li>
+                      </ul>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <p className="text-sm text-gray-500">
+                  {minThreads === effectiveMax
+                    ? `${minThreads} available`
+                    : `${minThreads}–${effectiveMax} available`}
+                </p>
               </div>
-              <p className="text-sm text-gray-500">
-                {`1–${effectiveMax} available`}
-              </p>
+              <Select
+                value={String(threadsToUse)}
+                onValueChange={(value) => chooseThreads(Number(value))}
+                disabled={isDisabled}
+              >
+                <SelectTrigger id="CPG_PORTAL_RUN_THREADS" className="w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {threadOptions.map((value) => (
+                    <SelectItem key={value} value={String(value)}>
+                      {value}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <Select
-              value={String(threads ?? defaultThreads)}
-              onValueChange={(value) => chooseThreads(Number(value))}
-              disabled={isDisabled}
-            >
-              <SelectTrigger id="CPG_PORTAL_RUN_THREADS" className="w-24">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {threadOptions.map((value) => (
-                  <SelectItem key={value} value={String(value)}>
-                    {value}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          )}
           <div>
             <Label htmlFor="CPG_PORTAL_RUN_NAME">Run name</Label>
             <p className="mb-2 text-sm text-gray-500">

@@ -503,7 +503,7 @@ function QueueControls() {
           {data?.queue_paused ? (
             <Button
               type="button"
-              onClick={() => resumeMutation.mutate(undefined)}
+              onClick={() => resumeMutation.mutate({})}
               disabled={isBusy}
             >
               {resumeMutation.isPending ? (

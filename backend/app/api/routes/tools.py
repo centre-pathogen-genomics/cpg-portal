@@ -238,12 +238,30 @@ def unfavourite_tool(
     return Message(message="Tool removed from favourites successfully")
 
 
-def _validate_cpus(max_cpus: int, default_cpus: int) -> None:
-    """Runs pick 1..max_cpus threads, so the default has to fit in there."""
-    if max_cpus < 1 or not 1 <= default_cpus <= max_cpus:
+def _validate_cpus(
+    min_cpus: int, max_cpus: int | None, default_cpus: int | None
+) -> None:
+    """Runs pick min_cpus..max_cpus threads: a missing maximum means the user's
+    own limit, a missing default means the tool's minimum."""
+    if min_cpus < 1:
         raise HTTPException(
             status_code=422,
-            detail="Threads must satisfy 1 <= default_cpus <= max_cpus",
+            detail="Threads must satisfy 1 <= min_cpus",
+        )
+    if max_cpus is not None and max_cpus < min_cpus:
+        raise HTTPException(
+            status_code=422,
+            detail="Threads must satisfy min_cpus <= max_cpus",
+        )
+    if default_cpus is not None and default_cpus < min_cpus:
+        raise HTTPException(
+            status_code=422,
+            detail="Threads must satisfy min_cpus <= default_cpus",
+        )
+    if max_cpus is not None and default_cpus is not None and default_cpus > max_cpus:
+        raise HTTPException(
+            status_code=422,
+            detail="Threads must satisfy default_cpus <= max_cpus",
         )
 
 
@@ -257,7 +275,7 @@ def create_tool(
     """
     Create new tool along with its params.
     """
-    _validate_cpus(tool_in.max_cpus, tool_in.default_cpus)
+    _validate_cpus(tool_in.min_cpus, tool_in.max_cpus, tool_in.default_cpus)
     tool = Tool(**tool_in.dict())
     session.add(tool)
     session.commit()
@@ -428,6 +446,7 @@ def update_tool(
         raise HTTPException(status_code=404, detail="Tool not found")
     tool_data = tool_in.dict(exclude_unset=True)
     _validate_cpus(
+        tool_data.get("min_cpus", tool.min_cpus),
         tool_data.get("max_cpus", tool.max_cpus),
         tool_data.get("default_cpus", tool.default_cpus),
     )

@@ -15,6 +15,7 @@ from app.models import (
     File,
     Message,
     Param,
+    ParamType,
     ParamVisibilityOperator,
     Run,
     RunPublic,
@@ -278,6 +279,18 @@ def read_run_tool_names(session: SessionDep, current_user: CurrentUser) -> Any:
     return session.exec(statement).all()
 
 
+def _scaled_file_count(session: Session, file_id: uuid.UUID) -> int:
+    """How many files one chosen file stands for.
+
+    A group is worth its children, but a pair is a single unit of work even
+    though it carries two files, so only groups multiply.
+    """
+    file = session.get(File, file_id)
+    if not file or not file.is_group:
+        return 1
+    return sum(_scaled_file_count(session, child.id) for child in file.children)
+
+
 def default_run_name(session: Session, tool: Tool) -> str:
     """Name for a run that was left unnamed, e.g. ``Sleep-20261023-001``."""
     now = datetime.now(UTC)
@@ -317,18 +330,64 @@ async def create_run(
     if not current_user.is_superuser and not tool.enabled:
         raise HTTPException(status_code=403, detail="Tool is disabled")
 
-    # Threads: at least one, up to the tool's max_cpus, capped by the user's own
-    # max_cpus (administrators are not capped), defaulting to what the tool asks
-    # for.
+    # Threads: between the tool's minimum and maximum, where a missing maximum
+    # means the user's own limit is the maximum, and everyone but
+    # administrators is capped by their own max_cpus. A missing default means
+    # the tool's minimum.
+    min_cpus = tool.min_cpus
     max_cpus = tool.max_cpus
-    if not current_user.is_superuser:
+    if max_cpus is None:
+        max_cpus = current_user.max_cpus
+    elif not current_user.is_superuser:
         max_cpus = min(tool.max_cpus, current_user.max_cpus)
-    if cpus is None:
-        cpus = min(tool.default_cpus, max_cpus)
-    if not 1 <= cpus <= max_cpus:
+    if max_cpus < min_cpus:
         raise HTTPException(
             status_code=400,
-            detail=f"Threads must be between 1 and {max_cpus} for this tool",
+            detail=(
+                f"This tool needs at least {min_cpus} threads and your limit is "
+                f"{max_cpus}"
+            ),
+        )
+    if cpus is None:
+        default_cpus = tool.default_cpus
+        if default_cpus is None:
+            # Tools that take a batch of input files usually want a thread per
+            # file, or the CPUs the tool asked for per file, so that is the
+            # default when the tool has not named one. A parameter with
+            # cpus_per_file zero does not scale at all, for tools where only
+            # some file parameters should, and a group of files counts as the
+            # files it holds.
+            file_count = 0
+            for param in tool.params or []:
+                if (
+                    not param.get("multiple")
+                    or param.get("param_type") != ParamType.file
+                ):
+                    continue
+                chosen = params.get(param.get("name"))
+                if not isinstance(chosen, list):
+                    continue
+                configured = param.get("cpus_per_file")
+                cpus_per_file = 1 if configured is None else configured
+                if cpus_per_file <= 0:
+                    continue
+                files_in_param = 0
+                for file_id in chosen:
+                    try:
+                        chosen_id = uuid.UUID(str(file_id))
+                    except ValueError:
+                        # The parameter validation below reports this properly.
+                        continue
+                    files_in_param += _scaled_file_count(session, chosen_id)
+                file_count += files_in_param * cpus_per_file
+            default_cpus = file_count or min_cpus
+        cpus = min(max(default_cpus, min_cpus), max_cpus)
+    if not min_cpus <= cpus <= max_cpus:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Threads must be between {min_cpus} and {max_cpus} for this tool"
+            ),
         )
 
     # check the user que limit

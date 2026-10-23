@@ -14,12 +14,15 @@ class QueuePublicStatus(SQLModel):
 
 
 @router.get("/queue", response_model=QueuePublicStatus)
-def read_queue_status(
+def read_queue_drain_status(
     session: SessionDep,
     _current_user: CurrentUser,
 ) -> QueuePublicStatus:
     """
     Retrieve user-visible queue drain status.
+
+    Named apart from the admin queue status so the generated clients get one
+    set of helpers per endpoint.
     """
     app_settings = get_or_create_app_settings(session)
     return QueuePublicStatus(

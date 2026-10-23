@@ -303,7 +303,7 @@ function RunsTable({
               <TableHead>{renderSortableHeading("created_at")}</TableHead>
               <TableHead>{renderSortableHeading("runtime")}</TableHead>
               <TableHead>Threads</TableHead>
-              <TableHead></TableHead>
+              <TableHead />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -368,9 +368,7 @@ function RunsTable({
                       </Badge>
                     ))}
                   </TableCell>
-                  <TableCell>
-                    {humanReadableDate(run.created_at)}
-                  </TableCell>
+                  <TableCell>{humanReadableDate(run.created_at)}</TableCell>
                   <TableCell>
                     <RunRuntime
                       started_at={run.started_at ?? null}
@@ -419,10 +417,7 @@ interface RunsActionsMenuProps {
   visibleRunIds: string[]
 }
 
-function RunsActionsMenu({
-  allCount,
-  visibleRunIds,
-}: RunsActionsMenuProps) {
+function RunsActionsMenu({ allCount, visibleRunIds }: RunsActionsMenuProps) {
   const [deleteMode, setDeleteMode] = useState<BulkDeleteMode | null>(null)
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
@@ -455,9 +450,7 @@ function RunsActionsMenu({
   return (
     <BulkDeleteMenu
       allCount={allCount}
-      confirmLabel={
-        deleteMode === "current" ? "Delete Visible" : "Delete All"
-      }
+      confirmLabel={deleteMode === "current" ? "Delete Visible" : "Delete All"}
       currentCount={visibleRunIds.length}
       descriptionNoun="inactive run"
       descriptionSuffix=" and associated unsaved files"
@@ -493,7 +486,7 @@ function Runs() {
   })
   const { data: queueStatus } = useQuery({
     queryKey: ["settings", "queue"],
-    queryFn: async () => (await SettingsService.readQueueStatus()).data,
+    queryFn: async () => (await SettingsService.readQueueDrainStatus()).data,
     refetchInterval: 15_000,
   })
 
