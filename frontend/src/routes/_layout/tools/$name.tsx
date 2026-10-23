@@ -29,6 +29,7 @@ import {
   readToolByNameQueryKey,
   readUserMeQueryKey,
   uninstallToolMutation,
+  updateToolPostInstallMutation,
 } from "../../../client/@tanstack/react-query.gen"
 import CodeBlock from "../../../components/Common/CodeBlock"
 import Badge from "../../../components/Tools/badges/Badge"
@@ -118,7 +119,10 @@ function InstallToolButton({ tool }: { tool: ToolPublic }) {
   const installInProgress =
     tool.status === "install_queued" || tool.status === "installing"
   const uninstallInProgress = tool.status === "uninstalling"
-  const statusInProgress = installInProgress || uninstallInProgress
+  const updateInProgress =
+    tool.status === "updating" || tool.status === "update_queued"
+  const statusInProgress =
+    installInProgress || uninstallInProgress || updateInProgress
   const isInstalled = tool.status === "installed"
   const isUninstallAction =
     isInstalled || uninstallInProgress || awaitingUninstallConfirmation
@@ -209,9 +213,57 @@ function InstallToolButton({ tool }: { tool: ToolPublic }) {
         ? "Uninstalling..."
         : installInProgress || installMutation.isPending
           ? "Installing..."
-          : isUninstallAction
-            ? "Uninstall"
-            : "Install"}
+          : updateInProgress
+            ? "Updating..."
+            : isUninstallAction
+              ? "Uninstall"
+              : "Install"}
+    </Button>
+  )
+}
+
+function UpdateToolButton({ tool }: { tool: ToolPublic }) {
+  const queryClient = useQueryClient()
+  const showToast = useCustomToast()
+  const updateInProgress =
+    tool.status === "updating" || tool.status === "update_queued"
+  const busy =
+    updateInProgress ||
+    tool.status === "installing" ||
+    tool.status === "install_queued" ||
+    tool.status === "uninstalling"
+
+  const updateMutation = useMutation({
+    ...updateToolPostInstallMutation(),
+    onError: ({ message }) =>
+      showToast("Error", message || "Could not update tool", "error"),
+    onSuccess: ({ message }) => {
+      showToast("Success", message || "Update started", "success")
+      return queryClient.invalidateQueries({
+        queryKey: readToolByNameQueryKey({ path: { tool_name: tool.name } }),
+      })
+    },
+  })
+
+  // Updating re-runs the post-install command, so it only means something for
+  // a tool that has one and an environment to run it in.
+  if (
+    !updateInProgress &&
+    (tool.status !== "installed" || !tool.post_install)
+  ) {
+    return null
+  }
+
+  return (
+    <Button
+      variant="outline"
+      disabled={busy || updateMutation.isPending}
+      onClick={() => updateMutation.mutate({ path: { tool_id: tool.id } })}
+    >
+      {(updateInProgress || updateMutation.isPending) && (
+        <LoaderCircle className="animate-spin" />
+      )}
+      {updateInProgress || updateMutation.isPending ? "Updating..." : "Update"}
     </Button>
   )
 }
@@ -461,6 +513,19 @@ function Tool() {
             to run this tool
           </p>
         )}
+        {!anonymous &&
+          (tool.status === "installing" ||
+            tool.status === "install_queued" ||
+            tool.status === "updating" ||
+            tool.status === "update_queued") && (
+            <p className="mb-4 text-sm text-muted-foreground">
+              {`This tool is being ${
+                tool.status === "updating" || tool.status === "update_queued"
+                  ? "updated"
+                  : "installed"
+              }. Runs you start now wait in the queue until it is ready.`}
+            </p>
+          )}
         <RunToolForm
           toolId={tool.id}
           params={tool.params || []}
@@ -482,7 +547,10 @@ function Tool() {
               <AccordionTrigger>Admin</AccordionTrigger>
               <AccordionContent>
                 <div className="mb-4 flex items-center justify-between">
-                  <InstallToolButton tool={tool} />
+                  <div className="flex items-center gap-2">
+                    <InstallToolButton tool={tool} />
+                    <UpdateToolButton tool={tool} />
+                  </div>
                   <div className="flex gap-4">
                     <ToolToggle tool={tool} kind="summary" />
                     <ToolToggle tool={tool} kind="tool" />

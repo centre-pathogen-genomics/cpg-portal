@@ -556,6 +556,11 @@ async def create_run(
         except Exception:
             raise HTTPException(status_code=400, detail=f"Invalid parameter value: {v}")
 
+    # The run's CPUs are in the template context as `cpus`, so a tool can ask
+    # for the threads it reserved with `--threads {{ cpus }}`. It wins over a
+    # parameter of the same name.
+    escaped_params["cpus"] = cpus
+
     # create command
     env = JinjaEnvironment()
     # add custom filters

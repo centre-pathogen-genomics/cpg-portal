@@ -179,3 +179,31 @@ def test_dispatched_runs_hold_their_cpus(db: Session, monkeypatch) -> None:
 
     assert reserved_cpus(db) == 4
     assert asyncio.run(dispatch_pending_runs(db)) == []
+
+
+def test_dispatch_holds_runs_until_the_tool_is_installed(
+    db: Session, fake_kiq: list[uuid.UUID], monkeypatch
+) -> None:
+    monkeypatch.setattr(settings, "TOTAL_CPUS", 4)
+    owner = create_random_user(db)
+    tool = _create_tool(db)
+    tool.status = ToolStatus.updating
+    db.add(tool)
+    db.commit()
+    run = _create_pending_run(db, owner, tool, cpus=1)
+
+    # The tool is being updated, so the run waits in the queue without holding
+    # on to any CPUs.
+    assert asyncio.run(dispatch_pending_runs(db)) == []
+    db.refresh(run)
+    assert run.taskiq_id is None
+    assert reserved_cpus(db) == 0
+
+    # Once the tool is ready the run goes to a worker.
+    tool.status = ToolStatus.installed
+    db.add(tool)
+    db.commit()
+    assert [dispatched.id for dispatched in asyncio.run(dispatch_pending_runs(db))] == [
+        run.id
+    ]
+    assert fake_kiq == [run.id]

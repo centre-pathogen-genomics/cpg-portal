@@ -25,8 +25,21 @@ from app.models import (
 )
 from app.tasks import install_tool as install_tool_task
 from app.tasks import uninstall_tool as uninstall_tool_task
+from app.tasks import update_tool as update_tool_task
 
 router = APIRouter()
+
+# Enabled tools stay visible while their environment is being installed or
+# updated: runs for them queue up and start once the tool is ready.
+VISIBLE_TOOL_STATUSES = (
+    ToolStatus.installed,
+    ToolStatus.install_queued,
+    ToolStatus.installing,
+    ToolStatus.update_queued,
+    ToolStatus.updating,
+    ToolStatus.uninstalled,
+    ToolStatus.failed,
+)
 
 
 class ToolsOrderBy(StrEnum):
@@ -54,7 +67,7 @@ def read_tools(
             .order_by(getattr(Tool, order_by).desc())
             .offset(skip)
             .limit(limit)
-            .where((Tool.enabled) & (Tool.status == "installed"))
+            .where(Tool.enabled, Tool.status.in_(VISIBLE_TOOL_STATUSES))
         )
         result = session.exec(query).all()
         count_query = select(func.count()).select_from(Tool)
@@ -76,7 +89,7 @@ def read_tools(
 
     # Apply enabled filter for non-superusers
     if not current_user.is_superuser:
-        query = query.where((Tool.enabled) & (Tool.status == "installed"))
+        query = query.where(Tool.enabled, Tool.status.in_(VISIBLE_TOOL_STATUSES))
 
     if show_favourites:
         query = query.where(UserFavouriteToolsLink.user_id == current_user.id)
@@ -125,7 +138,7 @@ def read_tool_with_favourite(
         raise ValueError("Either tool_id or name must be provided")
     if current_user is None:
         # If the user is anonymous, we don't need to join with UserFavouriteToolsLink
-        query = select(Tool).where((Tool.enabled) & (Tool.status == "installed"))
+        query = select(Tool).where(Tool.enabled, Tool.status.in_(VISIBLE_TOOL_STATUSES))
         if tool_id:
             query = query.where(Tool.id == tool_id)
         elif name:
@@ -146,13 +159,13 @@ def read_tool_with_favourite(
 
     # Apply enabled filter for non-superusers
     if not current_user.is_superuser:
-        query = query.where((Tool.enabled) & (Tool.status == "installed"))
+        query = query.where(Tool.enabled, Tool.status.in_(VISIBLE_TOOL_STATUSES))
     result = session.exec(query).first()
     if not result:
         raise HTTPException(status_code=404, detail="Tool not found")
     tool, favourited_tool_id = result
     if not current_user.is_superuser and (
-        not tool.enabled or tool.status != "installed"
+        not tool.enabled or tool.status not in VISIBLE_TOOL_STATUSES
     ):
         raise HTTPException(status_code=403, detail="Tool is disabled")
     tool_public = ToolPublic.from_orm(tool)
@@ -364,6 +377,49 @@ def disable_llm_summary(
     session.add(tool)
     session.commit()
     return Message(message="LLM summary disabled successfully")
+
+
+@router.post("/{tool_id}/update", response_model=Message)
+async def update_tool_post_install(
+    *,
+    session: SessionDep,
+    tool_id: uuid.UUID,
+    current_user: SuperUser,  # noqa: ARG001
+) -> Any:
+    """
+    Update a tool by ID: its post-install command runs again against the
+    environment it already has, which is how a tool refresh the data it
+    downloaded without a reinstall.
+    """
+    tool = session.get(Tool, tool_id)
+    if not tool:
+        raise HTTPException(status_code=404, detail="Tool not found")
+    if tool.status in {
+        ToolStatus.install_queued,
+        ToolStatus.installing,
+        ToolStatus.update_queued,
+        ToolStatus.updating,
+    }:
+        raise HTTPException(
+            status_code=400, detail="Tool is already being installed or updated"
+        )
+    if tool.status != ToolStatus.installed:
+        raise HTTPException(
+            status_code=400, detail="Install the tool before updating it"
+        )
+    if not tool.post_install:
+        raise HTTPException(
+            status_code=400, detail="Tool has no post-install command to run"
+        )
+
+    tool.status = ToolStatus.update_queued
+    tool.installation_log = "Update queued."
+    session.add(tool)
+    session.commit()
+
+    taskiq_task = await update_tool_task.kiq(tool_id=tool.id)
+
+    return Message(message=f"Tool update task {taskiq_task.task_id} started")
 
 
 @router.post("/{tool_id}/install", response_model=Message)

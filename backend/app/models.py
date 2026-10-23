@@ -242,6 +242,10 @@ class ToolStatus(StrEnum):
     installed = "installed"
     install_queued = "install_queued"
     installing = "installing"
+    # Re-running the post-install command against an environment that stays in
+    # place, e.g. to refresh a database it downloaded.
+    update_queued = "update_queued"
+    updating = "updating"
     failed = "failed"
 
 

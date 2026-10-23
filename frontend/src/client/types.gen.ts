@@ -1158,7 +1158,7 @@ export type ToolStats = {
 /**
  * ToolStatus
  */
-export type ToolStatus = 'uninstalled' | 'uninstalling' | 'installed' | 'install_queued' | 'installing' | 'failed';
+export type ToolStatus = 'uninstalled' | 'uninstalling' | 'installed' | 'install_queued' | 'installing' | 'update_queued' | 'updating' | 'failed';
 
 /**
  * ToolUpdate
@@ -2413,6 +2413,36 @@ export type ToolsDisableLlmSummaryResponses = {
 };
 
 export type ToolsDisableLlmSummaryResponse = ToolsDisableLlmSummaryResponses[keyof ToolsDisableLlmSummaryResponses];
+
+export type ToolsUpdateToolPostInstallData = {
+    body?: never;
+    path: {
+        /**
+         * Tool Id
+         */
+        tool_id: string;
+    };
+    query?: never;
+    url: '/api/v1/tools/{tool_id}/update';
+};
+
+export type ToolsUpdateToolPostInstallErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ToolsUpdateToolPostInstallError = ToolsUpdateToolPostInstallErrors[keyof ToolsUpdateToolPostInstallErrors];
+
+export type ToolsUpdateToolPostInstallResponses = {
+    /**
+     * Successful Response
+     */
+    200: Message;
+};
+
+export type ToolsUpdateToolPostInstallResponse = ToolsUpdateToolPostInstallResponses[keyof ToolsUpdateToolPostInstallResponses];
 
 export type ToolsInstallToolData = {
     body?: never;

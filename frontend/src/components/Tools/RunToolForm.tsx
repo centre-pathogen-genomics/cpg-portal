@@ -292,6 +292,27 @@ function buildVisibilityMap(params: Param[], values: Record<string, unknown>) {
 
 const THREADS_STORAGE_PREFIX = "CPG_PORTAL_RUN_THREADS_"
 
+// One key for every tool: the run settings section is either shown everywhere
+// or hidden everywhere, which is what a user expects from a shared panel.
+const RUN_SETTINGS_OPEN_KEY = "CPG_PORTAL_RUN_SETTINGS_OPEN"
+
+function readStoredSettingsOpen(): boolean | null {
+  try {
+    const stored = window.localStorage.getItem(RUN_SETTINGS_OPEN_KEY)
+    return stored === null ? null : stored === "true"
+  } catch {
+    return null
+  }
+}
+
+function storeSettingsOpen(open: boolean): void {
+  try {
+    window.localStorage.setItem(RUN_SETTINGS_OPEN_KEY, String(open))
+  } catch {
+    // Storage may be unavailable (private browsing); remembering is a nicety.
+  }
+}
+
 // The threads picked for a tool are remembered per browser, clamped to what is
 // allowed right now (the limits may have changed since).
 function readStoredThreads(
@@ -329,7 +350,15 @@ const RunToolForm = ({
   const showToast = useCustomToast()
   const { user } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
-  const [settingsOpen, setSettingsOpen] = useState(true)
+  const [settingsOpen, setSettingsOpen] = useState<boolean>(
+    () => readStoredSettingsOpen() ?? true,
+  )
+  const toggleSettings = () => {
+    setSettingsOpen((open) => {
+      storeSettingsOpen(!open)
+      return !open
+    })
+  }
   const [tags, setTags] = useState<string[]>([])
   const [emailOnFinished, setEmailOnFinished] = useState(false)
   const [runName, setRunName] = useState<string | null>(null)
@@ -620,7 +649,7 @@ const RunToolForm = ({
         <button
           type="button"
           className="flex w-full items-center justify-between gap-4 border-b pb-1"
-          onClick={() => setSettingsOpen((open) => !open)}
+          onClick={toggleSettings}
           aria-expanded={settingsOpen}
           aria-controls="CPG_PORTAL_RUN_SETTINGS"
         >

@@ -530,6 +530,51 @@ async def install_tool(
 
 
 @broker.task
+async def update_tool(
+    tool_id: uuid.UUID,
+    session: Session = TaskiqDepends(get_db),
+) -> bool:
+    """Re-run a tool's post-install command, keeping its environment."""
+    tool = session.get(Tool, tool_id)
+    if tool is None:
+        print(f"Tool(id={tool_id}) not found")
+        return False
+    if tool.status not in {ToolStatus.update_queued, ToolStatus.updating}:
+        print(
+            f"Tool(id={tool_id}) update task skipped because status is {tool.status}"
+        )
+        return False
+    # Mark it as actually running, the way an install does.
+    tool.status = ToolStatus.updating
+    session.add(tool)
+    session.commit()
+    conda_env = CondaEnvManger(
+        path=Path(settings.CONDA_PATH) / str(tool_id),
+        env_dict=tool.conda_env or {},
+        post_install_command=tool.post_install,
+        version=tool.version,
+    )
+    try:
+        stdout = await conda_env.update()
+    except CondaEnvMangerError as e:
+        print(f"Updating Tool(id={tool_id}) failed: {e}")
+        tool.status = ToolStatus.failed
+        tool.installation_log = str(e)
+        session.add(tool)
+        session.commit()
+        return False
+
+    print(f"Conda environment for Tool(id={tool_id}) updated")
+    tool.status = ToolStatus.installed
+    tool.installation_log = stdout
+    session.add(tool)
+    session.commit()
+    # Runs that were waiting for the tool to come back can start now.
+    await dispatch_pending_runs(session)
+    return True
+
+
+@broker.task
 async def uninstall_tool(
     tool_id: uuid.UUID,
     session: Session = TaskiqDepends(get_db),

@@ -17,6 +17,7 @@ def test_recover_interrupted_tasks_requeues_and_marks_interrupted(
 ) -> None:
     run_task_ids: list[uuid.UUID] = []
     install_task_ids: list[uuid.UUID] = []
+    update_task_ids: list[uuid.UUID] = []
 
     async def fake_run_kiq(run_id: uuid.UUID, _command: str | None):
         run_task_ids.append(run_id)
@@ -26,8 +27,13 @@ def test_recover_interrupted_tasks_requeues_and_marks_interrupted(
         install_task_ids.append(tool_id)
         return SimpleNamespace(task_id=f"install-task-{tool_id}")
 
+    async def fake_update_kiq(tool_id: uuid.UUID):
+        update_task_ids.append(tool_id)
+        return SimpleNamespace(task_id=f"update-task-{tool_id}")
+
     monkeypatch.setattr("app.tasks.run_tool.kiq", fake_run_kiq)
     monkeypatch.setattr(lifetime.install_tool, "kiq", fake_install_kiq)
+    monkeypatch.setattr(lifetime.update_tool, "kiq", fake_update_kiq)
 
     app_settings = get_or_create_app_settings(db)
     app_settings.queue_paused = False
@@ -62,10 +68,27 @@ def test_recover_interrupted_tasks_requeues_and_marks_interrupted(
         enabled=True,
         status=ToolStatus.installing,
     )
+    updating_tool = Tool(
+        name=f"updating-tool-{random_lower_string()}",
+        command="echo install",
+        post_install="echo update",
+        enabled=True,
+        status=ToolStatus.updating,
+    )
+    queued_update_tool = Tool(
+        name=f"queued-update-{random_lower_string()}",
+        command="echo install",
+        post_install="echo update",
+        enabled=True,
+        status=ToolStatus.update_queued,
+        installation_log="Update queued.",
+    )
     db.add(pending_tool)
     db.add(running_tool)
     db.add(queued_tool)
     db.add(installing_tool)
+    db.add(updating_tool)
+    db.add(queued_update_tool)
     db.commit()
 
     pending_run = Run(
@@ -95,6 +118,7 @@ def test_recover_interrupted_tasks_requeues_and_marks_interrupted(
     db.refresh(running_run)
     db.refresh(queued_tool)
     db.refresh(installing_tool)
+    db.refresh(updating_tool)
 
     assert pending_run.id in run_task_ids
     # Membership, not equality: recovery restarts every queued install in the
@@ -113,6 +137,20 @@ def test_recover_interrupted_tasks_requeues_and_marks_interrupted(
     assert installing_tool.installation_log == (
         "Tool installation was interrupted by server restart. "
         "Please retry installation."
+    )
+    # An interrupted update may have left partial data behind, so the tool is
+    # not trusted until it is updated again.
+    assert updating_tool.status == ToolStatus.failed
+    assert updating_tool.installation_log == (
+        "Tool update was interrupted by server restart and may have left "
+        "partial data behind. Please retry the update."
+    )
+    # An update that never started is handed to the worker again.
+    assert queued_update_tool.id in update_task_ids
+    assert queued_update_tool.status == ToolStatus.update_queued
+    assert queued_update_tool.installation_log == (
+        f"Tool update task update-task-{queued_update_tool.id} "
+        "restarted after server startup."
     )
 
 

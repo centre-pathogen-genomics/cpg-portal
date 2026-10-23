@@ -13,7 +13,7 @@ from sqlmodel import Session, select
 
 from app.core.app_settings import get_or_create_app_settings
 from app.core.config import settings
-from app.models import Run, RunStatus
+from app.models import Run, RunStatus, ToolStatus
 
 # Serializes the dispatch decision across workers, see dispatch_pending_runs.
 DISPATCH_LOCK_KEY = 8152531
@@ -81,6 +81,10 @@ async def dispatch_pending_runs(session: Session) -> list[Run]:
 
     dispatched: list[Run] = []
     for run in pending_runs:
+        # A run whose tool is still being installed or updated waits in the
+        # queue: the environment it needs is not there yet.
+        if run.tool.status != ToolStatus.installed:
+            continue
         if run.cpus > available:
             continue
         taskiq_task = await run_tool.kiq(run.id, run.command)

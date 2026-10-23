@@ -2107,7 +2107,7 @@ export const ToolStatsSchema = {
 
 export const ToolStatusSchema = {
     type: 'string',
-    enum: ['uninstalled', 'uninstalling', 'installed', 'install_queued', 'installing', 'failed'],
+    enum: ['uninstalled', 'uninstalling', 'installed', 'install_queued', 'installing', 'update_queued', 'updating', 'failed'],
     title: 'ToolStatus'
 } as const;
 

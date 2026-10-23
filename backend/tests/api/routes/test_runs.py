@@ -942,6 +942,31 @@ def test_create_run_without_a_tool_maximum_or_default(
     assert "between 2 and 3" in exc_info.value.detail
 
 
+def test_create_run_passes_the_cpus_to_the_command(db: Session, monkeypatch) -> None:
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
+    owner = create_random_user(db)
+    tool = _create_tool(db=db, owner=owner)
+    tool.command = "echo accessions | seqkit stats --threads {{ cpus }}"
+    tool.max_cpus = 8
+    db.add(tool)
+    db.commit()
+
+    run = asyncio.run(
+        create_run(
+            session=db,
+            current_user=owner,
+            tool_id=tool.id,
+            params={},
+            tags=[],
+            cpus=3,
+        )
+    )
+
+    assert run.command == "echo accessions | seqkit stats --threads 3"
+    assert run.cpus == 3
+
+
 def test_create_run_defaults_threads_to_the_input_files(
     db: Session, monkeypatch
 ) -> None:

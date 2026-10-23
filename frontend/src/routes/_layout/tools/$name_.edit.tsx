@@ -1019,13 +1019,20 @@ function InputsTab({ control }: { control: Control<ToolFormData> }) {
   const setupFiles = useFieldArray({ control, name: "setup_files" })
   const watchedParams = useWatch({ control, name: "params" }) ?? []
   const commandParams = useMemo(
-    () =>
-      watchedParams.map((param) => ({
+    () => [
+      ...watchedParams.map((param) => ({
         ...param,
         allowed_file_types: (param.allowed_file_types ?? []).map(
           (item) => item.value,
         ),
       })),
+      // Always available to a command, whether or not the tool declares it.
+      {
+        name: "cpus",
+        param_type: "int",
+        description: "The CPUs this run reserved.",
+      },
+    ],
     [watchedParams],
   )
   return (

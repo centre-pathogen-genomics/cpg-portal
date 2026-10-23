@@ -75,6 +75,99 @@ def test_install_tool_rejects_install_in_progress(
     assert exc_info.value.detail == "Tool is already being installed"
 
 
+def test_update_tool_sets_update_queued_and_queues_the_task(
+    monkeypatch, db: Session
+) -> None:
+    tool = _create_tool(db=db, status=ToolStatus.installed)
+    tool.post_install = "echo update"
+    db.add(tool)
+    db.commit()
+    task_ids: list[str] = []
+
+    async def fake_kiq(*, tool_id):
+        task_ids.append(str(tool_id))
+        return SimpleNamespace(task_id="update-task")
+
+    monkeypatch.setattr(tools_routes.update_tool_task, "kiq", fake_kiq)
+
+    message = asyncio.run(
+        tools_routes.update_tool_post_install(
+            session=db,
+            tool_id=tool.id,
+            current_user=SimpleNamespace(),
+        )
+    )
+
+    db.refresh(tool)
+    assert tool.status == ToolStatus.update_queued
+    assert tool.installation_log == "Update queued."
+    assert task_ids == [str(tool.id)]
+    assert message.message == "Tool update task update-task started"
+
+
+def test_update_tool_rejects_an_update_in_progress(db: Session) -> None:
+    tool = _create_tool(db=db, status=ToolStatus.update_queued)
+    tool.post_install = "echo update"
+    db.add(tool)
+    db.commit()
+
+    with pytest.raises(HTTPException) as exc_info:
+        asyncio.run(
+            tools_routes.update_tool_post_install(
+                session=db,
+                tool_id=tool.id,
+                current_user=SimpleNamespace(),
+            )
+        )
+
+    assert exc_info.value.status_code == 400
+    assert exc_info.value.detail == "Tool is already being installed or updated"
+
+
+def test_update_tool_rejects_a_tool_that_is_not_installed(db: Session) -> None:
+    tool = _create_tool(db=db, status=ToolStatus.uninstalled)
+    tool.post_install = "echo update"
+    db.add(tool)
+    db.commit()
+
+    with pytest.raises(HTTPException) as exc_info:
+        asyncio.run(
+            tools_routes.update_tool_post_install(
+                session=db,
+                tool_id=tool.id,
+                current_user=SimpleNamespace(),
+            )
+        )
+
+    assert exc_info.value.status_code == 400
+    assert exc_info.value.detail == "Install the tool before updating it"
+
+
+def test_update_tool_rejects_a_tool_without_a_post_install(db: Session) -> None:
+    tool = _create_tool(db=db, status=ToolStatus.installed)
+
+    with pytest.raises(HTTPException) as exc_info:
+        asyncio.run(
+            tools_routes.update_tool_post_install(
+                session=db,
+                tool_id=tool.id,
+                current_user=SimpleNamespace(),
+            )
+        )
+
+    assert exc_info.value.status_code == 400
+    assert exc_info.value.detail == "Tool has no post-install command to run"
+
+
+def test_enabled_tools_stay_visible_while_they_are_installed(db: Session) -> None:
+    tool = _create_tool(db=db, status=ToolStatus.installing)
+    user = create_random_user(db)
+
+    listed = tools_routes.read_tools(session=db, current_user=user, limit=1000)
+
+    assert tool.id in [candidate.id for candidate in listed.data]
+
+
 def test_create_tool_keeps_the_threads_range(db: Session) -> None:
     tool = tools_routes.create_tool(
         session=db,
