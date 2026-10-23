@@ -6,6 +6,7 @@ import pytest
 
 from app import sandbox
 from app.core.config import settings
+from app.models import File
 from app.tasks import (
     RunDirs,
     build_run_argv,
@@ -26,22 +27,34 @@ def _dirs(tmp_path: Path) -> RunDirs:
     return dirs
 
 
-def _input_file(tmp_path: Path, name: str) -> tuple[uuid.UUID, Path]:
-    """Create a file as it is stored by the portal, and its database id."""
-    file_id = uuid.uuid4()
-    location = tmp_path / f"{file_id}_{name}"
+def _input_file(tmp_path: Path, name: str) -> tuple[File, Path]:
+    """Create a file the way the portal stores it, and the path it lives at.
+
+    On disk the name carries the file id, while the file's own name is the one
+    a tool is given.
+    """
+    file = File(
+        name=name,
+        file_type="bam",
+        size=10,
+        saved=True,
+        location="",
+        owner_id=uuid.uuid4(),
+    )
+    location = tmp_path / f"{file.id}_{name}"
     location.write_text("input data")
-    return file_id, location
+    file.location = str(location)
+    return file, location
 
 
 class _StubSession:
     """Minimal session returning prepared File rows, and accepting updates."""
 
-    def __init__(self, locations: dict[uuid.UUID, Path]):
-        self.locations = locations
+    def __init__(self, files: dict[uuid.UUID, File]):
+        self.files = files
 
     def get(self, model, file_id):  # noqa: ARG002
-        return SimpleNamespace(location=str(self.locations[file_id]))
+        return self.files[file_id]
 
     def add(self, instance) -> None:
         pass
@@ -52,7 +65,7 @@ class _StubSession:
 
 def test_sandbox_exec_command_only_mounts_the_run(tmp_path: Path) -> None:
     dirs = _dirs(tmp_path)
-    _, location = _input_file(tmp_path, "sample.bam")
+    file, location = _input_file(tmp_path, "sample.bam")
     conda_prefix = Path("/conda") / str(uuid.uuid4())
     data_path = tmp_path / "DB"
     data_path.mkdir()
@@ -62,7 +75,7 @@ def test_sandbox_exec_command_only_mounts_the_run(tmp_path: Path) -> None:
         work_dir=dirs.work,
         tmp_dir=dirs.tmp,
         inputs_dir=dirs.inputs,
-        input_files={location.name: location},
+        input_files={file.name: location},
         conda_prefix=conda_prefix,
         data_path=data_path,
         cpus=4,
@@ -84,7 +97,7 @@ def test_sandbox_exec_command_only_mounts_the_run(tmp_path: Path) -> None:
     assert f"{dirs.work}:{sandbox.CONTAINER_WORK_DIR}" in argv
     assert f"{dirs.tmp}:{sandbox.CONTAINER_TMP_DIR}" in argv
     assert f"{dirs.inputs}:{sandbox.CONTAINER_INPUTS_DIR}:ro" in argv
-    assert f"{location}:{sandbox.CONTAINER_INPUTS_DIR}/{location.name}:ro" in argv
+    assert f"{location}:{sandbox.CONTAINER_INPUTS_DIR}/{file.name}:ro" in argv
     # The environment keeps its original path, so interpreters inside it resolve.
     assert f"{conda_prefix}:{conda_prefix}:ro" in argv
     # Reference data is mounted read-only at its own path.
@@ -298,45 +311,61 @@ def test_build_run_argv_without_sandbox(monkeypatch, tmp_path: Path) -> None:
 def test_link_input_files_mounts_read_only(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr(settings, "SANDBOX_ENABLED", True)
     dirs = _dirs(tmp_path)
-    file_id, location = _input_file(tmp_path, "sample.bam")
-    session = _StubSession({file_id: location})
-    run = SimpleNamespace(input_file_ids=[file_id])
+    file, location = _input_file(tmp_path, "sample.bam")
+    session = _StubSession({file.id: file})
+    run = SimpleNamespace(input_file_ids=[file.id])
 
     input_files = link_input_files(session, run, dirs)
 
-    assert input_files == {location.name: location}
+    assert input_files == {file.name: location}
     # The working directory links to the file inside the container, and the
     # bind mount target exists so that apptainer can mount over it.
-    assert (dirs.work / location.name).is_symlink()
-    assert (dirs.work / location.name).readlink() == Path(
+    assert (dirs.work / file.name).is_symlink()
+    assert (dirs.work / file.name).readlink() == Path(
         sandbox.CONTAINER_INPUTS_DIR
-    ) / location.name
-    assert (dirs.inputs / location.name).stat().st_size == 0
-    assert not (dirs.work / location.name).exists()  # dangling on the worker
+    ) / file.name
+    assert (dirs.inputs / file.name).stat().st_size == 0
+    assert not (dirs.work / file.name).exists()  # dangling on the worker
 
 
 def test_link_input_files_without_sandbox(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr(settings, "SANDBOX_ENABLED", False)
     dirs = _dirs(tmp_path)
-    file_id, location = _input_file(tmp_path, "sample.bam")
-    session = _StubSession({file_id: location})
-    run = SimpleNamespace(input_file_ids=[file_id])
+    file, location = _input_file(tmp_path, "sample.bam")
+    session = _StubSession({file.id: file})
+    run = SimpleNamespace(input_file_ids=[file.id])
 
     link_input_files(session, run, dirs)
 
-    assert (dirs.work / location.name).readlink() == location
-    assert (dirs.work / location.name).read_text() == "input data"
+    assert (dirs.work / file.name).readlink() == location
+    assert (dirs.work / file.name).read_text() == "input data"
     assert not list(dirs.inputs.iterdir())
+
+
+def test_link_input_files_links_a_file_used_twice_once(
+    monkeypatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(settings, "SANDBOX_ENABLED", False)
+    dirs = _dirs(tmp_path)
+    file, location = _input_file(tmp_path, "sample.bam")
+    session = _StubSession({file.id: file})
+    # The same file handed to two parameters is listed twice on the run.
+    run = SimpleNamespace(input_file_ids=[file.id, file.id])
+
+    input_files = link_input_files(session, run, dirs)
+
+    assert input_files == {file.name: location}
+    assert (dirs.work / file.name).readlink() == location
 
 
 def test_process_targets_ignores_input_files(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr(settings, "SANDBOX_ENABLED", True)
     dirs = _dirs(tmp_path)
-    file_id, location = _input_file(tmp_path, "sample.bam")
-    session = _StubSession({file_id: location})
+    file, location = _input_file(tmp_path, "sample.bam")
+    session = _StubSession({file.id: file})
     run = SimpleNamespace(
-        id=file_id,
-        input_file_ids=[file_id],
+        id=file.id,
+        input_file_ids=[file.id],
         params={},
         tags=[],
         files=[],

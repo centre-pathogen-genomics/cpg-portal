@@ -144,6 +144,16 @@ def sanitise_shell_input(input_string: str) -> str:
     )  # replace invalid characters with "_"
 
 
+def input_file_name(name: str) -> str:
+    """The name a tool sees for one of its input files.
+
+    On disk a file is stored as `<file id>_<name>` to keep it unique; inside a
+    run the tool gets the plain name, so its command and its working directory
+    agree. The run creation endpoint checks for clashes before it queues a run.
+    """
+    return sanitise_shell_input(name)
+
+
 def escape(value):
     if isinstance(value, list):
         return [escape(i) for i in value]

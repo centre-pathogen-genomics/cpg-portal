@@ -24,7 +24,12 @@ from app.crud import save_file
 from app.models import File, Run, RunStatus, SetupFile, Target, Tool, ToolStatus
 from app.scheduling import dispatch_pending_runs
 from app.tkq import broker
-from app.utils import escape, generate_run_finished_email, send_email
+from app.utils import (
+    escape,
+    generate_run_finished_email,
+    input_file_name,
+    send_email,
+)
 from app.wsmanager import manager
 
 SessionDep = Annotated[Session, TaskiqDepends(get_db)]
@@ -199,7 +204,12 @@ def link_input_files(session, run, dirs: RunDirs) -> dict[str, Path] | None:
         for file_id in run.input_file_ids:
             file = session.get(File, file_id)
             location = Path(file.location)
-            file_name = location.name
+            # The tool sees the file's own name, not the id-prefixed one it is
+            # stored under.
+            file_name = input_file_name(file.name)
+            if file_name in input_files:
+                # The same file can be given to two parameters.
+                continue
             print(f"Linking {location} to {dirs.work / file_name}")
             if settings.SANDBOX_ENABLED:
                 # The sandbox mounts the file read-only on top of this

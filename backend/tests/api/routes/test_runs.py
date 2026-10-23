@@ -1016,6 +1016,104 @@ def test_create_run_defaults_threads_to_the_input_files(
     assert run_with(files[:1]).cpus == 1
 
 
+def test_create_run_gives_the_tool_the_file_name_without_the_stored_id(
+    db: Session, monkeypatch
+) -> None:
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
+    owner = create_random_user(db)
+    tool = _create_tool(db=db, owner=owner)
+    tool.command = "samtools view -o out.bam {{ input_file }}"
+    tool.params = [{"name": "input_file", "param_type": "file", "multiple": False}]
+    db.add(tool)
+    db.commit()
+    file = _create_saved_file(db=db, owner=owner, name="reads.bam", file_type="bam")
+    # On disk the name carries the file id, but the tool is given the name the
+    # file was uploaded under.
+    file.location = f"/storage/ab/cd/{file.id}_{file.name}"
+    db.add(file)
+    db.commit()
+
+    run = asyncio.run(
+        create_run(
+            session=db,
+            current_user=owner,
+            tool_id=tool.id,
+            params={"input_file": [str(file.id)]},
+            tags=[],
+        )
+    )
+
+    assert run.command == "samtools view -o out.bam reads.bam"
+    assert run.params["input_file"] == "reads.bam"
+
+
+def test_create_run_rejects_two_files_with_the_same_name(
+    db: Session, monkeypatch
+) -> None:
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
+    owner = create_random_user(db)
+    tool = _create_tool(db=db, owner=owner)
+    tool.params = [
+        {"name": "first", "param_type": "file", "multiple": False},
+        {"name": "second", "param_type": "file", "multiple": False},
+    ]
+    db.add(tool)
+    db.commit()
+    first = _create_saved_file(db=db, owner=owner, name="reads.fastq.gz")
+    second = _create_saved_file(db=db, owner=owner, name="reads.fastq.gz")
+
+    with pytest.raises(HTTPException) as exc_info:
+        asyncio.run(
+            create_run(
+                session=db,
+                current_user=owner,
+                tool_id=tool.id,
+                params={"first": [str(first.id)], "second": [str(second.id)]},
+                tags=[],
+            )
+        )
+
+    assert exc_info.value.status_code == 400
+    assert exc_info.value.detail == (
+        "Files with the same name cannot be used in one run: `reads.fastq.gz` is "
+        "used by parameters `first` and `second`. Rename one of the files and "
+        "try again."
+    )
+
+
+def test_create_run_accepts_one_file_in_two_parameters(
+    db: Session, monkeypatch
+) -> None:
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
+    owner = create_random_user(db)
+    tool = _create_tool(db=db, owner=owner)
+    tool.command = "echo {{ first }} {{ second }}"
+    tool.params = [
+        {"name": "first", "param_type": "file", "multiple": False},
+        {"name": "second", "param_type": "file", "multiple": False},
+    ]
+    db.add(tool)
+    db.commit()
+    file = _create_saved_file(db=db, owner=owner, name="genome.fasta")
+
+    run = asyncio.run(
+        create_run(
+            session=db,
+            current_user=owner,
+            tool_id=tool.id,
+            params={"first": [str(file.id)], "second": [str(file.id)]},
+            tags=[],
+        )
+    )
+
+    assert run.command == "echo genome.fasta genome.fasta"
+    # The worker links the file once, so the run lists it once.
+    assert run.input_file_ids == [str(file.id)]
+
+
 def test_create_run_scales_the_default_by_the_cpus_per_file(
     db: Session, monkeypatch
 ) -> None:

@@ -24,7 +24,7 @@ from app.models import (
     Tool,
 )
 from app.scheduling import dispatch_pending_runs
-from app.utils import escape, flatten, validate_param_value
+from app.utils import escape, flatten, input_file_name, validate_param_value
 from app.wsmanager import manager
 
 router = APIRouter()
@@ -408,6 +408,27 @@ async def create_run(
     files = []
     tool_params = [Param(**param) for param in (tool.params or [])]
 
+    # A tool sees each input file under its own name, so two different files
+    # cannot share one: the work directory would hold a single file for both.
+    # The same file handed to two parameters is one file, and is allowed.
+    seen_input_files: dict[str, tuple[uuid.UUID, str]] = {}
+
+    def register_input_file(file: File, param_name: str) -> str:
+        """Record the name the tool will see, refusing a clashing file."""
+        name = input_file_name(file.name)
+        previous = seen_input_files.get(name)
+        if previous is not None and previous[0] != file.id:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Files with the same name cannot be used in one run: "
+                    f"`{name}` is used by parameters `{previous[1]}` and "
+                    f"`{param_name}`. Rename one of the files and try again."
+                ),
+            )
+        seen_input_files[name] = (file.id, param_name)
+        return name
+
     # Reject path traversal in free-form user supplied values, including params
     # the tool doesn't declare. enum values (checked against the tool's options,
     # and which may legitimately contain "/") and file params (checked as file
@@ -490,7 +511,7 @@ async def create_run(
                     child_names = []
                     for child in file.children:
                         files.append(child)
-                        child_names.append(Path(child.location).name)
+                        child_names.append(register_input_file(child, param.name))
 
                     if (
                         file.file_type == FileTypeEnum.PAIR.value
@@ -503,7 +524,7 @@ async def create_run(
                         # otherwise, add the children as separate files
                         file_names.extend(child_names)
                 else:
-                    file_names.append(Path(file.location).name)
+                    file_names.append(register_input_file(file, param.name))
                     files.append(file)
             if param.multiple:
                 normalized_params[param.name] = file_names
@@ -576,7 +597,8 @@ async def create_run(
         status="pending",
         cpus=cpus,
         params=normalized_params,
-        input_file_ids=[str(file.id) for file in files],
+        # A file given to two parameters is listed twice; the worker links it once.
+        input_file_ids=list(dict.fromkeys(str(file.id) for file in files)),
         command=cmd,
         tags=tags,
         email_on_completion=email_on_completion,
