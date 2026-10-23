@@ -764,91 +764,15 @@ function DetailsTab({ control }: { control: Control<ToolFormData> }) {
   )
 }
 
-function ExecutionTab({ control }: { control: Control<ToolFormData> }) {
+function InstallationTab({ control }: { control: Control<ToolFormData> }) {
   const dependencies = useFieldArray({ control, name: "conda_dependencies" })
   return (
-    <TabsContent value="execution" className="space-y-6">
+    <TabsContent value="installation" className="space-y-6">
       <Card className="rounded-md">
         <CardHeader>
-          <CardTitle>Execution</CardTitle>
+          <CardTitle>Installation</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-3">
-            <FormField
-              control={control}
-              name="min_cpus"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Min CPUs</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min={1}
-                      {...field}
-                      onChange={(event) =>
-                        field.onChange(
-                          Number.parseInt(event.target.value, 10) || 0,
-                        )
-                      }
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={control}
-              name="max_cpus"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Max CPUs (optional)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min={1}
-                      {...field}
-                      value={field.value ?? ""}
-                      onChange={(event) =>
-                        field.onChange(
-                          Number.parseInt(event.target.value, 10) || null,
-                        )
-                      }
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={control}
-              name="default_cpus"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Default CPUs (optional)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min={1}
-                      {...field}
-                      value={field.value ?? ""}
-                      onChange={(event) =>
-                        field.onChange(
-                          Number.parseInt(event.target.value, 10) || null,
-                        )
-                      }
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          <TextField
-            control={control}
-            name="command"
-            label="Command"
-            multiline
-          />
           <TextField
             control={control}
             name="post_install"
@@ -1091,8 +1015,92 @@ function ParamVisibilityFields({
 
 function InputsTab({ control }: { control: Control<ToolFormData> }) {
   const params = useFieldArray({ control, name: "params" })
+  const setupFiles = useFieldArray({ control, name: "setup_files" })
   return (
     <TabsContent value="inputs" className="space-y-6">
+      <Card className="rounded-md">
+        <CardHeader>
+          <CardTitle>Execution</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <TextField
+            control={control}
+            name="command"
+            label="Command"
+            multiline
+          />
+          <div className="grid gap-4 md:grid-cols-3">
+            <FormField
+              control={control}
+              name="min_cpus"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Min CPUs</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={1}
+                      {...field}
+                      onChange={(event) =>
+                        field.onChange(
+                          Number.parseInt(event.target.value, 10) || 0,
+                        )
+                      }
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={control}
+              name="max_cpus"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Max CPUs (optional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={1}
+                      {...field}
+                      value={field.value ?? ""}
+                      onChange={(event) =>
+                        field.onChange(
+                          Number.parseInt(event.target.value, 10) || null,
+                        )
+                      }
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={control}
+              name="default_cpus"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Default CPUs (optional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={1}
+                      {...field}
+                      value={field.value ?? ""}
+                      onChange={(event) =>
+                        field.onChange(
+                          Number.parseInt(event.target.value, 10) || null,
+                        )
+                      }
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </CardContent>
+      </Card>
       <Card className="rounded-md">
         <CardHeader className="flex-row items-center justify-between">
           <CardTitle>Inputs</CardTitle>
@@ -1218,6 +1226,45 @@ function InputsTab({ control }: { control: Control<ToolFormData> }) {
           ))}
         </CardContent>
       </Card>
+      <Card className="rounded-md">
+        <CardHeader className="flex-row items-center justify-between">
+          <CardTitle>Setup Files</CardTitle>
+          <ArrayActions
+            label="Add setup file"
+            onAdd={() => setupFiles.append({ name: "", content: "" })}
+          />
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {setupFiles.fields.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              No setup files configured.
+            </p>
+          )}
+          {setupFiles.fields.map((field, index) => (
+            <div key={field.id} className="space-y-4 rounded-md border p-4">
+              <div className="grid gap-4 md:grid-cols-[1fr_auto]">
+                <TextField
+                  control={control}
+                  name={`setup_files.${index}.name`}
+                  label="Name"
+                />
+                <RowActions
+                  index={index}
+                  count={setupFiles.fields.length}
+                  onMove={setupFiles.move}
+                  onRemove={() => setupFiles.remove(index)}
+                />
+              </div>
+              <TextField
+                control={control}
+                name={`setup_files.${index}.content`}
+                label="Content"
+                multiline
+              />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
     </TabsContent>
   )
 }
@@ -1262,7 +1309,6 @@ function TargetTypeField({
 
 function OutputsTab({ control }: { control: Control<ToolFormData> }) {
   const targets = useFieldArray({ control, name: "targets" })
-  const setupFiles = useFieldArray({ control, name: "setup_files" })
   return (
     <TabsContent value="outputs" className="space-y-6">
       <Card className="rounded-md">
@@ -1309,45 +1355,6 @@ function OutputsTab({ control }: { control: Control<ToolFormData> }) {
                   onRemove={() => targets.remove(index)}
                 />
               </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-      <Card className="rounded-md">
-        <CardHeader className="flex-row items-center justify-between">
-          <CardTitle>Setup Files</CardTitle>
-          <ArrayActions
-            label="Add setup file"
-            onAdd={() => setupFiles.append({ name: "", content: "" })}
-          />
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {setupFiles.fields.length === 0 && (
-            <p className="text-sm text-muted-foreground">
-              No setup files configured.
-            </p>
-          )}
-          {setupFiles.fields.map((field, index) => (
-            <div key={field.id} className="space-y-4 rounded-md border p-4">
-              <div className="grid gap-4 md:grid-cols-[1fr_auto]">
-                <TextField
-                  control={control}
-                  name={`setup_files.${index}.name`}
-                  label="Name"
-                />
-                <RowActions
-                  index={index}
-                  count={setupFiles.fields.length}
-                  onMove={setupFiles.move}
-                  onRemove={() => setupFiles.remove(index)}
-                />
-              </div>
-              <TextField
-                control={control}
-                name={`setup_files.${index}.content`}
-                label="Content"
-                multiline
-              />
             </div>
           ))}
         </CardContent>
@@ -1675,13 +1682,13 @@ function ToolEditor() {
           <Tabs defaultValue="details" className="w-full">
             <TabsList className="mb-4 flex h-auto w-full flex-wrap justify-start">
               <TabsTrigger value="details">Details</TabsTrigger>
-              <TabsTrigger value="execution">Execution</TabsTrigger>
+              <TabsTrigger value="installation">Installation</TabsTrigger>
               <TabsTrigger value="inputs">Inputs</TabsTrigger>
               <TabsTrigger value="outputs">Outputs</TabsTrigger>
               <TabsTrigger value="admin">Admin</TabsTrigger>
             </TabsList>
             <DetailsTab control={form.control} />
-            <ExecutionTab control={form.control} />
+            <InstallationTab control={form.control} />
             <InputsTab control={form.control} />
             <OutputsTab control={form.control} />
             <AdminTab control={form.control} />
