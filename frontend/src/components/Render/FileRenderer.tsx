@@ -1,24 +1,51 @@
-import { LoaderCircle } from "lucide-react";
-import { Suspense } from "react";
-import type { FilePublic } from "../../client";
-import { humanReadableFileSize } from "../../utils";
-import CsvFileToTable from "./CsvFileToTable";
-import FastaFile from "./FastaFile";
-import GenbankFile from "./GenbankFile";
-import HtmlFile from "./HtmlFile";
-import ImageFile from "./ImageFile";
-import JsonFile from "./JsonFile";
-import MarkdownFile from "./MarkdownFile";
-import NewickFile from "./NewickFile";
-import TextFile from "./TextFile";
-import VegaFile from "./VegaFile";
+import { LoaderCircle } from "lucide-react"
+import { Suspense } from "react"
+import type { FilePublic } from "../../client"
+import { humanReadableFileSize } from "../../utils"
+import CsvFileToTable from "./CsvFileToTable"
+import FastaFile from "./FastaFile"
+import GenbankFile from "./GenbankFile"
+import HtmlFile from "./HtmlFile"
+import ImageFile from "./ImageFile"
+import JsonFile from "./JsonFile"
+import MarkdownFile from "./MarkdownFile"
+import NewickFile from "./NewickFile"
+import TextFile from "./TextFile"
+import VegaFile from "./VegaFile"
 
 interface FileRendererProps {
-  file: FilePublic;
-  showUnsupportedMessage?: boolean;
-  showTooLargeMessage?: boolean;
-  fileSizeLimit?: number;
+  file: FilePublic
+  showUnsupportedMessage?: boolean
+  showTooLargeMessage?: boolean
+  fileSizeLimit?: number
 }
+
+// The file types FileRenderer knows how to draw, so a caller can offer exactly
+// the files that will render instead of guessing by size. Keep in step with the
+// switch below.
+export const RENDERABLE_FILE_TYPES = [
+  "json",
+  "text",
+  "md",
+  "fasta",
+  "genbank",
+  "newick",
+  "vega",
+  "vega-lite",
+  "csv",
+  "tsv",
+  "html",
+  "png",
+  "jpeg",
+  "svg",
+] as const
+
+export const canRenderFile = (file: FilePublic) =>
+  !file.is_group &&
+  !!file.file_type &&
+  RENDERABLE_FILE_TYPES.includes(
+    file.file_type as (typeof RENDERABLE_FILE_TYPES)[number],
+  )
 
 const TooLargeToPreview = ({ limit }: { limit: number }) => (
   <div className="flex flex-col items-start gap-4">
@@ -26,7 +53,7 @@ const TooLargeToPreview = ({ limit }: { limit: number }) => (
       File is too large to preview ({`>${humanReadableFileSize(limit)}`})
     </p>
   </div>
-);
+)
 
 const FileRenderer = ({
   file,
@@ -36,7 +63,7 @@ const FileRenderer = ({
 }: FileRendererProps) => {
   // Don't attempt to render group files
   if (file.is_group) {
-    return null;
+    return null
   }
 
   if (file.size && file.size < fileSizeLimit) {
@@ -46,42 +73,42 @@ const FileRenderer = ({
           switch (file.file_type) {
             case "json":
               if (file.size > 1000000) {
-                return TooLargeToPreview({ limit: 1000000 });
+                return TooLargeToPreview({ limit: 1000000 })
               }
               if (file.size > 100000) {
                 // For larger JSON files, use TextFile to avoid performance issues
-                return <TextFile fileId={file.id} />;
+                return <TextFile fileId={file.id} />
               }
-              return <JsonFile fileId={file.id} />;
+              return <JsonFile fileId={file.id} />
             case "text":
               if (file.size > 1000000) {
-                return TooLargeToPreview({ limit: 1000000 });
+                return TooLargeToPreview({ limit: 1000000 })
               }
-              return <TextFile fileId={file.id} />;
+              return <TextFile fileId={file.id} />
             case "md":
               if (file.size > 1000000) {
-                return TooLargeToPreview({ limit: 1000000 });
+                return TooLargeToPreview({ limit: 1000000 })
               }
-              return <MarkdownFile fileId={file.id} />;
+              return <MarkdownFile fileId={file.id} />
             case "fasta":
               // Fasta files can be large; handled within FastaFile component
-              return <FastaFile fileId={file.id} />;
+              return <FastaFile fileId={file.id} />
             case "genbank":
               return (
                 <GenbankFile
                   fileId={file.id}
                   viewer={file.size > 2000000 ? "circular" : "both"}
                 />
-              );
+              )
             case "newick":
               if (file.size > 1000000) {
-                return TooLargeToPreview({ limit: 1000000 });
+                return TooLargeToPreview({ limit: 1000000 })
               }
-              return <NewickFile fileId={file.id} />;
+              return <NewickFile fileId={file.id} />
             case "vega":
-              return <VegaFile fileId={file.id} />;
+              return <VegaFile fileId={file.id} />
             case "vega-lite":
-              return <VegaFile fileId={file.id} leftNegativeMargin={110} />;
+              return <VegaFile fileId={file.id} leftNegativeMargin={110} />
             case "csv":
             case "tsv":
               return (
@@ -89,28 +116,28 @@ const FileRenderer = ({
                   tsv={file.file_type === "tsv"}
                   fileId={file.id}
                 />
-              );
+              )
             case "html":
-              return <HtmlFile fileId={file.id} />;
+              return <HtmlFile fileId={file.id} />
             case "png":
             case "jpeg":
             case "svg":
-              return <ImageFile fileId={file.id} />;
+              return <ImageFile fileId={file.id} />
 
             default:
               return showUnsupportedMessage ? (
                 <p className="italic text-gray-500">
                   Preview not available for this file type
                 </p>
-              ) : null;
+              ) : null
           }
         })()}
       </Suspense>
-    );
+    )
   }
   return showTooLargeMessage ? (
     <TooLargeToPreview limit={fileSizeLimit} />
-  ) : null;
-};
+  ) : null
+}
 
-export default FileRenderer;
+export default FileRenderer

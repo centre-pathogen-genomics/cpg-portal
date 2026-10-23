@@ -8,7 +8,9 @@ import { readRunOptions } from "../../../client/@tanstack/react-query.gen"
 import AISummaryButton from "../../../components/AI/AISummary"
 import ReactMarkdown from "../../../components/Common/Markdown"
 import DownloadAllFilesButton from "../../../components/Files/DownloadAllFilesButton"
-import FileRenderer from "../../../components/Render/FileRenderer"
+import FileRenderer, {
+  canRenderFile,
+} from "../../../components/Render/FileRenderer"
 import CancelRunButton from "../../../components/Runs/CancelRunButton"
 import DeleteRunButton from "../../../components/Runs/DeleteRunButton"
 import EditRunName from "../../../components/Runs/EditableRunName"
@@ -39,8 +41,9 @@ function RunDetail() {
   )
   // Sharing a run lets others read it, so ownership decides what is shown.
   const isOwner = run.owner_id === user?.id
-  const fileTabs =
-    run.files?.filter((file) => file.size && file.size < 500000) || []
+  // Every output the renderer can draw gets a tab; the renderer decides what
+  // it can show, so size is not a reason to leave one out.
+  const fileTabs = run.files?.filter(canRenderFile) ?? []
   const firstTab =
     run.tool.llm_summary_enabled && llmSummary ? "llm_summary" : fileTabs[0]?.id
 
@@ -97,7 +100,10 @@ function RunDetail() {
                 )}
               </div>
               <Tabs defaultValue={firstTab} className="overflow-y-auto">
-                <TabsList className="h-auto w-full justify-start rounded-none border-b bg-transparent p-0">
+                <TabsList
+                  variant="line"
+                  className="w-full justify-start overflow-x-auto pb-2 [scrollbar-width:thin]"
+                >
                   {run.tool.llm_summary_enabled && llmSummary && (
                     <TabsTrigger value="llm_summary">AI Summary</TabsTrigger>
                   )}
@@ -121,7 +127,7 @@ function RunDetail() {
                     <FileRenderer
                       file={file}
                       showUnsupportedMessage={false}
-                      showTooLargeMessage={false}
+                      showTooLargeMessage
                     />
                   </TabsContent>
                 ))}
