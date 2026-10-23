@@ -30,8 +30,9 @@ const TOKEN_CLASS: Record<JinjaToken["kind"], string> = {
   name: "text-foreground",
 }
 
-const PARAM_CLASS =
-  "rounded underline decoration-dotted underline-offset-2 px-0.5"
+// No padding: the copy has to keep exactly the same metrics as the textarea
+// behind it, or the caret drifts away from the characters.
+const PARAM_CLASS = "rounded underline decoration-dotted underline-offset-2"
 
 // One colour per parameter, taken in the order the tool declares them, so a
 // command full of references reads by parameter rather than by type. The type
@@ -168,7 +169,7 @@ const CommandField = ({
         }}
         spellCheck={false}
         disabled={disabled}
-        className={`${shared} relative block min-h-28 w-full resize-none overflow-y-auto border-0 bg-transparent text-transparent caret-foreground outline-none`}
+        className={`${shared} relative block max-h-[70vh] min-h-28 w-full resize-none overflow-y-auto border-0 bg-transparent text-transparent caret-foreground outline-none [field-sizing:content]`}
       />
       {hover && (
         <div
