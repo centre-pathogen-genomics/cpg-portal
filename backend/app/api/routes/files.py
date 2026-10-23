@@ -248,7 +248,7 @@ def create_pair(
     children = [forward_file, reverse_file]
     # Create a pair with PAIR file type - pairs are NOT groups
     pair_metadata = File(
-        name=name,
+        name=sanitise_shell_input(name),
         owner_id=current_user.id,
         file_type=FileTypeEnum.PAIR.value,
         children=children,
@@ -343,7 +343,7 @@ def create_group(
 
     # Create the group
     group_metadata = File(
-        name=name,
+        name=sanitise_shell_input(name),
         owner_id=current_user.id,
         file_type=group_file_type,
         children=files,

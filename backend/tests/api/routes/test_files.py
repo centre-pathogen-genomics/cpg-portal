@@ -9,6 +9,7 @@ from sqlmodel import Session
 
 from app.api.routes.files import (
     create_group,
+    create_pair,
     delete_files,
     get_current_file_types,
     read_files,
@@ -92,6 +93,57 @@ def test_create_group_combines_selected_group_and_file(db: Session) -> None:
     assert child.parent_id == result.id
     assert existing_child.parent_id == result.id
     assert result.size == 15
+
+
+def test_create_group_sanitises_the_name(db: Session) -> None:
+    owner = create_random_user(db)
+    child = _create_saved_file(
+        db=db,
+        owner=owner,
+        name=f"child-{random_lower_string()}.fa",
+        size=5,
+        created_at=_utc_now(),
+        file_type="fasta",
+    )
+
+    group = create_group(
+        session=db,
+        current_user=owner,
+        name="my group; rm -rf /",
+        file_ids=[child.id],
+    )
+
+    assert group.name == "my_group__rm_-rf__"
+
+
+def test_create_pair_sanitises_the_name(db: Session) -> None:
+    owner = create_random_user(db)
+    forward = _create_saved_file(
+        db=db,
+        owner=owner,
+        name=f"r1-{random_lower_string()}.fa",
+        size=5,
+        created_at=_utc_now(),
+        file_type="fasta",
+    )
+    reverse = _create_saved_file(
+        db=db,
+        owner=owner,
+        name=f"r2-{random_lower_string()}.fa",
+        size=5,
+        created_at=_utc_now(),
+        file_type="fasta",
+    )
+
+    pair = create_pair(
+        session=db,
+        current_user=owner,
+        name="reads 1 & 2",
+        forward=forward.id,
+        reverse=reverse.id,
+    )
+
+    assert pair.name == "reads_1___2"
 
 
 def test_create_group_rejects_mismatched_group_and_file_type(db: Session) -> None:

@@ -14,9 +14,14 @@ const EditableFileName = ({ file }: EditableFileNameProps) => {
   const [editing, setEditing] = useState(false)
   const renameFile = useMutation({
     ...renameFileMutation(),
-    onSuccess: () => {
+    onSuccess: (renamed) => {
       showToast("Success", "File renamed successfully.", "success")
+      // The API sanitises the name, so show what it stored instead of what was
+      // typed, and refetch the file itself: its query key is not under
+      // "files", so invalidating that alone leaves the page stale.
+      setDisplayName(renamed.name)
       queryClient.invalidateQueries({ queryKey: ["files"] })
+      queryClient.invalidateQueries({ queryKey: [{ _id: "filesReadFile" }] })
     },
     onError: (error: any) => {
       showToast(

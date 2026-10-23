@@ -178,7 +178,7 @@ def save_file(
 ) -> File:
     """Save a single file and commit the session."""
     file_id = str(uuid.uuid4())
-    file_name = sanitise_shell_input(name)
+    new_name_sanitised = sanitise_shell_input(name)
 
     # create a directory structure to save the file
     # e.g. /storage/ab/cd/ab_cd_filename
@@ -188,7 +188,7 @@ def save_file(
     second_2_chars = file_id[2:4]
     file_storage_location = Path(settings.STORAGE_PATH) / first_2_chars / second_2_chars
     file_storage_location.mkdir(parents=True, exist_ok=True)
-    file_storage_location = file_storage_location / f"{file_id}_{file_name}"
+    file_storage_location = file_storage_location / f"{file_id}_{new_name_sanitised}"
 
     with open(file_storage_location, "wb") as fdst:
         print(f"Copying file content to {file_storage_location}")
@@ -196,7 +196,7 @@ def save_file(
         print(f"File saved to {file_storage_location}")
 
     file_metadata = File(
-        name=name,
+        name=new_name_sanitised,
         owner_id=owner_id,
         location=str(file_storage_location),
         size=file_storage_location.stat().st_size,
@@ -213,14 +213,16 @@ def save_file(
 def rename_file(*, session: Session, file: File, new_name: str) -> File:
     """Rename a file both in the filesystem and in the database."""
     new_name_sanitised = sanitise_shell_input(new_name)
-    if not file.children:
+    if (
+        not file.children and file.location
+    ):  # Only rename if the file is not a group and has a location
         # Group files do not have a location
         new_location_sanitised = (
             Path(file.location).parent / f"{file.id}_{new_name_sanitised}"
         )
         Path(file.location).rename(new_location_sanitised)
         file.location = str(new_location_sanitised)
-    file.name = new_name
+    file.name = new_name_sanitised
     session.add(file)
     session.commit()
     session.refresh(file)
