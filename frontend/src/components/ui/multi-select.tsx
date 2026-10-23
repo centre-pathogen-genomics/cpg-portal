@@ -35,6 +35,11 @@ interface MultiSelectProps {
   emptyMessage?: string
   disabled?: boolean
   loading?: boolean
+  /**
+   * Pick exactly one option: choosing replaces the current choice and closes
+   * the list, so a single-value field looks like the multi-select one.
+   */
+  single?: boolean
   "aria-label"?: string
 }
 
@@ -48,6 +53,7 @@ function MultiSelect({
   emptyMessage = "No options found.",
   disabled = false,
   loading = false,
+  single = false,
   "aria-label": ariaLabel,
 }: MultiSelectProps) {
   const [open, setOpen] = useState(false)
@@ -61,6 +67,14 @@ function MultiSelect({
   )
 
   const toggleValue = (optionValue: string) => {
+    if (single) {
+      // One choice only: selecting replaces what was there, and selecting the
+      // current choice again (or the chip's ×) clears it. Either way the list
+      // closes.
+      onValueChange(value.includes(optionValue) ? [] : [optionValue])
+      setOpen(false)
+      return
+    }
     onValueChange(
       value.includes(optionValue)
         ? value.filter((selectedValue) => selectedValue !== optionValue)
@@ -92,7 +106,9 @@ function MultiSelect({
                 ? "Loading files..."
                 : value.length === 0
                   ? placeholder
-                  : `${selectedUnits} ${selectedUnits === 1 ? "file" : "files"} selected`}
+                  : single
+                    ? (selectedOptions[0]?.label ?? placeholder)
+                    : `${selectedUnits} ${selectedUnits === 1 ? "file" : "files"} selected`}
             </span>
             <ChevronsUpDown className="text-muted-foreground opacity-60" />
           </Button>
@@ -140,7 +156,7 @@ function MultiSelect({
                   className="h-7 px-2"
                   onClick={() => onValueChange([])}
                 >
-                  Clear all
+                  {single ? "Clear" : "Clear all"}
                 </Button>
               </div>
             )}
@@ -148,7 +164,9 @@ function MultiSelect({
         </PopoverContent>
       </Popover>
 
-      {selectedOptions.length > 0 && (
+      {/* A single choice is already named on the trigger; repeating it in a
+          chip would only duplicate it. */}
+      {!single && selectedOptions.length > 0 && (
         <div className="flex flex-wrap gap-1.5" aria-label="Selected files">
           {selectedOptions.map((option) => (
             <Badge
