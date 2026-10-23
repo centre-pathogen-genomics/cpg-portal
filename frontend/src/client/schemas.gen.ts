@@ -288,6 +288,11 @@ export const FilePublicSchema = {
             ],
             title: 'Children'
         },
+        updated_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Updated At'
+        },
         parent_id: {
             anyOf: [
                 {
@@ -307,7 +312,7 @@ export const FilePublicSchema = {
         }
     },
     type: 'object',
-    required: ['name', 'id', 'created_at'],
+    required: ['name', 'id', 'updated_at', 'created_at'],
     title: 'FilePublic'
 } as const;
 
@@ -384,10 +389,15 @@ export const FilePublicChildSchema = {
             type: 'string',
             format: 'date-time',
             title: 'Created At'
+        },
+        updated_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Updated At'
         }
     },
     type: 'object',
-    required: ['name', 'id', 'created_at'],
+    required: ['name', 'id', 'created_at', 'updated_at'],
     title: 'FilePublicChild'
 } as const;
 

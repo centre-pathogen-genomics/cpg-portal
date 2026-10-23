@@ -14,6 +14,7 @@ from app.api.routes.files import (
     get_current_file_types,
     read_files,
 )
+from app.crud import rename_file as rename_file_crud
 from app.models import File, User
 from tests.utils.user import create_random_user
 from tests.utils.utils import random_lower_string
@@ -228,6 +229,46 @@ def test_read_files_filters_by_name_and_sorts(
 
     assert result.count == 3
     assert [item.id for item in result.data[:2]] == [newer.id, older.id]
+
+
+def test_read_files_sorts_by_updated_at(db: Session) -> None:
+    owner = create_random_user(db)
+    prefix = random_lower_string()
+    older = _create_saved_file(
+        db=db,
+        owner=owner,
+        name=f"{prefix}-older.txt",
+        size=10,
+        created_at=_utc_now() - timedelta(days=2),
+    )
+    newer = _create_saved_file(
+        db=db,
+        owner=owner,
+        name=f"{prefix}-newer.txt",
+        size=10,
+        created_at=_utc_now() - timedelta(days=1),
+    )
+    # Creating a file sets updated_at too, so age them on purpose.
+    older.updated_at = _utc_now() - timedelta(days=2)
+    newer.updated_at = _utc_now() - timedelta(days=1)
+    db.add(older)
+    db.add(newer)
+    db.commit()
+
+    # Renaming the older file moves it to the top of the list.
+    rename_file_crud(
+        session=db, file=older, new_name=f"{prefix}-older-renamed.txt"
+    )
+
+    result = read_files(
+        session=db,
+        current_user=owner,
+        name=prefix,
+        order_by="-updated_at",
+        types=[],
+    )
+
+    assert [item.id for item in result.data[:2]] == [older.id, newer.id]
 
 
 def test_read_files_rejects_unknown_sort_column(db: Session) -> None:

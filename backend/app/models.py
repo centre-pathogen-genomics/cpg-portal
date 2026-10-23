@@ -498,17 +498,25 @@ class File(FileBase, table=True):
     run_id: uuid.UUID = Field(foreign_key="run.id", nullable=True)
     run: Run = Relationship(back_populates="files")
     created_at: datetime = Field(default_factory=_utcnow_naive, nullable=False)
+    # Any change to the row, e.g. a rename, moves this.
+    updated_at: datetime = Field(
+        default_factory=_utcnow_naive,
+        nullable=False,
+        sa_column_kwargs={"onupdate": _utcnow_naive},
+    )
 
 
 class FilePublicChild(FileBase):
     id: uuid.UUID
     run_id: uuid.UUID | None = None
     created_at: datetime
+    updated_at: datetime
 
 
 class FilePublic(FileBase):
     id: uuid.UUID
     children: list[FilePublicChild] | None = None
+    updated_at: datetime
     parent_id: uuid.UUID | None = None
     created_at: datetime
 

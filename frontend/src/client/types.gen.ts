@@ -172,6 +172,10 @@ export type FilePublic = {
      */
     children?: Array<FilePublicChild> | null;
     /**
+     * Updated At
+     */
+    updated_at: string;
+    /**
      * Parent Id
      */
     parent_id?: string | null;
@@ -221,6 +225,10 @@ export type FilePublicChild = {
      * Created At
      */
     created_at: string;
+    /**
+     * Updated At
+     */
+    updated_at: string;
 };
 
 /**

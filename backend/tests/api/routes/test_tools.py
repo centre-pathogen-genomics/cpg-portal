@@ -163,7 +163,11 @@ def test_enabled_tools_stay_visible_while_they_are_installed(db: Session) -> Non
     tool = _create_tool(db=db, status=ToolStatus.installing)
     user = create_random_user(db)
 
-    listed = tools_routes.read_tools(session=db, current_user=user, limit=1000)
+    # Searching for this tool by name keeps the test independent of how many
+    # other tools the shared test database has accumulated.
+    listed = tools_routes.read_tools(
+        session=db, current_user=user, limit=1000, search=tool.name
+    )
 
     assert tool.id in [candidate.id for candidate in listed.data]
 
