@@ -3,8 +3,8 @@ import {
   useMutation,
   useQuery,
   useQueryClient,
-} from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+} from "@tanstack/react-query"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import {
   ArrowDown,
   ArrowUp,
@@ -16,33 +16,28 @@ import {
   Pencil,
   Search,
   Trash2,
-} from "lucide-react";
-import {
-  type KeyboardEvent,
-  type MouseEvent,
-  useEffect,
-  useState,
-} from "react";
-import { BsFolder } from "react-icons/bs";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
+} from "lucide-react"
+import { type KeyboardEvent, type MouseEvent, useEffect, useState } from "react"
+import { BsFolder } from "react-icons/bs"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui/dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
+} from "@/components/ui/dropdown-menu"
+import { Input } from "@/components/ui/input"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
   TableBody,
@@ -50,45 +45,45 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { cn } from "@/lib/utils";
-import type { FilePublic, FileTypeEnum } from "../../../client";
-import { FilesService } from "../../../client";
+} from "@/components/ui/table"
+import { cn } from "@/lib/utils"
+import type { FilePublic, FileTypeEnum } from "../../../client"
+import { FilesService } from "../../../client"
 import {
   BulkDeleteMenu,
   type BulkDeleteMode,
-} from "../../../components/Common/BulkDeleteMenu";
-import { ConfirmationDialog } from "../../../components/Common/ConfirmationDialog";
-import { PaginatedTableFooter } from "../../../components/Common/PaginatedTableFooter";
-import ViewModeButtons from "../../../components/Common/ViewModeButtons";
-import CreateGroupButton from "../../../components/Files/CreateGroupButton";
-import StorageStats from "../../../components/Files/StorageStats";
-import FileUpload from "../../../components/Files/UploadFileButtonWithProgress";
-import useCustomToast from "../../../hooks/useCustomToast";
-import { useDownloadAllFiles } from "../../../hooks/useDownloadAllFiles";
-import useViewMode, { type ViewMode } from "../../../hooks/useViewMode";
-import { useVisibleIds } from "../../../hooks/useVisibleIds";
-import { humanReadableDate, humanReadableFileSize } from "../../../utils";
+} from "../../../components/Common/BulkDeleteMenu"
+import { ConfirmationDialog } from "../../../components/Common/ConfirmationDialog"
+import { PaginatedTableFooter } from "../../../components/Common/PaginatedTableFooter"
+import ViewModeButtons from "../../../components/Common/ViewModeButtons"
+import CreateGroupButton from "../../../components/Files/CreateGroupButton"
+import StorageStats from "../../../components/Files/StorageStats"
+import FileUpload from "../../../components/Files/UploadFileButtonWithProgress"
+import useCustomToast from "../../../hooks/useCustomToast"
+import { useDownloadAllFiles } from "../../../hooks/useDownloadAllFiles"
+import useViewMode, { type ViewMode } from "../../../hooks/useViewMode"
+import { useVisibleIds } from "../../../hooks/useVisibleIds"
+import { humanReadableDate, humanReadableFileSize } from "../../../utils"
 
 export const Route = createFileRoute("/_layout/files/")({
   component: Files,
   head: () => ({ meta: [{ title: "My Files | CPG Portal" }] }),
-});
+})
 
 interface FilesTableProps {
-  view: ViewMode;
-  selected: string[];
-  setSelected: React.Dispatch<React.SetStateAction<string[]>>;
-  selectedType: string | null;
-  setSelectedType: React.Dispatch<React.SetStateAction<string | null>>;
-  typeFilter?: string;
-  nameFilter: string;
-  orderBy: string;
-  setOrderBy: React.Dispatch<React.SetStateAction<string>>;
-  setVisibleFileIds: React.Dispatch<React.SetStateAction<string[]>>;
+  view: ViewMode
+  selected: string[]
+  setSelected: React.Dispatch<React.SetStateAction<string[]>>
+  selectedType: string | null
+  setSelectedType: React.Dispatch<React.SetStateAction<string | null>>
+  typeFilter?: string
+  nameFilter: string
+  orderBy: string
+  setOrderBy: React.Dispatch<React.SetStateAction<string>>
+  setVisibleFileIds: React.Dispatch<React.SetStateAction<string[]>>
 }
 
-type SortColumn = "name" | "file_type" | "size" | "created_at" | "updated_at";
+type SortColumn = "name" | "file_type" | "size" | "created_at" | "updated_at"
 
 const sortLabels: Record<SortColumn, string> = {
   name: "Name",
@@ -96,62 +91,62 @@ const sortLabels: Record<SortColumn, string> = {
   size: "Size",
   created_at: "Created",
   updated_at: "Updated",
-};
+}
 
 interface FileActionsMenuProps {
-  file: FilePublic;
+  file: FilePublic
 }
 
 const getDownloadUrl = async (fileId: string) => {
   const token = (await FilesService.getDownloadToken({ path: { id: fileId } }))
-    .data;
-  return `${import.meta.env.VITE_API_URL}/api/v1/files/download/${token}`;
-};
+    .data
+  return `${import.meta.env.VITE_API_URL}/api/v1/files/download/${token}`
+}
 
 function FileActionsMenu({ file }: FileActionsMenuProps) {
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [renameOpen, setRenameOpen] = useState(false);
-  const [renameValue, setRenameValue] = useState(file.name);
-  const queryClient = useQueryClient();
-  const showToast = useCustomToast();
-  const isGroup = file.is_group && file.children && file.children.length > 0;
-  const { downloadAll } = useDownloadAllFiles();
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [renameOpen, setRenameOpen] = useState(false)
+  const [renameValue, setRenameValue] = useState(file.name)
+  const queryClient = useQueryClient()
+  const showToast = useCustomToast()
+  const isGroup = file.is_group && file.children && file.children.length > 0
+  const { downloadAll } = useDownloadAllFiles()
 
   const ungroupMutation = useMutation({
     mutationFn: () => FilesService.ungroupFile({ path: { id: file.id } }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["files"] });
-      queryClient.invalidateQueries({ queryKey: ["files-count"] });
-      queryClient.invalidateQueries({ queryKey: [{ _id: "getFilesStats" }] });
+      queryClient.invalidateQueries({ queryKey: ["files"] })
+      queryClient.invalidateQueries({ queryKey: ["files-count"] })
+      queryClient.invalidateQueries({ queryKey: [{ _id: "getFilesStats" }] })
     },
     onError: () => {
-      showToast("Error", "Failed to ungroup file.", "error");
+      showToast("Error", "Failed to ungroup file.", "error")
     },
-  });
+  })
 
   const deleteMutation = useMutation({
     mutationFn: () => FilesService.deleteFile({ path: { id: file.id } }),
     onSuccess: () => {
-      showToast("Success", "File deleted successfully.", "success");
-      setDeleteOpen(false);
+      showToast("Success", "File deleted successfully.", "success")
+      setDeleteOpen(false)
     },
     onError: () => {
-      showToast("An error occurred.", "Failed to delete file.", "error");
+      showToast("An error occurred.", "Failed to delete file.", "error")
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["files"] });
-      queryClient.invalidateQueries({ queryKey: ["files-count"] });
-      queryClient.invalidateQueries({ queryKey: [{ _id: "getFilesStats" }] });
+      queryClient.invalidateQueries({ queryKey: ["files"] })
+      queryClient.invalidateQueries({ queryKey: ["files-count"] })
+      queryClient.invalidateQueries({ queryKey: [{ _id: "getFilesStats" }] })
     },
-  });
+  })
 
   const renameMutation = useMutation({
     mutationFn: (name: string) =>
       FilesService.renameFile({ path: { id: file.id }, query: { name } }),
     onSuccess: () => {
-      showToast("Success", "File renamed successfully.", "success");
-      setRenameOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["files"] });
+      showToast("Success", "File renamed successfully.", "success")
+      setRenameOpen(false)
+      queryClient.invalidateQueries({ queryKey: ["files"] })
     },
     onError: (error: any) => {
       showToast(
@@ -159,30 +154,30 @@ function FileActionsMenu({ file }: FileActionsMenuProps) {
         error?.response?.data?.detail ||
           "An error occurred while renaming the file.",
         "error",
-      );
+      )
     },
-  });
+  })
 
   const downloadFiles = async () => {
     if (isGroup) {
-      await downloadAll([file], file.name);
-      return;
+      await downloadAll([file], file.name)
+      return
     }
-    const url = await getDownloadUrl(file.id);
-    window.open(url, "_blank");
-  };
+    const url = await getDownloadUrl(file.id)
+    window.open(url, "_blank")
+  }
   const showRename = () => {
-    setRenameValue(file.name);
-    setRenameOpen(true);
-  };
+    setRenameValue(file.name)
+    setRenameOpen(true)
+  }
   const rename = () => {
-    const name = renameValue.trim();
+    const name = renameValue.trim()
     if (name && name !== file.name) {
-      renameMutation.mutate(name);
+      renameMutation.mutate(name)
     } else {
-      setRenameOpen(false);
+      setRenameOpen(false)
     }
-  };
+  }
 
   return (
     <>
@@ -268,16 +263,16 @@ function FileActionsMenu({ file }: FileActionsMenuProps) {
         </DialogContent>
       </Dialog>
     </>
-  );
+  )
 }
 
 interface FilesActionsMenuProps {
-  selectedIds: string[];
-  allCount: number;
-  visibleFileIds: string[];
-  typeFilter: string;
-  nameFilter: string;
-  onDeleted: () => void;
+  selectedIds: string[]
+  allCount: number
+  visibleFileIds: string[]
+  typeFilter: string
+  nameFilter: string
+  onDeleted: () => void
 }
 
 function FilesActionsMenu({
@@ -288,17 +283,17 @@ function FilesActionsMenu({
   nameFilter,
   onDeleted,
 }: FilesActionsMenuProps) {
-  const [deleteMode, setDeleteMode] = useState<BulkDeleteMode | null>(null);
-  const queryClient = useQueryClient();
-  const showToast = useCustomToast();
+  const [deleteMode, setDeleteMode] = useState<BulkDeleteMode | null>(null)
+  const queryClient = useQueryClient()
+  const showToast = useCustomToast()
 
   const mutation = useMutation({
     mutationFn: async (mode: BulkDeleteMode) => {
       if (mode === "selected") {
         await Promise.all(
           selectedIds.map((id) => FilesService.deleteFile({ path: { id } })),
-        );
-        return;
+        )
+        return
       }
       // "All" means everything the current filters match, not every file the
       // user owns.
@@ -315,22 +310,22 @@ function FilesActionsMenu({
                   : {}),
                 ...(nameFilter.trim() ? { name: nameFilter.trim() } : {}),
               },
-      });
+      })
     },
     onSuccess: () => {
-      showToast("Success", "Files deleted successfully.", "success");
-      onDeleted();
-      setDeleteMode(null);
+      showToast("Success", "Files deleted successfully.", "success")
+      onDeleted()
+      setDeleteMode(null)
     },
     onError: () => {
-      showToast("An error occurred.", "Failed to delete files.", "error");
+      showToast("An error occurred.", "Failed to delete files.", "error")
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["files"] });
-      queryClient.invalidateQueries({ queryKey: ["files-count"] });
-      queryClient.invalidateQueries({ queryKey: [{ _id: "getFilesStats" }] });
+      queryClient.invalidateQueries({ queryKey: ["files"] })
+      queryClient.invalidateQueries({ queryKey: ["files-count"] })
+      queryClient.invalidateQueries({ queryKey: [{ _id: "getFilesStats" }] })
     },
-  });
+  })
 
   return (
     <BulkDeleteMenu
@@ -346,7 +341,7 @@ function FilesActionsMenu({
       descriptionNoun="file"
       mode={deleteMode}
       onConfirm={() => {
-        if (deleteMode) mutation.mutate(deleteMode);
+        if (deleteMode) mutation.mutate(deleteMode)
       }}
       onModeChange={setDeleteMode}
       pending={mutation.isPending}
@@ -354,7 +349,7 @@ function FilesActionsMenu({
       titleNoun="Files"
       triggerAriaLabel="File actions"
     />
-  );
+  )
 }
 
 function FilesTable({
@@ -369,16 +364,16 @@ function FilesTable({
   setOrderBy,
   setVisibleFileIds,
 }: FilesTableProps) {
-  const [pageSize, setPageSize] = useState(20);
-  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20)
+  const [page, setPage] = useState(1)
   const [selectionAnchorId, setSelectionAnchorId] = useState<string | null>(
     null,
-  );
-  const navigate = useNavigate({ from: Route.fullPath });
-  const trimmedNameFilter = nameFilter.trim();
+  )
+  const navigate = useNavigate({ from: Route.fullPath })
+  const trimmedNameFilter = nameFilter.trim()
   useEffect(() => {
-    setPage(1);
-  }, [typeFilter, trimmedNameFilter, orderBy, pageSize]);
+    setPage(1)
+  }, [typeFilter, trimmedNameFilter, orderBy, pageSize])
   const { data, isLoading, isFetching, isError, error } = useQuery({
     queryKey: ["files", pageSize, page, typeFilter, trimmedNameFilter, orderBy],
     placeholderData: keepPreviousData,
@@ -396,47 +391,45 @@ function FilesTable({
           },
         })
       ).data,
-  });
-  const files = data?.data ?? [];
-  const totalCount = data?.count ?? 0;
-  const pageCount = Math.max(1, Math.ceil(totalCount / pageSize));
+  })
+  const files = data?.data ?? []
+  const totalCount = data?.count ?? 0
+  const pageCount = Math.max(1, Math.ceil(totalCount / pageSize))
   const canSelect = (file: (typeof files)[number]) =>
     file.is_group
       ? selected.length > 0 && file.file_type === selectedType
-      : !selected.length || file.file_type === selectedType;
-  useVisibleIds(files, setVisibleFileIds);
+      : !selected.length || file.file_type === selectedType
+  useVisibleIds(files, setVisibleFileIds)
   useEffect(() => {
     if (!selected.length) {
-      setSelectionAnchorId(null);
-      setSelectedType(null);
+      setSelectionAnchorId(null)
+      setSelectedType(null)
     }
-  }, [selected.length, setSelectedType]);
+  }, [selected.length, setSelectedType])
   const toggle = (file: (typeof files)[number]) => {
-    setSelectionAnchorId(file.id);
+    setSelectionAnchorId(file.id)
     setSelected((current) =>
       current.includes(file.id)
         ? current.filter((value) => value !== file.id)
         : [...current, file.id],
-    );
-    setSelectedType(file.file_type ?? null);
-  };
+    )
+    setSelectedType(file.file_type ?? null)
+  }
   const selectRange = (file: (typeof files)[number]) => {
     if (!selectionAnchorId) {
-      toggle(file);
-      return;
+      toggle(file)
+      return
     }
-    const anchorIndex = files.findIndex(
-      (item) => item.id === selectionAnchorId,
-    );
-    const fileIndex = files.findIndex((item) => item.id === file.id);
+    const anchorIndex = files.findIndex((item) => item.id === selectionAnchorId)
+    const fileIndex = files.findIndex((item) => item.id === file.id)
     if (anchorIndex === -1 || fileIndex === -1) {
-      toggle(file);
-      return;
+      toggle(file)
+      return
     }
     const [start, end] =
       anchorIndex < fileIndex
         ? [anchorIndex, fileIndex]
-        : [fileIndex, anchorIndex];
+        : [fileIndex, anchorIndex]
     const rangeIds = files
       .slice(start, end + 1)
       .filter((item) =>
@@ -444,35 +437,35 @@ function FilesTable({
           ? selected.length > 0 && item.file_type === file.file_type
           : item.file_type === file.file_type,
       )
-      .map((item) => item.id);
-    setSelectedType(file.file_type ?? null);
-    setSelected((current) => Array.from(new Set([...current, ...rangeIds])));
-  };
+      .map((item) => item.id)
+    setSelectedType(file.file_type ?? null)
+    setSelected((current) => Array.from(new Set([...current, ...rangeIds])))
+  }
   const handleSelectionClick = (
     file: (typeof files)[number],
     event: MouseEvent | KeyboardEvent,
   ) => {
-    if (!canSelect(file)) return;
+    if (!canSelect(file)) return
     if (event.shiftKey) {
-      selectRange(file);
-      return;
+      selectRange(file)
+      return
     }
-    toggle(file);
-  };
+    toggle(file)
+  }
   const sortFiles = (column: SortColumn) => {
-    setSelected([]);
-    setOrderBy((current) => (current === column ? `-${column}` : column));
-  };
+    setSelected([])
+    setOrderBy((current) => (current === column ? `-${column}` : column))
+  }
   const changePage = (nextPage: number) => {
-    setPage(Math.min(Math.max(nextPage, 1), pageCount));
-  };
+    setPage(Math.min(Math.max(nextPage, 1), pageCount))
+  }
   const changePageSize = (nextPageSize: number) => {
-    setPageSize(nextPageSize);
-  };
+    setPageSize(nextPageSize)
+  }
   const renderSortableHeading = (column: SortColumn) => {
-    const isAscending = orderBy === column;
-    const isDescending = orderBy === `-${column}`;
-    const Icon = isAscending ? ArrowUp : isDescending ? ArrowDown : ArrowUpDown;
+    const isAscending = orderBy === column
+    const isDescending = orderBy === `-${column}`
+    const Icon = isAscending ? ArrowUp : isDescending ? ArrowDown : ArrowUpDown
 
     return (
       <Button
@@ -484,20 +477,20 @@ function FilesTable({
         {sortLabels[column]}
         <Icon className="ml-2 h-4 w-4" />
       </Button>
-    );
-  };
+    )
+  }
 
   const fileTypeLabel = (file: (typeof files)[number]) =>
     file.is_group
       ? `${file.file_type} (group of ${file.children?.length ?? 0})`
       : file.file_type === "pair"
         ? "paired-end reads"
-        : file.file_type;
+        : file.file_type
 
   const isInteractiveTarget = (target: EventTarget) =>
     (target as Element).closest(
       "button, a, input, [data-selection-cell], [data-file-actions-cell]",
-    ) != null;
+    ) != null
 
   // A card and a row behave like a table row: a modified click selects the
   // file, a plain click (or Enter/Space) opens it.
@@ -506,37 +499,37 @@ function FilesTable({
     event: MouseEvent | KeyboardEvent,
   ) => {
     if (event.metaKey || event.ctrlKey || event.shiftKey) {
-      handleSelectionClick(file, event);
-      return;
+      handleSelectionClick(file, event)
+      return
     }
     navigate({
       to: "/files/$fileId",
       params: { fileId: file.id },
       search: { groupId: undefined },
       resetScroll: true,
-    });
-  };
+    })
+  }
 
   const itemProps = (file: (typeof files)[number]) => ({
     role: "button" as const,
     tabIndex: 0,
     onClick: (event: MouseEvent) => {
-      if (isInteractiveTarget(event.target)) return;
-      activate(file, event);
+      if (isInteractiveTarget(event.target)) return
+      activate(file, event)
     },
     onMouseDown: (event: MouseEvent) => {
-      if (isInteractiveTarget(event.target)) return;
+      if (isInteractiveTarget(event.target)) return
       if (event.metaKey || event.ctrlKey || event.shiftKey) {
-        event.preventDefault();
+        event.preventDefault()
       }
     },
     onKeyDown: (event: KeyboardEvent) => {
-      if (event.key !== "Enter" && event.key !== " ") return;
-      if (isInteractiveTarget(event.target)) return;
-      event.preventDefault();
-      activate(file, event);
+      if (event.key !== "Enter" && event.key !== " ") return
+      if (isInteractiveTarget(event.target)) return
+      event.preventDefault()
+      activate(file, event)
     },
-  });
+  })
 
   const renderSelectionControl = (file: (typeof files)[number]) => (
     <div className="shrink-0" data-selection-cell>
@@ -545,9 +538,9 @@ function FilesTable({
           aria-label={`Select file ${file.name}`}
           checked={selected.includes(file.id)}
           onClick={(event) => {
-            if (!event.shiftKey) return;
-            event.preventDefault();
-            handleSelectionClick(file, event);
+            if (!event.shiftKey) return
+            event.preventDefault()
+            handleSelectionClick(file, event)
           }}
           onCheckedChange={() => toggle(file)}
         />
@@ -555,20 +548,20 @@ function FilesTable({
         file.is_group && <BsFolder />
       )}
     </div>
-  );
+  )
 
   const renderTags = (file: (typeof files)[number]) =>
     file.tags?.map((tag) => (
       <Badge key={tag} className="bg-cyan-100 text-cyan-800 hover:bg-cyan-100">
         {tag}
       </Badge>
-    ));
+    ))
 
   const renderFileActions = (file: (typeof files)[number]) => (
     <div className="relative z-10 shrink-0" data-file-actions-cell>
       <FileActionsMenu file={file} />
     </div>
-  );
+  )
 
   const renderCard = (file: (typeof files)[number]) => (
     <Card
@@ -591,7 +584,9 @@ function FilesTable({
           {renderTags(file)}
         </div>
       )}
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-2 px-4 text-sm">
+      {/* The details sit at the bottom of the card, so cards in a row line
+          them up. */}
+      <dl className="mt-auto grid grid-cols-2 gap-x-4 gap-y-2 px-4 text-sm">
         <div className="min-w-0">
           <dt className="text-muted-foreground">Type</dt>
           <dd className="truncate">{fileTypeLabel(file)}</dd>
@@ -612,7 +607,7 @@ function FilesTable({
         </div>
       </dl>
     </Card>
-  );
+  )
 
   const renderListRow = (file: (typeof files)[number]) => (
     <div
@@ -639,19 +634,19 @@ function FilesTable({
       </div>
       {renderFileActions(file)}
     </div>
-  );
+  )
 
   const renderErrorState = () => (
     <div className="rounded-md border p-6 text-center text-destructive">
       Error: {(error as Error).message}
     </div>
-  );
+  )
 
   const renderEmptyState = () => (
     <div className="rounded-md border p-6 text-center text-muted-foreground">
       No files found.
     </div>
-  );
+  )
 
   // Cards and rows keep the table's "deselect everything" checkbox, which the
   // table shows in its header.
@@ -664,7 +659,7 @@ function FilesTable({
       />
       {selected.length} selected
     </div>
-  );
+  )
 
   const footer = (
     <PaginatedTableFooter
@@ -677,7 +672,7 @@ function FilesTable({
       pageSize={pageSize}
       totalCount={totalCount}
     />
-  );
+  )
 
   if (view === "cards") {
     return (
@@ -709,7 +704,7 @@ function FilesTable({
         )}
         {footer}
       </>
-    );
+    )
   }
 
   if (view === "list") {
@@ -743,7 +738,7 @@ function FilesTable({
         )}
         {footer}
       </>
-    );
+    )
   }
 
   return (
@@ -798,9 +793,9 @@ function FilesTable({
                         "button, a, input, [data-selection-cell], [data-file-actions-cell]",
                       )
                     )
-                      return;
+                      return
                     if (event.metaKey || event.ctrlKey || event.shiftKey) {
-                      event.preventDefault();
+                      event.preventDefault()
                     }
                   }}
                   onClick={(event) => {
@@ -809,17 +804,17 @@ function FilesTable({
                         "button, a, input, [data-selection-cell], [data-file-actions-cell]",
                       )
                     )
-                      return;
+                      return
                     if (event.metaKey || event.ctrlKey || event.shiftKey) {
-                      handleSelectionClick(file, event);
-                      return;
+                      handleSelectionClick(file, event)
+                      return
                     }
                     navigate({
                       to: "/files/$fileId",
                       params: { fileId: file.id },
                       search: { groupId: undefined },
                       resetScroll: true,
-                    });
+                    })
                   }}
                 >
                   <TableCell
@@ -832,9 +827,9 @@ function FilesTable({
                         aria-label={`Select file ${file.name}`}
                         checked={selected.includes(file.id)}
                         onClick={(event) => {
-                          if (!event.shiftKey) return;
-                          event.preventDefault();
-                          handleSelectionClick(file, event);
+                          if (!event.shiftKey) return
+                          event.preventDefault()
+                          handleSelectionClick(file, event)
                         }}
                         onCheckedChange={() => toggle(file)}
                       />
@@ -891,22 +886,22 @@ function FilesTable({
       </div>
       {footer}
     </>
-  );
+  )
 }
 
 function Files() {
-  const [view, setView] = useViewMode("records");
-  const [selected, setSelected] = useState<string[]>([]);
-  const [selectedType, setSelectedType] = useState<string | null>(null);
-  const [typeFilter, setTypeFilter] = useState("all");
-  const [nameFilter, setNameFilter] = useState("");
-  const [orderBy, setOrderBy] = useState("-updated_at");
-  const [visibleFileIds, setVisibleFileIds] = useState<string[]>([]);
+  const [view, setView] = useViewMode("records")
+  const [selected, setSelected] = useState<string[]>([])
+  const [selectedType, setSelectedType] = useState<string | null>(null)
+  const [typeFilter, setTypeFilter] = useState("all")
+  const [nameFilter, setNameFilter] = useState("")
+  const [orderBy, setOrderBy] = useState("-updated_at")
+  const [visibleFileIds, setVisibleFileIds] = useState<string[]>([])
   const { data: fileTypes } = useQuery({
     queryKey: ["files", "types", "current"],
     queryFn: async () => (await FilesService.getCurrentFileTypes()).data ?? {},
-  });
-  const trimmedNameFilter = nameFilter.trim();
+  })
+  const trimmedNameFilter = nameFilter.trim()
   // What the current filters match, which is what "Delete All" and "Group All"
   // act on.
   const { data: matchingFilesCount } = useQuery({
@@ -924,7 +919,7 @@ function Files() {
           },
         })
       ).data?.count ?? 0,
-  });
+  })
   return (
     <div className="w-full px-4 md:px-6 lg:px-8 xl:px-12">
       <div className="mb-2 space-y-1">
@@ -946,9 +941,9 @@ function Files() {
               className="pl-9"
               value={nameFilter}
               onChange={(event) => {
-                setNameFilter(event.target.value);
-                setSelected([]);
-                setSelectedType(null);
+                setNameFilter(event.target.value)
+                setSelected([])
+                setSelectedType(null)
               }}
               placeholder="Search by name"
               aria-label="Search files by name"
@@ -958,9 +953,9 @@ function Files() {
             className="h-9 w-full rounded-md border bg-background px-3 sm:w-[150px]"
             value={typeFilter}
             onChange={(event) => {
-              setTypeFilter(event.target.value);
-              setSelected([]);
-              setSelectedType(null);
+              setTypeFilter(event.target.value)
+              setSelected([])
+              setSelectedType(null)
             }}
           >
             <option value="all">Types</option>
@@ -989,8 +984,8 @@ function Files() {
               }
               matchingCount={matchingFilesCount ?? 0}
               onGroupCreated={() => {
-                setSelected([]);
-                setSelectedType(null);
+                setSelected([])
+                setSelectedType(null)
               }}
               size="md"
             />
@@ -1003,8 +998,8 @@ function Files() {
             typeFilter={typeFilter}
             nameFilter={nameFilter}
             onDeleted={() => {
-              setSelected([]);
-              setSelectedType(null);
+              setSelected([])
+              setSelectedType(null)
             }}
           />
         </div>
@@ -1022,7 +1017,7 @@ function Files() {
         setVisibleFileIds={setVisibleFileIds}
       />
     </div>
-  );
+  )
 }
 
-export default Files;
+export default Files
