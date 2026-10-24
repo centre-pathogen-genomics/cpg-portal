@@ -14,7 +14,9 @@ from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
 from app.models import (
     AuthTokenPurpose,
+    File,
     Message,
+    Run,
     UpdatePassword,
     User,
     UserCreate,
@@ -279,9 +281,23 @@ def delete_user(
         raise HTTPException(
             status_code=403, detail="Super users are not allowed to delete themselves"
         )
-    # TODO: delete all items owned by the user
-    # statement = delete(Item).where(col(Item.owner_id) == user_id)
-    # session.exec(statement)  # type: ignore
+    # Runs and files keep a hard reference to their owner, so a user who still
+    # owns either cannot go: the deletion would either fail against the not-null
+    # foreign key or leave the rows behind.
+    owned_runs = session.exec(
+        select(func.count()).select_from(Run).where(Run.owner_id == user_id)
+    ).one()
+    owned_files = session.exec(
+        select(func.count()).select_from(File).where(File.owner_id == user_id)
+    ).one()
+    if owned_runs or owned_files:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"This user still owns {owned_runs} run(s) and {owned_files} "
+                "file(s). Delete those first."
+            ),
+        )
     session.delete(user)
     session.commit()
     return Message(message="User deleted successfully")
