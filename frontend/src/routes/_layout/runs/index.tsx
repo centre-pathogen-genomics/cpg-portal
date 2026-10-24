@@ -3,8 +3,8 @@ import {
   useMutation,
   useQuery,
   useQueryClient,
-} from "@tanstack/react-query"
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
+} from "@tanstack/react-query";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   ArrowDown,
   ArrowUp,
@@ -16,27 +16,27 @@ import {
   Search,
   Trash2,
   TriangleAlert,
-} from "lucide-react"
-import { useCallback, useEffect, useState } from "react"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
+} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import { Skeleton } from "@/components/ui/skeleton"
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -44,48 +44,48 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 import {
   type RunPublicMinimal,
   type RunStatus,
   RunsService,
   SettingsService,
-} from "../../../client"
+} from "../../../client";
 import {
   BulkDeleteMenu,
   type BulkDeleteMode,
-} from "../../../components/Common/BulkDeleteMenu"
-import DeleteAlert from "../../../components/Common/DeleteAlert"
-import { PaginatedTableFooter } from "../../../components/Common/PaginatedTableFooter"
-import ViewModeButtons from "../../../components/Common/ViewModeButtons"
-import CancelAlert from "../../../components/Runs/CancelAlert"
-import CancelRunsButton from "../../../components/Runs/CancelRunsButton"
-import ParamTag from "../../../components/Runs/ParamTag"
-import RunRuntime from "../../../components/Runs/RunTime"
-import StatusBadge, { StatusIcon } from "../../../components/Runs/StatusBadge"
-import useCustomToast from "../../../hooks/useCustomToast"
-import useViewMode, { type ViewMode } from "../../../hooks/useViewMode"
-import { useVisibleIds } from "../../../hooks/useVisibleIds"
-import { humanReadableDate } from "../../../utils"
+} from "../../../components/Common/BulkDeleteMenu";
+import DeleteAlert from "../../../components/Common/DeleteAlert";
+import { PaginatedTableFooter } from "../../../components/Common/PaginatedTableFooter";
+import ViewModeButtons from "../../../components/Common/ViewModeButtons";
+import CancelAlert from "../../../components/Runs/CancelAlert";
+import CancelRunsButton from "../../../components/Runs/CancelRunsButton";
+import ParamTag from "../../../components/Runs/ParamTag";
+import RunRuntime from "../../../components/Runs/RunTime";
+import StatusBadge, { StatusIcon } from "../../../components/Runs/StatusBadge";
+import useCustomToast from "../../../hooks/useCustomToast";
+import useViewMode, { type ViewMode } from "../../../hooks/useViewMode";
+import { useVisibleIds } from "../../../hooks/useVisibleIds";
+import { humanReadableDate } from "../../../utils";
 
 export const Route = createFileRoute("/_layout/runs/")({
   component: Runs,
   head: () => ({ meta: [{ title: "My Runs | CPG Portal" }] }),
-})
+});
 
 interface RunsTableProps {
-  nameFilter: string
-  orderBy: string
-  setOrderBy: React.Dispatch<React.SetStateAction<string>>
-  setVisibleRunIds: React.Dispatch<React.SetStateAction<string[]>>
-  toolFilter: string
-  view: ViewMode
+  nameFilter: string;
+  orderBy: string;
+  setOrderBy: React.Dispatch<React.SetStateAction<string>>;
+  setVisibleRunIds: React.Dispatch<React.SetStateAction<string[]>>;
+  toolFilter: string;
+  view: ViewMode;
 }
 
-type SortColumn = "name" | "status" | "created_at" | "finished_at" | "runtime"
+type SortColumn = "name" | "status" | "created_at" | "finished_at" | "runtime";
 
-const inactiveRunStatuses: RunStatus[] = ["completed", "failed", "cancelled"]
-const activeRunStatuses: RunStatus[] = ["pending", "running"]
+const inactiveRunStatuses: RunStatus[] = ["completed", "failed", "cancelled"];
+const activeRunStatuses: RunStatus[] = ["pending", "running"];
 
 const sortLabels: Record<SortColumn, string> = {
   name: "Name",
@@ -93,21 +93,21 @@ const sortLabels: Record<SortColumn, string> = {
   created_at: "Date",
   finished_at: "Finished",
   runtime: "Runtime",
-}
+};
 
 interface RunActionsMenuProps {
-  run: RunPublicMinimal
+  run: RunPublicMinimal;
 }
 
 function RunActionsMenu({ run }: RunActionsMenuProps) {
-  const [cancelOpen, setCancelOpen] = useState(false)
-  const [deleteOpen, setDeleteOpen] = useState(false)
-  const [renameOpen, setRenameOpen] = useState(false)
-  const [renameValue, setRenameValue] = useState(run.name ?? "")
-  const queryClient = useQueryClient()
-  const showToast = useCustomToast()
-  const canCancel = ["running", "pending"].includes(run.status)
-  const displayName = run.name ?? run.id.split("-")[0]
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [renameValue, setRenameValue] = useState(run.name ?? "");
+  const queryClient = useQueryClient();
+  const showToast = useCustomToast();
+  const canCancel = ["running", "pending"].includes(run.status);
+  const displayName = run.name ?? run.id.split("-")[0];
 
   const renameMutation = useMutation({
     mutationFn: (name: string) =>
@@ -116,34 +116,34 @@ function RunActionsMenu({ run }: RunActionsMenuProps) {
         query: { name },
       }),
     onSuccess: () => {
-      showToast("Success", "Run renamed successfully.", "success")
-      setRenameOpen(false)
-      queryClient.invalidateQueries({ queryKey: ["runs"] })
+      showToast("Success", "Run renamed successfully.", "success");
+      setRenameOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["runs"] });
       queryClient.invalidateQueries({
         queryKey: [{ _id: "runsReadRun", path: { id: run.id } }],
-      })
+      });
     },
     onError: () => {
       showToast(
         "An error occurred.",
         "An error occurred while renaming the run.",
         "error",
-      )
+      );
     },
-  })
+  });
 
   const showRename = () => {
-    setRenameValue(displayName)
-    setRenameOpen(true)
-  }
+    setRenameValue(displayName);
+    setRenameOpen(true);
+  };
   const rename = () => {
-    const name = renameValue.trim()
+    const name = renameValue.trim();
     if (name && name !== displayName) {
-      renameMutation.mutate(name)
+      renameMutation.mutate(name);
     } else {
-      setRenameOpen(false)
+      setRenameOpen(false);
     }
-  }
+  };
 
   return (
     <>
@@ -220,13 +220,15 @@ function RunActionsMenu({ run }: RunActionsMenuProps) {
         onClose={() => setDeleteOpen(false)}
       />
     </>
-  )
+  );
 }
 
 /** A run's params, matching the table's params cell. */
 function RunParamTags({ run }: { run: RunPublicMinimal }) {
-  const keys = Object.keys(run.params).filter((key) => run.params[key] !== null)
-  if (!keys.length) return null
+  const keys = Object.keys(run.params).filter(
+    (key) => run.params[key] !== null,
+  );
+  if (!keys.length) return null;
 
   return (
     <div className="pointer-events-none flex flex-wrap">
@@ -236,12 +238,12 @@ function RunParamTags({ run }: { run: RunPublicMinimal }) {
         </div>
       ))}
     </div>
-  )
+  );
 }
 
 /** A run's tags, matching the table's tags cell. */
 function RunTags({ run }: { run: RunPublicMinimal }) {
-  if (!run.tags?.length) return null
+  if (!run.tags?.length) return null;
 
   return (
     <div className="pointer-events-none flex flex-wrap">
@@ -254,15 +256,15 @@ function RunTags({ run }: { run: RunPublicMinimal }) {
         </Badge>
       ))}
     </div>
-  )
+  );
 }
 
 /** One run as a card, for the cards view. */
 function RunCard({ run }: { run: RunPublicMinimal }) {
-  const name = run.name ?? run.id.split("-")[0]
+  const name = run.name ?? run.id.split("-")[0];
   const toolName = run.tool_version
     ? `${run.tool.name} (v${run.tool_version})`
-    : run.tool.name
+    : run.tool.name;
 
   return (
     <Card className="relative gap-3 p-4 transition-colors hover:bg-muted/50">
@@ -304,15 +306,15 @@ function RunCard({ run }: { run: RunPublicMinimal }) {
         <span>{run.cpus} threads</span>
       </div>
     </Card>
-  )
+  );
 }
 
 /** One run as a compact line, for the list view. */
 function RunListRow({ run }: { run: RunPublicMinimal }) {
-  const name = run.name ?? run.id.split("-")[0]
+  const name = run.name ?? run.id.split("-")[0];
   const toolName = run.tool_version
     ? `${run.tool.name} (v${run.tool_version})`
-    : run.tool.name
+    : run.tool.name;
 
   return (
     <div className="relative flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md border bg-card px-3 py-2 transition-colors hover:bg-muted/50">
@@ -324,7 +326,7 @@ function RunListRow({ run }: { run: RunPublicMinimal }) {
         className="absolute inset-0 rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
       />
       <span className="pointer-events-none flex shrink-0 items-center">
-        <StatusIcon status={run.status} />
+        <StatusIcon status={run.status} className="text-xl" />
       </span>
       <span className="pointer-events-none min-w-0 flex-1 truncate font-semibold">
         {name}
@@ -351,7 +353,7 @@ function RunListRow({ run }: { run: RunPublicMinimal }) {
         <RunActionsMenu run={run} />
       </div>
     </div>
-  )
+  );
 }
 
 /** Loading placeholder shaped like `RunCard`. */
@@ -369,7 +371,7 @@ function RunCardSkeleton() {
       <Skeleton className="h-4 w-3/4" />
       <Skeleton className="h-4 w-1/2" />
     </Card>
-  )
+  );
 }
 
 /** Loading placeholder shaped like `RunListRow`. */
@@ -382,7 +384,7 @@ function RunListRowSkeleton() {
       <Skeleton className="h-5 w-24 shrink-0" />
       <Skeleton className="size-8 shrink-0" />
     </div>
-  )
+  );
 }
 
 function RunsTable({
@@ -393,14 +395,14 @@ function RunsTable({
   toolFilter,
   view,
 }: RunsTableProps) {
-  const [pageSize, setPageSize] = useState(20)
-  const [page, setPage] = useState(1)
-  const navigate = useNavigate({ from: Route.fullPath })
-  const trimmedNameFilter = nameFilter.trim()
+  const [pageSize, setPageSize] = useState(20);
+  const [page, setPage] = useState(1);
+  const navigate = useNavigate({ from: Route.fullPath });
+  const trimmedNameFilter = nameFilter.trim();
 
   useEffect(() => {
-    setPage(1)
-  }, [trimmedNameFilter, orderBy, pageSize, toolFilter])
+    setPage(1);
+  }, [trimmedNameFilter, orderBy, pageSize, toolFilter]);
 
   const { data, isLoading, isFetching, isError, error } = useQuery({
     queryKey: ["runs", pageSize, page, trimmedNameFilter, orderBy, toolFilter],
@@ -419,30 +421,30 @@ function RunsTable({
         })
       ).data,
     refetchInterval: 5000,
-  })
+  });
 
-  const runs = data?.data ?? []
-  const totalCount = data?.count ?? 0
-  const pageCount = Math.max(1, Math.ceil(totalCount / pageSize))
+  const runs = data?.data ?? [];
+  const totalCount = data?.count ?? 0;
+  const pageCount = Math.max(1, Math.ceil(totalCount / pageSize));
   const isInactiveRun = useCallback(
     (run: RunPublicMinimal) => inactiveRunStatuses.includes(run.status),
     [],
-  )
-  useVisibleIds(runs, setVisibleRunIds, isInactiveRun)
+  );
+  useVisibleIds(runs, setVisibleRunIds, isInactiveRun);
 
   const sortRuns = (column: SortColumn) => {
-    setOrderBy((current) => (current === column ? `-${column}` : column))
-  }
+    setOrderBy((current) => (current === column ? `-${column}` : column));
+  };
   const changePage = (nextPage: number) => {
-    setPage(Math.min(Math.max(nextPage, 1), pageCount))
-  }
+    setPage(Math.min(Math.max(nextPage, 1), pageCount));
+  };
   const changePageSize = (nextPageSize: number) => {
-    setPageSize(nextPageSize)
-  }
+    setPageSize(nextPageSize);
+  };
   const renderSortableHeading = (column: SortColumn) => {
-    const isAscending = orderBy === column
-    const isDescending = orderBy === `-${column}`
-    const Icon = isAscending ? ArrowUp : isDescending ? ArrowDown : ArrowUpDown
+    const isAscending = orderBy === column;
+    const isDescending = orderBy === `-${column}`;
+    const Icon = isAscending ? ArrowUp : isDescending ? ArrowDown : ArrowUpDown;
 
     return (
       <Button
@@ -454,17 +456,17 @@ function RunsTable({
         {sortLabels[column]}
         <Icon className="ml-2 h-4 w-4" />
       </Button>
-    )
-  }
+    );
+  };
 
   // The cards and list views show the same runs as the table, only laid out
   // differently, so they share its loading, error and empty states.
   if (view !== "table") {
-    const Entry = view === "cards" ? RunCard : RunListRow
+    const Entry = view === "cards" ? RunCard : RunListRow;
     const listClassName =
       view === "cards"
         ? "grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
-        : "flex flex-col gap-2"
+        : "flex flex-col gap-2";
 
     return (
       <>
@@ -508,7 +510,7 @@ function RunsTable({
           totalCount={totalCount}
         />
       </>
-    )
+    );
   }
 
   return (
@@ -556,12 +558,12 @@ function RunsTable({
                         "button, a, input, [data-run-actions-cell]",
                       )
                     )
-                      return
+                      return;
                     navigate({
                       to: "/runs/$runid",
                       params: { runid: run.id },
                       resetScroll: true,
-                    })
+                    });
                   }}
                 >
                   <TableCell>
@@ -635,18 +637,18 @@ function RunsTable({
         totalCount={totalCount}
       />
     </>
-  )
+  );
 }
 
 interface RunsActionsMenuProps {
-  allCount: number
-  visibleRunIds: string[]
+  allCount: number;
+  visibleRunIds: string[];
 }
 
 function RunsActionsMenu({ allCount, visibleRunIds }: RunsActionsMenuProps) {
-  const [deleteMode, setDeleteMode] = useState<BulkDeleteMode | null>(null)
-  const queryClient = useQueryClient()
-  const showToast = useCustomToast()
+  const [deleteMode, setDeleteMode] = useState<BulkDeleteMode | null>(null);
+  const queryClient = useQueryClient();
+  const showToast = useCustomToast();
 
   const mutation = useMutation({
     mutationFn: async (mode: BulkDeleteMode) => {
@@ -657,21 +659,21 @@ function RunsActionsMenu({ allCount, visibleRunIds }: RunsActionsMenuProps) {
                 ids: visibleRunIds,
               }
             : {},
-      })
+      });
     },
     onSuccess: () => {
-      showToast("Success", "Runs deleted successfully.", "success")
-      setDeleteMode(null)
+      showToast("Success", "Runs deleted successfully.", "success");
+      setDeleteMode(null);
     },
     onError: () => {
-      showToast("An error occurred.", "Failed to delete runs.", "error")
+      showToast("An error occurred.", "Failed to delete runs.", "error");
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["runs"] })
-      queryClient.invalidateQueries({ queryKey: ["runs-count"] })
-      queryClient.invalidateQueries({ queryKey: ["files"] })
+      queryClient.invalidateQueries({ queryKey: ["runs"] });
+      queryClient.invalidateQueries({ queryKey: ["runs-count"] });
+      queryClient.invalidateQueries({ queryKey: ["files"] });
     },
-  })
+  });
 
   return (
     <BulkDeleteMenu
@@ -682,26 +684,26 @@ function RunsActionsMenu({ allCount, visibleRunIds }: RunsActionsMenuProps) {
       descriptionSuffix=" and associated unsaved files"
       mode={deleteMode}
       onConfirm={() => {
-        if (deleteMode) mutation.mutate(deleteMode)
+        if (deleteMode) mutation.mutate(deleteMode);
       }}
       onModeChange={setDeleteMode}
       pending={mutation.isPending}
       titleNoun="Runs"
       triggerAriaLabel="Run actions"
     />
-  )
+  );
 }
 
 function Runs() {
-  const [nameFilter, setNameFilter] = useState("")
-  const [orderBy, setOrderBy] = useState("-created_at")
-  const [toolFilter, setToolFilter] = useState("all")
-  const [visibleRunIds, setVisibleRunIds] = useState<string[]>([])
-  const [view, setView] = useViewMode("records")
+  const [nameFilter, setNameFilter] = useState("");
+  const [orderBy, setOrderBy] = useState("-created_at");
+  const [toolFilter, setToolFilter] = useState("all");
+  const [visibleRunIds, setVisibleRunIds] = useState<string[]>([]);
+  const [view, setView] = useViewMode("records");
   const { data: toolNames } = useQuery({
     queryKey: ["runs", "tools"],
     queryFn: async () => (await RunsService.readRunToolNames()).data ?? [],
-  })
+  });
   // Runs that are still going, which are the ones Cancel All can stop.
   const { data: activeRunsCount } = useQuery({
     queryKey: ["runs-count", "active"],
@@ -712,7 +714,7 @@ function Runs() {
         })
       ).data?.count ?? 0,
     refetchInterval: 10_000,
-  })
+  });
   const { data: allRunsCount } = useQuery({
     queryKey: ["runs-count", "all"],
     queryFn: async () =>
@@ -721,12 +723,12 @@ function Runs() {
           query: { skip: 0, limit: 1, statuses: inactiveRunStatuses },
         })
       ).data?.count ?? 0,
-  })
+  });
   const { data: queueStatus } = useQuery({
     queryKey: ["settings", "queue"],
     queryFn: async () => (await SettingsService.readQueueDrainStatus()).data,
     refetchInterval: 15_000,
-  })
+  });
 
   return (
     <div className="w-full px-4 md:px-6 lg:px-8 xl:px-12">
@@ -791,7 +793,7 @@ function Runs() {
         view={view}
       />
     </div>
-  )
+  );
 }
 
-export default Runs
+export default Runs;
