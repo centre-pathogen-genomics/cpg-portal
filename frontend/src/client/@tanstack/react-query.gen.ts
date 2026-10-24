@@ -2,7 +2,7 @@
 
 import { type Options, LoginService, UsersService, UtilsService, ToolsService, FilesService, RunsService, LlmService, SettingsService, StatsService, AdminService } from '../sdk.gen';
 import { queryOptions, type UseMutationOptions, type DefaultError, infiniteQueryOptions, type InfiniteData } from '@tanstack/react-query';
-import type { LoginLoginAccessTokenData, LoginLoginAccessTokenError, LoginLoginAccessTokenResponse, LoginTestTokenData, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordError, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordError, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentError, LoginRecoverPasswordHtmlContentResponse, UsersReadUsersData, UsersCreateUserData, UsersCreateUserError, UsersCreateUserResponse, UsersDeleteUserMeData, UsersDeleteUserMeResponse, UsersReadUserMeData, UsersUpdateUserMeData, UsersUpdateUserMeError, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeError, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserError, UsersRegisterUserResponse, UsersActivateAccountData, UsersDeleteUserData, UsersDeleteUserError, UsersDeleteUserResponse, UsersReadUserByIdData, UsersUpdateUserData, UsersUpdateUserError, UsersUpdateUserResponse, UtilsTestEmailData, UtilsTestEmailError, UtilsTestEmailResponse, UtilsHealthCheckData, UtilsMaxUploadSizeData, ToolsReadToolsData, ToolsCreateToolData, ToolsCreateToolError, ToolsCreateToolResponse, ToolsReadToolByNameData, ToolsDeleteToolData, ToolsDeleteToolError, ToolsDeleteToolResponse, ToolsReadToolData, ToolsUpdateToolData, ToolsUpdateToolError, ToolsUpdateToolResponse, ToolsUnfavouriteToolData, ToolsUnfavouriteToolError, ToolsUnfavouriteToolResponse, ToolsFavouriteToolData, ToolsFavouriteToolError, ToolsFavouriteToolResponse, ToolsEnableToolData, ToolsEnableToolError, ToolsEnableToolResponse, ToolsDisableToolData, ToolsDisableToolError, ToolsDisableToolResponse, ToolsEnableLlmSummaryData, ToolsEnableLlmSummaryError, ToolsEnableLlmSummaryResponse, ToolsDisableLlmSummaryData, ToolsDisableLlmSummaryError, ToolsDisableLlmSummaryResponse, ToolsUpdateToolPostInstallData, ToolsUpdateToolPostInstallError, ToolsUpdateToolPostInstallResponse, ToolsInstallToolData, ToolsInstallToolError, ToolsInstallToolResponse, ToolsUninstallToolData, ToolsUninstallToolError, ToolsUninstallToolResponse, FilesDeleteFilesData, FilesDeleteFilesError, FilesReadFilesData, FilesUploadFileData, FilesUploadFileError, FilesUploadFileResponse, FilesGetFilesAllowedTypesData, FilesGetCurrentFileTypesData, FilesGetFilesStatsData, FilesCreatePairData, FilesCreatePairError, FilesCreatePairResponse, FilesCreateGroupData, FilesCreateGroupError, FilesCreateGroupResponse, FilesUngroupFileData, FilesUngroupFileError, FilesUngroupFileResponse, FilesDeleteFileData, FilesDeleteFileError, FilesReadFileData, FilesSaveFileData, FilesSaveFileError, FilesSaveFileResponse, FilesCopyFileData, FilesCopyFileError, FilesCopyFileResponse, FilesDownloadFileData, FilesGetDownloadTokenData, FilesGetBulkDownloadTokenData, FilesDownloadAllFilesWithTokenData, FilesRenameFileData, FilesRenameFileError, FilesRenameFileResponse, FilesDownloadFileWithTokenData, RunsDeleteRunsData, RunsDeleteRunsError, RunsDeleteRunsResponse, RunsReadRunsData, RunsCreateRunData, RunsCreateRunError, RunsCreateRunResponse, RunsReadRunToolNamesData, RunsCancelRunsData, RunsCancelRunsResponse, RunsReadActiveRunsData, RunsDeleteRunData, RunsDeleteRunError, RunsDeleteRunResponse, RunsReadRunData, RunsCancelRunData, RunsCancelRunError, RunsCancelRunResponse, RunsRenameRunData, RunsRenameRunError, RunsRenameRunResponse, RunsToggleRunSharingData, RunsToggleRunSharingError, RunsToggleRunSharingResponse, LlmGenerateRunSummaryData, LlmGenerateRunSummaryError, LlmGenerateRunSummaryResponse, SettingsReadQueueDrainStatusData, SettingsReadAppSettingsData, SettingsUpdateAppSettingsData, SettingsUpdateAppSettingsError, SettingsUpdateAppSettingsResponse, StatsGetSystemStatsData, StatsGetSystemStatsError, StatsGetSystemStatsResponse, StatsGetStatsSummaryData, StatsGetUserDetailStatsData, StatsGetUserDetailStatsError, StatsGetUserDetailStatsResponse, StatsGetToolDetailStatsData, StatsGetToolDetailStatsError, StatsGetToolDetailStatsResponse, AdminReadQueueStatusData, AdminPauseQueueData, AdminPauseQueueError, AdminPauseQueueResponse, AdminResumeQueueData, AdminResumeQueueResponse } from '../types.gen';
+import type { LoginLoginAccessTokenData, LoginLoginAccessTokenError, LoginLoginAccessTokenResponse, LoginTestTokenData, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordError, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordError, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentError, LoginRecoverPasswordHtmlContentResponse, UsersReadUsersData, UsersCreateUserData, UsersCreateUserError, UsersCreateUserResponse, UsersDeleteUserMeData, UsersDeleteUserMeResponse, UsersReadUserMeData, UsersUpdateUserMeData, UsersUpdateUserMeError, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeError, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserError, UsersRegisterUserResponse, UsersActivateAccountData, UsersDeleteUserData, UsersDeleteUserError, UsersDeleteUserResponse, UsersReadUserByIdData, UsersUpdateUserData, UsersUpdateUserError, UsersUpdateUserResponse, UtilsTestEmailData, UtilsTestEmailError, UtilsTestEmailResponse, UtilsHealthCheckData, UtilsMaxUploadSizeData, ToolsReadToolsData, ToolsCreateToolData, ToolsCreateToolError, ToolsCreateToolResponse, ToolsReadToolByNameData, ToolsReadToolVersionsData, ToolsDeleteToolData, ToolsDeleteToolError, ToolsDeleteToolResponse, ToolsReadToolData, ToolsUpdateToolData, ToolsUpdateToolError, ToolsUpdateToolResponse, ToolsUnfavouriteToolData, ToolsUnfavouriteToolError, ToolsUnfavouriteToolResponse, ToolsFavouriteToolData, ToolsFavouriteToolError, ToolsFavouriteToolResponse, ToolsCreateToolVersionData, ToolsCreateToolVersionError, ToolsCreateToolVersionResponse, ToolsEnableToolData, ToolsEnableToolError, ToolsEnableToolResponse, ToolsDisableToolData, ToolsDisableToolError, ToolsDisableToolResponse, ToolsEnableLlmSummaryData, ToolsEnableLlmSummaryError, ToolsEnableLlmSummaryResponse, ToolsDisableLlmSummaryData, ToolsDisableLlmSummaryError, ToolsDisableLlmSummaryResponse, ToolsUpdateToolPostInstallData, ToolsUpdateToolPostInstallError, ToolsUpdateToolPostInstallResponse, ToolsInstallToolData, ToolsInstallToolError, ToolsInstallToolResponse, ToolsUninstallToolData, ToolsUninstallToolError, ToolsUninstallToolResponse, FilesDeleteFilesData, FilesDeleteFilesError, FilesReadFilesData, FilesUploadFileData, FilesUploadFileError, FilesUploadFileResponse, FilesGetFilesAllowedTypesData, FilesGetCurrentFileTypesData, FilesGetFilesStatsData, FilesCreatePairData, FilesCreatePairError, FilesCreatePairResponse, FilesCreateGroupData, FilesCreateGroupError, FilesCreateGroupResponse, FilesUngroupFileData, FilesUngroupFileError, FilesUngroupFileResponse, FilesDeleteFileData, FilesDeleteFileError, FilesReadFileData, FilesSaveFileData, FilesSaveFileError, FilesSaveFileResponse, FilesCopyFileData, FilesCopyFileError, FilesCopyFileResponse, FilesDownloadFileData, FilesGetDownloadTokenData, FilesGetBulkDownloadTokenData, FilesDownloadAllFilesWithTokenData, FilesRenameFileData, FilesRenameFileError, FilesRenameFileResponse, FilesDownloadFileWithTokenData, RunsDeleteRunsData, RunsDeleteRunsError, RunsDeleteRunsResponse, RunsReadRunsData, RunsCreateRunData, RunsCreateRunError, RunsCreateRunResponse, RunsReadRunToolNamesData, RunsCancelRunsData, RunsCancelRunsResponse, RunsReadActiveRunsData, RunsDeleteRunData, RunsDeleteRunError, RunsDeleteRunResponse, RunsReadRunData, RunsCancelRunData, RunsCancelRunError, RunsCancelRunResponse, RunsRenameRunData, RunsRenameRunError, RunsRenameRunResponse, RunsToggleRunSharingData, RunsToggleRunSharingError, RunsToggleRunSharingResponse, LlmGenerateRunSummaryData, LlmGenerateRunSummaryError, LlmGenerateRunSummaryResponse, SettingsReadQueueDrainStatusData, SettingsReadAppSettingsData, SettingsUpdateAppSettingsData, SettingsUpdateAppSettingsError, SettingsUpdateAppSettingsResponse, StatsGetSystemStatsData, StatsGetSystemStatsError, StatsGetSystemStatsResponse, StatsGetStatsSummaryData, StatsGetUserDetailStatsData, StatsGetUserDetailStatsError, StatsGetUserDetailStatsResponse, StatsGetToolDetailStatsData, StatsGetToolDetailStatsError, StatsGetToolDetailStatsResponse, AdminReadQueueStatusData, AdminPauseQueueData, AdminPauseQueueError, AdminPauseQueueResponse, AdminResumeQueueData, AdminResumeQueueResponse } from '../types.gen';
 import type { AxiosError } from 'axios';
 import { client as _heyApiClient } from '../client.gen';
 
@@ -585,6 +585,10 @@ export const readToolsQueryKey = (options?: Options<ToolsReadToolsData>) => crea
 /**
  * Read Tools
  * Retrieve tools with a favourited status for the current user.
+ *
+ * One row per tool name, so a stack of versions lists once: the version the
+ * plain name path serves (the default), or else the earliest one this user
+ * can see.
  */
 export const readToolsOptions = (options?: Options<ToolsReadToolsData>) => {
     return queryOptions({
@@ -644,7 +648,10 @@ export const readToolByNameQueryKey = (options: Options<ToolsReadToolByNameData>
 
 /**
  * Read Tool By Name
- * Retrieve tool by name.
+ * Retrieve a tool by name, one of its versions.
+ *
+ * Without a version the default of that name is returned, so `/tools/<name>`
+ * keeps working.
  */
 export const readToolByNameOptions = (options: Options<ToolsReadToolByNameData>) => {
     return queryOptions({
@@ -658,6 +665,30 @@ export const readToolByNameOptions = (options: Options<ToolsReadToolByNameData>)
             return data;
         },
         queryKey: readToolByNameQueryKey(options)
+    });
+};
+
+export const readToolVersionsQueryKey = (options: Options<ToolsReadToolVersionsData>) => createQueryKey('toolsReadToolVersions', options);
+
+/**
+ * Read Tool Versions
+ * List every version of a tool name, in the stack's order.
+ *
+ * Follows the same visibility rule as the single-tool reads: superusers see
+ * the whole stack, everyone else only the enabled versions.
+ */
+export const readToolVersionsOptions = (options: Options<ToolsReadToolVersionsData>) => {
+    return queryOptions({
+        queryFn: async ({ queryKey, signal }) => {
+            const { data } = await ToolsService.readToolVersions({
+                ...options,
+                ...queryKey[0],
+                signal,
+                throwOnError: true
+            });
+            return data;
+        },
+        queryKey: readToolVersionsQueryKey(options)
     });
 };
 
@@ -765,6 +796,51 @@ export const favouriteToolMutation = (options?: Partial<Options<ToolsFavouriteTo
     const mutationOptions: UseMutationOptions<ToolsFavouriteToolResponse, AxiosError<ToolsFavouriteToolError>, Options<ToolsFavouriteToolData>> = {
         mutationFn: async (localOptions) => {
             const { data } = await ToolsService.favouriteTool({
+                ...options,
+                ...localOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const createToolVersionQueryKey = (options: Options<ToolsCreateToolVersionData>) => createQueryKey('toolsCreateToolVersion', options);
+
+/**
+ * Create Tool Version
+ * Add a version of a tool.
+ *
+ * A copy of the tool under the same name with the new version, disabled and
+ * not installed, ready to be edited.
+ */
+export const createToolVersionOptions = (options: Options<ToolsCreateToolVersionData>) => {
+    return queryOptions({
+        queryFn: async ({ queryKey, signal }) => {
+            const { data } = await ToolsService.createToolVersion({
+                ...options,
+                ...queryKey[0],
+                signal,
+                throwOnError: true
+            });
+            return data;
+        },
+        queryKey: createToolVersionQueryKey(options)
+    });
+};
+
+/**
+ * Create Tool Version
+ * Add a version of a tool.
+ *
+ * A copy of the tool under the same name with the new version, disabled and
+ * not installed, ready to be edited.
+ */
+export const createToolVersionMutation = (options?: Partial<Options<ToolsCreateToolVersionData>>): UseMutationOptions<ToolsCreateToolVersionResponse, AxiosError<ToolsCreateToolVersionError>, Options<ToolsCreateToolVersionData>> => {
+    const mutationOptions: UseMutationOptions<ToolsCreateToolVersionResponse, AxiosError<ToolsCreateToolVersionError>, Options<ToolsCreateToolVersionData>> = {
+        mutationFn: async (localOptions) => {
+            const { data } = await ToolsService.createToolVersion({
                 ...options,
                 ...localOptions,
                 throwOnError: true

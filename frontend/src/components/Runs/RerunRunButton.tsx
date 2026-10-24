@@ -1,11 +1,13 @@
-import { useNavigate } from "@tanstack/react-router";
-import { RotateCcw } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import type { RunPublic } from "../../client";
+import { useNavigate } from "@tanstack/react-router"
+import { RotateCcw } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import type { RunPublic } from "../../client"
+import useRunToolVersion from "../../hooks/useRunToolVersion"
 
 /** Opens the tool's run form prefilled with what this run used. */
 export default function RerunRunButton({ run }: { run: RunPublic }) {
-  const navigate = useNavigate();
+  const navigate = useNavigate()
+  const rerunVersion = useRunToolVersion(run)
 
   return (
     <Button
@@ -17,7 +19,10 @@ export default function RerunRunButton({ run }: { run: RunPublic }) {
         navigate({
           to: "/tools/$name",
           params: { name: run.tool.name },
-          search: { rerun: run.id },
+          search: {
+            rerun: run.id,
+            ...(rerunVersion ? { version: rerunVersion } : {}),
+          },
           resetScroll: true,
         })
       }
@@ -25,5 +30,5 @@ export default function RerunRunButton({ run }: { run: RunPublic }) {
       <RotateCcw className="size-4" />
       Rerun
     </Button>
-  );
+  )
 }

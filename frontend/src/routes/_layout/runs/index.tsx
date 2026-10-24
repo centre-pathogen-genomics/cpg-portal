@@ -346,7 +346,11 @@ function RunsTable({
                     <StatusBadge status={run.status} />
                   </TableCell>
                   <TableCell>{run.name ?? run.id.split("-")[0]}</TableCell>
-                  <TableCell>{run.tool.name}</TableCell>
+                  <TableCell>
+                    {run.tool_version
+                      ? `${run.tool.name} (v${run.tool_version})`
+                      : run.tool.name}
+                  </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap">
                       {Object.keys(run.params)

@@ -115,6 +115,7 @@ const ToolCard = ({
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         toolId={tool.id}
+        status={tool.status}
         params={tool.params || []}
         minCpus={tool.min_cpus}
         maxCpus={tool.max_cpus}

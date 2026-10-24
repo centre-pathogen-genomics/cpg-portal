@@ -408,12 +408,11 @@ def test_create_run_rejects_path_traversal_params(db: Session) -> None:
     db.refresh(tool)
 
     bad_params = [
-        {"output_file": "../../../../../../etc/passwd"},
-        {"output_file": "sub/out.txt"},
         {"output_file": ".."},
+        # a backslash is a path separator on Windows and stays rejected
         {"output_file": "..\\out.txt"},
         # undeclared params are validated too
-        {"output_file": "ok.txt", "undeclared": "../secret"},
+        {"output_file": "ok.txt", "undeclared": "..\\secret"},
     ]
     for params in bad_params:
         with pytest.raises(HTTPException) as exc_info:
@@ -428,6 +427,40 @@ def test_create_run_rejects_path_traversal_params(db: Session) -> None:
             )
         assert exc_info.value.status_code == 400
         assert "not allowed" in exc_info.value.detail
+
+
+def test_create_run_allows_slashes_in_string_params(
+    monkeypatch: pytest.MonkeyPatch, db: Session
+) -> None:
+    """A slash in a string param passes, masked to "_" for the template."""
+    owner = create_random_user(db)
+    tool = _create_tool(db=db, owner=owner)
+    # The tool masks the value to "_" and asks for the slashes back, like a
+    # Nextclade dataset name such as community/v-gen-lab/chikV/genotypes.
+    tool.command = "echo {{ output_file | replace('_', '/') }}"
+    tool.params = [{"name": "output_file", "param_type": "str", "required": True}]
+    db.add(tool)
+    db.commit()
+    db.refresh(tool)
+
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
+
+    slashed = "community/v-gen-lab/chikV/genotypes"
+    run = asyncio.run(
+        create_run(
+            session=db,
+            current_user=owner,
+            tool_id=tool.id,
+            params={"output_file": slashed},
+            tags=[],
+        )
+    )
+
+    # The run keeps what was typed; the command gets it masked, so the tool's
+    # replace hands the slashes back.
+    assert run.params["output_file"] == slashed
+    assert slashed in run.command
 
 
 def test_create_run_allows_slashes_in_enum_values(db: Session) -> None:

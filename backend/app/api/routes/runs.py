@@ -22,6 +22,7 @@ from app.models import (
     RunsPublicMinimal,
     RunStatus,
     Tool,
+    ToolStatus,
 )
 from app.scheduling import dispatch_pending_runs
 from app.utils import escape, flatten, input_file_name, validate_param_value
@@ -329,6 +330,8 @@ async def create_run(
         raise HTTPException(status_code=404, detail="Tool not found")
     if not current_user.is_superuser and not tool.enabled:
         raise HTTPException(status_code=403, detail="Tool is disabled")
+    if tool.status == ToolStatus.uninstalled:
+        raise HTTPException(status_code=409, detail="Tool is not installed")
 
     # Threads: between the tool's minimum and maximum, where a missing maximum
     # means the user's own limit is the maximum, and everyone but
@@ -433,9 +436,10 @@ async def create_run(
         return name
 
     # Reject path traversal in free-form user supplied values, including params
-    # the tool doesn't declare. enum values (checked against the tool's options,
-    # and which may legitimately contain "/") and file params (checked as file
-    # ids) are validated separately below.
+    # the tool doesn't declare. A "/" passes: the command template gets it
+    # masked to "_". enum values (checked against the tool's options, and which
+    # may legitimately contain "/") and file params (checked as file ids) are
+    # validated separately below.
     validated_elsewhere = {
         p.name for p in tool_params if p.param_type in ("enum", "file")
     }
@@ -447,7 +451,7 @@ async def create_run(
         except ValueError:
             raise HTTPException(
                 status_code=400,
-                detail=f"Invalid value for parameter `{param_name}`: path separators ('/', '\\') and '..' are not allowed",
+                detail=f"Invalid value for parameter `{param_name}`: backslashes, NUL bytes and '..' are not allowed",
             )
 
     visible_params = _build_visible_param_lookup(tool_params, params)
@@ -599,6 +603,7 @@ async def create_run(
     # create a run
     run = Run(
         tool_id=tool_id,
+        tool_version=tool.version,
         name=(name or "").strip() or default_run_name(session, tool),
         owner_id=current_user.id,
         status="pending",

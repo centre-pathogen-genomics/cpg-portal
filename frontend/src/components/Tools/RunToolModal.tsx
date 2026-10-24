@@ -6,13 +6,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import type { Param } from "../../client"
+import type { Param, ToolStatus } from "../../client"
 import RunToolForm from "./RunToolForm"
 
 interface RunToolModalProps {
   isOpen: boolean
   onClose: () => void
   toolId: string
+  status: ToolStatus
   params: Param[]
   minCpus?: number | null
   maxCpus?: number | null
@@ -23,6 +24,7 @@ const RunToolModal = ({
   isOpen,
   onClose,
   toolId,
+  status,
   params,
   minCpus,
   maxCpus,
@@ -33,8 +35,14 @@ const RunToolModal = ({
       <DialogHeader>
         <DialogTitle>Configure Tool</DialogTitle>
       </DialogHeader>
+      {status === "uninstalled" && (
+        <p className="text-sm text-muted-foreground">
+          This tool is not installed, so runs cannot start yet.
+        </p>
+      )}
       <RunToolForm
         toolId={toolId}
+        isDisabled={status === "uninstalled"}
         params={params}
         onSuccess={onClose}
         minCpus={minCpus}

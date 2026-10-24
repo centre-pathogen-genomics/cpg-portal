@@ -5,6 +5,7 @@ from enum import StrEnum
 from typing import Optional
 
 from pydantic import EmailStr
+from sqlalchemy import UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB as JSON
 from sqlalchemy.orm import RelationshipProperty
 from sqlmodel import (
@@ -304,6 +305,13 @@ class ToolBase(SQLModel):
 # Properties to receive on Tool creation
 class ToolCreate(ToolBase):
     name: str
+    version: str = ""
+    # Order within a stack of tools sharing a name, and whether this version is
+    # the one `/tools/<name>` loads.
+    version_sort: int | None = None
+    is_default: bool = False
+    # Without these the table defaults win and a new tool comes out disabled.
+    enabled: bool = False
 
 
 # Properties to receive on Tool update
@@ -315,12 +323,27 @@ class ToolUpdate(ToolBase):
     command: str | None = None
     status: ToolStatus | None = None
     installation_log: str | None = None
+    # A version can be renamed, reordered and made the stack's default.
+    version: str | None = None
+    version_sort: int | None = None
+    is_default: bool | None = None
 
 
 # Database model, database table inferred from class name
 class Tool(ToolBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    name: str = Field(index=True, unique=True)
+    # Not unique any more: versions of one tool share a name, and the pair
+    # (name, version) is what has to be unique.
+    name: str = Field(index=True)
+    # Always set, empty for a tool without versions: PostgreSQL treats NULLs as
+    # distinct, so the unique pair below would not hold an empty version down.
+    version: str = Field(default="", nullable=False, index=True)
+    # Order within a stack of tools sharing a name, e.g. for a tool whose
+    # versions are git commit hashes. Unset falls back to created_at.
+    version_sort: int | None = None
+    # Exactly one version of a name is the default, and `/tools/<name>` loads
+    # it.
+    is_default: bool = False
     badges: list[ToolBadge] | None = Field(default_factory=list, sa_column=Column(JSON))
     favourited_count: int = 0
     run_count: int = 0
@@ -348,9 +371,16 @@ class Tool(ToolBase, table=True):
     )
     created_at: datetime = Field(default_factory=_utcnow_naive, nullable=False)
 
+    __table_args__ = (
+        UniqueConstraint("name", "version", name="uq_tool_name_version"),
+    )
+
 
 # Properties to return via API, id is always required
 class ToolPublic(ToolBase):
+    # Always a string: empty for a tool without versions. Required, so the
+    # clients see it as one.
+    version: str
     favourited: bool = False
     status: ToolStatus
     installation_log: str | None = None
@@ -358,6 +388,8 @@ class ToolPublic(ToolBase):
     run_count: int = 0
     enabled: bool = False
     conda_env_pinned: str | None = None
+    version_sort: int | None = None
+    is_default: bool = False
     id: uuid.UUID
 
 
@@ -372,6 +404,11 @@ class ToolMinimalPublic(SQLModel):
     favourited_count: int = 0
     run_count: int = 0
     enabled: bool = False
+    # Runs cannot start while the tool is uninstalled, so the run form is
+    # disabled for it.
+    status: ToolStatus
+    # A run page names the version it ran, and a rerun goes back to it.
+    version: str
     llm_summary_enabled: bool = False
     explanation_of_results_markdown: str | None = None
     # The run form needs the threads a tool allows, and it is opened from the
@@ -429,6 +466,10 @@ class Run(RunBase, table=True):
     )
     command: str | None = None
     conda_env_pinned: str | None = None
+    # The version of the tool row this run used. A snapshot, like `command`
+    # above: the tool row may be renamed or reordered afterwards, and that must
+    # not rewrite what ran.
+    tool_version: str = Field(default="", nullable=False)
     stdout: str | None = None
     tool_id: uuid.UUID = Field(foreign_key="tool.id", nullable=False)
     tool: Tool = Relationship(back_populates="runs")
@@ -443,6 +484,8 @@ class RunPublicMinimal(SQLModel):
     id: uuid.UUID
     name: str | None = None
     tool: ToolMinimalPublic
+    # The version the run used, whatever the tool row says now.
+    tool_version: str = ""
     params: dict
     cpus: int = 1
     status: RunStatus

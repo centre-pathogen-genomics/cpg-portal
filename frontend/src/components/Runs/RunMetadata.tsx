@@ -19,6 +19,7 @@ import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import type { RunPublic } from "../../client"
+import useRunToolVersion from "../../hooks/useRunToolVersion"
 import { humanReadableDateTime } from "../../utils"
 import ParamTag from "./ParamTag"
 import RunRuntime from "./RunTime"
@@ -40,6 +41,8 @@ function Parameters({ params }: { params: Record<string, any> }) {
 
 function RunMetadata({ run }: { run: RunPublic }) {
   const navigate = useNavigate()
+  // Where the tool name leads: the version this run used.
+  const toolVersion = useRunToolVersion(run)
   const [copied, setCopied] = useState(false)
   const copy = () => {
     toast.success("Run URL copied to clipboard!")
@@ -68,11 +71,14 @@ function RunMetadata({ run }: { run: RunPublic }) {
             navigate({
               to: "/tools/$name",
               params: { name: run.tool.name },
+              search: toolVersion ? { version: toolVersion } : {},
               resetScroll: true,
             })
           }
         >
-          {run.tool.name}
+          {run.tool_version
+            ? `${run.tool.name} (v${run.tool_version})`
+            : run.tool.name}
         </button>
       ),
     },

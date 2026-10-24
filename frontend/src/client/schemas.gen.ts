@@ -883,6 +883,11 @@ export const RunPublicSchema = {
         tool: {
             '$ref': '#/components/schemas/ToolMinimalPublic'
         },
+        tool_version: {
+            type: 'string',
+            title: 'Tool Version',
+            default: ''
+        },
         params: {
             additionalProperties: true,
             type: 'object',
@@ -1049,6 +1054,11 @@ export const RunPublicMinimalSchema = {
         },
         tool: {
             '$ref': '#/components/schemas/ToolMinimalPublic'
+        },
+        tool_version: {
+            type: 'string',
+            title: 'Tool Version',
+            default: ''
         },
         params: {
             additionalProperties: true,
@@ -1387,15 +1397,9 @@ export const ToolCreateSchema = {
             title: 'Name'
         },
         version: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Version'
+            type: 'string',
+            title: 'Version',
+            default: ''
         },
         image: {
             anyOf: [
@@ -1622,6 +1626,27 @@ export const ToolCreateSchema = {
                 }
             ],
             title: 'Default Cpus'
+        },
+        version_sort: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Version Sort'
+        },
+        is_default: {
+            type: 'boolean',
+            title: 'Is Default',
+            default: false
+        },
+        enabled: {
+            type: 'boolean',
+            title: 'Enabled',
+            default: false
         }
     },
     type: 'object',
@@ -1738,6 +1763,13 @@ export const ToolMinimalPublicSchema = {
             title: 'Enabled',
             default: false
         },
+        status: {
+            '$ref': '#/components/schemas/ToolStatus'
+        },
+        version: {
+            type: 'string',
+            title: 'Version'
+        },
         llm_summary_enabled: {
             type: 'boolean',
             title: 'Llm Summary Enabled',
@@ -1783,7 +1815,7 @@ export const ToolMinimalPublicSchema = {
         }
     },
     type: 'object',
-    required: ['id', 'name'],
+    required: ['id', 'name', 'status', 'version'],
     title: 'ToolMinimalPublic'
 } as const;
 
@@ -1794,14 +1826,7 @@ export const ToolPublicSchema = {
             title: 'Name'
         },
         version: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
+            type: 'string',
             title: 'Version'
         },
         image: {
@@ -2075,6 +2100,22 @@ export const ToolPublicSchema = {
             ],
             title: 'Conda Env Pinned'
         },
+        version_sort: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Version Sort'
+        },
+        is_default: {
+            type: 'boolean',
+            title: 'Is Default',
+            default: false
+        },
         id: {
             type: 'string',
             format: 'uuid',
@@ -2082,7 +2123,7 @@ export const ToolPublicSchema = {
         }
     },
     type: 'object',
-    required: ['name', 'command', 'status', 'id'],
+    required: ['name', 'version', 'command', 'status', 'id'],
     title: 'ToolPublic'
 } as const;
 
@@ -2425,6 +2466,28 @@ export const ToolUpdateSchema = {
                 }
             ],
             title: 'Installation Log'
+        },
+        version_sort: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Version Sort'
+        },
+        is_default: {
+            anyOf: [
+                {
+                    type: 'boolean'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Is Default'
         }
     },
     type: 'object',

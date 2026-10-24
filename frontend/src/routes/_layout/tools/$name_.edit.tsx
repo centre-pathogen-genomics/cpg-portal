@@ -135,6 +135,11 @@ const setupFileSchema = z.object({
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
   version: optionalString,
+  // The stack order for this version, and whether it is the default one the
+  // plain tool path loads. The order is typed as text and turned into a number
+  // when it is sent.
+  version_sort: optionalString,
+  is_default: z.boolean(),
   image: optionalString,
   description: optionalString,
   explanation_of_results_markdown: optionalString,
@@ -167,6 +172,10 @@ const formSchema = z.object({
 type ToolFormData = z.infer<typeof formSchema>
 
 export const Route = createFileRoute("/_layout/tools/$name_/edit")({
+  // Which version to edit; without it the stack's default is loaded.
+  validateSearch: (search: Record<string, unknown>): { version?: string } => ({
+    version: typeof search.version === "string" ? search.version : undefined,
+  }),
   beforeLoad: async () => {
     const response = await UsersService.readUserMe({
       throwOnError: true,
@@ -217,6 +226,11 @@ function defaultValues(tool: ToolPublic): ToolFormData {
   return {
     name: tool.name,
     version: tool.version ?? "",
+    version_sort:
+      tool.version_sort === null || tool.version_sort === undefined
+        ? ""
+        : String(tool.version_sort),
+    is_default: tool.is_default ?? false,
     image: tool.image ?? "",
     description: tool.description ?? "",
     explanation_of_results_markdown: tool.explanation_of_results_markdown ?? "",
@@ -333,6 +347,8 @@ function buildToolUpdate(data: ToolFormData): ToolUpdate {
   return {
     name: data.name.trim(),
     version: nullIfBlank(data.version),
+    version_sort: data.version_sort?.trim() ? Number(data.version_sort) : null,
+    is_default: data.is_default ?? false,
     image: nullIfBlank(data.image),
     description: nullIfBlank(data.description),
     explanation_of_results_markdown: nullIfBlank(
@@ -399,11 +415,15 @@ function TextField({
   name,
   label,
   multiline = false,
+  type = "text",
+  description,
 }: {
   control: Control<ToolFormData>
   name: FieldPath<ToolFormData>
   label: string
   multiline?: boolean
+  type?: string
+  description?: string
 }) {
   return (
     <FormField
@@ -420,9 +440,12 @@ function TextField({
                 value={String(field.value ?? "")}
               />
             ) : (
-              <Input {...field} value={String(field.value ?? "")} />
+              <Input type={type} {...field} value={String(field.value ?? "")} />
             )}
           </FormControl>
+          {description && (
+            <p className="text-sm text-muted-foreground">{description}</p>
+          )}
           <FormMessage />
         </FormItem>
       )}
@@ -434,10 +457,12 @@ function BooleanField({
   control,
   name,
   label,
+  description,
 }: {
   control: Control<ToolFormData>
   name: FieldPath<ToolFormData>
   label: string
+  description?: string
 }) {
   return (
     <FormField
@@ -452,6 +477,9 @@ function BooleanField({
             />
           </FormControl>
           <FormLabel className="m-0">{label}</FormLabel>
+          {description && (
+            <p className="text-sm text-muted-foreground">{description}</p>
+          )}
         </FormItem>
       )}
     />
@@ -682,6 +710,19 @@ function DetailsTab({ control }: { control: Control<ToolFormData> }) {
         <CardContent className="grid gap-4 md:grid-cols-2">
           <TextField control={control} name="name" label="Name" />
           <TextField control={control} name="version" label="Version" />
+          <TextField
+            control={control}
+            name="version_sort"
+            label="Version order"
+            type="number"
+            description="Order within the versions of this name. Empty falls back to the creation time."
+          />
+          <BooleanField
+            control={control}
+            name="is_default"
+            label="Default version"
+            description="The version the plain tool path shows."
+          />
           <TextField control={control} name="image" label="Image URL" />
           <TextField control={control} name="url" label="Home URL" />
           <TextField control={control} name="github_repo" label="GitHub repo" />
@@ -1491,6 +1532,7 @@ function AdminTab({ control }: { control: Control<ToolFormData> }) {
 
 function ToolEditor() {
   const { name } = Route.useParams()
+  const { version } = Route.useSearch()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
@@ -1502,7 +1544,10 @@ function ToolEditor() {
     isError,
     isPending,
   } = useQuery({
-    ...readToolByNameOptions({ path: { tool_name: name } }),
+    ...readToolByNameOptions({
+      path: { tool_name: name },
+      query: version ? { version } : {},
+    }),
   })
 
   const form = useForm<ToolFormData>({
@@ -1532,6 +1577,7 @@ function ToolEditor() {
       navigate({
         to: "/tools/$name",
         params: { name: updatedTool.name },
+        search: { version: updatedTool.version ?? "" },
         resetScroll: true,
       })
     },
@@ -1615,7 +1661,11 @@ function ToolEditor() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <Button variant="ghost" asChild className="mb-2 px-0">
-            <RouterLink to="/tools/$name" params={{ name }}>
+            <RouterLink
+              to="/tools/$name"
+              params={{ name }}
+              search={{ version }}
+            >
               <ArrowLeft />
               Back
             </RouterLink>
@@ -1694,7 +1744,11 @@ function ToolEditor() {
             </DialogContent>
           </Dialog>
           <Button variant="outline" asChild>
-            <RouterLink to="/tools/$name" params={{ name }}>
+            <RouterLink
+              to="/tools/$name"
+              params={{ name }}
+              search={{ version }}
+            >
               Cancel
             </RouterLink>
           </Button>

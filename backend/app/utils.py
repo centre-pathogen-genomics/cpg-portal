@@ -175,15 +175,22 @@ def validate_param_value(value) -> None:
     """
     Reject string parameter values that could be used for path traversal.
 
+    A "/" is allowed: `escape` masks it to "_" before the command template
+    renders, and that is why a tool that wants a slash asks for it back with a
+    replace. A backslash, a NUL byte, or a parent-directory reference is
+    rejected instead.
+
     Raises ValueError if the value (or any string nested in a list) contains a
-    path separator, a NUL byte, or is a parent-directory reference.
+    backslash, a NUL byte, or is a parent-directory reference.
     """
     if isinstance(value, list):
         for item in value:
             validate_param_value(item)
     elif isinstance(value, str):
-        if "/" in value or "\\" in value or "\x00" in value or value == "..":
-            raise ValueError("Path separators and traversal sequences are not allowed")
+        if "\\" in value or "\x00" in value or value == "..":
+            raise ValueError(
+                "Backslashes, NUL bytes and traversal sequences are not allowed"
+            )
 
 
 def flatten(lst: list) -> list:

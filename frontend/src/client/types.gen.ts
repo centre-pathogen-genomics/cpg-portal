@@ -529,6 +529,10 @@ export type RunPublic = {
     name?: string | null;
     tool: ToolMinimalPublic;
     /**
+     * Tool Version
+     */
+    tool_version?: string;
+    /**
      * Params
      */
     params: {
@@ -608,6 +612,10 @@ export type RunPublicMinimal = {
      */
     name?: string | null;
     tool: ToolMinimalPublic;
+    /**
+     * Tool Version
+     */
+    tool_version?: string;
     /**
      * Params
      */
@@ -847,7 +855,7 @@ export type ToolCreate = {
     /**
      * Version
      */
-    version?: string | null;
+    version?: string;
     /**
      * Image
      */
@@ -929,6 +937,18 @@ export type ToolCreate = {
      * Default Cpus
      */
     default_cpus?: number | null;
+    /**
+     * Version Sort
+     */
+    version_sort?: number | null;
+    /**
+     * Is Default
+     */
+    is_default?: boolean;
+    /**
+     * Enabled
+     */
+    enabled?: boolean;
 };
 
 /**
@@ -991,6 +1011,11 @@ export type ToolMinimalPublic = {
      * Enabled
      */
     enabled?: boolean;
+    status: ToolStatus;
+    /**
+     * Version
+     */
+    version: string;
     /**
      * Llm Summary Enabled
      */
@@ -1024,7 +1049,7 @@ export type ToolPublic = {
     /**
      * Version
      */
-    version?: string | null;
+    version: string;
     /**
      * Image
      */
@@ -1131,6 +1156,14 @@ export type ToolPublic = {
      * Conda Env Pinned
      */
     conda_env_pinned?: string | null;
+    /**
+     * Version Sort
+     */
+    version_sort?: number | null;
+    /**
+     * Is Default
+     */
+    is_default?: boolean;
     /**
      * Id
      */
@@ -1284,6 +1317,14 @@ export type ToolUpdate = {
      * Installation Log
      */
     installation_log?: string | null;
+    /**
+     * Version Sort
+     */
+    version_sort?: number | null;
+    /**
+     * Is Default
+     */
+    is_default?: boolean | null;
 };
 
 /**
@@ -2136,7 +2177,13 @@ export type ToolsReadToolByNameData = {
          */
         tool_name: string;
     };
-    query?: never;
+    query?: {
+        /**
+         * Version
+         * Version to load, defaulting to the stack's default
+         */
+        version?: string | null;
+    };
     url: '/api/v1/tools/name/{tool_name}';
 };
 
@@ -2157,6 +2204,37 @@ export type ToolsReadToolByNameResponses = {
 };
 
 export type ToolsReadToolByNameResponse = ToolsReadToolByNameResponses[keyof ToolsReadToolByNameResponses];
+
+export type ToolsReadToolVersionsData = {
+    body?: never;
+    path: {
+        /**
+         * Tool Name
+         */
+        tool_name: string;
+    };
+    query?: never;
+    url: '/api/v1/tools/name/{tool_name}/versions';
+};
+
+export type ToolsReadToolVersionsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ToolsReadToolVersionsError = ToolsReadToolVersionsErrors[keyof ToolsReadToolVersionsErrors];
+
+export type ToolsReadToolVersionsResponses = {
+    /**
+     * Response Tools-Read Tool Versions
+     * Successful Response
+     */
+    200: Array<ToolPublic>;
+};
+
+export type ToolsReadToolVersionsResponse = ToolsReadToolVersionsResponses[keyof ToolsReadToolVersionsResponses];
 
 export type ToolsDeleteToolData = {
     body?: never;
@@ -2307,6 +2385,42 @@ export type ToolsFavouriteToolResponses = {
 };
 
 export type ToolsFavouriteToolResponse = ToolsFavouriteToolResponses[keyof ToolsFavouriteToolResponses];
+
+export type ToolsCreateToolVersionData = {
+    body?: never;
+    path: {
+        /**
+         * Tool Id
+         */
+        tool_id: string;
+    };
+    query: {
+        /**
+         * Version
+         * Version to add to the stack
+         */
+        version: string;
+    };
+    url: '/api/v1/tools/{tool_id}/versions';
+};
+
+export type ToolsCreateToolVersionErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ToolsCreateToolVersionError = ToolsCreateToolVersionErrors[keyof ToolsCreateToolVersionErrors];
+
+export type ToolsCreateToolVersionResponses = {
+    /**
+     * Successful Response
+     */
+    200: ToolPublic;
+};
+
+export type ToolsCreateToolVersionResponse = ToolsCreateToolVersionResponses[keyof ToolsCreateToolVersionResponses];
 
 export type ToolsEnableToolData = {
     body?: never;
