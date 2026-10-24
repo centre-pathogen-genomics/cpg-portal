@@ -4,7 +4,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import {
   ArrowDown,
   ArrowUp,
@@ -21,6 +21,7 @@ import { useCallback, useEffect, useState } from "react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
@@ -56,12 +57,14 @@ import {
 } from "../../../components/Common/BulkDeleteMenu"
 import DeleteAlert from "../../../components/Common/DeleteAlert"
 import { PaginatedTableFooter } from "../../../components/Common/PaginatedTableFooter"
+import ViewModeButtons from "../../../components/Common/ViewModeButtons"
 import CancelAlert from "../../../components/Runs/CancelAlert"
 import CancelRunsButton from "../../../components/Runs/CancelRunsButton"
 import ParamTag from "../../../components/Runs/ParamTag"
 import RunRuntime from "../../../components/Runs/RunTime"
 import StatusBadge from "../../../components/Runs/StatusBadge"
 import useCustomToast from "../../../hooks/useCustomToast"
+import useViewMode, { type ViewMode } from "../../../hooks/useViewMode"
 import { useVisibleIds } from "../../../hooks/useVisibleIds"
 import { humanReadableDate } from "../../../utils"
 
@@ -76,6 +79,7 @@ interface RunsTableProps {
   setOrderBy: React.Dispatch<React.SetStateAction<string>>
   setVisibleRunIds: React.Dispatch<React.SetStateAction<string[]>>
   toolFilter: string
+  view: ViewMode
 }
 
 type SortColumn = "name" | "status" | "created_at" | "finished_at" | "runtime"
@@ -218,12 +222,170 @@ function RunActionsMenu({ run }: RunActionsMenuProps) {
   )
 }
 
+/** A run's params, matching the table's params cell. */
+function RunParamTags({ run }: { run: RunPublicMinimal }) {
+  const keys = Object.keys(run.params).filter((key) => run.params[key] !== null)
+  if (!keys.length) return null
+
+  return (
+    <div className="pointer-events-none flex flex-wrap">
+      {keys.map((key) => (
+        <div key={key} className="m-0.5">
+          <ParamTag param={key} value={run.params[key]} />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/** A run's tags, matching the table's tags cell. */
+function RunTags({ run }: { run: RunPublicMinimal }) {
+  if (!run.tags?.length) return null
+
+  return (
+    <div className="pointer-events-none flex flex-wrap">
+      {run.tags.map((tag) => (
+        <Badge
+          key={tag}
+          className="mr-1 bg-cyan-100 text-cyan-800 hover:bg-cyan-100"
+        >
+          {tag}
+        </Badge>
+      ))}
+    </div>
+  )
+}
+
+/** One run as a card, for the cards view. */
+function RunCard({ run }: { run: RunPublicMinimal }) {
+  const name = run.name ?? run.id.split("-")[0]
+  const toolName = run.tool_version
+    ? `${run.tool.name} (v${run.tool_version})`
+    : run.tool.name
+
+  return (
+    <Card className="relative gap-3 p-4 transition-colors hover:bg-muted/50">
+      {/* The whole card opens the run, so the actions menu keeps its clicks. */}
+      <Link
+        to="/runs/$runid"
+        params={{ runid: run.id }}
+        aria-label={`Open ${name}`}
+        className="absolute inset-0 rounded-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+      />
+      <div className="flex items-start justify-between gap-2">
+        <div className="pointer-events-none min-w-0">
+          <div className="truncate font-semibold">{name}</div>
+          <div className="truncate text-sm text-muted-foreground">
+            {toolName}
+          </div>
+        </div>
+        <div className="relative z-10 flex shrink-0 items-center gap-2">
+          <span className="pointer-events-none flex items-center">
+            <StatusBadge status={run.status} />
+          </span>
+          <RunActionsMenu run={run} />
+        </div>
+      </div>
+      <RunParamTags run={run} />
+      <RunTags run={run} />
+      <div className="pointer-events-none flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+        <span>{humanReadableDate(run.created_at)}</span>
+        <RunRuntime
+          started_at={run.started_at ?? null}
+          finished_at={run.finished_at ?? null}
+          status={run.status}
+        />
+        <span>{run.cpus} threads</span>
+      </div>
+    </Card>
+  )
+}
+
+/** One run as a compact line, for the list view. */
+function RunListRow({ run }: { run: RunPublicMinimal }) {
+  const name = run.name ?? run.id.split("-")[0]
+  const toolName = run.tool_version
+    ? `${run.tool.name} (v${run.tool_version})`
+    : run.tool.name
+
+  return (
+    <div className="relative flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md border bg-card px-3 py-2 transition-colors hover:bg-muted/50">
+      {/* The whole line opens the run, so the actions menu keeps its clicks. */}
+      <Link
+        to="/runs/$runid"
+        params={{ runid: run.id }}
+        aria-label={`Open ${name}`}
+        className="absolute inset-0 rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+      />
+      <span className="pointer-events-none flex shrink-0 items-center">
+        <StatusBadge status={run.status} />
+      </span>
+      <span className="pointer-events-none min-w-0 flex-1 truncate font-semibold">
+        {name}
+      </span>
+      <span className="pointer-events-none shrink-0 text-sm text-muted-foreground">
+        {toolName}
+      </span>
+      <RunParamTags run={run} />
+      <RunTags run={run} />
+      <span className="pointer-events-none shrink-0 text-sm text-muted-foreground">
+        {humanReadableDate(run.created_at)}
+      </span>
+      <span className="pointer-events-none shrink-0 text-sm text-muted-foreground">
+        <RunRuntime
+          started_at={run.started_at ?? null}
+          finished_at={run.finished_at ?? null}
+          status={run.status}
+        />
+      </span>
+      <span className="pointer-events-none shrink-0 text-sm text-muted-foreground">
+        {run.cpus} threads
+      </span>
+      <div className="relative z-10 ml-auto flex shrink-0 items-center">
+        <RunActionsMenu run={run} />
+      </div>
+    </div>
+  )
+}
+
+/** Loading placeholder shaped like `RunCard`. */
+function RunCardSkeleton() {
+  return (
+    <Card className="gap-3 p-4">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1 space-y-2">
+          <Skeleton className="h-5 w-2/3" />
+          <Skeleton className="h-4 w-1/2" />
+        </div>
+        <Skeleton className="size-8" />
+      </div>
+      <Skeleton className="h-5 w-full" />
+      <Skeleton className="h-4 w-3/4" />
+      <Skeleton className="h-4 w-1/2" />
+    </Card>
+  )
+}
+
+/** Loading placeholder shaped like `RunListRow`. */
+function RunListRowSkeleton() {
+  return (
+    <div className="flex items-center gap-3 rounded-md border bg-card px-3 py-2">
+      <Skeleton className="h-5 w-20 shrink-0" />
+      <Skeleton className="h-5 flex-1" />
+      <Skeleton className="hidden h-5 w-32 sm:block" />
+      <Skeleton className="h-5 w-24 shrink-0" />
+      <Skeleton className="size-8 shrink-0" />
+    </div>
+  )
+}
+
 function RunsTable({
   nameFilter,
   orderBy,
   setOrderBy,
   setVisibleRunIds,
   toolFilter,
+  view,
 }: RunsTableProps) {
   const [pageSize, setPageSize] = useState(20)
   const [page, setPage] = useState(1)
@@ -286,6 +448,60 @@ function RunsTable({
         {sortLabels[column]}
         <Icon className="ml-2 h-4 w-4" />
       </Button>
+    )
+  }
+
+  // The cards and list views show the same runs as the table, only laid out
+  // differently, so they share its loading, error and empty states.
+  if (view !== "table") {
+    const Entry = view === "cards" ? RunCard : RunListRow
+    const listClassName =
+      view === "cards"
+        ? "grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
+        : "flex flex-col gap-2"
+
+    return (
+      <>
+        {isLoading ? (
+          <div className={listClassName}>
+            {new Array(pageSize)
+              .fill(null)
+              .map((_, index) =>
+                view === "cards" ? (
+                  <RunCardSkeleton key={index} />
+                ) : (
+                  <RunListRowSkeleton key={index} />
+                ),
+              )}
+          </div>
+        ) : isError ? (
+          <Alert variant="destructive">
+            <TriangleAlert />
+            <AlertTitle>Could not load runs</AlertTitle>
+            <AlertDescription>{(error as Error).message}</AlertDescription>
+          </Alert>
+        ) : runs.length ? (
+          <div className={listClassName}>
+            {runs.map((run) => (
+              <Entry key={run.id} run={run} />
+            ))}
+          </div>
+        ) : (
+          <div className="flex h-24 items-center justify-center rounded-md border text-center">
+            No runs found.
+          </div>
+        )}
+        <PaginatedTableFooter
+          isFetching={isFetching}
+          isLoading={isLoading}
+          itemLabel="runs"
+          onPageChange={changePage}
+          onPageSizeChange={changePageSize}
+          page={page}
+          pageSize={pageSize}
+          totalCount={totalCount}
+        />
+      </>
     )
   }
 
@@ -475,6 +691,7 @@ function Runs() {
   const [orderBy, setOrderBy] = useState("-created_at")
   const [toolFilter, setToolFilter] = useState("all")
   const [visibleRunIds, setVisibleRunIds] = useState<string[]>([])
+  const [view, setView] = useViewMode("records")
   const { data: toolNames } = useQuery({
     queryKey: ["runs", "tools"],
     queryFn: async () => (await RunsService.readRunToolNames()).data ?? [],
@@ -545,6 +762,7 @@ function Runs() {
             allCount={allRunsCount ?? 0}
             visibleRunIds={visibleRunIds}
           />
+          <ViewModeButtons mode={view} onChange={setView} />
         </div>
       </div>
       <RunsTable
@@ -553,6 +771,7 @@ function Runs() {
         setOrderBy={setOrderBy}
         setVisibleRunIds={setVisibleRunIds}
         toolFilter={toolFilter}
+        view={view}
       />
     </div>
   )

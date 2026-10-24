@@ -10,8 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import ErrorLogo from "/assets/images/500.png"
 import type { ToolsOrderBy } from "../../client"
 import { readToolsOptions } from "../../client/@tanstack/react-query.gen"
-import type { ToolListView } from "../../lib/tool_list_view"
-import { getToolListView, setToolListView } from "../../lib/tool_list_view"
+import useViewMode, { type ViewMode } from "../../hooks/useViewMode"
 import ToolCard from "./ToolCard"
 import ToolRow from "./ToolRow"
 
@@ -24,7 +23,7 @@ function ToolCards({
   orderBy: ToolsOrderBy
   showFavourites: boolean
   search?: string
-  view: ToolListView
+  view: ViewMode
 }) {
   const { data: tools } = useSuspenseQuery({
     ...readToolsOptions({
@@ -38,7 +37,7 @@ function ToolCards({
           <h2 className="text-lg font-semibold">No matches found</h2>
         </div>
       )}
-      {view === "rows" ? (
+      {view === "list" ? (
         <div className="mb-8 flex flex-col gap-2">
           {tools.data.map((tool) => (
             <ToolRow key={tool.id} tool={tool} />
@@ -64,12 +63,9 @@ function ToolsGrid({
 }) {
   const [orderBy, setOrderBy] = useState<ToolsOrderBy>("run_count")
   const [showFavourites, setShowFavourites] = useState(false)
-  const [view, setView] = useState<ToolListView>(() => getToolListView())
-  // Switching the view sticks, so it survives a reload.
-  const chooseView = (next: ToolListView) => {
-    setView(next)
-    setToolListView(next)
-  }
+  // The tool list keeps its own choice, apart from the runs and files lists.
+  // It has no table, so only the list view changes it from the cards.
+  const [view, setView] = useViewMode("tools", "cards")
   return (
     <>
       <div className="mt-2">
@@ -119,10 +115,10 @@ function ToolsGrid({
                 <Button
                   type="button"
                   size="sm"
-                  variant={view === "cards" ? "secondary" : "ghost"}
-                  aria-pressed={view === "cards"}
+                  variant={view !== "list" ? "secondary" : "ghost"}
+                  aria-pressed={view !== "list"}
                   title="Card view"
-                  onClick={() => chooseView("cards")}
+                  onClick={() => setView("cards")}
                 >
                   <LayoutGrid />
                   <span className="hidden sm:inline">Cards</span>
@@ -130,10 +126,10 @@ function ToolsGrid({
                 <Button
                   type="button"
                   size="sm"
-                  variant={view === "rows" ? "secondary" : "ghost"}
-                  aria-pressed={view === "rows"}
+                  variant={view === "list" ? "secondary" : "ghost"}
+                  aria-pressed={view === "list"}
                   title="List view"
-                  onClick={() => chooseView("rows")}
+                  onClick={() => setView("list")}
                 >
                   <List />
                   <span className="hidden sm:inline">List</span>
