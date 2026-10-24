@@ -1,3 +1,4 @@
+import { useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
 import { FiTrash2 } from "react-icons/fi"
 import { Button } from "@/components/ui/button"
@@ -9,6 +10,7 @@ interface DeleteButtonProps {
 }
 
 const DeleteFileButton = ({ file }: DeleteButtonProps) => {
+  const navigate = useNavigate()
   const [isOpen, setIsOpen] = useState(false)
 
   return (
@@ -27,6 +29,8 @@ const DeleteFileButton = ({ file }: DeleteButtonProps) => {
         id={file.id}
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
+        // The page itself is gone with the file, so the list answers next.
+        onDelete={() => navigate({ to: "/files", resetScroll: true })}
       />
     </>
   )
