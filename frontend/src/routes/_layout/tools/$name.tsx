@@ -434,7 +434,11 @@ function VersionSelect({
               })
             }}
           >
-            {"v" + version.version}
+            <span
+              className={version.version === current ? "font-bold" : undefined}
+            >
+              v{version.version}
+            </span>
             {version.is_default ? " (default)" : ""}
             {!version.enabled ? " (disabled)" : ""}
           </DropdownMenuItem>

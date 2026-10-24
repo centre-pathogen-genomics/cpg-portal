@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { ListOrdered, LoaderCircle } from "lucide-react"
+import { ChevronDown, ChevronUp, ListOrdered, LoaderCircle } from "lucide-react"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -10,7 +10,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import type { ToolPublic } from "../../client"
@@ -23,12 +22,12 @@ import {
 } from "../../client/@tanstack/react-query.gen"
 import { handleError } from "../../utils"
 
-/** Where a version sits in its stack, and which one the plain name serves. */
+/** Order a tool's versions with the arrows, and pick the default. */
 export default function ToolVersionsAdmin({ tool }: { tool: ToolPublic }) {
   const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [orders, setOrders] = useState<Record<string, string>>({})
+  const [order, setOrder] = useState<string[]>([])
   const [defaultId, setDefaultId] = useState("")
   const { data: versions } = useQuery({
     ...readToolVersionsOptions({ path: { tool_name: tool.name } }),
@@ -38,48 +37,36 @@ export default function ToolVersionsAdmin({ tool }: { tool: ToolPublic }) {
     ...updateToolMutation(),
     onError: (error) => handleError(error, toast.error),
   })
+  const byId = new Map((versions ?? []).map((version) => [version.id, version]))
 
-  // Start from what the stack holds now.
+  // Start from the order the stack is in now.
   useEffect(() => {
     if (!open || !versions) return
-    setOrders(
-      Object.fromEntries(
-        versions.map((version) => [
-          version.id,
-          version.version_sort === null || version.version_sort === undefined
-            ? ""
-            : String(version.version_sort),
-        ]),
-      ),
-    )
+    setOrder(versions.map((version) => version.id))
     setDefaultId(versions.find((version) => version.is_default)?.id ?? "")
   }, [open, versions])
 
+  const move = (index: number, to: number) => {
+    if (to < 0 || to >= order.length) return
+    const next = [...order]
+    const [moved] = next.splice(index, 1)
+    next.splice(to, 0, moved)
+    setOrder(next)
+  }
+
   const save = async () => {
-    const stack = versions ?? []
-    const nextOrders = new Map<string, number | null>()
-    for (const version of stack) {
-      const typed = (orders[version.id] ?? "").trim()
-      if (typed === "") {
-        nextOrders.set(version.id, null)
-        continue
-      }
-      const parsed = Number(typed)
-      if (!Number.isInteger(parsed)) {
-        toast.error(`Order for v${version.version} has to be a whole number`)
-        return
-      }
-      nextOrders.set(version.id, parsed)
-    }
     setSaving(true)
     try {
-      for (const version of stack) {
-        const nextOrder = nextOrders.get(version.id) ?? null
-        const previousOrder = version.version_sort ?? null
-        if (nextOrder !== previousOrder) {
+      for (const [index, id] of order.entries()) {
+        const version = byId.get(id)
+        if (!version) continue
+        // The arrows name a position, which is stored as 1..n so the stack
+        // reads back in the same order.
+        const position = index + 1
+        if ((version.version_sort ?? null) !== position) {
           await update.mutateAsync({
             path: { tool_id: version.id },
-            body: { version_sort: nextOrder },
+            body: { version_sort: position },
           })
         }
         // Making one version the default clears it on the others, so the stack
@@ -129,10 +116,9 @@ export default function ToolVersionsAdmin({ tool }: { tool: ToolPublic }) {
             <DialogTitle>Versions of {tool.name}</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Pick the default version, the one {"/tools/"}
-            {tool.name} serves, and set the order each version lists in. An
-            empty order falls back to the creation time, which suits versions
-            named after git commit hashes.
+            Move a version up or down to set the order the stack lists in, and
+            pick the default, the one {"/tools/"}
+            {tool.name} serves.
           </p>
           {versions && versions.length === 0 && (
             <p className="text-sm text-muted-foreground">No versions yet.</p>
@@ -142,51 +128,55 @@ export default function ToolVersionsAdmin({ tool }: { tool: ToolPublic }) {
             onValueChange={setDefaultId}
             className="gap-0"
           >
-            {(versions ?? []).map((version) => (
-              <div
-                key={version.id}
-                className="flex items-center gap-3 border-b py-2 last:border-b-0"
-              >
-                <RadioGroupItem
-                  value={version.id}
-                  id={`default-version-${version.id}`}
-                />
-                <Label
-                  htmlFor={`default-version-${version.id}`}
-                  className="flex-1 cursor-pointer"
+            {order.map((id, index) => {
+              const version = byId.get(id)
+              if (!version) return null
+
+              return (
+                <div
+                  key={id}
+                  className="flex items-center gap-2 border-b py-2 last:border-b-0"
                 >
-                  v{version.version}
-                  {version.is_default && (
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      current default
-                    </span>
-                  )}
-                  {!version.enabled && (
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      disabled
-                    </span>
-                  )}
-                </Label>
-                <Label
-                  htmlFor={`version-order-${version.id}`}
-                  className="text-xs text-muted-foreground"
-                >
-                  Order
-                </Label>
-                <Input
-                  id={`version-order-${version.id}`}
-                  className="w-20"
-                  inputMode="numeric"
-                  value={orders[version.id] ?? ""}
-                  onChange={(event) =>
-                    setOrders({
-                      ...orders,
-                      [version.id]: event.target.value,
-                    })
-                  }
-                />
-              </div>
-            ))}
+                  <RadioGroupItem value={id} id={`default-version-${id}`} />
+                  <Label
+                    htmlFor={`default-version-${id}`}
+                    className="flex-1 cursor-pointer"
+                  >
+                    v{version.version}
+                    {version.is_default && (
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        current default
+                      </span>
+                    )}
+                    {!version.enabled && (
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        disabled
+                      </span>
+                    )}
+                  </Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`Move v${version.version} up`}
+                    disabled={index === 0}
+                    onClick={() => move(index, index - 1)}
+                  >
+                    <ChevronUp />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`Move v${version.version} down`}
+                    disabled={index === order.length - 1}
+                    onClick={() => move(index, index + 1)}
+                  >
+                    <ChevronDown />
+                  </Button>
+                </div>
+              )
+            })}
           </RadioGroup>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setOpen(false)}>
