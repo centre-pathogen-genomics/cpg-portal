@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { FilesService, RunsService, UsersService } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
+import { handleError } from "../../utils"
 import { ConfirmationDialog } from "./ConfirmationDialog"
 
 interface DeleteProps {
@@ -39,12 +40,9 @@ const Delete = ({ type, id, isOpen, onClose, onDelete }: DeleteProps) => {
       onDelete?.()
       onClose()
     },
-    onError: () => {
-      showToast(
-        "An error occurred.",
-        `An error occurred while deleting the ${type.toLowerCase()}.`,
-        "error",
-      )
+    onError: (error) => {
+      // The API explains a refusal, e.g. a user that still owns runs or files.
+      handleError(error, showToast)
     },
     onSettled: () => {
       queryClient.invalidateQueries({
