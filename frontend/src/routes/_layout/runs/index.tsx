@@ -62,7 +62,7 @@ import CancelAlert from "../../../components/Runs/CancelAlert"
 import CancelRunsButton from "../../../components/Runs/CancelRunsButton"
 import ParamTag from "../../../components/Runs/ParamTag"
 import RunRuntime from "../../../components/Runs/RunTime"
-import StatusBadge from "../../../components/Runs/StatusBadge"
+import StatusBadge, { StatusIcon } from "../../../components/Runs/StatusBadge"
 import useCustomToast from "../../../hooks/useCustomToast"
 import useViewMode, { type ViewMode } from "../../../hooks/useViewMode"
 import { useVisibleIds } from "../../../hooks/useVisibleIds"
@@ -85,6 +85,7 @@ interface RunsTableProps {
 type SortColumn = "name" | "status" | "created_at" | "finished_at" | "runtime"
 
 const inactiveRunStatuses: RunStatus[] = ["completed", "failed", "cancelled"]
+const activeRunStatuses: RunStatus[] = ["pending", "running"]
 
 const sortLabels: Record<SortColumn, string> = {
   name: "Name",
@@ -273,16 +274,21 @@ function RunCard({ run }: { run: RunPublicMinimal }) {
         className="absolute inset-0 rounded-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
       />
       <div className="flex items-start justify-between gap-2">
-        <div className="pointer-events-none min-w-0">
-          <div className="truncate font-semibold">{name}</div>
-          <div className="truncate text-sm text-muted-foreground">
-            {toolName}
+        {/* The status shows as a larger icon right of the name, and the label
+            would take the room the details need. */}
+        <div className="pointer-events-none flex min-w-0 items-start gap-2">
+          <div className="min-w-0">
+            <div className="truncate font-semibold">{name}</div>
+            <div className="truncate text-sm text-muted-foreground">
+              {toolName}
+            </div>
           </div>
+          <StatusIcon
+            status={run.status}
+            className="mt-0.5 ml-1 shrink-0 text-xl"
+          />
         </div>
         <div className="relative z-10 flex shrink-0 items-center gap-2">
-          <span className="pointer-events-none flex items-center">
-            <StatusBadge status={run.status} />
-          </span>
           <RunActionsMenu run={run} />
         </div>
       </div>
@@ -318,7 +324,7 @@ function RunListRow({ run }: { run: RunPublicMinimal }) {
         className="absolute inset-0 rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
       />
       <span className="pointer-events-none flex shrink-0 items-center">
-        <StatusBadge status={run.status} />
+        <StatusIcon status={run.status} />
       </span>
       <span className="pointer-events-none min-w-0 flex-1 truncate font-semibold">
         {name}
@@ -696,6 +702,17 @@ function Runs() {
     queryKey: ["runs", "tools"],
     queryFn: async () => (await RunsService.readRunToolNames()).data ?? [],
   })
+  // Runs that are still going, which are the ones Cancel All can stop.
+  const { data: activeRunsCount } = useQuery({
+    queryKey: ["runs-count", "active"],
+    queryFn: async () =>
+      (
+        await RunsService.readRuns({
+          query: { skip: 0, limit: 1, statuses: activeRunStatuses },
+        })
+      ).data?.count ?? 0,
+    refetchInterval: 10_000,
+  })
   const { data: allRunsCount } = useQuery({
     queryKey: ["runs-count", "all"],
     queryFn: async () =>
@@ -757,12 +774,12 @@ function Runs() {
           </select>
         </div>
         <div className="flex justify-end gap-4">
-          <CancelRunsButton />
+          {!!activeRunsCount && <CancelRunsButton />}
+          <ViewModeButtons mode={view} onChange={setView} />
           <RunsActionsMenu
             allCount={allRunsCount ?? 0}
             visibleRunIds={visibleRunIds}
           />
-          <ViewModeButtons mode={view} onChange={setView} />
         </div>
       </div>
       <RunsTable
