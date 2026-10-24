@@ -406,6 +406,9 @@ async def create_run(
         )
 
     files = []
+    # The file ids each parameter was given, in the same shape as the values, so
+    # a run can be repeated later.
+    param_file_ids: dict[str, list] = {}
     tool_params = [Param(**param) for param in (tool.params or [])]
 
     # A tool sees each input file under its own name, so two different files
@@ -530,6 +533,10 @@ async def create_run(
                 normalized_params[param.name] = file_names
             else:
                 normalized_params[param.name] = file_names[0]
+            # What the user picked, group and all, so a rerun can offer the very
+            # same files again. The loop above rewrote its own copy of each id,
+            # so these are the ids as they came in.
+            param_file_ids[param.name] = list(file_ids)
         elif param.param_type == "bool":
             if not isinstance(normalized_params[param.name], bool):
                 raise HTTPException(
@@ -599,6 +606,7 @@ async def create_run(
         params=normalized_params,
         # A file given to two parameters is listed twice; the worker links it once.
         input_file_ids=list(dict.fromkeys(str(file.id) for file in files)),
+        param_files=param_file_ids,
         command=cmd,
         tags=tags,
         email_on_completion=email_on_completion,

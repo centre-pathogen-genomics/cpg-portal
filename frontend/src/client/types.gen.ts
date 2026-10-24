@@ -584,6 +584,12 @@ export type RunPublic = {
      */
     llm_summary?: string | null;
     /**
+     * Param Files
+     */
+    param_files?: {
+        [key: string]: unknown;
+    } | null;
+    /**
      * Files
      */
     files: Array<FilePublic>;

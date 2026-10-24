@@ -1004,6 +1004,18 @@ export const RunPublicSchema = {
             ],
             title: 'Llm Summary'
         },
+        param_files: {
+            anyOf: [
+                {
+                    additionalProperties: true,
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Param Files'
+        },
         files: {
             items: {
                 '$ref': '#/components/schemas/FilePublic'

@@ -1,6 +1,6 @@
 import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query"
 import { ChevronDown, HelpCircle, LoaderCircle } from "lucide-react"
-import { useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { type SubmitHandler, useForm } from "react-hook-form"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -60,7 +60,7 @@ const FileParam = ({
 }: FileParamProps) => {
   const fileLabel = (file: FilePublic) =>
     `${file.name} (${file.file_type}${
-      file.is_group ? `, group of size ${file.children?.length ?? 0}` : ""
+      file.is_group ? `, group of ${file.children?.length ?? 0}` : ""
     })`
 
   return (
@@ -108,6 +108,15 @@ interface RunToolFormProps {
   minCpus?: number | null
   maxCpus?: number | null
   defaultCpus?: number | null
+  /**
+   * Values from an earlier run, to prefill the form with (e.g. a rerun):
+   * `{...run.params, ...run.param_files}`. Anything that no longer fits is left
+   * at its default.
+   */
+  initialValues?: Record<string, unknown>
+  initialTags?: string[]
+  /** The threads the run being repeated used, clamped to the range now. */
+  initialThreads?: number | null
 }
 
 function isEmptyValue(value: unknown) {
@@ -327,6 +336,9 @@ const RunToolForm = ({
   minCpus,
   maxCpus,
   defaultCpus,
+  initialValues,
+  initialTags,
+  initialThreads,
 }: RunToolFormProps) => {
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
@@ -370,10 +382,13 @@ const RunToolForm = ({
   // Only a pick made on this page counts as an override; a remembered one is
   // just the starting point, and the files decide when they have a say.
   const [threads, setThreads] = useState<number | null>(null)
-  const chooseThreads = (value: number) => {
-    setThreads(value)
-    storeThreads(threadsKey, value)
-  }
+  const chooseThreads = useCallback(
+    (value: number) => {
+      setThreads(value)
+      storeThreads(threadsKey, value)
+    },
+    [threadsKey],
+  )
 
   const defaults = useMemo(() => {
     const values: Record<string, unknown> = {}
@@ -417,6 +432,63 @@ const RunToolForm = ({
   const fileQueriesByParam = new Map(
     fileParams.map((param, index) => [param.name, fileQueries[index]]),
   )
+
+  // Prefill from an earlier run once its files have loaded: a parameter the
+  // tool no longer has, a file that no longer exists and a choice the tool no
+  // longer offers are all left at their default.
+  const prefilled = useRef(false)
+  useEffect(() => {
+    // Nothing to prefill from, or the files are still loading: keep waiting.
+    if (prefilled.current || !initialValues) return
+    if (fileQueries.some((query) => query.isLoading)) return
+    prefilled.current = true
+    const next: Record<string, unknown> = {}
+    for (const param of params) {
+      const recorded = initialValues?.[param.name]
+      if (recorded === undefined || recorded === null) continue
+      if (param.param_type === "file") {
+        const allowed = new Set(
+          (fileQueriesByParam.get(param.name)?.data ?? []).map(
+            (file) => file.id,
+          ),
+        )
+        const ids = (Array.isArray(recorded) ? recorded : [recorded]).flat()
+        const usable = ids.filter(
+          (id): id is string => typeof id === "string" && allowed.has(id),
+        )
+        if (usable.length) next[param.name] = usable
+        continue
+      }
+      if (
+        param.param_type === "enum" &&
+        !(param.options ?? []).includes(String(recorded))
+      ) {
+        continue
+      }
+      next[param.name] = recorded
+    }
+    reset({ ...getValues(), ...next })
+    if (initialTags?.length) setTags(initialTags)
+    if (initialThreads != null) {
+      // The threads may no longer fit, e.g. the tool's limits changed, and a
+      // select with no matching option shows blank.
+      chooseThreads(
+        Math.max(minThreads, Math.min(initialThreads, effectiveMax)),
+      )
+    }
+  }, [
+    initialValues,
+    initialTags,
+    initialThreads,
+    params,
+    fileQueries,
+    fileQueriesByParam,
+    getValues,
+    reset,
+    minThreads,
+    effectiveMax,
+    chooseThreads,
+  ])
 
   // Tools that take a batch of input files usually want a thread per file, or
   // the CPUs the tool asked for per file, so that is the default when the tool
@@ -607,41 +679,27 @@ const RunToolForm = ({
           </div>
         )
       })}
-      <div className="my-4 flex items-center gap-2">
-        <Button type="submit" disabled={isDisabled || isLoading}>
-          {isLoading && <LoaderCircle className="animate-spin" />}Submit
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={isDisabled}
-          onClick={() => reset(defaults)}
-        >
-          Reset
-        </Button>
-        <div className="ml-2">
-          <EmailOnFinished
-            emailOnFinished={emailOnFinished}
-            setEmailOnFinished={setEmailOnFinished}
-            isDisabled={isDisabled}
-          />
-        </div>
-      </div>
-      <h2 className="my-4 text-lg font-semibold">
+
+      <h2 className="my-4 text-lg ">
         <button
           type="button"
-          className="flex w-full items-center justify-between gap-4 border-b pb-1"
+          className="flex w-full items-center justify-between gap-4 border-b pb-1 font-semibold"
           onClick={toggleSettings}
           aria-expanded={settingsOpen}
           aria-controls="CPG_PORTAL_RUN_SETTINGS"
         >
           Run Settings
-          <ChevronDown
-            className={cn(
-              "text-muted-foreground size-5 transition-transform",
-              settingsOpen && "rotate-180",
+          <div className="flex items-center justify-between gap-2 font-normal">
+            {!settingsOpen && (
+              <p className="text-sm text-gray-500">click to open</p>
             )}
-          />
+            <ChevronDown
+              className={cn(
+                "text-muted-foreground size-5 transition-transform",
+                settingsOpen && "rotate-180",
+              )}
+            />
+          </div>
         </button>
       </h2>
 
@@ -736,6 +794,26 @@ const RunToolForm = ({
           )}
         </div>
       )}
+      <div className="my-4 flex items-center gap-2">
+        <Button type="submit" disabled={isDisabled || isLoading}>
+          {isLoading && <LoaderCircle className="animate-spin" />}Submit
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={isDisabled}
+          onClick={() => reset(defaults)}
+        >
+          Reset
+        </Button>
+        <div className="ml-2">
+          <EmailOnFinished
+            emailOnFinished={emailOnFinished}
+            setEmailOnFinished={setEmailOnFinished}
+            isDisabled={isDisabled}
+          />
+        </div>
+      </div>
     </form>
   )
 }

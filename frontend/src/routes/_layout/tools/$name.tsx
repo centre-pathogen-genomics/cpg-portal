@@ -25,6 +25,7 @@ import {
   enableToolMutation,
   getToolDetailStatsOptions,
   installToolMutation,
+  readRunOptions,
   readToolByNameOptions,
   readToolByNameQueryKey,
   readUserMeQueryKey,
@@ -40,6 +41,11 @@ import useCustomToast from "../../../hooks/useCustomToast"
 
 export const Route = createFileRoute("/_layout/tools/$name")({
   component: Tool,
+  // The run page's Rerun button sends the run to prefill this form from. The
+  // key stays optional so links to this page need no search object.
+  validateSearch: (search: Record<string, unknown>): { rerun?: string } => ({
+    rerun: typeof search.rerun === "string" ? search.rerun : undefined,
+  }),
   head: (context) => ({
     meta: [
       {
@@ -365,11 +371,17 @@ function Tool() {
   const queryClient = useQueryClient()
   const currentUser = queryClient.getQueryData<UserPublic>(readUserMeQueryKey())
   const { name } = Route.useParams()
+  const { rerun: rerunRunId } = Route.useSearch()
   const {
     isError,
     data: tool,
     isPending,
   } = useQuery({ ...readToolByNameOptions({ path: { tool_name: name } }) })
+  // The run a Rerun brought here, whose parameters prefill the form.
+  const { data: rerunRun } = useQuery({
+    ...readRunOptions({ path: { id: rerunRunId ?? "" } }),
+    enabled: !!rerunRunId && !!tool,
+  })
   const [favourited, setFavourited] = useState(false)
   useEffect(() => {
     if (tool) setFavourited(tool.favourited ?? false)
@@ -533,6 +545,13 @@ function Tool() {
           minCpus={tool.min_cpus}
           maxCpus={tool.max_cpus}
           defaultCpus={tool.default_cpus}
+          initialValues={
+            rerunRun
+              ? { ...rerunRun.params, ...(rerunRun.param_files ?? {}) }
+              : undefined
+          }
+          initialTags={rerunRun?.tags ?? undefined}
+          initialThreads={rerunRun?.cpus ?? undefined}
           onSuccess={(run) =>
             navigate({
               to: "/runs/$runid",

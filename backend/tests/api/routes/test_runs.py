@@ -1016,6 +1016,64 @@ def test_create_run_defaults_threads_to_the_input_files(
     assert run_with(files[:1]).cpus == 1
 
 
+def test_create_run_records_the_files_of_each_parameter(
+    db: Session, monkeypatch
+) -> None:
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
+    owner = create_random_user(db)
+    tool = _create_tool(db=db, owner=owner)
+    tool.command = "echo {{ first }} {{ second }}"
+    tool.params = [
+        {"name": "first", "param_type": "file", "multiple": True},
+        {"name": "second", "param_type": "file", "multiple": False},
+    ]
+    db.add(tool)
+    db.commit()
+    first = _create_saved_file(db=db, owner=owner, name="one.fasta")
+    second = _create_saved_file(db=db, owner=owner, name="two.fasta")
+
+    run = asyncio.run(
+        create_run(
+            session=db,
+            current_user=owner,
+            tool_id=tool.id,
+            params={
+                "first": [str(first.id)],
+                "second": [str(second.id)],
+            },
+            tags=[],
+        )
+    )
+
+    # What each parameter was given is kept, so the run can be repeated later.
+    assert run.param_files == {
+        "first": [str(first.id)],
+        "second": [str(second.id)],
+    }
+
+    # A group is recorded by its own id, not by the files it holds, so a rerun
+    # offers the very same group.
+    group = _create_saved_file(
+        db=db, owner=owner, name="group-of-two.fasta", file_type="fasta"
+    )
+    group.is_group = True
+    db.add(group)
+    db.commit()
+    group_run = asyncio.run(
+        create_run(
+            session=db,
+            current_user=owner,
+            tool_id=tool.id,
+            params={"first": [str(group.id)]},
+            tags=[],
+        )
+    )
+
+    assert group_run.param_files == {"first": [str(group.id)]}
+    assert group_run.input_file_ids == [str(group.id)]
+
+
 def test_create_run_gives_the_tool_the_file_name_without_the_stored_id(
     db: Session, monkeypatch
 ) -> None:

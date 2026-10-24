@@ -415,6 +415,9 @@ class Run(RunBase, table=True):
     status: RunStatus = Field(sa_column=Column(Enum(RunStatus)))
     tags: list[str] | None = Field(default_factory=list, sa_column=Column(JSON))
     params: dict = Field(default_factory=dict, sa_column=Column(JSON))
+    # The files each file parameter was given, keyed by parameter name, so the
+    # run can be repeated later (`{"input_file": ["<file id>"]}`).
+    param_files: dict | None = Field(default_factory=dict, sa_column=Column(JSON))
     input_file_ids: list[uuid.UUID] | None = Field(
         default_factory=list, sa_column=Column(JSON)
     )
@@ -537,6 +540,8 @@ class RunPublic(RunPublicMinimal):
     conda_env_pinned: str | None = None
     llm_summary: str | None = None
     params: dict
+    # The files each file parameter was given, so the run can be repeated.
+    param_files: dict | None = None
     files: list[FilePublic]
 
 

@@ -16,6 +16,7 @@ import DeleteRunButton from "../../../components/Runs/DeleteRunButton"
 import EditRunName from "../../../components/Runs/EditableRunName"
 import OutputAccordion from "../../../components/Runs/OutputAccordion"
 import OutputFile from "../../../components/Runs/OutputFile"
+import RerunRunButton from "../../../components/Runs/RerunRunButton"
 import RunMetadata from "../../../components/Runs/RunMetadata"
 import ShareRunButton from "../../../components/Runs/ShareRunButton"
 import useAuth from "../../../hooks/useAuth"
@@ -58,6 +59,7 @@ function RunDetail() {
         </Link>
         <div className="flex items-center gap-2">
           {isOwner && <ShareRunButton run={run} />}
+          {isOwner && <RerunRunButton run={run} />}
           {isOwner &&
             (["running", "pending"].includes(run.status) ? (
               <CancelRunButton run_id={run.id} />
