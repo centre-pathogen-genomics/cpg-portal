@@ -58,9 +58,16 @@ const useAuth = () => {
   }
 
   const loginMutation = useMutation({
-    mutationFn: login,
-    onSuccess: () => {
-      navigate({ to: "/" })
+    mutationFn: ({ data }: { data: AccessToken; redirect?: string }) =>
+      login(data),
+    onSuccess: (_result, variables) => {
+      // Only a path on this site, so a crafted link cannot send someone away.
+      const target = variables.redirect
+      const path =
+        target && target.startsWith("/") && !target.startsWith("//")
+          ? target
+          : "/"
+      navigate({ to: path })
     },
     onError: (error) => handleError(error, showErrorToast),
   })
