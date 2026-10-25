@@ -120,6 +120,8 @@ services:
       args:
         - VITE_API_URL=http://localhost:8000
         - VITE_MAX_FILE_UPLOAD_SIZE=${MAX_FILE_UPLOAD_SIZE?Variable not set}
+        - VITE_TURNSTILE_SITE_KEY=${TURNSTILE_SITE_KEY:-}
+        - VITE_TURNSTILE_ACTION=${TURNSTILE_ACTION:-signup}
         - NODE_ENV=development
     environment:
       - PRERENDER_SITE_URL=http://localhost:5173

@@ -1481,6 +1481,10 @@ export type UserRegister = {
      * Full Name
      */
     full_name?: string | null;
+    /**
+     * Turnstile Token
+     */
+    turnstile_token?: string | null;
 };
 
 /**

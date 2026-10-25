@@ -296,6 +296,54 @@ Tools that need system packages which are neither in the sandbox image nor in
 their conda environment fail at runtime; add them to
 `backend/container/runtime.def` and rebuild.
 
+## Signup Protection (Cloudflare Turnstile)
+
+The signup form can carry a [Cloudflare Turnstile](https://www.cloudflare.com/products/turnstile)
+challenge, which keeps automated signups and bots out. It is off until you
+supply keys, so an existing deployment is unaffected:
+
+| Variable | Where | Meaning |
+| --- | --- | --- |
+| `TURNSTILE_SITE_KEY` | host env, feeding the frontend build arg | the public key the signup form shows |
+| `TURNSTILE_SECRET_KEY` | backend env or secret manager | what the backend verifies each token with |
+| `TURNSTILE_HOSTNAMES` | backend env react | comma-separated frontend hostnames a token may come from; required once a secret key is set |
+| `TURNSTILE_ACTION` | backend env | the action the widget names, `signup` by default |
+| `VITE_TURNSTILE_ACTION` | host env, feeding the frontend build arg | the same action on the widget side |
+
+Add a widget at <https://dash.cloudflare.com/> (Turnstile > Add site), give it
+every hostname you serve from (including `localhost` and `127.0.0.1` for local
+work), then:
+
+```bash
+TURNSTILE_SITE_KEY=<site key> docker compose up -d --build frontend
+TURNSTILE_SECRET_KEY=<secret key> TURNSTILE_HOSTNAMES=dashboard.example.org \
+  docker compose up -d --build backend worker
+```
+
+All three live in `.env`, and ship empty so a fresh deployment runs without a
+challenge. The site key is public; if your `.env` is committed (it is here),
+feed the secret from your deployment environment, your CI secrets, or your
+secret manager rather than writing it into the file. Compose also accepts the
+three from the shell, so
+`TURNSTILE_SECRET_KEY=... TURNSTILE_HOSTNAMES=... docker compose up -d backend worker`
+works without touching `.env`.
+
+With a secret key set, `POST /users/signup` refuses a request when the token is
+missing or oversized, when Cloudflare rejects it, when Cloudflare cannot be
+reached, when the verified `action` is not the one this deployment expects, or
+when the verified `hostname` is not in `TURNSTILE_HOSTNAMES` - the door fails
+shut rather than open. A production `TURNSTILE_HOSTNAMES` must not contain
+`localhost` or `127.0.0.1`.
+
+Cloudflare publishes [testing keys](https://developers.cloudflare.com/turnstile/troubleshooting/testing/)
+that answer without a challenge: the always-pass pair is site key
+`1x00000000000000000000AA` with secret `1x0000000000000000000000000000000AA`,
+and `2x0000000000000000000000000000000AA` always fails. They report
+`hostname: example.com`, so local runs pair them with
+`TURNSTILE_HOSTNAMES=example.com`.
+
+Only the signup route is guarded; login and password recovery are untouched.
+
 ## Public Tool Pages (Prerendering)
 
 Tool pages (`/tools/<name>`) are prerendered into the directory nginx serves, so

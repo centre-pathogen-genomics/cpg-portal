@@ -2723,6 +2723,17 @@ export const UserRegisterSchema = {
                 }
             ],
             title: 'Full Name'
+        },
+        turnstile_token: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Turnstile Token'
         }
     },
     type: 'object',

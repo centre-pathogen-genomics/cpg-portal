@@ -14,6 +14,12 @@ RUN bun install
 COPY ./frontend /app/frontend
 ARG VITE_API_URL
 ARG VITE_MAX_FILE_UPLOAD_SIZE
+# Optional: the Cloudflare Turnstile site key. When it is empty the signup form
+# carries no challenge, matching a backend without a secret key.
+ARG VITE_TURNSTILE_SITE_KEY
+# Optional: the action the widget names, which the backend checks. Defaults to
+# `signup` on both sides.
+ARG VITE_TURNSTILE_ACTION
 
 RUN bun run build
 

@@ -1,7 +1,7 @@
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import func, select
 
 from app import crud
@@ -12,6 +12,7 @@ from app.api.deps import (
 )
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
+from app.core.turnstile import verify_turnstile
 from app.models import (
     AuthTokenPurpose,
     File,
@@ -161,10 +162,17 @@ def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Any:
 
 
 @router.post("/signup", response_model=UserPublic)
-def register_user(session: SessionDep, user_in: UserRegister) -> Any:
+def register_user(
+    session: SessionDep, user_in: UserRegister, request: Request
+) -> Any:
     """
     Register a new inactive user and send them an account activation email.
     """
+    # Only asks for anything when a Turnstile secret key is configured.
+    verify_turnstile(
+        user_in.turnstile_token,
+        request.client.host if request.client else None,
+    )
     existing_user = crud.get_user_by_email(session=session, email=user_in.email)
     if existing_user:
         raise HTTPException(

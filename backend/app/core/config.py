@@ -77,6 +77,15 @@ class Settings(BaseSettings):
 
     PROJECT_NAME: str
     SENTRY_DSN: HttpUrl | None = None
+    # Cloudflare Turnstile keeps automated signups out. Verification only
+    # happens when a secret key is set, so a deployment without one leaves
+    # signups as they were.
+    TURNSTILE_SECRET_KEY: str | None = None
+    # The frontend hostnames a token may come from. Required once a
+    # secret key is set: the verified hostname is checked against it.
+    TURNSTILE_HOSTNAMES: str | None = None
+    # The action the check expects back from Cloudflare.
+    TURNSTILE_ACTION: str = "signup"
     POSTGRES_SERVER: str
     POSTGRES_PORT: int = 5432
     POSTGRES_USER: str

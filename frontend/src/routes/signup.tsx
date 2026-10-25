@@ -4,9 +4,14 @@ import {
   Link as RouterLink,
   redirect,
 } from "@tanstack/react-router"
+import { useRef, useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { AuthLayout } from "@/components/Common/AuthLayout"
+import Turnstile, {
+  type TurnstileHandle,
+  turnstileEnabled,
+} from "@/components/Common/Turnstile"
 import {
   Form,
   FormControl,
@@ -71,12 +76,26 @@ function SignUp() {
     },
   })
 
+  // The Turnstile token, and a handle for resetting the widget after a failed
+  // submit: a token is only good once.
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
+  const turnstile = useRef<TurnstileHandle>(null)
+
   const onSubmit = (data: FormData) => {
     if (signUpMutation.isPending) return
+    if (turnstileEnabled && !turnstileToken) return
 
     // exclude confirm_password from submission data
     const { confirm_password: _confirm_password, ...submitData } = data
-    signUpMutation.mutate(submitData)
+    signUpMutation.mutate(
+      { ...submitData, turnstile_token: turnstileToken ?? undefined },
+      {
+        onError: () => {
+          setTurnstileToken(null)
+          turnstile.current?.reset()
+        },
+      },
+    )
   }
 
   return (
@@ -165,10 +184,13 @@ function SignUp() {
               )}
             />
 
+            <Turnstile ref={turnstile} onToken={setTurnstileToken} />
+
             <LoadingButton
               type="submit"
               className="w-full"
               loading={signUpMutation.isPending}
+              disabled={turnstileEnabled && !turnstileToken}
             >
               Sign Up
             </LoadingButton>

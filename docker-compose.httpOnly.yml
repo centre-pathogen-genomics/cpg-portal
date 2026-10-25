@@ -146,6 +146,11 @@ services:
     env_file:
       - .env
     environment:
+      # Turnstile keys come from the environment or your secret manager, never
+      # from the committed .env: see deployment.md.
+      - TURNSTILE_SECRET_KEY=${TURNSTILE_SECRET_KEY:-}
+      - TURNSTILE_HOSTNAMES=${TURNSTILE_HOSTNAMES:-}
+      - TURNSTILE_ACTION=${TURNSTILE_ACTION:-signup}
       - DOMAIN=${DOMAIN}
       - FRONTEND_HOST=${FRONTEND_HOST?Variable not set}
       - ENVIRONMENT=${ENVIRONMENT}
@@ -241,6 +246,8 @@ services:
       args:
         - VITE_API_URL=https://${DOMAIN?Variable not set}
         - VITE_MAX_FILE_UPLOAD_SIZE=${MAX_FILE_UPLOAD_SIZE?Variable not set}
+        - VITE_TURNSTILE_SITE_KEY=${TURNSTILE_SITE_KEY:-}
+        - VITE_TURNSTILE_ACTION=${TURNSTILE_ACTION:-signup}
         - NODE_ENV=production
     environment:
       # Canonical URLs and sitemap.xml need the public origin.
