@@ -121,6 +121,8 @@ services:
         - VITE_API_URL=http://localhost:8000
         - VITE_MAX_FILE_UPLOAD_SIZE=${MAX_FILE_UPLOAD_SIZE?Variable not set}
         - NODE_ENV=development
+    environment:
+      - PRERENDER_SITE_URL=http://localhost:5173
 
   playwright:
     build:

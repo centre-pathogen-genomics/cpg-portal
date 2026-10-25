@@ -296,6 +296,40 @@ Tools that need system packages which are neither in the sandbox image nor in
 their conda environment fail at runtime; add them to
 `backend/container/runtime.def` and rebuild.
 
+## Public Tool Pages (Prerendering)
+
+Tool pages (`/tools/<name>`) are prerendered into the directory nginx serves, so
+crawlers and social scrapers - which never run JavaScript - get each tool's own
+title, description, image, canonical URL and a summary listing its versions,
+tags, parameters and links (home page, documentation, GitHub repository, DOI,
+license and citation). Each file
+is the app's own shell, so a browser loads the SPA over it and hydrates: visitors
+always read the live catalogue from the API, and adding or editing a tool needs
+no rebuild.
+
+The frontend container runs `frontend/scripts/prerender.py` at start and then
+every `PRERENDER_INTERVAL_SECONDS` (default 21600, six hours). It writes
+`/tools/<name>.html` for every tool name, plus `sitemap.xml` and `robots.txt`,
+into `/usr/share/nginx/html`; nginx serves `/tools/<name>` from the matching
+`<name>.html` file and falls back to the app for everything else.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `PRERENDER_ENABLED` | `true` | `false` skips prerendering altogether |
+| `PRERENDER_API_URL` | `http://backend:8000/api/v1` | where the catalogue is read from |
+| `PRERENDER_SITE_URL` | - | public origin, e.g. `https://dashboard.example.org`. Without it pages carry no canonical URL and no sitemap is written |
+| `PRERENDER_INTERVAL_SECONDS` | `21600` | refresh interval; `0` prerenders once and exits |
+| `PRERENDER_SITE_DIR` | `/usr/share/nginx/html` | the served directory |
+
+`compose.yml`, `docker-compose.httpOnly.yml` and `compose.override.yml` set
+`PRERENDER_SITE_URL` already. To refresh sooner than the interval, restart the
+container or run a single pass:
+
+```bash
+docker compose restart frontend
+docker compose exec -e PRERENDER_INTERVAL_SECONDS=0 frontend /usr/local/bin/prerender.py
+```
+
 ## Threads and CPU Scheduling
 
 Every run reserves a number of CPUs (threads), and the worker only hands out

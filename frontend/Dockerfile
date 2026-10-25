@@ -42,3 +42,13 @@ COPY --from=jupyterlite-build /app/dist/ /usr/share/nginx/html/wasm/jupyterlite/
 
 COPY ./frontend/nginx.conf /etc/nginx/conf.d/default.conf
 COPY ./frontend/nginx-backend-not-found.conf /etc/nginx/extra-conf.d/backend-not-found.conf
+
+# Prerender the public tool pages, so crawlers and social scrapers get the
+# tool's own title, description and image. The script writes into the served
+# directory, and the container runs it on start and on a timer.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends python3 \
+    && rm -rf /var/lib/apt/lists/*
+COPY ./frontend/scripts/prerender.py /usr/local/bin/prerender.py
+COPY ./frontend/docker-entrypoint.d/40-prerender.sh /docker-entrypoint.d/40-prerender.sh
+RUN chmod +x /usr/local/bin/prerender.py /docker-entrypoint.d/40-prerender.sh

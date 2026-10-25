@@ -235,6 +235,9 @@ services:
         - VITE_API_URL=https://api.${DOMAIN?Variable not set}
         - VITE_MAX_FILE_UPLOAD_SIZE=${MAX_FILE_UPLOAD_SIZE?Variable not set}
         - NODE_ENV=production
+    environment:
+      # Canonical URLs and sitemap.xml need the public origin.
+      - PRERENDER_SITE_URL=https://dashboard.${DOMAIN?Variable not set}
     labels:
       - traefik.enable=true
       - traefik.docker.network=traefik-public
