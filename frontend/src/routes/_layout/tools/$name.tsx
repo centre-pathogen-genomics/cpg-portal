@@ -40,6 +40,7 @@ import {
   updateToolPostInstallMutation,
 } from "../../../client/@tanstack/react-query.gen"
 import CodeBlock from "../../../components/Common/CodeBlock"
+import { ConfirmationDialog } from "../../../components/Common/ConfirmationDialog"
 import Badge from "../../../components/Tools/badges/Badge"
 import GitHubBadge from "../../../components/Tools/badges/GitHubBadge"
 import CreateVersionButton from "../../../components/Tools/CreateVersionButton"
@@ -218,33 +219,62 @@ function InstallToolButton({ tool }: { tool: ToolPublic }) {
   const inProgress =
     statusInProgress || mutationInProgress || awaitingUninstallConfirmation
 
+  // Which action the dialog asks about, and whether it is open. The action
+  // outlives the close, so the dialog does not flip to the other one while it
+  // fades out.
+  const [confirmAction, setConfirmAction] = useState<"install" | "uninstall">(
+    "install",
+  )
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const uninstalling = confirmAction === "uninstall"
+
   const handleClick = () => {
     if (inProgress) return
+    setConfirmAction(isUninstallAction ? "uninstall" : "install")
+    setConfirmOpen(true)
+  }
 
-    if (isUninstallAction) {
+  const runConfirmedAction = () => {
+    if (confirmAction === "uninstall") {
       setAwaitingUninstallConfirmation(true)
       uninstallMutation.mutate({ path: { tool_id: tool.id } })
-      return
+    } else {
+      installMutation.mutate({ path: { tool_id: tool.id } })
     }
-
-    installMutation.mutate({ path: { tool_id: tool.id } })
+    setConfirmOpen(false)
   }
 
   return (
-    <Button disabled={inProgress} onClick={handleClick}>
-      {inProgress && <LoaderCircle className="animate-spin" />}
-      {awaitingUninstallConfirmation ||
-      uninstallInProgress ||
-      uninstallMutation.isPending
-        ? "Uninstalling..."
-        : installInProgress || installMutation.isPending
-          ? "Installing..."
-          : updateInProgress
-            ? "Updating..."
-            : isUninstallAction
-              ? "Uninstall"
-              : "Install"}
-    </Button>
+    <>
+      <Button disabled={inProgress} onClick={handleClick}>
+        {inProgress && <LoaderCircle className="animate-spin" />}
+        {awaitingUninstallConfirmation ||
+        uninstallInProgress ||
+        uninstallMutation.isPending
+          ? "Uninstalling..."
+          : installInProgress || installMutation.isPending
+            ? "Installing..."
+            : updateInProgress
+              ? "Updating..."
+              : isUninstallAction
+                ? "Uninstall"
+                : "Install"}
+      </Button>
+      <ConfirmationDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={`${uninstalling ? "Uninstall" : "Install"} ${tool.name}?`}
+        description={
+          uninstalling
+            ? "This removes the tool's environment from the worker. The tool cannot run until it is installed again."
+            : "This prepares the tool's environment on the worker, which can take a while. Runs started meanwhile wait in the queue."
+        }
+        confirmLabel={uninstalling ? "Uninstall" : "Install"}
+        confirmVariant={uninstalling ? "destructive" : "default"}
+        pending={mutationInProgress}
+        onConfirm={runConfirmedAction}
+      />
+    </>
   )
 }
 
@@ -259,6 +289,7 @@ function UpdateToolButton({ tool }: { tool: ToolPublic }) {
     tool.status === "install_queued" ||
     tool.status === "uninstalling"
 
+  const [confirmOpen, setConfirmOpen] = useState(false)
   const updateMutation = useMutation({
     ...updateToolPostInstallMutation(),
     onError: ({ message }) =>
@@ -281,16 +312,33 @@ function UpdateToolButton({ tool }: { tool: ToolPublic }) {
   }
 
   return (
-    <Button
-      variant="outline"
-      disabled={busy || updateMutation.isPending}
-      onClick={() => updateMutation.mutate({ path: { tool_id: tool.id } })}
-    >
-      {(updateInProgress || updateMutation.isPending) && (
-        <LoaderCircle className="animate-spin" />
-      )}
-      {updateInProgress || updateMutation.isPending ? "Updating..." : "Update"}
-    </Button>
+    <>
+      <Button
+        variant="outline"
+        disabled={busy || updateMutation.isPending}
+        onClick={() => setConfirmOpen(true)}
+      >
+        {(updateInProgress || updateMutation.isPending) && (
+          <LoaderCircle className="animate-spin" />
+        )}
+        {updateInProgress || updateMutation.isPending
+          ? "Updating..."
+          : "Update"}
+      </Button>
+      <ConfirmationDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={`Update ${tool.name}?`}
+        description="This re-runs the tool's post-install command against its existing environment."
+        confirmLabel="Update"
+        confirmVariant="default"
+        pending={updateMutation.isPending}
+        onConfirm={() => {
+          updateMutation.mutate({ path: { tool_id: tool.id } })
+          setConfirmOpen(false)
+        }}
+      />
+    </>
   )
 }
 

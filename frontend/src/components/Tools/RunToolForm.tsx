@@ -1,12 +1,12 @@
-import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query"
-import { ChevronDown, HelpCircle, LoaderCircle } from "lucide-react"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { type SubmitHandler, useForm } from "react-hook-form"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { MultiSelect } from "@/components/ui/multi-select"
+import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
+import { ChevronDown, HelpCircle, LoaderCircle } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type SubmitHandler, useForm } from "react-hook-form";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { MultiSelect } from "@/components/ui/multi-select";
 import {
   Popover,
   PopoverContent,
@@ -14,14 +14,14 @@ import {
   PopoverHeader,
   PopoverTitle,
   PopoverTrigger,
-} from "@/components/ui/popover"
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 import {
   type FilePublic,
   FilesService,
@@ -29,24 +29,24 @@ import {
   type Param,
   type ParamVisibilityOperator,
   type RunPublic,
-} from "../../client"
-import { createRunMutation } from "../../client/@tanstack/react-query.gen"
-import useAuth from "../../hooks/useAuth"
-import useCustomToast from "../../hooks/useCustomToast"
-import { cn } from "../../lib/utils"
-import { handleError } from "../../utils"
-import TagInput from "../Common/TagInput"
-import FileUploadButton from "../Files/UploadFileButtonWithProgress"
-import EmailOnFinished from "./EmailOnFinished"
+} from "../../client";
+import { createRunMutation } from "../../client/@tanstack/react-query.gen";
+import useAuth from "../../hooks/useAuth";
+import useCustomToast from "../../hooks/useCustomToast";
+import { cn } from "../../lib/utils";
+import { handleError } from "../../utils";
+import TagInput from "../Common/TagInput";
+import FileUploadButton from "../Files/UploadFileButtonWithProgress";
+import EmailOnFinished from "./EmailOnFinished";
 
 interface FileParamProps {
-  param: Param
-  data: FilePublic[]
-  isLoading: boolean
-  values: string[]
-  updateValues: (update: (values: string[]) => string[]) => void
-  setIsLoading: (loading: boolean) => void
-  disabled: boolean
+  param: Param;
+  data: FilePublic[];
+  isLoading: boolean;
+  values: string[];
+  updateValues: (update: (values: string[]) => string[]) => void;
+  setIsLoading: (loading: boolean) => void;
+  disabled: boolean;
 }
 
 const FileParam = ({
@@ -61,7 +61,7 @@ const FileParam = ({
   const fileLabel = (file: FilePublic) =>
     `${file.name} (${file.file_type}${
       file.is_group ? `, group of ${file.children?.length ?? 0}` : ""
-    })`
+    })`;
 
   return (
     <div className="flex flex-col gap-2">
@@ -97,26 +97,26 @@ const FileParam = ({
         />
       )}
     </div>
-  )
-}
+  );
+};
 
 interface RunToolFormProps {
-  toolId: string
-  params: Param[]
-  onSuccess?: (run: RunPublic) => void
-  isDisabled?: boolean
-  minCpus?: number | null
-  maxCpus?: number | null
-  defaultCpus?: number | null
+  toolId: string;
+  params: Param[];
+  onSuccess?: (run: RunPublic) => void;
+  isDisabled?: boolean;
+  minCpus?: number | null;
+  maxCpus?: number | null;
+  defaultCpus?: number | null;
   /**
    * Values from an earlier run, to prefill the form with (e.g. a rerun):
    * `{...run.params, ...run.param_files}`. Anything that no longer fits is left
    * at its default.
    */
-  initialValues?: Record<string, unknown>
-  initialTags?: string[]
+  initialValues?: Record<string, unknown>;
+  initialTags?: string[];
   /** The threads the run being repeated used, clamped to the range now. */
-  initialThreads?: number | null
+  initialThreads?: number | null;
 }
 
 function isEmptyValue(value: unknown) {
@@ -126,7 +126,7 @@ function isEmptyValue(value: unknown) {
     (typeof value === "string" && value.trim() === "") ||
     (Array.isArray(value) && value.length === 0) ||
     (typeof value === "number" && Number.isNaN(value))
-  )
+  );
 }
 
 function parseVisibilityValue(
@@ -136,30 +136,30 @@ function parseVisibilityValue(
 ) {
   const parseScalar = (rawValue: unknown) => {
     if (rawValue === null || rawValue === undefined || rawValue === "")
-      return null
+      return null;
 
     if (param.param_type === "bool") {
-      if (typeof rawValue === "boolean") return rawValue
+      if (typeof rawValue === "boolean") return rawValue;
       if (typeof rawValue === "string") {
-        const lowered = rawValue.trim().toLowerCase()
-        if (["true", "1", "yes", "on"].includes(lowered)) return true
-        if (["false", "0", "no", "off"].includes(lowered)) return false
+        const lowered = rawValue.trim().toLowerCase();
+        if (["true", "1", "yes", "on"].includes(lowered)) return true;
+        if (["false", "0", "no", "off"].includes(lowered)) return false;
       }
-      return null
+      return null;
     }
 
     if (param.param_type === "int") {
-      const parsed = Number.parseInt(String(rawValue), 10)
-      return Number.isNaN(parsed) ? null : parsed
+      const parsed = Number.parseInt(String(rawValue), 10);
+      return Number.isNaN(parsed) ? null : parsed;
     }
 
     if (param.param_type === "float") {
-      const parsed = Number.parseFloat(String(rawValue))
-      return Number.isNaN(parsed) ? null : parsed
+      const parsed = Number.parseFloat(String(rawValue));
+      return Number.isNaN(parsed) ? null : parsed;
     }
 
-    return String(rawValue)
-  }
+    return String(rawValue);
+  };
 
   if (
     operator === "truthy" ||
@@ -167,25 +167,25 @@ function parseVisibilityValue(
     operator === "is_set" ||
     operator === "is_empty"
   ) {
-    return null
+    return null;
   }
 
   if (operator === "in" || operator === "not_in") {
-    if (value === null || value === undefined) return []
-    if (Array.isArray(value)) return value.map((item) => parseScalar(item))
+    if (value === null || value === undefined) return [];
+    if (Array.isArray(value)) return value.map((item) => parseScalar(item));
     if (typeof value === "string") {
       return value
         .split(",")
         .map((item) => item.trim())
         .filter(Boolean)
-        .map((item) => parseScalar(item))
+        .map((item) => parseScalar(item));
     }
-    return [parseScalar(value)]
+    return [parseScalar(value)];
   }
 
-  if (value === null || value === undefined || value === "") return null
+  if (value === null || value === undefined || value === "") return null;
 
-  return parseScalar(value)
+  return parseScalar(value);
 }
 
 function matchesVisibilityCondition({
@@ -193,112 +193,113 @@ function matchesVisibilityCondition({
   operator,
   expectedValue,
 }: {
-  dependencyValue: unknown
-  operator: ParamVisibilityOperator
-  expectedValue: unknown
+  dependencyValue: unknown;
+  operator: ParamVisibilityOperator;
+  expectedValue: unknown;
 }) {
-  if (operator === "truthy") return Boolean(dependencyValue)
-  if (operator === "falsy") return !dependencyValue
-  if (operator === "is_set") return !isEmptyValue(dependencyValue)
-  if (operator === "is_empty") return isEmptyValue(dependencyValue)
+  if (operator === "truthy") return Boolean(dependencyValue);
+  if (operator === "falsy") return !dependencyValue;
+  if (operator === "is_set") return !isEmptyValue(dependencyValue);
+  if (operator === "is_empty") return isEmptyValue(dependencyValue);
 
-  if (operator === "equals") return dependencyValue === expectedValue
-  if (operator === "not_equals") return dependencyValue !== expectedValue
+  if (operator === "equals") return dependencyValue === expectedValue;
+  if (operator === "not_equals") return dependencyValue !== expectedValue;
   if (operator === "in") {
     if (Array.isArray(expectedValue)) {
       if (Array.isArray(dependencyValue)) {
-        return dependencyValue.some((item) => expectedValue.includes(item))
+        return dependencyValue.some((item) => expectedValue.includes(item));
       }
-      return expectedValue.includes(dependencyValue)
+      return expectedValue.includes(dependencyValue);
     }
-    return false
+    return false;
   }
   if (operator === "not_in") {
     if (Array.isArray(expectedValue)) {
       if (Array.isArray(dependencyValue)) {
-        return dependencyValue.every((item) => !expectedValue.includes(item))
+        return dependencyValue.every((item) => !expectedValue.includes(item));
       }
-      return !expectedValue.includes(dependencyValue)
+      return !expectedValue.includes(dependencyValue);
     }
-    return true
+    return true;
   }
   if (
     typeof dependencyValue !== "number" ||
     typeof expectedValue !== "number"
   ) {
-    return false
+    return false;
   }
-  if (operator === "greater_than") return dependencyValue > expectedValue
+  if (operator === "greater_than") return dependencyValue > expectedValue;
   if (operator === "greater_than_or_equal")
-    return dependencyValue >= expectedValue
-  if (operator === "less_than") return dependencyValue < expectedValue
-  if (operator === "less_than_or_equal") return dependencyValue <= expectedValue
-  return false
+    return dependencyValue >= expectedValue;
+  if (operator === "less_than") return dependencyValue < expectedValue;
+  if (operator === "less_than_or_equal")
+    return dependencyValue <= expectedValue;
+  return false;
 }
 
 function buildVisibilityMap(params: Param[], values: Record<string, unknown>) {
-  const paramsByName = new Map(params.map((param) => [param.name, param]))
-  const cache = new Map<string, boolean>()
-  const visiting = new Set<string>()
+  const paramsByName = new Map(params.map((param) => [param.name, param]));
+  const cache = new Map<string, boolean>();
+  const visiting = new Set<string>();
 
   const getVisible = (name: string): boolean => {
-    const cached = cache.get(name)
-    if (cached !== undefined) return cached
-    if (visiting.has(name)) return false
+    const cached = cache.get(name);
+    if (cached !== undefined) return cached;
+    if (visiting.has(name)) return false;
 
-    const param = paramsByName.get(name)
-    if (!param) return true
+    const param = paramsByName.get(name);
+    if (!param) return true;
 
-    visiting.add(name)
-    let visible = true
+    visiting.add(name);
+    let visible = true;
     if (param.visible_if_param) {
-      const dependency = paramsByName.get(param.visible_if_param)
+      const dependency = paramsByName.get(param.visible_if_param);
       if (!dependency) {
-        visible = false
+        visible = false;
       } else if (getVisible(dependency.name)) {
-        const dependencyValue = values[dependency.name] ?? dependency.default
-        const operator = param.visible_if_operator ?? "equals"
+        const dependencyValue = values[dependency.name] ?? dependency.default;
+        const operator = param.visible_if_operator ?? "equals";
         const expectedValue = parseVisibilityValue(
           param.visible_if_value,
           dependency,
           operator,
-        )
+        );
         visible = matchesVisibilityCondition({
           dependencyValue,
           operator,
           expectedValue,
-        })
+        });
       } else {
-        visible = false
+        visible = false;
       }
     }
-    visiting.delete(name)
-    cache.set(name, visible)
-    return visible
-  }
+    visiting.delete(name);
+    cache.set(name, visible);
+    return visible;
+  };
 
-  for (const param of params) getVisible(param.name)
-  return cache
+  for (const param of params) getVisible(param.name);
+  return cache;
 }
 
-const THREADS_STORAGE_PREFIX = "CPG_PORTAL_RUN_THREADS_"
+const THREADS_STORAGE_PREFIX = "CPG_PORTAL_RUN_THREADS_";
 
 // One key for every tool: the run settings section is either shown everywhere
 // or hidden everywhere, which is what a user expects from a shared panel.
-const RUN_SETTINGS_OPEN_KEY = "CPG_PORTAL_RUN_SETTINGS_OPEN"
+const RUN_SETTINGS_OPEN_KEY = "CPG_PORTAL_RUN_SETTINGS_OPEN";
 
 function readStoredSettingsOpen(): boolean | null {
   try {
-    const stored = window.localStorage.getItem(RUN_SETTINGS_OPEN_KEY)
-    return stored === null ? null : stored === "true"
+    const stored = window.localStorage.getItem(RUN_SETTINGS_OPEN_KEY);
+    return stored === null ? null : stored === "true";
   } catch {
-    return null
+    return null;
   }
 }
 
 function storeSettingsOpen(open: boolean): void {
   try {
-    window.localStorage.setItem(RUN_SETTINGS_OPEN_KEY, String(open))
+    window.localStorage.setItem(RUN_SETTINGS_OPEN_KEY, String(open));
   } catch {
     // Storage may be unavailable (private browsing); remembering is a nicety.
   }
@@ -312,17 +313,17 @@ function readStoredThreads(
   max: number,
 ): number | null {
   try {
-    const stored = Number(window.localStorage.getItem(key))
-    if (!Number.isInteger(stored) || stored < 1) return null
-    return Math.min(Math.max(stored, min), max)
+    const stored = Number(window.localStorage.getItem(key));
+    if (!Number.isInteger(stored) || stored < 1) return null;
+    return Math.min(Math.max(stored, min), max);
   } catch {
-    return null
+    return null;
   }
 }
 
 function storeThreads(key: string, value: number): void {
   try {
-    window.localStorage.setItem(key, String(value))
+    window.localStorage.setItem(key, String(value));
   } catch {
     // Storage may be unavailable (private browsing); remembering is a nicety.
   }
@@ -340,35 +341,35 @@ const RunToolForm = ({
   initialTags,
   initialThreads,
 }: RunToolFormProps) => {
-  const queryClient = useQueryClient()
-  const showToast = useCustomToast()
-  const { user } = useAuth()
-  const [isLoading, setIsLoading] = useState(false)
+  const queryClient = useQueryClient();
+  const showToast = useCustomToast();
+  const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState<boolean>(
     () => readStoredSettingsOpen() ?? true,
-  )
+  );
   const toggleSettings = () => {
     setSettingsOpen((open) => {
-      storeSettingsOpen(!open)
-      return !open
-    })
-  }
-  const [tags, setTags] = useState<string[]>([])
-  const [emailOnFinished, setEmailOnFinished] = useState(false)
-  const [runName, setRunName] = useState<string | null>(null)
+      storeSettingsOpen(!open);
+      return !open;
+    });
+  };
+  const [tags, setTags] = useState<string[]>([]);
+  const [emailOnFinished, setEmailOnFinished] = useState(false);
+  const [runName, setRunName] = useState<string | null>(null);
 
   // A tool that needs a fixed number of threads does not offer the choice at
   // all. A tool without a maximum leaves the user's own limit as the maximum,
   // and a tool without a default starts at its minimum.
-  const minThreads = Math.max(1, minCpus ?? 1)
-  const toolMax = maxCpus ?? user?.max_cpus ?? 1
-  const fixedThreads = maxCpus != null && minThreads === maxCpus
+  const minThreads = Math.max(1, minCpus ?? 1);
+  const toolMax = maxCpus ?? user?.max_cpus ?? 1;
+  const fixedThreads = maxCpus != null && minThreads === maxCpus;
   const effectiveMax = user?.is_superuser
     ? Math.max(minThreads, toolMax)
-    : Math.max(minThreads, Math.min(toolMax, user?.max_cpus ?? toolMax))
+    : Math.max(minThreads, Math.min(toolMax, user?.max_cpus ?? toolMax));
   // Whether the user's own limit is what caps the tool's range.
   const cappedByUser =
-    !user?.is_superuser && (user?.max_cpus ?? toolMax) < toolMax
+    !user?.is_superuser && (user?.max_cpus ?? toolMax) < toolMax;
   const threadOptions = useMemo(
     () =>
       Array.from(
@@ -376,25 +377,25 @@ const RunToolForm = ({
         (_, index) => minThreads + index,
       ),
     [effectiveMax, minThreads],
-  )
+  );
 
-  const threadsKey = `${THREADS_STORAGE_PREFIX}${toolId}`
+  const threadsKey = `${THREADS_STORAGE_PREFIX}${toolId}`;
   // Only a pick made on this page counts as an override; a remembered one is
   // just the starting point, and the files decide when they have a say.
-  const [threads, setThreads] = useState<number | null>(null)
+  const [threads, setThreads] = useState<number | null>(null);
   const chooseThreads = useCallback(
     (value: number) => {
-      setThreads(value)
-      storeThreads(threadsKey, value)
+      setThreads(value);
+      storeThreads(threadsKey, value);
     },
     [threadsKey],
-  )
+  );
 
   const defaults = useMemo(() => {
-    const values: Record<string, unknown> = {}
-    for (const param of params) values[param.name] = param.default
-    return values
-  }, [params])
+    const values: Record<string, unknown> = {};
+    for (const param of params) values[param.name] = param.default;
+    return values;
+  }, [params]);
 
   const {
     register,
@@ -410,11 +411,11 @@ const RunToolForm = ({
     mode: "onBlur",
     criteriaMode: "all",
     defaultValues: defaults,
-  })
+  });
 
   // The file pickers and the threads default both need the files a tool's file
   // parameters may choose from, so they are loaded here.
-  const fileParams = params.filter((param) => param.param_type === "file")
+  const fileParams = params.filter((param) => param.param_type === "file");
   const fileQueries = useQueries({
     queries: fileParams.map((param) => ({
       enabled: !isDisabled,
@@ -428,53 +429,53 @@ const RunToolForm = ({
           },
         }).then(({ data }) => data?.data || []),
     })),
-  })
+  });
   const fileQueriesByParam = new Map(
     fileParams.map((param, index) => [param.name, fileQueries[index]]),
-  )
+  );
 
   // Prefill from an earlier run once its files have loaded: a parameter the
   // tool no longer has, a file that no longer exists and a choice the tool no
   // longer offers are all left at their default.
-  const prefilled = useRef(false)
+  const prefilled = useRef(false);
   useEffect(() => {
     // Nothing to prefill from, or the files are still loading: keep waiting.
-    if (prefilled.current || !initialValues) return
-    if (fileQueries.some((query) => query.isLoading)) return
-    prefilled.current = true
-    const next: Record<string, unknown> = {}
+    if (prefilled.current || !initialValues) return;
+    if (fileQueries.some((query) => query.isLoading)) return;
+    prefilled.current = true;
+    const next: Record<string, unknown> = {};
     for (const param of params) {
-      const recorded = initialValues?.[param.name]
-      if (recorded === undefined || recorded === null) continue
+      const recorded = initialValues?.[param.name];
+      if (recorded === undefined || recorded === null) continue;
       if (param.param_type === "file") {
         const allowed = new Set(
           (fileQueriesByParam.get(param.name)?.data ?? []).map(
             (file) => file.id,
           ),
-        )
-        const ids = (Array.isArray(recorded) ? recorded : [recorded]).flat()
+        );
+        const ids = (Array.isArray(recorded) ? recorded : [recorded]).flat();
         const usable = ids.filter(
           (id): id is string => typeof id === "string" && allowed.has(id),
-        )
-        if (usable.length) next[param.name] = usable
-        continue
+        );
+        if (usable.length) next[param.name] = usable;
+        continue;
       }
       if (
         param.param_type === "enum" &&
         !(param.options ?? []).includes(String(recorded))
       ) {
-        continue
+        continue;
       }
-      next[param.name] = recorded
+      next[param.name] = recorded;
     }
-    reset({ ...getValues(), ...next })
-    if (initialTags?.length) setTags(initialTags)
+    reset({ ...getValues(), ...next });
+    if (initialTags?.length) setTags(initialTags);
     if (initialThreads != null) {
       // The threads may no longer fit, e.g. the tool's limits changed, and a
       // select with no matching option shows blank.
       chooseThreads(
         Math.max(minThreads, Math.min(initialThreads, effectiveMax)),
-      )
+      );
     }
   }, [
     initialValues,
@@ -488,7 +489,7 @@ const RunToolForm = ({
     minThreads,
     effectiveMax,
     chooseThreads,
-  ])
+  ]);
 
   // Tools that take a batch of input files usually want a thread per file, or
   // the CPUs the tool asked for per file, so that is the default when the tool
@@ -496,26 +497,26 @@ const RunToolForm = ({
   // all, for tools where only some file parameters should, a group of files
   // counts as the files it holds, and a pair stays one unit of work.
   const chosenFileCount = params.reduce((count, param) => {
-    if (!param.multiple || param.param_type !== "file") return count
-    const configured = param.cpus_per_file ?? 1
-    if (configured <= 0) return count
-    const files = fileQueriesByParam.get(param.name)?.data ?? []
-    const byId = new Map(files.map((file) => [file.id, file]))
-    const chosen = (getValues(param.name) as string[] | undefined) ?? []
+    if (!param.multiple || param.param_type !== "file") return count;
+    const configured = param.cpus_per_file ?? 1;
+    if (configured <= 0) return count;
+    const files = fileQueriesByParam.get(param.name)?.data ?? [];
+    const byId = new Map(files.map((file) => [file.id, file]));
+    const chosen = (getValues(param.name) as string[] | undefined) ?? [];
     const units = chosen.reduce((total, id) => {
-      const file = byId.get(id)
-      return total + (file?.is_group ? (file.children?.length ?? 1) : 1)
-    }, 0)
-    return count + units * configured
-  }, 0)
+      const file = byId.get(id);
+      return total + (file?.is_group ? (file.children?.length ?? 1) : 1);
+    }, 0);
+    return count + units * configured;
+  }, 0);
   const defaultThreads = Math.max(
     minThreads,
     Math.min(defaultCpus ?? (chosenFileCount || minThreads), effectiveMax),
-  )
+  );
   const storedThreads = useMemo(
     () => readStoredThreads(threadsKey, minThreads, effectiveMax),
     [threadsKey, minThreads, effectiveMax],
-  )
+  );
   // A pick made here wins, then the default the chosen files imply, then the
   // threads this browser used for the tool last time.
   const threadsToUse = fixedThreads
@@ -523,45 +524,45 @@ const RunToolForm = ({
     : (threads ??
       (chosenFileCount > 0
         ? defaultThreads
-        : (storedThreads ?? defaultThreads)))
+        : (storedThreads ?? defaultThreads)));
 
-  const formValues = watch()
+  const formValues = watch();
   const visibleParams = useMemo(
     () => buildVisibilityMap(params, formValues),
     [formValues, params],
-  )
+  );
 
   const mutation = useMutation({
     ...createRunMutation(),
     onSuccess: (run: RunPublic) => {
-      showToast("Success!", `Run Queued (${run.id})`, "success")
-      onSuccess?.(run)
+      showToast("Success!", `Run Queued (${run.id})`, "success");
+      onSuccess?.(run);
     },
     onError: (error) => handleError(error, showToast),
     onSettled: () => {
-      setIsLoading(false)
-      queryClient.invalidateQueries({ queryKey: ["toolRuns"] })
+      setIsLoading(false);
+      queryClient.invalidateQueries({ queryKey: ["toolRuns"] });
     },
-  })
+  });
 
   const submit: SubmitHandler<Record<string, unknown>> = async (formData) => {
-    clearErrors()
-    let hasValidationError = false
+    clearErrors();
+    let hasValidationError = false;
     for (const param of params) {
-      if (!visibleParams.get(param.name)) continue
+      if (!visibleParams.get(param.name)) continue;
       if (param.required && isEmptyValue(formData[param.name])) {
-        setError(param.name, { type: "required", message: "Required" })
-        hasValidationError = true
+        setError(param.name, { type: "required", message: "Required" });
+        hasValidationError = true;
       }
     }
-    if (hasValidationError) return
+    if (hasValidationError) return;
 
     const filtered = Object.fromEntries(
       Object.entries(formData).filter(
         ([name, value]) => visibleParams.get(name) && !isEmptyValue(value),
       ),
-    )
-    setIsLoading(true)
+    );
+    setIsLoading(true);
     await mutation.mutateAsync({
       body: { params: filtered, tags },
       query: {
@@ -570,13 +571,13 @@ const RunToolForm = ({
         name: runName ?? undefined,
         cpus: threadsToUse,
       },
-    })
-  }
+    });
+  };
 
   return (
     <form onSubmit={handleSubmit(submit)} className="w-full">
       {params.map((param) => {
-        if (!visibleParams.get(param.name)) return null
+        if (!visibleParams.get(param.name)) return null;
         return (
           <div className="pb-4" key={param.name}>
             <Label htmlFor={param.name}>
@@ -619,11 +620,11 @@ const RunToolForm = ({
                 className="h-10 w-full rounded-md border bg-background px-3"
                 value={(watch(param.name) as string | undefined) ?? ""}
                 onChange={(event) => {
-                  clearErrors(param.name)
+                  clearErrors(param.name);
                   setValue(param.name, event.target.value, {
                     shouldDirty: true,
                     shouldValidate: true,
-                  })
+                  });
                 }}
               >
                 <option value="">Select an option</option>
@@ -641,11 +642,11 @@ const RunToolForm = ({
                   disabled={isDisabled}
                   defaultChecked={param.default as boolean}
                   onCheckedChange={(checked) => {
-                    clearErrors(param.name)
+                    clearErrors(param.name);
                     setValue(param.name, checked === true, {
                       shouldDirty: true,
                       shouldValidate: true,
-                    })
+                    });
                   }}
                 />
                 <Label htmlFor={param.name}>
@@ -664,7 +665,7 @@ const RunToolForm = ({
                 }
                 values={(watch(param.name) as string[] | undefined) || []}
                 updateValues={(update) => {
-                  clearErrors(param.name)
+                  clearErrors(param.name);
                   setValue(
                     param.name,
                     update((getValues(param.name) as string[]) || []),
@@ -672,15 +673,15 @@ const RunToolForm = ({
                       shouldDirty: true,
                       shouldValidate: true,
                     },
-                  )
+                  );
                 }}
               />
             )}
           </div>
-        )
+        );
       })}
 
-      <h2 className="my-4 text-lg ">
+      <h2 className="mt-2 mb-4 text-lg ">
         <button
           type="button"
           className="flex w-full items-center justify-between gap-4 border-b pb-1 font-semibold"
@@ -691,7 +692,7 @@ const RunToolForm = ({
           Run Settings
           <div className="flex items-center justify-between gap-2 font-normal">
             {!settingsOpen && (
-              <p className="text-sm text-gray-500">click to open</p>
+              <p className="text-sm text-gray-400">click to open</p>
             )}
             <ChevronDown
               className={cn(
@@ -815,7 +816,7 @@ const RunToolForm = ({
         </div>
       </div>
     </form>
-  )
-}
+  );
+};
 
-export default RunToolForm
+export default RunToolForm;
