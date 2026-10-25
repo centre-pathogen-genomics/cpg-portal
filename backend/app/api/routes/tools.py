@@ -170,7 +170,12 @@ def read_tool_with_favourite(
             query = query.where(
                 Tool.version == version if version is not None else Tool.is_default
             )
-        return session.exec(query).first()
+        tool = session.exec(query).first()
+        if tool is None:
+            # A tool that is disabled, or not one a visitor may see, reads as
+            # missing rather than as a server error.
+            raise HTTPException(status_code=404, detail="Tool not found")
+        return tool
     query = select(
         Tool, UserFavouriteToolsLink.tool_id.label("favourited_tool_id")
     ).join(
