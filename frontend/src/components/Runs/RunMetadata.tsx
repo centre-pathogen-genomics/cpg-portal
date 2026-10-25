@@ -89,7 +89,7 @@ function RunMetadata({ run }: { run: RunPublic }) {
     },
     {
       icon: <HiOutlineCpuChip />,
-      title: "Threads",
+      title: "CPUs",
       value: `${run.cpus}`,
     },
     {

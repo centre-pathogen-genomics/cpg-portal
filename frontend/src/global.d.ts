@@ -1,34 +1,34 @@
 declare module "@phylocanvas/phylocanvas.gl" {
   export const TreeTypes: {
-    Circular: string;
-    Diagonal: string;
-    Hierarchical: string;
-    Radial: string;
-    Rectangular: string;
-  };
+    Circular: string
+    Diagonal: string
+    Hierarchical: string
+    Radial: string
+    Rectangular: string
+  }
 
   export interface PhylocanvasProps {
-    source?: string;
-    size?: { width: number; height: number };
-    type?: string;
-    interactive?: boolean;
-    showLabels?: boolean;
-    showLeafLabels?: boolean;
-    fontColour?: number[];
-    fillColour?: number[];
-    [key: string]: unknown;
+    source?: string
+    size?: { width: number; height: number }
+    type?: string
+    interactive?: boolean
+    showLabels?: boolean
+    showLeafLabels?: boolean
+    fontColour?: number[]
+    fillColour?: number[]
+    [key: string]: unknown
   }
 
   export class PhylocanvasGL {
-    constructor(view?: HTMLElement | null, props?: PhylocanvasProps);
-    setProps(props: PhylocanvasProps): void;
-    destroy(): void;
+    constructor(view?: HTMLElement | null, props?: PhylocanvasProps)
+    setProps(props: PhylocanvasProps): void
+    destroy(): void
   }
 }
 
 declare module "remark-gfm" {
-  import { Plugin } from "unified";
+  import { Plugin } from "unified"
 
-  const remarkGfm: Plugin;
-  export default remarkGfm;
+  const remarkGfm: Plugin
+  export default remarkGfm
 }

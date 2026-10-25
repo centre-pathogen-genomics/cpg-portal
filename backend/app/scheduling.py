@@ -1,6 +1,6 @@
 """Decide which queued runs may start.
 
-Every run reserves a number of CPUs (threads) and the worker only hands out
+Every run reserves a number of CPUs and the worker only hands out
 ``TOTAL_CPUS`` of them, so a run stays ``pending`` until the CPUs it asked for
 are free: with 10 CPUs and three runs asking for 5, two start and the third
 waits for one of them to finish.

@@ -987,6 +987,21 @@ export const RunPublicSchema = {
             ],
             title: 'Command'
         },
+        metrics: {
+            anyOf: [
+                {
+                    items: {
+                        additionalProperties: true,
+                        type: 'object'
+                    },
+                    type: 'array'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Metrics'
+        },
         conda_env_pinned: {
             anyOf: [
                 {

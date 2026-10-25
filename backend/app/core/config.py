@@ -86,6 +86,10 @@ class Settings(BaseSettings):
     TURNSTILE_HOSTNAMES: str | None = None
     # The action the check expects back from Cloudflare.
     TURNSTILE_ACTION: str = "signup"
+    # Runs are sampled for CPU, memory, threads and I/O while they
+    # execute. The series is halved whenever it passes the cap.
+    RUN_METRICS_INTERVAL: float = 5.0
+    RUN_METRICS_MAX_SAMPLES: int = 720
     POSTGRES_SERVER: str
     POSTGRES_PORT: int = 5432
     POSTGRES_USER: str

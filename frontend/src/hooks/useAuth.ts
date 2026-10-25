@@ -64,9 +64,7 @@ const useAuth = () => {
       // Only a path on this site, so a crafted link cannot send someone away.
       const target = variables.redirect
       const path =
-        target && target.startsWith("/") && !target.startsWith("//")
-          ? target
-          : "/"
+        target?.startsWith("/") && !target.startsWith("//") ? target : "/"
       navigate({ to: path })
     },
     onError: (error) => handleError(error, showErrorToast),

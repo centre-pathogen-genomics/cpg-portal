@@ -1,33 +1,33 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Suspense } from "react";
-import { ErrorBoundary } from "react-error-boundary";
-import { BsFileEarmarkText } from "react-icons/bs";
-import { HiOutlineDocument, HiOutlineFolder } from "react-icons/hi";
-import { HiCalendarDays, HiOutlineTag } from "react-icons/hi2";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import type { FilePublic } from "../../../client";
-import { readFileOptions } from "../../../client/@tanstack/react-query.gen";
-import DeleteFileButton from "../../../components/Files/DeleteFileButton";
-import DownloadAllFilesButton from "../../../components/Files/DownloadAllFilesButton";
-import DownloadFileButton from "../../../components/Files/DownloadFileButton";
-import EditableFileName from "../../../components/Files/EditableFileName";
-import FileRenderer from "../../../components/Render/FileRenderer";
-import { humanReadableDate, humanReadableFileSize } from "../../../utils";
+import { useSuspenseQuery } from "@tanstack/react-query"
+import { createFileRoute, Link } from "@tanstack/react-router"
+import { Suspense } from "react"
+import { ErrorBoundary } from "react-error-boundary"
+import { BsFileEarmarkText } from "react-icons/bs"
+import { HiOutlineDocument, HiOutlineFolder } from "react-icons/hi"
+import { HiCalendarDays, HiOutlineTag } from "react-icons/hi2"
+import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
+import type { FilePublic } from "../../../client"
+import { readFileOptions } from "../../../client/@tanstack/react-query.gen"
+import DeleteFileButton from "../../../components/Files/DeleteFileButton"
+import DownloadAllFilesButton from "../../../components/Files/DownloadAllFilesButton"
+import DownloadFileButton from "../../../components/Files/DownloadFileButton"
+import EditableFileName from "../../../components/Files/EditableFileName"
+import FileRenderer from "../../../components/Render/FileRenderer"
+import { humanReadableDate, humanReadableFileSize } from "../../../utils"
 
 export const Route = createFileRoute("/_layout/files/$fileId")({
   component: FileDetail,
   validateSearch: (search: Record<string, unknown>) => ({
     groupId: (search.groupId as string) || undefined,
   }),
-});
+})
 
 function FileMetadata({ file }: { file: FilePublic }) {
   const items: Array<{
-    icon: React.ReactNode;
-    title: string;
-    value: React.ReactNode;
+    icon: React.ReactNode
+    title: string
+    value: React.ReactNode
   }> = [
     {
       icon: file.is_group ? <HiOutlineFolder /> : <HiOutlineDocument />,
@@ -101,7 +101,7 @@ function FileMetadata({ file }: { file: FilePublic }) {
           },
         ]
       : []),
-  ];
+  ]
   return (
     <div className="flex flex-col">
       {items.map(({ icon, title, value }) => (
@@ -116,15 +116,15 @@ function FileMetadata({ file }: { file: FilePublic }) {
         </div>
       ))}
     </div>
-  );
+  )
 }
 
 function FileDetailContent() {
-  const { fileId } = Route.useParams();
-  const { groupId } = Route.useSearch();
+  const { fileId } = Route.useParams()
+  const { groupId } = Route.useSearch()
   const { data: file } = useSuspenseQuery({
     ...readFileOptions({ path: { id: fileId } }),
-  });
+  })
   return (
     <div className="w-full max-w-5xl justify-self-center overflow-x-hidden px-2">
       <div className="flex items-center justify-between gap-2">
@@ -172,7 +172,7 @@ function FileDetailContent() {
         </>
       )}
     </div>
-  );
+  )
 }
 
 function FileDetail() {
@@ -198,7 +198,7 @@ function FileDetail() {
         </ErrorBoundary>
       </Suspense>
     </div>
-  );
+  )
 }
 
-export default FileDetail;
+export default FileDetail

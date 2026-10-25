@@ -325,27 +325,27 @@ def unfavourite_tool(
 def _validate_cpus(
     min_cpus: int, max_cpus: int | None, default_cpus: int | None
 ) -> None:
-    """Runs pick min_cpus..max_cpus threads: a missing maximum means the user's
+    """Runs pick min_cpus..max_cpus CPUs: a missing maximum means the user's
     own limit, a missing default means the tool's minimum."""
     if min_cpus < 1:
         raise HTTPException(
             status_code=422,
-            detail="Threads must satisfy 1 <= min_cpus",
+            detail="CPUs must satisfy 1 <= min_cpus",
         )
     if max_cpus is not None and max_cpus < min_cpus:
         raise HTTPException(
             status_code=422,
-            detail="Threads must satisfy min_cpus <= max_cpus",
+            detail="CPUs must satisfy min_cpus <= max_cpus",
         )
     if default_cpus is not None and default_cpus < min_cpus:
         raise HTTPException(
             status_code=422,
-            detail="Threads must satisfy min_cpus <= default_cpus",
+            detail="CPUs must satisfy min_cpus <= default_cpus",
         )
     if max_cpus is not None and default_cpus is not None and default_cpus > max_cpus:
         raise HTTPException(
             status_code=422,
-            detail="Threads must satisfy default_cpus <= max_cpus",
+            detail="CPUs must satisfy default_cpus <= max_cpus",
         )
 
 

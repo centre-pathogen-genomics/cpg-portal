@@ -473,6 +473,11 @@ class Run(RunBase, table=True):
     # above: the tool row may be renamed or reordered afterwards, and that must
     # not rewrite what ran.
     tool_version: str = Field(default="", nullable=False)
+    # What the tree of the command the run started used while it worked - the
+    # sandbox's own runtime is left out - one reading per interval, each
+    # `{t, cpu, rss, procs, threads, read, write}`. `threads` is that tree's OS
+    # threads, so it need not match the threads the run reserved (`cpus`).
+    metrics: list[dict] | None = Field(default_factory=list, sa_column=Column(JSON))
     stdout: str | None = None
     tool_id: uuid.UUID = Field(foreign_key="tool.id", nullable=False)
     tool: Tool = Relationship(back_populates="runs")
@@ -583,6 +588,8 @@ class FilesStatistics(SQLModel):
 class RunPublic(RunPublicMinimal):
     stdout: str | None = None
     command: str | None = None
+    # The profiler series, kept out of the list payload.
+    metrics: list[dict] | None = None
     conda_env_pinned: str | None = None
     llm_summary: str | None = None
     params: dict

@@ -9,7 +9,6 @@ import type { ColumnDef } from "@tanstack/react-table"
 import {
   Activity,
   Bot,
-  CalendarDays,
   Database,
   Eye,
   LoaderCircle,
@@ -228,11 +227,11 @@ function buildStatsQuery(startDate: string, endDate: string) {
 
 function formatDateTimeLocal(date: Date) {
   const pad = (value: number) => value.toString().padStart(2, "0")
-  return (
-    [date.getFullYear(), pad(date.getMonth() + 1), pad(date.getDate())].join(
-      "-",
-    ) + `T${pad(date.getHours())}:${pad(date.getMinutes())}`
-  )
+  return `${[
+    date.getFullYear(),
+    pad(date.getMonth() + 1),
+    pad(date.getDate()),
+  ].join("-")}T${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
 function formatDateTime(value?: string | null) {

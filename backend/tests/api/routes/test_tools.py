@@ -202,7 +202,7 @@ def test_create_tool_rejects_an_unusable_threads_range(db: Session) -> None:
         )
 
     assert exc_info.value.status_code == 422
-    assert "Threads must satisfy default_cpus <= max_cpus" in exc_info.value.detail
+    assert "default_cpus <= max_cpus" in exc_info.value.detail
 
 
 def test_create_tool_rejects_a_minimum_above_the_default(db: Session) -> None:
@@ -220,7 +220,7 @@ def test_create_tool_rejects_a_minimum_above_the_default(db: Session) -> None:
         )
 
     assert exc_info.value.status_code == 422
-    assert "Threads must satisfy min_cpus <= default_cpus" in exc_info.value.detail
+    assert "min_cpus <= default_cpus" in exc_info.value.detail
 
 
 def test_update_tool_rejects_a_default_above_the_maximum(db: Session) -> None:
@@ -234,7 +234,7 @@ def test_update_tool_rejects_a_default_above_the_maximum(db: Session) -> None:
         )
 
     assert exc_info.value.status_code == 422
-    assert "Threads must satisfy default_cpus <= max_cpus" in exc_info.value.detail
+    assert "default_cpus <= max_cpus" in exc_info.value.detail
     # The rejected update leaves the tool untouched.
     db.refresh(tool)
     assert (tool.min_cpus, tool.max_cpus, tool.default_cpus) == (1, None, None)

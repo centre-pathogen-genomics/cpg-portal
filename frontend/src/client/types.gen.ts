@@ -580,6 +580,12 @@ export type RunPublic = {
      */
     command?: string | null;
     /**
+     * Metrics
+     */
+    metrics?: Array<{
+        [key: string]: unknown;
+    }> | null;
+    /**
      * Conda Env Pinned
      */
     conda_env_pinned?: string | null;

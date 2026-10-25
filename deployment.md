@@ -204,7 +204,7 @@ You can set several other environment variables:
 * `REDIS_PASSWORD`: Password of the Redis service, compose uses it to build `REDIS_URI`.
 * `NATS_USER`, `NATS_PASSWORD`: Credentials of the NATS service, compose uses them to build `NATS_URIS`.
 * `SANDBOX_ENABLED`, `SANDBOX_IMAGE`, `SANDBOX_NETWORK`, `SANDBOX_DNS`, `SANDBOX_DATA_PATH`: See the tool sandbox section.
-* `TOTAL_CPUS`: CPUs the worker hands out to runs, `0` detects them. See the threads section.
+* `TOTAL_CPUS`: CPUs the worker hands out to runs, `0` detects them. See the CPUs section.
 * `SENTRY_DSN`: The DSN for Sentry, if you are using it.
 
 ## GitHub Actions Environment Variables
@@ -344,6 +344,28 @@ and `2x0000000000000000000000000000000AA` always fails. They report
 
 Only the signup route is guarded; login and password recovery are untouched.
 
+## Run Profiler
+
+While a run works, the worker samples the command's process tree with psutil - CPU percent,
+resident memory, process and thread counts, and bytes read and written - and
+stores the readings on the run, where the run page charts them. A tool that
+shells out to other programs is counted as one run, sandbox or not. The sandbox's
+own runtime is skipped: apptainer's starter and the container's init are Go
+programs with a handful of threads each, and counting them would describe the
+sandbox rather than the tool. The thread count is the OS threads of that tree, so
+a command that goes through a shell to start something - a tool with a conda
+environment, say, whose activation is prepended - reports one more than the
+CPUs it was given; the CPUs a run reserved are the separate `cpus` figure,
+and that is the one the run form sets.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `RUN_METRICS_INTERVAL` | `5.0` | seconds between readings; `0` turns sampling off |
+| `RUN_METRICS_MAX_SAMPLES` | `720` | cap on readings kept per run; the series is halved whenever it passes it, so an hour at the default interval fits, and a long run keeps its shape without growing the row |
+
+Readings live in the `run.metrics` JSON column, so they travel with the run's
+history and add nothing to the runs list payload.
+
 ## Public Tool Pages (Prerendering)
 
 Tool pages (`/tools/<name>`) are prerendered into the directory nginx serves, so
@@ -378,18 +400,18 @@ docker compose restart frontend
 docker compose exec -e PRERENDER_INTERVAL_SECONDS=0 frontend /usr/local/bin/prerender.py
 ```
 
-## Threads and CPU Scheduling
+## CPUs and Scheduling
 
-Every run reserves a number of CPUs (threads), and the worker only hands out
+Every run reserves a number of CPUs, and the worker only hands out
 `TOTAL_CPUS` of them (`0` detects the CPUs available to the worker):
 
 * each tool has `max_cpus` (the most a run of that tool may use) and
   `default_cpus` (used when the user picks nothing),
 * each user has `max_cpus`, a limit per job,
-* a run may ask for 1 up to `min(tool.max_cpus, user.max_cpus)` threads, and gets
+* a run may ask for 1 up to `min(tool.max_cpus, user.max_cpus)` CPUs, and gets
   `min(tool.default_cpus, that maximum)` when it asks for nothing,
 * runs stay `pending` until the CPUs they asked for are free: three runs of 5
-  threads on a 10 CPU worker start two and leave the third queued until one of
+  CPUs on a 10 CPU worker start two and leave the third queued until one of
   them finishes,
 * each container gets exactly those CPUs through `apptainer exec --cpus N`.
 

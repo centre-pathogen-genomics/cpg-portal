@@ -1,10 +1,10 @@
 import {
-  type SortingState,
   type ColumnDef,
   flexRender,
   getCoreRowModel,
   getPaginationRowModel,
   getSortedRowModel,
+  type SortingState,
   useReactTable,
 } from "@tanstack/react-table"
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react"
@@ -51,7 +51,7 @@ export function DataTable<TData, TValue>({
   const pageCount = Math.max(table.getPageCount(), 1)
   const visibleData = useMemo(
     () => table.getRowModel().rows.map((row) => row.original),
-    [table.getRowModel().rows],
+    [table.getRowModel],
   )
 
   useEffect(() => {
@@ -115,7 +115,10 @@ export function DataTable<TData, TValue>({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
                   No results found.
                 </TableCell>
               </TableRow>

@@ -13,6 +13,7 @@ import type { RunPublic } from "../../client"
 import useWebSocket from "../../hooks/useWebsocket"
 import CodeBlock from "../Common/CodeBlock"
 import Markdown from "../Common/Markdown"
+import RunProfiler from "./RunProfiler"
 
 interface OutputAccordionItemProps {
   title: string
@@ -165,6 +166,7 @@ const OutputAccordion = ({ run }: { run: RunPublic }) => (
         )}
       </AccordionContent>
     </AccordionItem>
+    <RunProfiler run={run} />
   </Accordion>
 )
 

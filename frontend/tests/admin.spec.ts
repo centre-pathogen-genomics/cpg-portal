@@ -20,9 +20,7 @@ test("Add User button is visible", async ({ page }) => {
 test("Create Tool panel shows the create tool form", async ({ page }) => {
   await page.goto("/admin")
 
-  await expect(
-    page.getByRole("heading", { name: "Create Tool" }),
-  ).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Create Tool" })).toBeVisible()
   await expect(page.getByRole("textbox", { name: "Name *" })).toBeVisible()
   await expect(page.getByRole("textbox", { name: "Command *" })).toBeVisible()
 })
@@ -40,20 +38,28 @@ test("Admin page shows date filters and queue controls", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Queue Controls" }),
   ).toBeVisible()
-  await expect(page.getByText(/Accepting|Draining|Paused|Loading/)).toBeVisible()
+  await expect(
+    page.getByText(/Accepting|Draining|Paused|Loading/),
+  ).toBeVisible()
 })
 
-test("Admin users table has search and pagination controls", async ({ page }) => {
+test("Admin users table has search and pagination controls", async ({
+  page,
+}) => {
   await page.goto("/admin")
 
-  await expect(page.getByRole("textbox", { name: "Search users" })).toBeVisible()
+  await expect(
+    page.getByRole("textbox", { name: "Search users" }),
+  ).toBeVisible()
   await expect(
     page.getByRole("combobox", { name: "Filter users by status" }),
   ).toBeVisible()
   await expect(
     page.getByRole("button", { name: "User bulk actions" }),
   ).toBeVisible()
-  await expect(page.getByRole("button", { name: /Sort by Created/ })).toBeVisible()
+  await expect(
+    page.getByRole("button", { name: /Sort by Created/ }),
+  ).toBeVisible()
   await expect(page.getByText("Rows per page")).toBeVisible()
   await expect(page.getByRole("button", { name: "Previous" })).toBeVisible()
   await expect(page.getByRole("button", { name: "Next" })).toBeVisible()

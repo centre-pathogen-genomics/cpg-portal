@@ -373,7 +373,7 @@ function FilesTable({
   const trimmedNameFilter = nameFilter.trim()
   useEffect(() => {
     setPage(1)
-  }, [typeFilter, trimmedNameFilter, orderBy, pageSize])
+  }, [])
   const { data, isLoading, isFetching, isError, error } = useQuery({
     queryKey: ["files", pageSize, page, typeFilter, trimmedNameFilter, orderBy],
     placeholderData: keepPreviousData,

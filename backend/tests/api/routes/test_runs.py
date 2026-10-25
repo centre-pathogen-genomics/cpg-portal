@@ -1393,7 +1393,7 @@ def test_create_run_threads_when_the_tool_minimum_is_above_the_user_limit(
         )
 
     assert exc_info.value.status_code == 400
-    assert "needs at least 4 threads" in exc_info.value.detail
+    assert "needs at least 4" in exc_info.value.detail
 
 
 def test_create_run_threads_of_an_admin_are_not_capped(

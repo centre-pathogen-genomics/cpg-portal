@@ -347,7 +347,7 @@ async def create_run(
         raise HTTPException(
             status_code=400,
             detail=(
-                f"This tool needs at least {min_cpus} threads and your limit is "
+                f"This tool needs at least {min_cpus} CPUs and your limit is "
                 f"{max_cpus}"
             ),
         )
@@ -389,7 +389,7 @@ async def create_run(
         raise HTTPException(
             status_code=400,
             detail=(
-                f"Threads must be between {min_cpus} and {max_cpus} for this tool"
+                f"CPUs must be between {min_cpus} and {max_cpus} for this tool"
             ),
         )
 
@@ -589,7 +589,8 @@ async def create_run(
             raise HTTPException(status_code=400, detail=f"Invalid parameter value: {v}")
 
     # The run's CPUs are in the template context as `cpus`, so a tool can ask
-    # for the threads it reserved with `--threads {{ cpus }}`. It wins over a
+    # for the CPUs it reserved with its own threads flag, e.g.
+    # `--threads {{ cpus }}`. It wins over a
     # parameter of the same name.
     escaped_params["cpus"] = cpus
 

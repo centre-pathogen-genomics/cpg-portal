@@ -3,6 +3,7 @@ import json
 import os
 import shutil
 import signal
+import time
 import uuid
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -20,7 +21,9 @@ from app.api.deps import get_db
 from app.conda import CondaEnvManger, CondaEnvMangerError
 from app.core.app_settings import get_or_create_app_settings
 from app.core.config import settings
+from app.core.db import engine
 from app.crud import save_file
+from app.metrics import read_tree
 from app.models import File, Run, RunStatus, SetupFile, Target, Tool, ToolStatus
 from app.scheduling import dispatch_pending_runs
 from app.tkq import broker
@@ -128,8 +131,56 @@ async def run_command_in_subprocess(
                 break
             await asyncio.sleep(1)
 
-    # Run both the log reading and cancellation monitor concurrently.
-    await asyncio.gather(read_stdout(), monitor_cancellation())
+    async def sample_metrics():
+        """Record what the command's process tree is using, until it finishes."""
+        interval = settings.RUN_METRICS_INTERVAL
+        if interval <= 0:
+            return
+
+        started = time.monotonic()
+        seen: dict[int, float] = {}
+        samples: list[dict] = []
+        last = started
+
+        while process.returncode is None:
+            await asyncio.sleep(interval)
+            if process.returncode is not None:
+                break
+            now = time.monotonic()
+            elapsed = now - last
+            if elapsed <= 0:
+                continue
+            last = now
+
+            reading = await asyncio.to_thread(read_tree, process.pid, seen)
+            if reading is None:
+                continue
+
+            samples.append(
+                {
+                    "t": round(now - started, 1),
+                    "cpu": round(reading.cpu_seconds / elapsed * 100, 1),
+                    "rss": reading.rss_bytes,
+                    "procs": reading.processes,
+                    "threads": reading.threads,
+                    "read": reading.read_bytes,
+                    "write": reading.write_bytes,
+                }
+            )
+            if len(samples) >= settings.RUN_METRICS_MAX_SAMPLES:
+                # Keep the shape of a long run without growing the row forever.
+                del samples[1::2]
+
+            # Its own session: the run's own is busy streaming logs.
+            with Session(engine) as metrics_session:
+                metrics_run = metrics_session.get(Run, run_id)
+                if metrics_run is not None:
+                    metrics_run.metrics = list(samples)
+                    metrics_session.add(metrics_run)
+                    metrics_session.commit()
+
+    # Read the logs, watch for cancellation, and profile the run together.
+    await asyncio.gather(read_stdout(), monitor_cancellation(), sample_metrics())
 
     # Wait for the process to finish
     await process.wait()

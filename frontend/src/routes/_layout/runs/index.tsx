@@ -345,7 +345,7 @@ function RunCard({ run }: { run: RunPublicMinimal }) {
             finished_at={run.finished_at ?? null}
             status={run.status}
           />
-          <span>{run.cpus} threads</span>
+          <span>{run.cpus} CPUs</span>
         </div>
       </div>
     </Card>
@@ -448,7 +448,7 @@ function RunsTable({
 
   useEffect(() => {
     setPage(1)
-  }, [trimmedNameFilter, orderBy, pageSize, toolFilter])
+  }, [])
 
   const { data, isLoading, isFetching, isError, error } = useQuery({
     queryKey: ["runs", pageSize, page, trimmedNameFilter, orderBy, toolFilter],
@@ -572,7 +572,7 @@ function RunsTable({
               <TableHead>Tags</TableHead>
               <TableHead>{renderSortableHeading("created_at")}</TableHead>
               <TableHead>{renderSortableHeading("runtime")}</TableHead>
-              <TableHead>Threads</TableHead>
+              <TableHead>CPUs</TableHead>
               <TableHead />
             </TableRow>
           </TableHeader>
