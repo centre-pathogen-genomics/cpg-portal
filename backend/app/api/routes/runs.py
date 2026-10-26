@@ -337,12 +337,15 @@ async def create_run(
     # Threads: between the tool's minimum and maximum, where a missing maximum
     # means the user's own limit is the maximum, and everyone but
     # administrators is capped by their own max_cpus. A missing default means
-    # the tool's minimum.
+    # the tool's minimum. A tool that fixes its count - its minimum and maximum
+    # are the same - runs with that many whatever the user's own limit is: it
+    # cannot run with fewer, so the limit would only make the tool unusable.
     min_cpus = tool.min_cpus
+    fixed_cpus = tool.max_cpus is not None and tool.max_cpus == min_cpus
     max_cpus = tool.max_cpus
     if max_cpus is None:
         max_cpus = current_user.max_cpus
-    elif not current_user.is_superuser:
+    elif not current_user.is_superuser and not fixed_cpus:
         max_cpus = min(tool.max_cpus, current_user.max_cpus)
     if max_cpus < min_cpus:
         raise HTTPException(

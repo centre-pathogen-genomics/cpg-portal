@@ -423,6 +423,9 @@ Every run reserves a number of CPUs, and the worker only hands out
 * each user has `max_cpus`, a limit per job,
 * a run may ask for 1 up to `min(tool.max_cpus, user.max_cpus)` CPUs, and gets
   `min(tool.default_cpus, that maximum)` when it asks for nothing,
+* a tool that fixes its count, i.e. `min_cpus == max_cpus`, runs with that many
+  whatever the user's `max_cpus` says, since it cannot run with fewer. Give such
+  a tool a `default_cpus` of the same number and the run form offers no choice,
 * when a tool names no `default_cpus`, a run starts at the tool's minimum, plus
   the `cpus_per_file` of each file parameter that names one. A file parameter
   without it adds nothing, so files only scale a default where a tool asks for

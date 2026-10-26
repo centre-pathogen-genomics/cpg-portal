@@ -1373,6 +1373,44 @@ def test_create_run_skips_file_params_with_a_disabled_multiplier(
     assert run_with({"reads": reads}).cpus == 1
 
 
+def test_create_run_runs_a_fixed_cpu_tool_above_the_user_limit(
+    db: Session, monkeypatch
+) -> None:
+    """A tool that cannot run with fewer CPUs runs with its own count."""
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
+    owner = create_random_user(db)
+    owner.max_cpus = 2
+    db.add(owner)
+    db.commit()
+    tool = _tool_with_threads(db, owner, min_cpus=4, max_cpus=4, default_cpus=4)
+
+    run = asyncio.run(
+        create_run(
+            session=db,
+            current_user=owner,
+            tool_id=tool.id,
+            params={},
+            tags=[],
+        )
+    )
+    assert run.cpus == 4
+
+    # The tool still only accepts its own count.
+    with pytest.raises(HTTPException) as exc_info:
+        asyncio.run(
+            create_run(
+                session=db,
+                current_user=owner,
+                tool_id=tool.id,
+                params={},
+                tags=[],
+                cpus=3,
+            )
+        )
+    assert exc_info.value.status_code == 400
+
+
 def test_create_run_threads_when_the_tool_minimum_is_above_the_user_limit(
     db: Session, monkeypatch
 ) -> None:
