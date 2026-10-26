@@ -1000,7 +1000,7 @@ def test_create_run_passes_the_cpus_to_the_command(db: Session, monkeypatch) -> 
     assert run.cpus == 3
 
 
-def test_create_run_defaults_threads_to_the_input_files(
+def test_create_run_does_not_scale_with_files_unless_asked(
     db: Session, monkeypatch
 ) -> None:
     monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
@@ -1029,15 +1029,15 @@ def test_create_run_defaults_threads_to_the_input_files(
             )
         )
 
-    # A tool that takes a batch of input files wants a thread per file.
-    assert run_with(files).cpus == 3
+    # A file parameter that names no cpus_per_file does not scale at all.
+    assert run_with(files).cpus == 1
 
-    # The user's own limit still caps that.
+    # Not even when there are more files than the user may use CPUs.
     more_files = [
         _create_saved_file(db=db, owner=owner, name=f"extra_{index}.fastq.gz")
         for index in range(5)
     ]
-    assert run_with(files + more_files).cpus == 4
+    assert run_with(files + more_files).cpus == 1
 
     # Without input files the tool's minimum is the default.
     assert run_with([]).cpus == 1
@@ -1259,7 +1259,10 @@ def test_create_run_counts_groups_but_not_pairs(db: Session, monkeypatch) -> Non
     db.add(owner)
     db.commit()
     tool = _create_tool(db=db, owner=owner)
-    tool.params = [{"name": "file", "param_type": "file", "multiple": True}]
+    # The tool asks for a CPU per file, which is what makes the counting matter.
+    tool.params = [
+        {"name": "file", "param_type": "file", "multiple": True, "cpus_per_file": 1}
+    ]
     db.add(tool)
     db.commit()
 
@@ -1368,6 +1371,44 @@ def test_create_run_skips_file_params_with_a_disabled_multiplier(
 
     # With only the disabled parameter there is nothing to scale.
     assert run_with({"reads": reads}).cpus == 1
+
+
+def test_create_run_runs_a_fixed_cpu_tool_above_the_user_limit(
+    db: Session, monkeypatch
+) -> None:
+    """A tool that cannot run with fewer CPUs runs with its own count."""
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
+    owner = create_random_user(db)
+    owner.max_cpus = 2
+    db.add(owner)
+    db.commit()
+    tool = _tool_with_threads(db, owner, min_cpus=4, max_cpus=4, default_cpus=4)
+
+    run = asyncio.run(
+        create_run(
+            session=db,
+            current_user=owner,
+            tool_id=tool.id,
+            params={},
+            tags=[],
+        )
+    )
+    assert run.cpus == 4
+
+    # The tool still only accepts its own count.
+    with pytest.raises(HTTPException) as exc_info:
+        asyncio.run(
+            create_run(
+                session=db,
+                current_user=owner,
+                tool_id=tool.id,
+                params={},
+                tags=[],
+                cpus=3,
+            )
+        )
+    assert exc_info.value.status_code == 400
 
 
 def test_create_run_threads_when_the_tool_minimum_is_above_the_user_limit(

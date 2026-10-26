@@ -337,12 +337,15 @@ async def create_run(
     # Threads: between the tool's minimum and maximum, where a missing maximum
     # means the user's own limit is the maximum, and everyone but
     # administrators is capped by their own max_cpus. A missing default means
-    # the tool's minimum.
+    # the tool's minimum. A tool that fixes its count - its minimum and maximum
+    # are the same - runs with that many whatever the user's own limit is: it
+    # cannot run with fewer, so the limit would only make the tool unusable.
     min_cpus = tool.min_cpus
+    fixed_cpus = tool.max_cpus is not None and tool.max_cpus == min_cpus
     max_cpus = tool.max_cpus
     if max_cpus is None:
         max_cpus = current_user.max_cpus
-    elif not current_user.is_superuser:
+    elif not current_user.is_superuser and not fixed_cpus:
         max_cpus = min(tool.max_cpus, current_user.max_cpus)
     if max_cpus < min_cpus:
         raise HTTPException(
@@ -355,12 +358,9 @@ async def create_run(
     if cpus is None:
         default_cpus = tool.default_cpus
         if default_cpus is None:
-            # Tools that take a batch of input files usually want a thread per
-            # file, or the CPUs the tool asked for per file, so that is the
-            # default when the tool has not named one. A parameter with
-            # cpus_per_file zero does not scale at all, for tools where only
-            # some file parameters should, and a group of files counts as the
-            # files it holds.
+            # Only the file parameters the tool named a cpus_per_file for add to
+            # the default: one without a count does not scale at all. A group of
+            # files counts as the files it holds.
             file_count = 0
             for param in tool.params or []:
                 if (
@@ -372,7 +372,7 @@ async def create_run(
                 if not isinstance(chosen, list):
                     continue
                 configured = param.get("cpus_per_file")
-                cpus_per_file = 1 if configured is None else configured
+                cpus_per_file = 0 if configured is None else configured
                 if cpus_per_file <= 0:
                     continue
                 files_in_param = 0

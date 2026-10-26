@@ -227,10 +227,10 @@ class Param(SQLModel):
     param_type: ParamType
     allowed_file_types: list[FileType] | None = None
     multiple: bool = False
-    # CPUs one value of this parameter needs, e.g. a file that is processed
-    # with two threads. Zero takes this parameter out of the default above, for
-    # a tool with several file parameters where only some of them scale.
-    cpus_per_file: int = 1
+    # CPUs one value of this parameter adds to a run's default, e.g. a file that
+    # is processed with two threads. Zero - the default - does not scale with
+    # this parameter at all, so only the parameters a tool names it for add up.
+    cpus_per_file: int = 0
     description: str | None = None
     default: int | float | str | bool | None = None
     options: list[str] | None = None
