@@ -85,10 +85,12 @@ services:
       dockerfile: backend/Dockerfile
     volumes:
       - app-sandbox-data:/apptainer
-    # Building the sandbox image runs a %post section in a user namespace, which
-    # the default seccomp profile of Docker blocks.
-    security_opt:
-      - seccomp:unconfined
+    # Building the sandbox image needs what the worker needs to run it: apptainer
+    # mounts inside a user namespace, which the default seccomp profile blocks
+    # and which needs SYS_ADMIN and the loop devices. Without this the build
+    # fails with "Failed to set mount propagation: Permission denied" and
+    # prestart exits non-zero, so the backend and worker never start.
+    privileged: true
     networks:
       - traefik-public
       - default
