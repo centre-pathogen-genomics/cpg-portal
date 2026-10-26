@@ -274,6 +274,13 @@ This requires:
   container. The container it creates runs without privileges, with a read-only
   root filesystem, private namespaces and a cleaned environment, so it cannot
   see the worker's filesystem, `/storage`, or the worker's environment variables.
+  The `prestart` service needs the same privileges, because it builds the sandbox
+  image. Without them the build fails with `Failed to set mount propagation:
+  Permission denied`, `prestart` exits non-zero, and the backend and worker never
+  start - which also shows up as every `/api` request 404ing at the frontend,
+  because Traefik then has no backend router to match. If you keep your own
+  compose file, it needs the same change; `compose.yml` and
+  `docker-compose.httpOnly.yml` in this repository have it.
 * A sandbox image in the `app-sandbox-data` volume. The `prestart` service builds
   it on the first `docker compose up` if it is missing. Rebuild it after changing
   `backend/container/runtime.def`:
@@ -290,7 +297,7 @@ different image, e.g. one pulled from a registry with `apptainer pull`.
 The build runs its `%post` section inside a user namespace, so the host has to
 allow unprivileged user namespaces. On hosts where AppArmor restricts them, e.g.
 Ubuntu 24.04 and later, add `apparmor=unconfined` to `security_opt` of the
-`prestart` service.
+`prestart` service - a privileged service is already unconfined.
 
 Tools that need system packages which are neither in the sandbox image nor in
 their conda environment fail at runtime; add them to
