@@ -366,6 +366,12 @@ and that is the one the run form sets.
 Readings live in the `run.metrics` JSON column, so they travel with the run's
 history and add nothing to the runs list payload.
 
+## Admin Statistics
+
+The admin dashboard's numbers are generated from the `run` table: the runs a
+user owns, with their tools, statuses and timings. A user deleting their runs
+takes them out of those numbers with them.
+
 ## Public Tool Pages (Prerendering)
 
 Tool pages (`/tools/<name>`) are prerendered into the directory nginx serves, so

@@ -25,6 +25,7 @@ from app.core.db import engine
 from app.crud import save_file
 from app.metrics import read_tree
 from app.models import File, Run, RunStatus, SetupFile, Target, Tool, ToolStatus
+from app.run_records import is_terminal, record_run
 from app.scheduling import dispatch_pending_runs
 from app.tkq import broker
 from app.utils import (
@@ -210,6 +211,10 @@ def update_run(session: Session, run: Run, status: RunStatus, message=None):
             subject=email_data.subject,
             html_content=email_data.html_content,
         )
+    # A finished run gets its stats record here, in the same commit that sets the
+    # status, so the admin stats keep it after the owner deletes the run.
+    if is_terminal(status):
+        record_run(session, run)
     session.add(run)
     session.commit()
     try:

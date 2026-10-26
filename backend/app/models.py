@@ -488,6 +488,40 @@ class Run(RunBase, table=True):
     finished_at: datetime | None = Field(default=None, nullable=True)
 
 
+class RunRecord(SQLModel, table=True):
+    """A copy of a run that finished, kept for the statistics.
+
+    Runs are the owner's to delete, and the admin stats are built from them, so
+    deleting runs used to erase that history. The terminal state of every run is
+    copied here instead, keyed by the run's own id, and there is no foreign key
+    back to `run`: the row has to outlive the run. The owner's id, the tool and
+    the params the run was given are copied rather than joined, so deleting a
+    user or a tool, or renaming one, does not rewrite what happened either.
+    """
+
+    id: uuid.UUID = Field(primary_key=True)
+    # SQLModel would call this `runrecord`; the migration and the docs say
+    # `run_record`, so the name is spelled out.
+    __tablename__ = "run_record"
+    # A plain copy of the owner's id, no foreign key: the row has to outlive
+    # the user, and the stats label a deleted user by that id.
+    owner_id: uuid.UUID = Field(nullable=False)
+    tool_id: uuid.UUID | None = Field(
+        default=None, foreign_key="tool.id", nullable=True, ondelete="SET NULL"
+    )
+    tool_name: str = Field(default="", nullable=False, index=True)
+    # The version the run used, whatever the tool row says now.
+    tool_version: str = Field(default="", nullable=False)
+    status: RunStatus = Field(sa_column=Column(Enum(RunStatus)))
+    cpus: int | None = Field(default=None, nullable=True)
+    params: dict | None = Field(default_factory=dict, sa_column=Column(JSON))
+    created_at: datetime = Field(
+        default_factory=_utcnow_naive, nullable=False, index=True
+    )
+    started_at: datetime | None = Field(default=None, nullable=True)
+    finished_at: datetime | None = Field(default=None, nullable=True)
+
+
 class RunPublicMinimal(SQLModel):
     id: uuid.UUID
     name: str | None = None

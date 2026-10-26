@@ -7,7 +7,8 @@ from app.api.routes.stats import (
     get_tool_detail_stats,
     get_user_detail_stats,
 )
-from app.models import Run, RunStatus, Tool, ToolStatus
+from app.models import Run, RunRecord, RunStatus, Tool, ToolStatus
+from app.run_records import is_terminal, record_run
 from tests.utils.user import create_random_user
 from tests.utils.utils import random_lower_string
 
@@ -51,6 +52,11 @@ def _create_run(
     db.add(run)
     db.commit()
     db.refresh(run)
+    # A finished run gets its stats record in the app; the helper mirrors that,
+    # or the stats would count nothing.
+    if is_terminal(status):
+        record_run(db, run)
+        db.commit()
     return run
 
 
@@ -85,6 +91,33 @@ def test_system_stats_date_filter_applies_to_runs(db: Session) -> None:
     assert "failed" not in stats.runs.by_status
     assert stats.tools.most_popular[0].name == tool.name
     assert stats.tools.most_popular[0].count == 1
+
+
+def test_a_finished_run_is_recorded_for_the_stats(db: Session) -> None:
+    """Finished runs are copied into run_record, which the stats do not read."""
+    user = create_random_user(db)
+    tool = _create_tool(db)
+    created = _utc_now()
+    run = _create_run(
+        db=db,
+        owner_id=user.id,
+        tool_id=tool.id,
+        status=RunStatus.completed,
+        created_at=created,
+    )
+
+    record = db.get(RunRecord, run.id)
+    assert record is not None
+    assert record.owner_id == user.id
+    assert record.tool_id == tool.id
+    assert record.tool_name == tool.name
+    assert record.status == RunStatus.completed
+    assert record.created_at == created
+
+    # The copy outlives the run: that is what it is for.
+    db.delete(run)
+    db.commit()
+    assert db.get(RunRecord, run.id) is not None
 
 
 def test_user_and_tool_drilldowns_return_filtered_stats(

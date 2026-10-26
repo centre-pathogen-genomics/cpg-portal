@@ -24,6 +24,7 @@ from app.models import (
     Tool,
     ToolStatus,
 )
+from app.run_records import record_run
 from app.scheduling import dispatch_pending_runs
 from app.utils import escape, flatten, input_file_name, validate_param_value
 from app.wsmanager import manager
@@ -780,6 +781,8 @@ def cancel_run(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) ->
     if run.status == "completed":
         raise HTTPException(status_code=400, detail="Run already finished")
     run.status = "cancelled"
+    # Cancelling finishes the run, so it gets its stats record too.
+    record_run(session, run)
     session.add(run)
     session.commit()
     return run

@@ -6,6 +6,7 @@ from sqlmodel import Session, select
 
 from app.core.db import engine
 from app.models import Run, RunStatus, Tool, ToolStatus
+from app.run_records import record_run
 from app.scheduling import dispatch_pending_runs
 from app.tasks import install_tool, update_tool
 from app.tkq import broker
@@ -22,6 +23,7 @@ async def recover_interrupted_tasks(session: Session) -> None:
         run.status = RunStatus.cancelled
         run.stdout = "Run was cancelled due to server restart."
         session.add(run)
+        record_run(session, run)
 
     # Runs that were dispatched to the previous worker are pending again: their
     # task is gone, so forget its id and let the scheduler hand out CPUs to

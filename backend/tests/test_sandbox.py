@@ -1,4 +1,5 @@
 import uuid
+from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -53,7 +54,11 @@ class _StubSession:
     def __init__(self, files: dict[uuid.UUID, File]):
         self.files = files
 
-    def get(self, model, file_id):  # noqa: ARG002
+    def get(self, model, file_id):
+        # Only the prepared File rows exist here; anything else is absent, as it
+        # would be in a fresh database.
+        if model is not File:
+            return None
         return self.files[file_id]
 
     def add(self, instance) -> None:
@@ -365,6 +370,14 @@ def test_process_targets_ignores_input_files(monkeypatch, tmp_path: Path) -> Non
     session = _StubSession({file.id: file})
     run = SimpleNamespace(
         id=file.id,
+        # What `update_run` and the stats record read off a finished run.
+        owner_id=uuid.uuid4(),
+        tool_id=uuid.uuid4(),
+        cpus=1,
+        tool_version="",
+        created_at=datetime.now(UTC).replace(tzinfo=None),
+        started_at=datetime.now(UTC).replace(tzinfo=None),
+        finished_at=None,
         input_file_ids=[file.id],
         params={},
         tags=[],
@@ -372,7 +385,8 @@ def test_process_targets_ignores_input_files(monkeypatch, tmp_path: Path) -> Non
         stdout="",
         email_on_completion=False,
         tool=SimpleNamespace(
-            targets=[{"path": "*.bam", "target_type": "bam", "required": True}]
+            name="tool",
+            targets=[{"path": "*.bam", "target_type": "bam", "required": True}],
         ),
     )
     link_input_files(session, run, dirs)
