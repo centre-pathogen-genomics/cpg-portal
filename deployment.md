@@ -423,6 +423,10 @@ Every run reserves a number of CPUs, and the worker only hands out
 * each user has `max_cpus`, a limit per job,
 * a run may ask for 1 up to `min(tool.max_cpus, user.max_cpus)` CPUs, and gets
   `min(tool.default_cpus, that maximum)` when it asks for nothing,
+* when a tool names no `default_cpus`, a run starts at the tool's minimum, plus
+  the `cpus_per_file` of each file parameter that names one. A file parameter
+  without it adds nothing, so files only scale a default where a tool asks for
+  it,
 * runs stay `pending` until the CPUs they asked for are free: three runs of 5
   CPUs on a 10 CPU worker start two and leave the third queued until one of
   them finishes,

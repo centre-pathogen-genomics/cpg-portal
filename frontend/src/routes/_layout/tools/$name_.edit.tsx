@@ -263,7 +263,7 @@ function defaultValues(tool: ToolPublic): ToolFormData {
       param_type: param.param_type,
       allowed_file_types: stringList(param.allowed_file_types),
       multiple: param.multiple ?? false,
-      cpus_per_file: param.cpus_per_file ?? 1,
+      cpus_per_file: param.cpus_per_file ?? 0,
       description: param.description ?? "",
       default: param.default ?? null,
       options: stringList(param.options),
@@ -1183,7 +1183,7 @@ function InputsTab({ control }: { control: Control<ToolFormData> }) {
                 param_type: "str",
                 allowed_file_types: [],
                 multiple: false,
-                cpus_per_file: 1,
+                cpus_per_file: 0,
                 description: "",
                 default: null,
                 options: [],
@@ -1264,21 +1264,21 @@ function InputsTab({ control }: { control: Control<ToolFormData> }) {
                   name={`params.${index}.cpus_per_file`}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>CPUs per file (0 disables)</FormLabel>
+                      <FormLabel>CPUs per file (0 does not scale)</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
                           min={0}
                           className="w-40"
                           {...field}
-                          value={field.value ?? 1}
+                          value={field.value ?? 0}
                           onChange={(event) => {
                             const parsed = Number.parseInt(
                               event.target.value,
                               10,
                             )
                             field.onChange(
-                              Number.isNaN(parsed) ? 1 : Math.max(0, parsed),
+                              Number.isNaN(parsed) ? 0 : Math.max(0, parsed),
                             )
                           }}
                         />

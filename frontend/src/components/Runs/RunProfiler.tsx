@@ -1,30 +1,30 @@
-import { useCallback, useMemo, useRef, useState } from "react";
-import { HiOutlineCpuChip } from "react-icons/hi2";
-import { VegaEmbed } from "react-vega";
-import { useTheme } from "@/components/theme-provider";
+import { useCallback, useMemo, useRef, useState } from "react"
+import { HiOutlineCpuChip } from "react-icons/hi2"
+import { VegaEmbed } from "react-vega"
+import { useTheme } from "@/components/theme-provider"
 import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/components/ui/accordion";
-import type { RunPublic } from "../../client";
-import { humanReadableFileSize } from "../../utils";
+} from "@/components/ui/accordion"
+import type { RunPublic } from "../../client"
+import { humanReadableFileSize } from "../../utils"
 
 /** One profiler reading the worker took while the run worked. */
 interface Sample {
-  t: number;
-  cpu: number;
-  rss: number;
-  procs: number;
-  threads: number;
-  read: number;
-  write: number;
+  t: number
+  cpu: number
+  rss: number
+  procs: number
+  threads: number
+  read: number
+  write: number
 }
 
 /** The readings, with anything malformed left out. */
 function readSamples(run: RunPublic): Sample[] {
   const number = (value: unknown): number =>
-    typeof value === "number" && Number.isFinite(value) ? value : 0;
+    typeof value === "number" && Number.isFinite(value) ? value : 0
 
   return (run.metrics ?? [])
     .filter((entry): entry is Record<string, unknown> => !!entry)
@@ -37,7 +37,7 @@ function readSamples(run: RunPublic): Sample[] {
       threads: number(entry.threads),
       read: number(entry.read),
       write: number(entry.write),
-    }));
+    }))
 }
 
 function lineSpec({
@@ -47,11 +47,11 @@ function lineSpec({
   axis,
   width,
 }: {
-  values: Record<string, number>[];
-  field: string;
-  title: string;
-  axis: string;
-  width: number;
+  values: Record<string, number>[]
+  field: string
+  title: string
+  axis: string
+  width: number
 }) {
   return {
     width,
@@ -72,7 +72,7 @@ function lineSpec({
       ],
     },
     title: { text: title, fontSize: 12, anchor: "start" },
-  };
+  }
 }
 
 /**
@@ -81,40 +81,40 @@ function lineSpec({
  * section at all.
  */
 export default function RunProfiler({ run }: { run: RunPublic }) {
-  const { resolvedTheme } = useTheme();
-  const readings = useMemo(() => readSamples(run), [run]);
-  const [width, setWidth] = useState(460);
-  const observer = useRef<ResizeObserver | null>(null);
+  const { resolvedTheme } = useTheme()
+  const readings = useMemo(() => readSamples(run), [run])
+  const [width, setWidth] = useState(460)
+  const observer = useRef<ResizeObserver | null>(null)
 
   // A callback ref, because the accordion only mounts the charts when it opens.
   const measure = useCallback((node: HTMLDivElement | null) => {
-    observer.current?.disconnect();
-    if (!node) return;
+    observer.current?.disconnect()
+    if (!node) return
     observer.current = new ResizeObserver((entries) => {
-      for (const entry of entries) setWidth(entry.contentRect.width);
-    });
-    observer.current.observe(node);
-  }, []);
+      for (const entry of entries) setWidth(entry.contentRect.width)
+    })
+    observer.current.observe(node)
+  }, [])
 
-  const running = run.status === "running" || run.status === "pending";
-  if (!readings.length && !running) return null;
+  const running = run.status === "running" || run.status === "pending"
+  if (!readings.length && !running) return null
 
   const peakCpu = readings.length
     ? Math.max(...readings.map((reading) => reading.cpu))
-    : 0;
+    : 0
   const peakMemory = readings.length
     ? Math.max(...readings.map((reading) => reading.rss))
-    : 0;
+    : 0
   const processes = readings.length
     ? Math.max(...readings.map((reading) => reading.procs))
-    : 0;
+    : 0
   const threads = readings.length
     ? Math.max(...readings.map((reading) => reading.threads))
-    : 0;
-  const last = readings[readings.length - 1];
+    : 0
+  const last = readings[readings.length - 1]
   // Never ask for a chart wider than the panel, or it would grow to fit.
-  const half = Math.max(180, Math.floor((Math.min(width, 1000) - 24) / 2));
-  const theme = resolvedTheme === "dark" ? "dark" : undefined;
+  const half = Math.max(180, Math.floor((Math.min(width, 1000) - 24) / 2))
+  const theme = resolvedTheme === "dark" ? "dark" : undefined
 
   const stats = [
     {
@@ -139,7 +139,7 @@ export default function RunProfiler({ run }: { run: RunPublic }) {
           )}`
         : "-",
     },
-  ];
+  ]
 
   return (
     <AccordionItem value="resources">
@@ -203,5 +203,5 @@ export default function RunProfiler({ run }: { run: RunPublic }) {
         )}
       </AccordionContent>
     </AccordionItem>
-  );
+  )
 }

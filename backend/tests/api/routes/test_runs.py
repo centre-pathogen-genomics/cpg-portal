@@ -1000,7 +1000,7 @@ def test_create_run_passes_the_cpus_to_the_command(db: Session, monkeypatch) -> 
     assert run.cpus == 3
 
 
-def test_create_run_defaults_threads_to_the_input_files(
+def test_create_run_does_not_scale_with_files_unless_asked(
     db: Session, monkeypatch
 ) -> None:
     monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
@@ -1029,15 +1029,15 @@ def test_create_run_defaults_threads_to_the_input_files(
             )
         )
 
-    # A tool that takes a batch of input files wants a thread per file.
-    assert run_with(files).cpus == 3
+    # A file parameter that names no cpus_per_file does not scale at all.
+    assert run_with(files).cpus == 1
 
-    # The user's own limit still caps that.
+    # Not even when there are more files than the user may use CPUs.
     more_files = [
         _create_saved_file(db=db, owner=owner, name=f"extra_{index}.fastq.gz")
         for index in range(5)
     ]
-    assert run_with(files + more_files).cpus == 4
+    assert run_with(files + more_files).cpus == 1
 
     # Without input files the tool's minimum is the default.
     assert run_with([]).cpus == 1
@@ -1259,7 +1259,10 @@ def test_create_run_counts_groups_but_not_pairs(db: Session, monkeypatch) -> Non
     db.add(owner)
     db.commit()
     tool = _create_tool(db=db, owner=owner)
-    tool.params = [{"name": "file", "param_type": "file", "multiple": True}]
+    # The tool asks for a CPU per file, which is what makes the counting matter.
+    tool.params = [
+        {"name": "file", "param_type": "file", "multiple": True, "cpus_per_file": 1}
+    ]
     db.add(tool)
     db.commit()
 

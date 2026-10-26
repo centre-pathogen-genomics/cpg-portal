@@ -490,14 +490,12 @@ const RunToolForm = ({
     chooseThreads,
   ])
 
-  // Tools that take a batch of input files usually want a thread per file, or
-  // the CPUs the tool asked for per file, so that is the default when the tool
-  // has not named one. A parameter with zero CPUs per file does not scale at
-  // all, for tools where only some file parameters should, a group of files
-  // counts as the files it holds, and a pair stays one unit of work.
+  // The CPUs a tool asked for per file, and only for the file parameters it
+  // named: one without a count does not scale at all. A group of files counts
+  // as the files it holds, and a pair stays one unit of work.
   const chosenFileCount = params.reduce((count, param) => {
     if (!param.multiple || param.param_type !== "file") return count
-    const configured = param.cpus_per_file ?? 1
+    const configured = param.cpus_per_file ?? 0
     if (configured <= 0) return count
     const files = fileQueriesByParam.get(param.name)?.data ?? []
     const byId = new Map(files.map((file) => [file.id, file]))

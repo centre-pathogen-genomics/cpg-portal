@@ -592,7 +592,7 @@ export const ParamSchema = {
         cpus_per_file: {
             type: 'integer',
             title: 'Cpus Per File',
-            default: 1
+            default: 0
         },
         description: {
             anyOf: [
