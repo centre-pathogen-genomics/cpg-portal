@@ -1,23 +1,29 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   createFileRoute,
   Link as RouterLink,
   useNavigate,
-} from "@tanstack/react-router";
-import { LoaderCircle, Pencil } from "lucide-react";
-import { useEffect, useState } from "react";
+} from "@tanstack/react-router"
+import { ChevronDown, LoaderCircle, Pencil } from "lucide-react"
+import { useEffect, useState } from "react"
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/components/ui/accordion";
-import { Badge as UiBadge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Switch } from "@/components/ui/switch";
-import type { ToolPublic, UserPublic } from "../../../client";
+} from "@/components/ui/accordion"
+import { Badge as UiBadge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Label } from "@/components/ui/label"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Switch } from "@/components/ui/switch"
+import type { ToolPublic, UserPublic } from "../../../client"
 import {
   disableLlmSummaryMutation,
   disableToolMutation,
@@ -25,20 +31,42 @@ import {
   enableToolMutation,
   getToolDetailStatsOptions,
   installToolMutation,
+  readRunOptions,
   readToolByNameOptions,
   readToolByNameQueryKey,
+  readToolVersionsOptions,
   readUserMeQueryKey,
   uninstallToolMutation,
-} from "../../../client/@tanstack/react-query.gen";
-import CodeBlock from "../../../components/Common/CodeBlock";
-import Badge from "../../../components/Tools/badges/Badge";
-import GitHubBadge from "../../../components/Tools/badges/GitHubBadge";
-import FavouriteButton from "../../../components/Tools/FavouriteButton";
-import RunToolForm from "../../../components/Tools/RunToolForm";
-import useCustomToast from "../../../hooks/useCustomToast";
+  updateToolPostInstallMutation,
+} from "../../../client/@tanstack/react-query.gen"
+import CodeBlock from "../../../components/Common/CodeBlock"
+import { ConfirmationDialog } from "../../../components/Common/ConfirmationDialog"
+import Badge from "../../../components/Tools/badges/Badge"
+import GitHubBadge from "../../../components/Tools/badges/GitHubBadge"
+import CreateVersionButton from "../../../components/Tools/CreateVersionButton"
+import FavouriteButton from "../../../components/Tools/FavouriteButton"
+import RunToolForm from "../../../components/Tools/RunToolForm"
+import ToolVersionsAdmin from "../../../components/Tools/ToolVersionsAdmin"
+import useCustomToast from "../../../hooks/useCustomToast"
+import {
+  forgetVersion,
+  getLastVersion,
+  rememberVersion,
+} from "../../../lib/version_preference"
 
 export const Route = createFileRoute("/_layout/tools/$name")({
-  component: Tool,
+  // The plain name path shows the default version of the stack.
+  component: () => <Tool />,
+  // The run page's Rerun button sends the run to prefill this form from. The
+  // key stays optional so links to this page need no search object.
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { rerun?: string; version?: string } => ({
+    rerun: typeof search.rerun === "string" ? search.rerun : undefined,
+    // The version picked in the dropdown, which is how a named version is
+    // loaded through this one route.
+    version: typeof search.version === "string" ? search.version : undefined,
+  }),
   head: (context) => ({
     meta: [
       {
@@ -48,19 +76,19 @@ export const Route = createFileRoute("/_layout/tools/$name")({
       { title: `${(context.params as { name: string }).name} | CPG Portal` },
     ],
   }),
-});
+})
 
 function ToolToggle({
   tool,
   kind,
 }: {
-  tool: ToolPublic;
-  kind: "tool" | "summary";
+  tool: ToolPublic
+  kind: "tool" | "summary"
 }) {
-  const queryClient = useQueryClient();
-  const showToast = useCustomToast();
-  const initial = kind === "tool" ? tool.enabled : tool.llm_summary_enabled;
-  const [enabled, setEnabled] = useState(initial);
+  const queryClient = useQueryClient()
+  const showToast = useCustomToast()
+  const initial = kind === "tool" ? tool.enabled : tool.llm_summary_enabled
+  const [enabled, setEnabled] = useState(initial)
   const enable = useMutation({
     ...(kind === "tool" ? enableToolMutation() : enableLlmSummaryMutation()),
     onError: () =>
@@ -70,12 +98,12 @@ function ToolToggle({
         "error",
       ),
     onSuccess: () => {
-      setEnabled(true);
+      setEnabled(true)
       queryClient.invalidateQueries({
         queryKey: readToolByNameQueryKey({ path: { tool_name: tool.name } }),
-      });
+      })
     },
-  });
+  })
   const disable = useMutation({
     ...(kind === "tool" ? disableToolMutation() : disableLlmSummaryMutation()),
     onError: () =>
@@ -85,13 +113,13 @@ function ToolToggle({
         "error",
       ),
     onSuccess: () => {
-      setEnabled(false);
+      setEnabled(false)
       queryClient.invalidateQueries({
         queryKey: readToolByNameQueryKey({ path: { tool_name: tool.name } }),
-      });
+      })
     },
-  });
-  const id = `enable-${kind}`;
+  })
+  const id = `enable-${kind}`
   return (
     <div className="flex items-center gap-2">
       <Switch
@@ -107,121 +135,219 @@ function ToolToggle({
           : `AI Summary ${enabled ? "Enabled" : "Disabled"}`}
       </Label>
     </div>
-  );
+  )
 }
 
 function InstallToolButton({ tool }: { tool: ToolPublic }) {
-  const queryClient = useQueryClient();
-  const showToast = useCustomToast();
+  const queryClient = useQueryClient()
+  const showToast = useCustomToast()
   const [awaitingUninstallConfirmation, setAwaitingUninstallConfirmation] =
-    useState(false);
+    useState(false)
   const installInProgress =
-    tool.status === "install_queued" || tool.status === "installing";
-  const uninstallInProgress = tool.status === "uninstalling";
-  const statusInProgress = installInProgress || uninstallInProgress;
-  const isInstalled = tool.status === "installed";
+    tool.status === "install_queued" || tool.status === "installing"
+  const uninstallInProgress = tool.status === "uninstalling"
+  const updateInProgress =
+    tool.status === "updating" || tool.status === "update_queued"
+  const statusInProgress =
+    installInProgress || uninstallInProgress || updateInProgress
+  const isInstalled = tool.status === "installed"
   const isUninstallAction =
-    isInstalled || uninstallInProgress || awaitingUninstallConfirmation;
+    isInstalled || uninstallInProgress || awaitingUninstallConfirmation
 
   useEffect(() => {
     if (!awaitingUninstallConfirmation) {
-      return;
+      return
     }
 
     if (tool.status === "uninstalled") {
-      setAwaitingUninstallConfirmation(false);
-      return;
+      setAwaitingUninstallConfirmation(false)
+      return
     }
 
     if (tool.status === "failed") {
-      setAwaitingUninstallConfirmation(false);
-      showToast("Error", "Uninstall failed", "error");
+      setAwaitingUninstallConfirmation(false)
+      showToast("Error", "Uninstall failed", "error")
     }
-  }, [awaitingUninstallConfirmation, tool.status, showToast]);
+  }, [awaitingUninstallConfirmation, tool.status, showToast])
 
   useEffect(() => {
     if (!awaitingUninstallConfirmation && !statusInProgress) {
-      return;
+      return
     }
 
     const queryKey = readToolByNameQueryKey({
       path: { tool_name: tool.name },
-    });
-    void queryClient.invalidateQueries({ queryKey });
+    })
+    void queryClient.invalidateQueries({ queryKey })
     const interval = setInterval(() => {
-      void queryClient.invalidateQueries({ queryKey });
-    }, 5000);
+      void queryClient.invalidateQueries({ queryKey })
+    }, 5000)
 
-    return () => clearInterval(interval);
-  }, [awaitingUninstallConfirmation, statusInProgress, tool.name, queryClient]);
+    return () => clearInterval(interval)
+  }, [awaitingUninstallConfirmation, statusInProgress, tool.name, queryClient])
 
   const refreshStatus = () => {
     return queryClient.invalidateQueries({
       queryKey: readToolByNameQueryKey({ path: { tool_name: tool.name } }),
-    });
-  };
+    })
+  }
 
   const installMutation = useMutation({
     ...installToolMutation(),
     onError: ({ message }) =>
       showToast("Error", message || "Could not install tool", "error"),
     onSuccess: ({ message }) => {
-      showToast("Success", message || "Installation started", "success");
-      return refreshStatus();
+      showToast("Success", message || "Installation started", "success")
+      return refreshStatus()
     },
-  });
+  })
 
   const uninstallMutation = useMutation({
     ...uninstallToolMutation(),
     onError: ({ message }) => {
-      setAwaitingUninstallConfirmation(false);
-      showToast("Error", message || "Could not uninstall tool", "error");
+      setAwaitingUninstallConfirmation(false)
+      showToast("Error", message || "Could not uninstall tool", "error")
     },
     onSuccess: ({ message }) => {
-      showToast("Success", message || "Uninstall started", "success");
-      return refreshStatus();
+      showToast("Success", message || "Uninstall started", "success")
+      return refreshStatus()
     },
-  });
+  })
 
   const mutationInProgress =
-    installMutation.isPending || uninstallMutation.isPending;
+    installMutation.isPending || uninstallMutation.isPending
   const inProgress =
-    statusInProgress || mutationInProgress || awaitingUninstallConfirmation;
+    statusInProgress || mutationInProgress || awaitingUninstallConfirmation
+
+  // Which action the dialog asks about, and whether it is open. The action
+  // outlives the close, so the dialog does not flip to the other one while it
+  // fades out.
+  const [confirmAction, setConfirmAction] = useState<"install" | "uninstall">(
+    "install",
+  )
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const uninstalling = confirmAction === "uninstall"
 
   const handleClick = () => {
-    if (inProgress) return;
+    if (inProgress) return
+    setConfirmAction(isUninstallAction ? "uninstall" : "install")
+    setConfirmOpen(true)
+  }
 
-    if (isUninstallAction) {
-      setAwaitingUninstallConfirmation(true);
-      uninstallMutation.mutate({ path: { tool_id: tool.id } });
-      return;
+  const runConfirmedAction = () => {
+    if (confirmAction === "uninstall") {
+      setAwaitingUninstallConfirmation(true)
+      uninstallMutation.mutate({ path: { tool_id: tool.id } })
+    } else {
+      installMutation.mutate({ path: { tool_id: tool.id } })
     }
-
-    installMutation.mutate({ path: { tool_id: tool.id } });
-  };
+    setConfirmOpen(false)
+  }
 
   return (
-    <Button disabled={inProgress} onClick={handleClick}>
-      {inProgress && <LoaderCircle className="animate-spin" />}
-      {awaitingUninstallConfirmation ||
-      uninstallInProgress ||
-      uninstallMutation.isPending
-        ? "Uninstalling..."
-        : installInProgress || installMutation.isPending
-          ? "Installing..."
-          : isUninstallAction
-            ? "Uninstall"
-            : "Install"}
-    </Button>
-  );
+    <>
+      <Button disabled={inProgress} onClick={handleClick}>
+        {inProgress && <LoaderCircle className="animate-spin" />}
+        {awaitingUninstallConfirmation ||
+        uninstallInProgress ||
+        uninstallMutation.isPending
+          ? "Uninstalling..."
+          : installInProgress || installMutation.isPending
+            ? "Installing..."
+            : updateInProgress
+              ? "Updating..."
+              : isUninstallAction
+                ? "Uninstall"
+                : "Install"}
+      </Button>
+      <ConfirmationDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={`${uninstalling ? "Uninstall" : "Install"} ${tool.name}?`}
+        description={
+          uninstalling
+            ? "This removes the tool's environment from the worker. The tool cannot run until it is installed again."
+            : "This prepares the tool's environment on the worker, which can take a while. Runs started meanwhile wait in the queue."
+        }
+        confirmLabel={uninstalling ? "Uninstall" : "Install"}
+        confirmVariant={uninstalling ? "destructive" : "default"}
+        pending={mutationInProgress}
+        onConfirm={runConfirmedAction}
+      />
+    </>
+  )
+}
+
+function UpdateToolButton({ tool }: { tool: ToolPublic }) {
+  const queryClient = useQueryClient()
+  const showToast = useCustomToast()
+  const updateInProgress =
+    tool.status === "updating" || tool.status === "update_queued"
+  const busy =
+    updateInProgress ||
+    tool.status === "installing" ||
+    tool.status === "install_queued" ||
+    tool.status === "uninstalling"
+
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const updateMutation = useMutation({
+    ...updateToolPostInstallMutation(),
+    onError: ({ message }) =>
+      showToast("Error", message || "Could not update tool", "error"),
+    onSuccess: ({ message }) => {
+      showToast("Success", message || "Update started", "success")
+      return queryClient.invalidateQueries({
+        queryKey: readToolByNameQueryKey({ path: { tool_name: tool.name } }),
+      })
+    },
+  })
+
+  // Updating re-runs the post-install command, so it only means something for
+  // a tool that has one and an environment to run it in.
+  if (
+    !updateInProgress &&
+    (tool.status !== "installed" || !tool.post_install)
+  ) {
+    return null
+  }
+
+  return (
+    <>
+      <Button
+        variant="outline"
+        disabled={busy || updateMutation.isPending}
+        onClick={() => setConfirmOpen(true)}
+      >
+        {(updateInProgress || updateMutation.isPending) && (
+          <LoaderCircle className="animate-spin" />
+        )}
+        {updateInProgress || updateMutation.isPending
+          ? "Updating..."
+          : "Update"}
+      </Button>
+      <ConfirmationDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={`Update ${tool.name}?`}
+        description="This re-runs the tool's post-install command against its existing environment."
+        confirmLabel="Update"
+        confirmVariant="default"
+        pending={updateMutation.isPending}
+        onConfirm={() => {
+          updateMutation.mutate({ path: { tool_id: tool.id } })
+          setConfirmOpen(false)
+        }}
+      />
+    </>
+  )
 }
 
 function AdminStatValue({
   label,
   value,
 }: {
-  label: string;
-  value: string | number;
+  label: string
+  value: string | number
 }) {
   return (
     <div>
@@ -230,14 +356,14 @@ function AdminStatValue({
         {typeof value === "number" ? value.toLocaleString() : value}
       </p>
     </div>
-  );
+  )
 }
 
 function ToolAdminStats({ tool }: { tool: ToolPublic }) {
   const { data, isLoading } = useQuery({
     ...getToolDetailStatsOptions({ path: { tool_id: tool.id } }),
     refetchInterval: 30_000,
-  });
+  })
 
   return (
     <div className="mb-5 rounded border p-4">
@@ -305,24 +431,125 @@ function ToolAdminStats({ tool }: { tool: ToolPublic }) {
         </div>
       </div>
     </div>
-  );
+  )
 }
 
-function Tool() {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const currentUser =
-    queryClient.getQueryData<UserPublic>(readUserMeQueryKey());
-  const { name } = Route.useParams();
+function VersionSelect({
+  toolName,
+  current,
+  versions,
+}: {
+  toolName: string
+  current: string
+  versions: ToolPublic[]
+}) {
+  const navigate = useNavigate()
+
+  // A single version needs no choice.
+  if (versions.length < 2) {
+    return <UiBadge className="ml-1 bg-green-500">v{current}</UiBadge>
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          aria-label="Select the tool version"
+          className="ml-1 inline-flex shrink-0 items-center gap-1 rounded-md bg-green-500 px-2 py-0.5 text-xs font-semibold text-white"
+        >
+          v{current}
+          <ChevronDown className="size-3" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start">
+        {versions.map((version) => (
+          <DropdownMenuItem
+            key={version.id}
+            onSelect={() => {
+              if (version.is_default) {
+                // The default answers on the plain name path, so clearing the
+                // preference keeps that link working.
+                forgetVersion(toolName)
+                navigate({ to: "/tools/$name", params: { name: toolName } })
+                return
+              }
+              rememberVersion(toolName, version.version ?? "")
+              navigate({
+                to: "/tools/$name",
+                params: { name: toolName },
+                search: { version: version.version ?? "" },
+              })
+            }}
+          >
+            <span
+              className={version.version === current ? "font-bold" : undefined}
+            >
+              v{version.version}
+            </span>
+            {version.is_default ? " (default)" : ""}
+            {!version.enabled ? " (disabled)" : ""}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+export function Tool() {
+  const navigate = useNavigate()
+  const { version } = Route.useSearch()
+  const queryClient = useQueryClient()
+  const currentUser = queryClient.getQueryData<UserPublic>(readUserMeQueryKey())
+  const { name } = Route.useParams()
+  const { rerun: rerunRunId } = Route.useSearch()
   const {
     isError,
     data: tool,
     isPending,
-  } = useQuery({ ...readToolByNameOptions({ path: { tool_name: name } }) });
-  const [favourited, setFavourited] = useState(false);
+  } = useQuery({
+    ...readToolByNameOptions({
+      path: { tool_name: name },
+      query: version ? { version } : {},
+    }),
+  })
+  // Every version of this name, for the version dropdown.
+  const { data: versions } = useQuery({
+    ...readToolVersionsOptions({ path: { tool_name: name } }),
+  })
+  // Remember the version in use, and open the plain link on the remembered one.
   useEffect(() => {
-    if (tool) setFavourited(tool.favourited ?? false);
-  }, [tool]);
+    if (!versions) return
+    if (version) {
+      rememberVersion(name, version)
+      return
+    }
+    const remembered = getLastVersion(name)
+    if (!remembered) return
+    if (!versions.some((candidate) => candidate.version === remembered)) {
+      // The version is gone, or hidden from this user.
+      forgetVersion(name)
+      return
+    }
+    navigate({
+      to: "/tools/$name",
+      params: { name },
+      search: {
+        version: remembered,
+        ...(rerunRunId ? { rerun: rerunRunId } : {}),
+      },
+      replace: true,
+    })
+  }, [name, version, versions, rerunRunId, navigate])
+  // The run a Rerun brought here, whose parameters prefill the form.
+  const { data: rerunRun } = useQuery({
+    ...readRunOptions({ path: { id: rerunRunId ?? "" } }),
+    enabled: !!rerunRunId && !!tool,
+  })
+  const [favourited, setFavourited] = useState(false)
+  useEffect(() => {
+    if (tool) setFavourited(tool.favourited ?? false)
+  }, [tool])
 
   if (isError)
     return (
@@ -333,7 +560,7 @@ function Tool() {
           again.
         </p>
       </div>
-    );
+    )
   if (isPending)
     return (
       <div className="flex justify-center">
@@ -344,8 +571,8 @@ function Tool() {
           <Skeleton className="h-[200px]" />
         </div>
       </div>
-    );
-  const anonymous = !currentUser;
+    )
+  const anonymous = !currentUser
   return (
     <div className="flex justify-center">
       <div className="w-full max-w-5xl px-4 pt-6 pb-8">
@@ -363,7 +590,11 @@ function Tool() {
             </div>
             <h1 className="truncate text-4xl font-bold">{tool.name}</h1>
             {tool.version && (
-              <UiBadge className="ml-1 bg-green-500">v{tool.version}</UiBadge>
+              <VersionSelect
+                toolName={tool.name}
+                current={tool.version}
+                versions={versions ?? []}
+              />
             )}
           </div>
           {currentUser && (
@@ -373,6 +604,7 @@ function Tool() {
                   <RouterLink
                     to="/tools/$name/edit"
                     params={{ name: tool.name }}
+                    search={{ version: tool.version ?? "" }}
                   >
                     <Pencil />
                     Edit
@@ -462,10 +694,40 @@ function Tool() {
             to run this tool
           </p>
         )}
+        {!anonymous &&
+          (tool.status === "installing" ||
+            tool.status === "install_queued" ||
+            tool.status === "updating" ||
+            tool.status === "update_queued" ||
+            tool.status === "failed") && (
+            <p className="mb-4 text-muted-foreground">
+              {`This tool version is being ${
+                tool.status === "updating" || tool.status === "update_queued"
+                  ? "updated"
+                  : "installed"
+              }. Runs you start now wait in the queue until it is ready.`}
+            </p>
+          )}
+        {!anonymous && tool.status === "uninstalled" && (
+          <p className="mb-4 text-muted-foreground">
+            This tool version is not installed, so runs cannot start yet. An
+            administrator has to install it first.
+          </p>
+        )}
         <RunToolForm
           toolId={tool.id}
           params={tool.params || []}
-          isDisabled={anonymous}
+          isDisabled={anonymous || tool.status === "uninstalled"}
+          minCpus={tool.min_cpus}
+          maxCpus={tool.max_cpus}
+          defaultCpus={tool.default_cpus}
+          initialValues={
+            rerunRun
+              ? { ...rerunRun.params, ...(rerunRun.param_files ?? {}) }
+              : undefined
+          }
+          initialTags={rerunRun?.tags ?? undefined}
+          initialThreads={rerunRun?.cpus ?? undefined}
           onSuccess={(run) =>
             navigate({
               to: "/runs/$runid",
@@ -480,7 +742,12 @@ function Tool() {
               <AccordionTrigger>Admin</AccordionTrigger>
               <AccordionContent>
                 <div className="mb-4 flex items-center justify-between">
-                  <InstallToolButton tool={tool} />
+                  <div className="flex items-center gap-2">
+                    <InstallToolButton tool={tool} />
+                    <UpdateToolButton tool={tool} />
+                    <CreateVersionButton tool={tool} />
+                    <ToolVersionsAdmin tool={tool} />
+                  </div>
                   <div className="flex gap-4">
                     <ToolToggle tool={tool} kind="summary" />
                     <ToolToggle tool={tool} kind="tool" />
@@ -501,7 +768,7 @@ function Tool() {
         )}
       </div>
     </div>
-  );
+  )
 }
 
-export default Tool;
+export default Tool

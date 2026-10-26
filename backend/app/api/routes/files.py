@@ -21,7 +21,11 @@ from app.core.file_types import FileTypeEnum, FileTypeMetadata, file_types
 from app.core.security import create_access_token
 from app.crud import (
     get_file_stats,
+)
+from app.crud import (
     rename_file as rename_file_crud,
+)
+from app.crud import (
     save_file as save_file_to_filesystem,
 )
 from app.models import (
@@ -41,6 +45,7 @@ BULK_DOWNLOAD_NAME_PREFIX = "|name:"
 
 FILE_SORT_COLUMNS = {
     "created_at": File.created_at,
+    "updated_at": File.updated_at,
     "file_type": File.file_type,
     "name": File.name,
     "size": File.size,
@@ -72,7 +77,7 @@ def read_files(
     current_user: CurrentUser,
     skip: int = 0,
     limit: int = 100,
-    order_by: str = Query("-created_at", pattern=r"^-?[a-zA-Z_]+$"),
+    order_by: str = Query("-updated_at", pattern=r"^-?[a-zA-Z_]+$"),
     name: str | None = Query(None, min_length=1, max_length=255),
     types: list[FileTypeEnum] = Query(None),
 ) -> Any:
@@ -244,7 +249,7 @@ def create_pair(
     children = [forward_file, reverse_file]
     # Create a pair with PAIR file type - pairs are NOT groups
     pair_metadata = File(
-        name=name,
+        name=sanitise_shell_input(name),
         owner_id=current_user.id,
         file_type=FileTypeEnum.PAIR.value,
         children=children,
@@ -339,7 +344,7 @@ def create_group(
 
     # Create the group
     group_metadata = File(
-        name=name,
+        name=sanitise_shell_input(name),
         owner_id=current_user.id,
         file_type=group_file_type,
         children=files,

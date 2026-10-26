@@ -5,6 +5,7 @@ from enum import StrEnum
 from typing import Optional
 
 from pydantic import EmailStr
+from sqlalchemy import UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB as JSON
 from sqlalchemy.orm import RelationshipProperty
 from sqlmodel import (
@@ -44,6 +45,9 @@ class UserBase(SQLModel):
     is_superuser: bool = False
     full_name: str | None = Field(default=None, max_length=255)
     max_runs: int = 10
+    # Highest number of CPUs (threads) a single run of this user may ask for,
+    # capped further by the tool's own cpus_max.
+    max_cpus: int = 4
     max_storage: int = Field(
         default=1024 * 1024 * 1024 * 25, sa_column=Column(BigInteger(), nullable=False)
     )  # 25 GB
@@ -59,6 +63,9 @@ class UserRegister(SQLModel):
     email: EmailStr = Field(max_length=255)
     password: str = Field(min_length=8, max_length=40)
     full_name: str | None = Field(default=None, max_length=255)
+    # The Turnstile token from the signup form, checked when a secret key is
+    # configured. Never stored.
+    turnstile_token: str | None = None
 
 
 # Properties to receive via API on update, all are optional
@@ -220,6 +227,10 @@ class Param(SQLModel):
     param_type: ParamType
     allowed_file_types: list[FileType] | None = None
     multiple: bool = False
+    # CPUs one value of this parameter needs, e.g. a file that is processed
+    # with two threads. Zero takes this parameter out of the default above, for
+    # a tool with several file parameters where only some of them scale.
+    cpus_per_file: int = 1
     description: str | None = None
     default: int | float | str | bool | None = None
     options: list[str] | None = None
@@ -235,6 +246,10 @@ class ToolStatus(StrEnum):
     installed = "installed"
     install_queued = "install_queued"
     installing = "installing"
+    # Re-running the post-install command against an environment that stays in
+    # place, e.g. to refresh a database it downloaded.
+    update_queued = "update_queued"
+    updating = "updating"
     failed = "failed"
 
 
@@ -278,11 +293,28 @@ class ToolBase(SQLModel):
     params: list[Param] | None = None
     targets: list[Target] | None = None
     llm_summary_enabled: bool = False
+    # CPUs (threads) a run of this tool may reserve: users pick
+    # min_cpus..max_cpus, capped further by their own max_cpus, defaulting to
+    # default_cpus. A missing maximum means the tool does not care and the
+    # user's own limit is the maximum, a missing default means the tool's
+    # minimum. A tool whose minimum equals its maximum needs a fixed number of
+    # threads, so the run form does not offer the choice at all. The value is
+    # handed to the container as `apptainer exec --cpus`.
+    min_cpus: int = 1
+    max_cpus: int | None = None
+    default_cpus: int | None = None
 
 
 # Properties to receive on Tool creation
 class ToolCreate(ToolBase):
     name: str
+    version: str = ""
+    # Order within a stack of tools sharing a name, and whether this version is
+    # the one `/tools/<name>` loads.
+    version_sort: int | None = None
+    is_default: bool = False
+    # Without these the table defaults win and a new tool comes out disabled.
+    enabled: bool = False
 
 
 # Properties to receive on Tool update
@@ -294,12 +326,27 @@ class ToolUpdate(ToolBase):
     command: str | None = None
     status: ToolStatus | None = None
     installation_log: str | None = None
+    # A version can be renamed, reordered and made the stack's default.
+    version: str | None = None
+    version_sort: int | None = None
+    is_default: bool | None = None
 
 
 # Database model, database table inferred from class name
 class Tool(ToolBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    name: str = Field(index=True, unique=True)
+    # Not unique any more: versions of one tool share a name, and the pair
+    # (name, version) is what has to be unique.
+    name: str = Field(index=True)
+    # Always set, empty for a tool without versions: PostgreSQL treats NULLs as
+    # distinct, so the unique pair below would not hold an empty version down.
+    version: str = Field(default="", nullable=False, index=True)
+    # Order within a stack of tools sharing a name, e.g. for a tool whose
+    # versions are git commit hashes. Unset falls back to created_at.
+    version_sort: int | None = None
+    # Exactly one version of a name is the default, and `/tools/<name>` loads
+    # it.
+    is_default: bool = False
     badges: list[ToolBadge] | None = Field(default_factory=list, sa_column=Column(JSON))
     favourited_count: int = 0
     run_count: int = 0
@@ -327,9 +374,16 @@ class Tool(ToolBase, table=True):
     )
     created_at: datetime = Field(default_factory=_utcnow_naive, nullable=False)
 
+    __table_args__ = (
+        UniqueConstraint("name", "version", name="uq_tool_name_version"),
+    )
+
 
 # Properties to return via API, id is always required
 class ToolPublic(ToolBase):
+    # Always a string: empty for a tool without versions. Required, so the
+    # clients see it as one.
+    version: str
     favourited: bool = False
     status: ToolStatus
     installation_log: str | None = None
@@ -337,6 +391,8 @@ class ToolPublic(ToolBase):
     run_count: int = 0
     enabled: bool = False
     conda_env_pinned: str | None = None
+    version_sort: int | None = None
+    is_default: bool = False
     id: uuid.UUID
 
 
@@ -351,8 +407,18 @@ class ToolMinimalPublic(SQLModel):
     favourited_count: int = 0
     run_count: int = 0
     enabled: bool = False
+    # Runs cannot start while the tool is uninstalled, so the run form is
+    # disabled for it.
+    status: ToolStatus
+    # A run page names the version it ran, and a rerun goes back to it.
+    version: str
     llm_summary_enabled: bool = False
     explanation_of_results_markdown: str | None = None
+    # The run form needs the threads a tool allows, and it is opened from the
+    # tool cards as well as the tool page.
+    min_cpus: int = 1
+    max_cpus: int | None = None
+    default_cpus: int | None = None
 
 
 class ToolsPublic(SQLModel):
@@ -371,6 +437,9 @@ class RunStatus(StrEnum):
 class RunBase(SQLModel):
     taskiq_id: str
     name: str | None = None
+    # CPUs (threads) reserved for this run, 1 up to min(tool.max_cpus, the
+    # owner's max_cpus), defaulting to the tool's default_cpus.
+    cpus: int = 1
     status: RunStatus
     llm_summary: str | None = None
     email_on_completion: bool = False
@@ -386,6 +455,9 @@ class Run(RunBase, table=True):
     status: RunStatus = Field(sa_column=Column(Enum(RunStatus)))
     tags: list[str] | None = Field(default_factory=list, sa_column=Column(JSON))
     params: dict = Field(default_factory=dict, sa_column=Column(JSON))
+    # The files each file parameter was given, keyed by parameter name, so the
+    # run can be repeated later (`{"input_file": ["<file id>"]}`).
+    param_files: dict | None = Field(default_factory=dict, sa_column=Column(JSON))
     input_file_ids: list[uuid.UUID] | None = Field(
         default_factory=list, sa_column=Column(JSON)
     )
@@ -397,6 +469,15 @@ class Run(RunBase, table=True):
     )
     command: str | None = None
     conda_env_pinned: str | None = None
+    # The version of the tool row this run used. A snapshot, like `command`
+    # above: the tool row may be renamed or reordered afterwards, and that must
+    # not rewrite what ran.
+    tool_version: str = Field(default="", nullable=False)
+    # What the tree of the command the run started used while it worked - the
+    # sandbox's own runtime is left out - one reading per interval, each
+    # `{t, cpu, rss, procs, threads, read, write}`. `threads` is that tree's OS
+    # threads, so it need not match the threads the run reserved (`cpus`).
+    metrics: list[dict] | None = Field(default_factory=list, sa_column=Column(JSON))
     stdout: str | None = None
     tool_id: uuid.UUID = Field(foreign_key="tool.id", nullable=False)
     tool: Tool = Relationship(back_populates="runs")
@@ -407,17 +488,55 @@ class Run(RunBase, table=True):
     finished_at: datetime | None = Field(default=None, nullable=True)
 
 
+class RunRecord(SQLModel, table=True):
+    """A copy of a run that finished, kept for the statistics.
+
+    Runs are the owner's to delete, and the admin stats are built from them, so
+    deleting runs used to erase that history. The terminal state of every run is
+    copied here instead, keyed by the run's own id, and there is no foreign key
+    back to `run`: the row has to outlive the run. The owner's id, the tool and
+    the params the run was given are copied rather than joined, so deleting a
+    user or a tool, or renaming one, does not rewrite what happened either.
+    """
+
+    id: uuid.UUID = Field(primary_key=True)
+    # SQLModel would call this `runrecord`; the migration and the docs say
+    # `run_record`, so the name is spelled out.
+    __tablename__ = "run_record"
+    # A plain copy of the owner's id, no foreign key: the row has to outlive
+    # the user, and the stats label a deleted user by that id.
+    owner_id: uuid.UUID = Field(nullable=False)
+    tool_id: uuid.UUID | None = Field(
+        default=None, foreign_key="tool.id", nullable=True, ondelete="SET NULL"
+    )
+    tool_name: str = Field(default="", nullable=False, index=True)
+    # The version the run used, whatever the tool row says now.
+    tool_version: str = Field(default="", nullable=False)
+    status: RunStatus = Field(sa_column=Column(Enum(RunStatus)))
+    cpus: int | None = Field(default=None, nullable=True)
+    params: dict | None = Field(default_factory=dict, sa_column=Column(JSON))
+    created_at: datetime = Field(
+        default_factory=_utcnow_naive, nullable=False, index=True
+    )
+    started_at: datetime | None = Field(default=None, nullable=True)
+    finished_at: datetime | None = Field(default=None, nullable=True)
+
+
 class RunPublicMinimal(SQLModel):
     id: uuid.UUID
     name: str | None = None
     tool: ToolMinimalPublic
+    # The version the run used, whatever the tool row says now.
+    tool_version: str = ""
     params: dict
+    cpus: int = 1
     status: RunStatus
     shared: bool = False
     tags: list[str] | None = None
     created_at: datetime
     started_at: datetime | None = None
     finished_at: datetime | None = None
+    owner_id: uuid.UUID  # Who owns the run, so the UI can tell their own
     owner_name: str | None = (
         None  # Full name of the run owner, only shown for shared runs
     )
@@ -467,17 +586,25 @@ class File(FileBase, table=True):
     run_id: uuid.UUID = Field(foreign_key="run.id", nullable=True)
     run: Run = Relationship(back_populates="files")
     created_at: datetime = Field(default_factory=_utcnow_naive, nullable=False)
+    # Any change to the row, e.g. a rename, moves this.
+    updated_at: datetime = Field(
+        default_factory=_utcnow_naive,
+        nullable=False,
+        sa_column_kwargs={"onupdate": _utcnow_naive},
+    )
 
 
 class FilePublicChild(FileBase):
     id: uuid.UUID
     run_id: uuid.UUID | None = None
     created_at: datetime
+    updated_at: datetime
 
 
 class FilePublic(FileBase):
     id: uuid.UUID
     children: list[FilePublicChild] | None = None
+    updated_at: datetime
     parent_id: uuid.UUID | None = None
     created_at: datetime
 
@@ -495,9 +622,13 @@ class FilesStatistics(SQLModel):
 class RunPublic(RunPublicMinimal):
     stdout: str | None = None
     command: str | None = None
+    # The profiler series, kept out of the list payload.
+    metrics: list[dict] | None = None
     conda_env_pinned: str | None = None
     llm_summary: str | None = None
     params: dict
+    # The files each file parameter was given, so the run can be repeated.
+    param_files: dict | None = None
     files: list[FilePublic]
 
 

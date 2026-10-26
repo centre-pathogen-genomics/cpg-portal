@@ -41,7 +41,10 @@ function CircleDisplay({ circle }: CircleDisplayProps) {
       })
       .catch((error) => {
         if (!cancelled) {
-          console.error(`Failed to load stream event image: ${circle.image}`, error)
+          console.error(
+            `Failed to load stream event image: ${circle.image}`,
+            error,
+          )
           setImageTexture(null)
         }
       })

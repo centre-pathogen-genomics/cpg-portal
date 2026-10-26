@@ -20,11 +20,34 @@ const icons: Record<RunStatus, React.ReactNode> = {
   cancelled: <MdCancel className="size-[0.95em]" />,
 }
 
+/**
+ * Just the status icon, for the compact list view, where the label would take
+ * the room the details need. The title and the accessible name keep the status
+ * itself readable.
+ */
+export function StatusIcon({
+  status,
+  className,
+}: {
+  status: RunStatus
+  className?: string
+}) {
+  return (
+    <span
+      className={cn("inline-flex items-center", styles[status], className)}
+      title={status}
+      aria-label={status}
+    >
+      {icons[status]}
+    </span>
+  )
+}
+
 function StatusBadge({ status }: { status: RunStatus }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 border px-1 text-xs font-bold uppercase",
+        "inline-flex items-center gap-1 border px-1 py-1 text-xs font-bold uppercase rounded",
         styles[status],
       )}
     >

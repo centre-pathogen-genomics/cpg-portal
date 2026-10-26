@@ -1,11 +1,11 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   createFileRoute,
   Link as RouterLink,
   redirect,
   useNavigate,
-} from "@tanstack/react-router";
+} from "@tanstack/react-router"
 import {
   ArrowLeft,
   Braces,
@@ -13,8 +13,8 @@ import {
   ChevronUp,
   Plus,
   Trash2,
-} from "lucide-react";
-import { useEffect, useState } from "react";
+} from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
 import {
   type Control,
   Controller,
@@ -24,8 +24,8 @@ import {
   useFieldArray,
   useForm,
   useWatch,
-} from "react-hook-form";
-import { z } from "zod";
+} from "react-hook-form"
+import { z } from "zod"
 import {
   type CondaEnv,
   type CondaEnvPipDependency,
@@ -40,22 +40,22 @@ import {
   type ToolStatus,
   type ToolUpdate,
   UsersService,
-} from "@/client";
+} from "@/client"
 import {
   readToolByNameOptions,
   readToolByNameQueryKey,
   readToolsQueryKey,
   updateToolMutation,
-} from "@/client/@tanstack/react-query.gen";
+} from "@/client/@tanstack/react-query.gen"
 import {
   FileTypeEnumSchema,
   ParamTypeSchema,
   ParamVisibilityOperatorSchema,
   ToolStatusSchema,
-} from "@/client/schemas.gen";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
+} from "@/client/schemas.gen"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -64,7 +64,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
+} from "@/components/ui/dialog"
 import {
   Form,
   FormControl,
@@ -72,44 +72,46 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { LoadingButton } from "@/components/ui/loading-button";
+} from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { LoadingButton } from "@/components/ui/loading-button"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
-import useCustomToast from "@/hooks/useCustomToast";
-import { handleError } from "@/utils";
+} from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Textarea } from "@/components/ui/textarea"
+import useCustomToast from "@/hooks/useCustomToast"
+import { handleError } from "@/utils"
+import CommandField from "../../../components/Tools/CommandField"
 
-const paramTypes = ParamTypeSchema.enum as unknown as ParamType[];
+const paramTypes = ParamTypeSchema.enum as unknown as ParamType[]
 const paramVisibilityOperators =
-  ParamVisibilityOperatorSchema.enum as unknown as ParamVisibilityOperator[];
-const fileTypes = FileTypeEnumSchema.enum as unknown as FileTypeEnum[];
-const toolStatuses = ToolStatusSchema.enum as unknown as ToolStatus[];
+  ParamVisibilityOperatorSchema.enum as unknown as ParamVisibilityOperator[]
+const fileTypes = FileTypeEnumSchema.enum as unknown as FileTypeEnum[]
+const toolStatuses = ToolStatusSchema.enum as unknown as ToolStatus[]
 
-const optionalString = z.string().nullable().optional();
+const optionalString = z.string().nullable().optional()
 
-const listItemSchema = z.object({ value: z.string() });
+const listItemSchema = z.object({ value: z.string() })
 const badgeSchema = z.object({
   badge: optionalString,
   url: optionalString,
-});
+})
 const condaDependencySchema = z.object({
   kind: z.enum(["dependency", "pip"]),
   value: z.string(),
-});
+})
 const paramSchema = z.object({
   name: z.string().min(1, "Name is required"),
   param_type: z.enum(paramTypes),
   allowed_file_types: z.array(listItemSchema),
   multiple: z.boolean(),
+  cpus_per_file: z.number().int().min(0),
   description: optionalString,
   default: z.union([z.string(), z.number(), z.boolean()]).nullable(),
   options: z.array(listItemSchema),
@@ -119,20 +121,25 @@ const paramSchema = z.object({
   visible_if_value: z
     .union([z.string(), z.number(), z.boolean(), z.array(listItemSchema)])
     .nullable(),
-});
+})
 const targetSchema = z.object({
   path: z.string().min(1, "Path is required"),
   target_type: z.string().min(1, "Target type is required"),
   required: z.boolean(),
-});
+})
 const setupFileSchema = z.object({
   name: z.string().min(1, "Name is required"),
   content: z.string(),
-});
+})
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
   version: optionalString,
+  // The stack order for this version, and whether it is the default one the
+  // plain tool path loads. The order is typed as text and turned into a number
+  // when it is sent.
+  version_sort: optionalString,
+  is_default: z.boolean(),
   image: optionalString,
   description: optionalString,
   explanation_of_results_markdown: optionalString,
@@ -151,25 +158,32 @@ const formSchema = z.object({
   setup_files: z.array(setupFileSchema),
   params: z.array(paramSchema),
   targets: z.array(targetSchema),
+  min_cpus: z.number().int().min(1),
+  max_cpus: z.number().int().min(1).nullable().optional(),
+  default_cpus: z.number().int().min(1).nullable().optional(),
   llm_summary_enabled: z.boolean(),
   favourited_count: z.number().int().min(0),
   run_count: z.number().int().min(0),
   enabled: z.boolean(),
   status: z.enum(toolStatuses),
   installation_log: optionalString,
-});
+})
 
-type ToolFormData = z.infer<typeof formSchema>;
+type ToolFormData = z.infer<typeof formSchema>
 
 export const Route = createFileRoute("/_layout/tools/$name_/edit")({
+  // Which version to edit; without it the stack's default is loaded.
+  validateSearch: (search: Record<string, unknown>): { version?: string } => ({
+    version: typeof search.version === "string" ? search.version : undefined,
+  }),
   beforeLoad: async () => {
     const response = await UsersService.readUserMe({
       throwOnError: true,
     }).catch(() => {
-      throw redirect({ to: "/login" });
-    });
+      throw redirect({ to: "/login" })
+    })
     if (!response.data.is_superuser) {
-      throw redirect({ to: "/" });
+      throw redirect({ to: "/" })
     }
   },
   component: ToolEditor,
@@ -180,38 +194,43 @@ export const Route = createFileRoute("/_layout/tools/$name_/edit")({
       },
     ],
   }),
-});
+})
 
 function nullIfBlank(value: string | null | undefined) {
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : null;
+  const trimmed = value?.trim()
+  return trimmed ? trimmed : null
 }
 
 function listValues(values: { value: string }[] | undefined) {
-  const seen = new Set<string>();
+  const seen = new Set<string>()
   return (values ?? [])
     .map((item) => item.value.trim())
     .filter((value) => {
-      if (!value || seen.has(value)) return false;
-      seen.add(value);
-      return true;
-    });
+      if (!value || seen.has(value)) return false
+      seen.add(value)
+      return true
+    })
 }
 
 function stringList(values: string[] | null | undefined) {
-  return (values ?? []).map((value) => ({ value }));
+  return (values ?? []).map((value) => ({ value }))
 }
 
 function isPipDependency(
   dependency: string | CondaEnvPipDependency,
 ): dependency is CondaEnvPipDependency {
-  return typeof dependency !== "string" && Array.isArray(dependency.pip);
+  return typeof dependency !== "string" && Array.isArray(dependency.pip)
 }
 
 function defaultValues(tool: ToolPublic): ToolFormData {
   return {
     name: tool.name,
     version: tool.version ?? "",
+    version_sort:
+      tool.version_sort === null || tool.version_sort === undefined
+        ? ""
+        : String(tool.version_sort),
+    is_default: tool.is_default ?? false,
     image: tool.image ?? "",
     description: tool.description ?? "",
     explanation_of_results_markdown: tool.explanation_of_results_markdown ?? "",
@@ -244,6 +263,7 @@ function defaultValues(tool: ToolPublic): ToolFormData {
       param_type: param.param_type,
       allowed_file_types: stringList(param.allowed_file_types),
       multiple: param.multiple ?? false,
+      cpus_per_file: param.cpus_per_file ?? 1,
       description: param.description ?? "",
       default: param.default ?? null,
       options: stringList(param.options),
@@ -265,30 +285,34 @@ function defaultValues(tool: ToolPublic): ToolFormData {
     enabled: tool.enabled ?? false,
     status: tool.status,
     installation_log: tool.installation_log ?? "",
-  };
+    min_cpus: tool.min_cpus ?? 1,
+    max_cpus: tool.max_cpus ?? null,
+    default_cpus: tool.default_cpus ?? null,
+  }
 }
 
 function buildParam(param: ToolFormData["params"][number]): Param {
-  const value = param.default;
-  let defaultValue: Param["default"] = null;
+  const value = param.default
+  let defaultValue: Param["default"] = null
   if (value !== null && value !== "") {
     if (param.param_type === "int")
-      defaultValue = Number.parseInt(String(value), 10);
+      defaultValue = Number.parseInt(String(value), 10)
     else if (param.param_type === "float")
-      defaultValue = Number.parseFloat(String(value));
-    else if (param.param_type === "bool") defaultValue = Boolean(value);
-    else defaultValue = String(value);
+      defaultValue = Number.parseFloat(String(value))
+    else if (param.param_type === "bool") defaultValue = Boolean(value)
+    else defaultValue = String(value)
   }
   const visibleIfValue = Array.isArray(param.visible_if_value)
     ? listValues(param.visible_if_value)
     : param.visible_if_value === "" || param.visible_if_value === null
       ? null
-      : param.visible_if_value;
+      : param.visible_if_value
   return {
     name: param.name.trim(),
     param_type: param.param_type,
     allowed_file_types: listValues(param.allowed_file_types),
     multiple: param.multiple,
+    cpus_per_file: param.cpus_per_file,
     description: nullIfBlank(param.description),
     default: defaultValue,
     options: listValues(param.options),
@@ -296,22 +320,21 @@ function buildParam(param: ToolFormData["params"][number]): Param {
     visible_if_param: nullIfBlank(param.visible_if_param),
     visible_if_operator: param.visible_if_operator ?? "equals",
     visible_if_value: visibleIfValue,
-  };
+  }
 }
 
 function buildToolUpdate(data: ToolFormData): ToolUpdate {
-  const condaDependencies: CondaEnv["dependencies"] = [];
+  const condaDependencies: CondaEnv["dependencies"] = []
   const pipDependencies = data.conda_dependencies
     .filter((dependency) => dependency.kind === "pip")
     .map((dependency) => dependency.value.trim())
-    .filter(Boolean);
+    .filter(Boolean)
 
   for (const dependency of data.conda_dependencies) {
-    const value = dependency.value.trim();
-    if (dependency.kind === "dependency" && value)
-      condaDependencies.push(value);
+    const value = dependency.value.trim()
+    if (dependency.kind === "dependency" && value) condaDependencies.push(value)
   }
-  if (pipDependencies.length) condaDependencies.push({ pip: pipDependencies });
+  if (pipDependencies.length) condaDependencies.push({ pip: pipDependencies })
 
   const condaEnv =
     data.conda_channels.length || condaDependencies.length
@@ -319,11 +342,13 @@ function buildToolUpdate(data: ToolFormData): ToolUpdate {
           channels: listValues(data.conda_channels),
           dependencies: condaDependencies,
         }
-      : null;
+      : null
 
   return {
     name: data.name.trim(),
     version: nullIfBlank(data.version),
+    version_sort: data.version_sort?.trim() ? Number(data.version_sort) : null,
+    is_default: data.is_default ?? false,
     image: nullIfBlank(data.image),
     description: nullIfBlank(data.description),
     explanation_of_results_markdown: nullIfBlank(
@@ -343,6 +368,9 @@ function buildToolUpdate(data: ToolFormData): ToolUpdate {
       .filter((badge) => badge.badge || badge.url),
     tags: listValues(data.tags),
     command: data.command.trim(),
+    min_cpus: data.min_cpus,
+    max_cpus: data.max_cpus ?? null,
+    default_cpus: data.default_cpus ?? null,
     conda_env: condaEnv,
     post_install: nullIfBlank(data.post_install),
     setup_files: data.setup_files.map<SetupFile>((file) => ({
@@ -361,7 +389,7 @@ function buildToolUpdate(data: ToolFormData): ToolUpdate {
     enabled: data.enabled,
     status: data.status,
     installation_log: nullIfBlank(data.installation_log),
-  };
+  }
 }
 
 function FieldShell({
@@ -369,9 +397,9 @@ function FieldShell({
   children,
   error,
 }: {
-  label: string;
-  children: React.ReactNode;
-  error?: string;
+  label: string
+  children: React.ReactNode
+  error?: string
 }) {
   return (
     <div className="grid gap-2">
@@ -379,7 +407,7 @@ function FieldShell({
       {children}
       {error && <p className="text-sm text-destructive">{error}</p>}
     </div>
-  );
+  )
 }
 
 function TextField({
@@ -387,11 +415,15 @@ function TextField({
   name,
   label,
   multiline = false,
+  type = "text",
+  description,
 }: {
-  control: Control<ToolFormData>;
-  name: FieldPath<ToolFormData>;
-  label: string;
-  multiline?: boolean;
+  control: Control<ToolFormData>
+  name: FieldPath<ToolFormData>
+  label: string
+  multiline?: boolean
+  type?: string
+  description?: string
 }) {
   return (
     <FormField
@@ -408,24 +440,29 @@ function TextField({
                 value={String(field.value ?? "")}
               />
             ) : (
-              <Input {...field} value={String(field.value ?? "")} />
+              <Input type={type} {...field} value={String(field.value ?? "")} />
             )}
           </FormControl>
+          {description && (
+            <p className="text-sm text-muted-foreground">{description}</p>
+          )}
           <FormMessage />
         </FormItem>
       )}
     />
-  );
+  )
 }
 
 function BooleanField({
   control,
   name,
   label,
+  description,
 }: {
-  control: Control<ToolFormData>;
-  name: FieldPath<ToolFormData>;
-  label: string;
+  control: Control<ToolFormData>
+  name: FieldPath<ToolFormData>
+  label: string
+  description?: string
 }) {
   return (
     <FormField
@@ -440,18 +477,21 @@ function BooleanField({
             />
           </FormControl>
           <FormLabel className="m-0">{label}</FormLabel>
+          {description && (
+            <p className="text-sm text-muted-foreground">{description}</p>
+          )}
         </FormItem>
       )}
     />
-  );
+  )
 }
 
 function ArrayActions({
   onAdd,
   label = "Add",
 }: {
-  onAdd: () => void;
-  label?: string;
+  onAdd: () => void
+  label?: string
 }) {
   return (
     <Button
@@ -464,7 +504,7 @@ function ArrayActions({
       <Plus />
       Add
     </Button>
-  );
+  )
 }
 
 function RowActions({
@@ -474,11 +514,11 @@ function RowActions({
   onRemove,
   removeLabel = "Remove",
 }: {
-  index: number;
-  count: number;
-  onMove: (from: number, to: number) => void;
-  onRemove: () => void;
-  removeLabel?: string;
+  index: number
+  count: number
+  onMove: (from: number, to: number) => void
+  onRemove: () => void
+  removeLabel?: string
 }) {
   return (
     <div className="flex justify-end gap-2">
@@ -512,7 +552,7 @@ function RowActions({
         <Trash2 />
       </Button>
     </div>
-  );
+  )
 }
 
 function StringListBuilder<T extends FieldValues>({
@@ -521,15 +561,15 @@ function StringListBuilder<T extends FieldValues>({
   label,
   placeholder,
 }: {
-  control: Control<T>;
-  name: FieldPath<T>;
-  label: string;
-  placeholder: string;
+  control: Control<T>
+  name: FieldPath<T>
+  label: string
+  placeholder: string
 }) {
   const { fields, append, remove, move } = useFieldArray({
     control,
     name: name as never,
-  });
+  })
   return (
     <div className="grid gap-3">
       <div className="flex items-center justify-between gap-3">
@@ -567,30 +607,30 @@ function StringListBuilder<T extends FieldValues>({
         </div>
       ))}
     </div>
-  );
+  )
 }
 
 function nextAvailableFileType(selectedTypes: { value: string }[] | undefined) {
   const selected = new Set(
     (selectedTypes ?? []).map((item) => item.value).filter(Boolean),
-  );
-  return fileTypes.find((type) => !selected.has(type)) ?? "unknown";
+  )
+  return fileTypes.find((type) => !selected.has(type)) ?? "unknown"
 }
 
 function FileTypeListBuilder({
   control,
   paramIndex,
 }: {
-  control: Control<ToolFormData>;
-  paramIndex: number;
+  control: Control<ToolFormData>
+  paramIndex: number
 }) {
   const name =
-    `params.${paramIndex}.allowed_file_types` as `params.${number}.allowed_file_types`;
+    `params.${paramIndex}.allowed_file_types` as `params.${number}.allowed_file_types`
   const { fields, append, remove, move } = useFieldArray({
     control,
     name,
-  });
-  const selectedTypes = useWatch({ control, name });
+  })
+  const selectedTypes = useWatch({ control, name })
 
   return (
     <div className="grid gap-3">
@@ -607,12 +647,12 @@ function FileTypeListBuilder({
         </p>
       )}
       {fields.map((field, index) => {
-        const currentValue = selectedTypes?.[index]?.value;
+        const currentValue = selectedTypes?.[index]?.value
         const selectedByOtherRows = new Set(
           (selectedTypes ?? [])
             .filter((_, selectedIndex) => selectedIndex !== index)
             .map((item) => item.value),
-        );
+        )
 
         return (
           <div
@@ -653,14 +693,14 @@ function FileTypeListBuilder({
               onRemove={() => remove(index)}
             />
           </div>
-        );
+        )
       })}
     </div>
-  );
+  )
 }
 
 function DetailsTab({ control }: { control: Control<ToolFormData> }) {
-  const badges = useFieldArray({ control, name: "badges" });
+  const badges = useFieldArray({ control, name: "badges" })
   return (
     <TabsContent value="details" className="space-y-6">
       <Card className="rounded-md">
@@ -670,6 +710,19 @@ function DetailsTab({ control }: { control: Control<ToolFormData> }) {
         <CardContent className="grid gap-4 md:grid-cols-2">
           <TextField control={control} name="name" label="Name" />
           <TextField control={control} name="version" label="Version" />
+          <TextField
+            control={control}
+            name="version_sort"
+            label="Version order"
+            type="number"
+            description="Order within the versions of this name. Empty falls back to the creation time."
+          />
+          <BooleanField
+            control={control}
+            name="is_default"
+            label="Default version"
+            description="The version the plain tool path shows."
+          />
           <TextField control={control} name="image" label="Image URL" />
           <TextField control={control} name="url" label="Home URL" />
           <TextField control={control} name="github_repo" label="GitHub repo" />
@@ -750,24 +803,18 @@ function DetailsTab({ control }: { control: Control<ToolFormData> }) {
         </CardContent>
       </Card>
     </TabsContent>
-  );
+  )
 }
 
-function ExecutionTab({ control }: { control: Control<ToolFormData> }) {
-  const dependencies = useFieldArray({ control, name: "conda_dependencies" });
+function InstallationTab({ control }: { control: Control<ToolFormData> }) {
+  const dependencies = useFieldArray({ control, name: "conda_dependencies" })
   return (
-    <TabsContent value="execution" className="space-y-6">
+    <TabsContent value="installation" className="space-y-6">
       <Card className="rounded-md">
         <CardHeader>
-          <CardTitle>Execution</CardTitle>
+          <CardTitle>Installation</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <TextField
-            control={control}
-            name="command"
-            label="Command"
-            multiline
-          />
           <TextField
             control={control}
             name="post_install"
@@ -837,17 +884,17 @@ function ExecutionTab({ control }: { control: Control<ToolFormData> }) {
         </CardContent>
       </Card>
     </TabsContent>
-  );
+  )
 }
 
 function ParamDefaultField({
   control,
   index,
 }: {
-  control: Control<ToolFormData>;
-  index: number;
+  control: Control<ToolFormData>
+  index: number
 }) {
-  const type = useWatch({ control, name: `params.${index}.param_type` });
+  const type = useWatch({ control, name: `params.${index}.param_type` })
   if (type === "bool") {
     return (
       <FormField
@@ -865,7 +912,7 @@ function ParamDefaultField({
           </FormItem>
         )}
       />
-    );
+    )
   }
   return (
     <TextField
@@ -873,18 +920,18 @@ function ParamDefaultField({
       name={`params.${index}.default`}
       label="Default"
     />
-  );
+  )
 }
 
 function ParamOptionsField({
   control,
   index,
 }: {
-  control: Control<ToolFormData>;
-  index: number;
+  control: Control<ToolFormData>
+  index: number
 }) {
-  const type = useWatch({ control, name: `params.${index}.param_type` });
-  if (type !== "enum") return null;
+  const type = useWatch({ control, name: `params.${index}.param_type` })
+  if (type !== "enum") return null
   return (
     <StringListBuilder
       control={control}
@@ -892,44 +939,44 @@ function ParamOptionsField({
       label="Options"
       placeholder="option"
     />
-  );
+  )
 }
 
 function ParamFileTypesField({
   control,
   index,
 }: {
-  control: Control<ToolFormData>;
-  index: number;
+  control: Control<ToolFormData>
+  index: number
 }) {
-  const type = useWatch({ control, name: `params.${index}.param_type` });
-  if (type !== "file") return null;
-  return <FileTypeListBuilder control={control} paramIndex={index} />;
+  const type = useWatch({ control, name: `params.${index}.param_type` })
+  if (type !== "file") return null
+  return <FileTypeListBuilder control={control} paramIndex={index} />
 }
 
 function ParamVisibilityFields({
   control,
   index,
 }: {
-  control: Control<ToolFormData>;
-  index: number;
+  control: Control<ToolFormData>
+  index: number
 }) {
-  const params = useWatch({ control, name: "params" }) ?? [];
+  const params = useWatch({ control, name: "params" }) ?? []
   const operator = useWatch({
     control,
     name: `params.${index}.visible_if_operator`,
-  });
+  })
   const dependencyName = useWatch({
     control,
     name: `params.${index}.visible_if_param`,
-  });
+  })
   const dependencyOptions = params
     .filter((_, paramIndex) => paramIndex !== index)
     .map((param) => param.name)
-    .filter(Boolean);
-  const operatorValue = operator ?? "equals";
-  const noValueOperators = new Set(["truthy", "falsy", "is_set", "is_empty"]);
-  const listValueOperators = new Set(["in", "not_in"]);
+    .filter(Boolean)
+  const operatorValue = operator ?? "equals"
+  const noValueOperators = new Set(["truthy", "falsy", "is_set", "is_empty"])
+  const listValueOperators = new Set(["in", "not_in"])
   return (
     <div className="space-y-4 rounded-md border border-dashed p-4">
       <p className="text-sm font-medium">Visibility rule</p>
@@ -1005,13 +1052,126 @@ function ParamVisibilityFields({
         </div>
       )}
     </div>
-  );
+  )
 }
 
 function InputsTab({ control }: { control: Control<ToolFormData> }) {
-  const params = useFieldArray({ control, name: "params" });
+  const params = useFieldArray({ control, name: "params" })
+  const setupFiles = useFieldArray({ control, name: "setup_files" })
+  const watchedParams = useWatch({ control, name: "params" }) ?? []
+  const commandParams = useMemo(
+    () => [
+      ...watchedParams.map((param) => ({
+        ...param,
+        allowed_file_types: (param.allowed_file_types ?? []).map(
+          (item) => item.value,
+        ),
+      })),
+      // Always available to a command, whether or not the tool declares it.
+      {
+        name: "cpus",
+        param_type: "int",
+        description: "The CPUs this run reserved.",
+      },
+    ],
+    [watchedParams],
+  )
   return (
     <TabsContent value="inputs" className="space-y-6">
+      <Card className="rounded-md">
+        <CardHeader>
+          <CardTitle>Execution</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <FormField
+            control={control}
+            name="command"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Command</FormLabel>
+                <FormControl>
+                  <CommandField
+                    value={String(field.value ?? "")}
+                    onChange={field.onChange}
+                    params={commandParams}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <div className="grid gap-4 md:grid-cols-3">
+            <FormField
+              control={control}
+              name="min_cpus"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Min CPUs</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={1}
+                      {...field}
+                      onChange={(event) =>
+                        field.onChange(
+                          Number.parseInt(event.target.value, 10) || 0,
+                        )
+                      }
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={control}
+              name="max_cpus"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Max CPUs (optional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={1}
+                      {...field}
+                      value={field.value ?? ""}
+                      onChange={(event) =>
+                        field.onChange(
+                          Number.parseInt(event.target.value, 10) || null,
+                        )
+                      }
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={control}
+              name="default_cpus"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Default CPUs (optional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={1}
+                      {...field}
+                      value={field.value ?? ""}
+                      onChange={(event) =>
+                        field.onChange(
+                          Number.parseInt(event.target.value, 10) || null,
+                        )
+                      }
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </CardContent>
+      </Card>
       <Card className="rounded-md">
         <CardHeader className="flex-row items-center justify-between">
           <CardTitle>Inputs</CardTitle>
@@ -1023,6 +1183,7 @@ function InputsTab({ control }: { control: Control<ToolFormData> }) {
                 param_type: "str",
                 allowed_file_types: [],
                 multiple: false,
+                cpus_per_file: 1,
                 description: "",
                 default: null,
                 options: [],
@@ -1098,6 +1259,34 @@ function InputsTab({ control }: { control: Control<ToolFormData> }) {
                   name={`params.${index}.multiple`}
                   label="Multiple"
                 />
+                <FormField
+                  control={control}
+                  name={`params.${index}.cpus_per_file`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>CPUs per file (0 disables)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min={0}
+                          className="w-40"
+                          {...field}
+                          value={field.value ?? 1}
+                          onChange={(event) => {
+                            const parsed = Number.parseInt(
+                              event.target.value,
+                              10,
+                            )
+                            field.onChange(
+                              Number.isNaN(parsed) ? 1 : Math.max(0, parsed),
+                            )
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
               <div className="grid gap-6">
                 <ParamOptionsField control={control} index={index} />
@@ -1108,16 +1297,55 @@ function InputsTab({ control }: { control: Control<ToolFormData> }) {
           ))}
         </CardContent>
       </Card>
+      <Card className="rounded-md">
+        <CardHeader className="flex-row items-center justify-between">
+          <CardTitle>Setup Files</CardTitle>
+          <ArrayActions
+            label="Add setup file"
+            onAdd={() => setupFiles.append({ name: "", content: "" })}
+          />
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {setupFiles.fields.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              No setup files configured.
+            </p>
+          )}
+          {setupFiles.fields.map((field, index) => (
+            <div key={field.id} className="space-y-4 rounded-md border p-4">
+              <div className="grid gap-4 md:grid-cols-[1fr_auto]">
+                <TextField
+                  control={control}
+                  name={`setup_files.${index}.name`}
+                  label="Name"
+                />
+                <RowActions
+                  index={index}
+                  count={setupFiles.fields.length}
+                  onMove={setupFiles.move}
+                  onRemove={() => setupFiles.remove(index)}
+                />
+              </div>
+              <TextField
+                control={control}
+                name={`setup_files.${index}.content`}
+                label="Content"
+                multiline
+              />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
     </TabsContent>
-  );
+  )
 }
 
 function TargetTypeField({
   control,
   index,
 }: {
-  control: Control<ToolFormData>;
-  index: number;
+  control: Control<ToolFormData>
+  index: number
 }) {
   return (
     <FormField
@@ -1147,12 +1375,11 @@ function TargetTypeField({
         </FormItem>
       )}
     />
-  );
+  )
 }
 
 function OutputsTab({ control }: { control: Control<ToolFormData> }) {
-  const targets = useFieldArray({ control, name: "targets" });
-  const setupFiles = useFieldArray({ control, name: "setup_files" });
+  const targets = useFieldArray({ control, name: "targets" })
   return (
     <TabsContent value="outputs" className="space-y-6">
       <Card className="rounded-md">
@@ -1203,47 +1430,8 @@ function OutputsTab({ control }: { control: Control<ToolFormData> }) {
           ))}
         </CardContent>
       </Card>
-      <Card className="rounded-md">
-        <CardHeader className="flex-row items-center justify-between">
-          <CardTitle>Setup Files</CardTitle>
-          <ArrayActions
-            label="Add setup file"
-            onAdd={() => setupFiles.append({ name: "", content: "" })}
-          />
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {setupFiles.fields.length === 0 && (
-            <p className="text-sm text-muted-foreground">
-              No setup files configured.
-            </p>
-          )}
-          {setupFiles.fields.map((field, index) => (
-            <div key={field.id} className="space-y-4 rounded-md border p-4">
-              <div className="grid gap-4 md:grid-cols-[1fr_auto]">
-                <TextField
-                  control={control}
-                  name={`setup_files.${index}.name`}
-                  label="Name"
-                />
-                <RowActions
-                  index={index}
-                  count={setupFiles.fields.length}
-                  onMove={setupFiles.move}
-                  onRemove={() => setupFiles.remove(index)}
-                />
-              </div>
-              <TextField
-                control={control}
-                name={`setup_files.${index}.content`}
-                label="Content"
-                multiline
-              />
-            </div>
-          ))}
-        </CardContent>
-      </Card>
     </TabsContent>
-  );
+  )
 }
 
 function AdminTab({ control }: { control: Control<ToolFormData> }) {
@@ -1339,112 +1527,117 @@ function AdminTab({ control }: { control: Control<ToolFormData> }) {
         </CardContent>
       </Card>
     </TabsContent>
-  );
+  )
 }
 
 function ToolEditor() {
-  const { name } = Route.useParams();
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const { showSuccessToast, showErrorToast } = useCustomToast();
-  const [jsonOpen, setJsonOpen] = useState(false);
-  const [jsonConfig, setJsonConfig] = useState("");
-  const [jsonError, setJsonError] = useState<string | null>(null);
+  const { name } = Route.useParams()
+  const { version } = Route.useSearch()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const { showSuccessToast, showErrorToast } = useCustomToast()
+  const [jsonOpen, setJsonOpen] = useState(false)
+  const [jsonConfig, setJsonConfig] = useState("")
+  const [jsonError, setJsonError] = useState<string | null>(null)
   const {
     data: tool,
     isError,
     isPending,
   } = useQuery({
-    ...readToolByNameOptions({ path: { tool_name: name } }),
-  });
+    ...readToolByNameOptions({
+      path: { tool_name: name },
+      query: version ? { version } : {},
+    }),
+  })
 
   const form = useForm<ToolFormData>({
     resolver: zodResolver(formSchema),
     mode: "onBlur",
     criteriaMode: "all",
     values: tool ? defaultValues(tool) : undefined,
-  });
+  })
 
   useEffect(() => {
-    if (tool) form.reset(defaultValues(tool));
-  }, [form, tool]);
+    if (tool) form.reset(defaultValues(tool))
+  }, [form, tool])
 
   const mutation = useMutation({
     ...updateToolMutation(),
     onSuccess: (updatedTool) => {
       queryClient.invalidateQueries({
         queryKey: readToolByNameQueryKey({ path: { tool_name: name } }),
-      });
+      })
       queryClient.invalidateQueries({
         queryKey: readToolByNameQueryKey({
           path: { tool_name: updatedTool.name },
         }),
-      });
-      queryClient.invalidateQueries({ queryKey: readToolsQueryKey() });
-      showSuccessToast("Tool updated successfully");
+      })
+      queryClient.invalidateQueries({ queryKey: readToolsQueryKey() })
+      showSuccessToast("Tool updated successfully")
       navigate({
         to: "/tools/$name",
         params: { name: updatedTool.name },
+        search: { version: updatedTool.version ?? "" },
         resetScroll: true,
-      });
+      })
     },
     onError: (error) => {
-      handleError(error, showErrorToast);
-      if (jsonOpen) handleError(error, setJsonError);
+      handleError(error, showErrorToast)
+      if (jsonOpen) handleError(error, setJsonError)
     },
-  });
+  })
 
   const onJsonOpenChange = (open: boolean) => {
-    if (mutation.isPending) return;
+    if (mutation.isPending) return
     if (open) {
-      setJsonConfig(JSON.stringify(buildToolUpdate(form.getValues()), null, 2));
-      setJsonError(null);
+      setJsonConfig(JSON.stringify(buildToolUpdate(form.getValues()), null, 2))
+      setJsonError(null)
     }
-    setJsonOpen(open);
-  };
+    setJsonOpen(open)
+  }
 
   const onSubmitJson = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!tool || mutation.isPending) return;
+    event.preventDefault()
+    if (!tool || mutation.isPending) return
 
-    let parsed: unknown;
+    let parsed: unknown
     try {
-      parsed = JSON.parse(jsonConfig);
+      parsed = JSON.parse(jsonConfig)
     } catch (error) {
       setJsonError(
         error instanceof Error
           ? `Invalid JSON: ${error.message}`
           : "Invalid JSON",
-      );
-      return;
+      )
+      return
     }
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      setJsonError("JSON must be an object.");
-      return;
+      setJsonError("JSON must be an object.")
+      return
     }
-    const data = parsed as Record<string, unknown>;
+    const data = parsed as Record<string, unknown>
     for (const key of ["name", "command"] as const) {
       if (typeof data[key] !== "string" || !data[key].trim()) {
-        setJsonError(`JSON must include a non-empty '${key}'.`);
-        return;
+        setJsonError(`JSON must include a non-empty '${key}'.`)
+        return
       }
     }
 
     // Keep the API representation intact; the server validates nested config.
-    setJsonError(null);
+    setJsonError(null)
     mutation.mutate({
       path: { tool_id: tool.id },
       body: data as ToolUpdate,
-    });
-  };
+    })
+  }
 
   const onSubmit: SubmitHandler<ToolFormData> = (data) => {
-    if (!tool) return;
+    if (!tool) return
     mutation.mutate({
       path: { tool_id: tool.id },
       body: buildToolUpdate(data),
-    });
-  };
+    })
+  }
 
   if (isError) {
     return (
@@ -1452,7 +1645,7 @@ function ToolEditor() {
         <h1 className="text-3xl font-bold">Tool Not Found</h1>
         <p>The requested tool could not be found.</p>
       </div>
-    );
+    )
   }
 
   if (isPending || !tool) {
@@ -1460,7 +1653,7 @@ function ToolEditor() {
       <div className="w-full px-4 py-8 md:px-6 lg:px-8">
         <h1 className="text-3xl font-bold">Loading editor...</h1>
       </div>
-    );
+    )
   }
 
   return (
@@ -1468,7 +1661,11 @@ function ToolEditor() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <Button variant="ghost" asChild className="mb-2 px-0">
-            <RouterLink to="/tools/$name" params={{ name }}>
+            <RouterLink
+              to="/tools/$name"
+              params={{ name }}
+              search={{ version }}
+            >
               <ArrowLeft />
               Back
             </RouterLink>
@@ -1511,8 +1708,8 @@ function ToolEditor() {
                   className="h-[55dvh] min-h-64 resize-y font-mono text-sm"
                   value={jsonConfig}
                   onChange={(event) => {
-                    setJsonConfig(event.target.value);
-                    setJsonError(null);
+                    setJsonConfig(event.target.value)
+                    setJsonError(null)
                   }}
                   spellCheck={false}
                   autoCapitalize="off"
@@ -1547,7 +1744,11 @@ function ToolEditor() {
             </DialogContent>
           </Dialog>
           <Button variant="outline" asChild>
-            <RouterLink to="/tools/$name" params={{ name }}>
+            <RouterLink
+              to="/tools/$name"
+              params={{ name }}
+              search={{ version }}
+            >
               Cancel
             </RouterLink>
           </Button>
@@ -1565,13 +1766,13 @@ function ToolEditor() {
           <Tabs defaultValue="details" className="w-full">
             <TabsList className="mb-4 flex h-auto w-full flex-wrap justify-start">
               <TabsTrigger value="details">Details</TabsTrigger>
-              <TabsTrigger value="execution">Execution</TabsTrigger>
+              <TabsTrigger value="installation">Installation</TabsTrigger>
               <TabsTrigger value="inputs">Inputs</TabsTrigger>
               <TabsTrigger value="outputs">Outputs</TabsTrigger>
               <TabsTrigger value="admin">Admin</TabsTrigger>
             </TabsList>
             <DetailsTab control={form.control} />
-            <ExecutionTab control={form.control} />
+            <InstallationTab control={form.control} />
             <InputsTab control={form.control} />
             <OutputsTab control={form.control} />
             <AdminTab control={form.control} />
@@ -1579,7 +1780,7 @@ function ToolEditor() {
         </form>
       </Form>
     </div>
-  );
+  )
 }
 
-export default ToolEditor;
+export default ToolEditor

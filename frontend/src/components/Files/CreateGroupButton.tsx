@@ -1,111 +1,58 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { LoaderCircle } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { createGroupMutation } from "../../client/@tanstack/react-query.gen"
-import useCustomToast from "../../hooks/useCustomToast"
+import CreateGroupDialog, { type GroupFilters } from "./CreateGroupDialog"
 
 interface CreateGroupButtonProps {
   selectedFileIds: string[]
+  /**
+   * When no file is selected, group everything these filters match instead.
+   * Without a selection and without filters there is nothing to group.
+   */
+  matchingFilters?: GroupFilters
+  matchingCount?: number
   onGroupCreated?: () => void
   className?: string
   size?: "xs" | "sm" | "md" | "lg"
-  variant?: string
-  colorScheme?: string
 }
 
 export default function CreateGroupButton({
   selectedFileIds,
+  matchingFilters,
+  matchingCount = 0,
   onGroupCreated,
   className,
   size = "md",
 }: CreateGroupButtonProps) {
-  const queryClient = useQueryClient()
-  const showToast = useCustomToast()
-  const [error, setError] = useState<string | null>(null)
-  const [name, setName] = useState("")
   const [open, setOpen] = useState(false)
-  const createGroup = useMutation({
-    ...createGroupMutation(),
-    onSuccess: () => {
-      showToast("Success", "Group created successfully.", "success")
-      setName("")
-      setError(null)
-      setOpen(false)
-      queryClient.invalidateQueries({ queryKey: ["files"] })
-      queryClient.invalidateQueries({ queryKey: ["files-count"] })
-      queryClient.invalidateQueries({ queryKey: [{ _id: "getFilesStats" }] })
-      onGroupCreated?.()
-    },
-    onError: (requestError: any) => {
-      const message =
-        requestError?.response?.data?.detail ||
-        "An error occurred while creating the group."
-      setError(message)
-      showToast("Error", message, "error")
-    },
-  })
-  const create = () => {
-    if (!name.trim()) {
-      setError("Group name is required")
-      return
-    }
-    createGroup.mutate({ body: selectedFileIds, query: { name: name.trim() } })
+  // A selection is grouped; otherwise the filters decide what a group would
+  // hold.
+  const groupingAll =
+    selectedFileIds.length === 0 && matchingFilters !== undefined
+  const groupSize = groupingAll ? matchingCount : selectedFileIds.length
+
+  if (groupSize === 0) {
+    return null
   }
-  const show = () => {
-    setName("")
-    setError(null)
-    setOpen(true)
-  }
+
   return (
     <>
       <Button
         className={className}
         size={size === "md" ? "default" : size === "xs" ? "sm" : size}
-        onClick={show}
-        disabled={!selectedFileIds.length}
+        onClick={() => setOpen(true)}
       >
-        {selectedFileIds.length
-          ? `Create Group (${selectedFileIds.length})`
-          : "Select to Group"}
+        {groupingAll
+          ? `Group All (${groupSize})`
+          : `Group Selected (${groupSize})`}
       </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create File Group</DialogTitle>
-          </DialogHeader>
-          <p>Enter a name for the group of {selectedFileIds.length} files:</p>
-          <Input
-            placeholder="Group name"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            onKeyDown={(event) => event.key === "Enter" && create()}
-          />
-          {error && <p className="text-sm text-destructive">{error}</p>}
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={create}
-              disabled={!name.trim() || createGroup.isPending}
-            >
-              {createGroup.isPending && (
-                <LoaderCircle className="animate-spin" />
-              )}
-              Create Group
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <CreateGroupDialog
+        open={open}
+        onOpenChange={setOpen}
+        selectedFileIds={groupingAll ? undefined : selectedFileIds}
+        matchingFilters={groupingAll ? matchingFilters : undefined}
+        groupSize={groupSize}
+        onGroupCreated={onGroupCreated}
+      />
     </>
   )
 }

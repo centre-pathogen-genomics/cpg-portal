@@ -3,8 +3,11 @@ import json
 import os
 import shutil
 import signal
+import time
 import uuid
+from collections.abc import Iterator
 from contextlib import contextmanager
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Annotated
@@ -13,21 +16,49 @@ from jinja2 import Environment as JinjaEnvironment
 from sqlmodel import Session, select
 from taskiq import TaskiqDepends
 
+from app import sandbox
 from app.api.deps import get_db
 from app.conda import CondaEnvManger, CondaEnvMangerError
 from app.core.app_settings import get_or_create_app_settings
 from app.core.config import settings
+from app.core.db import engine
 from app.crud import save_file
+from app.metrics import read_tree
 from app.models import File, Run, RunStatus, SetupFile, Target, Tool, ToolStatus
+from app.run_records import is_terminal, record_run
+from app.scheduling import dispatch_pending_runs
 from app.tkq import broker
-from app.utils import escape, generate_run_finished_email, send_email
+from app.utils import (
+    escape,
+    generate_run_finished_email,
+    input_file_name,
+    send_email,
+)
 from app.wsmanager import manager
 
 SessionDep = Annotated[Session, TaskiqDepends(get_db)]
 
+WORK_SUBDIR = "work"
+INPUTS_SUBDIR = "inputs"
+TMP_SUBDIR = "tmp"
+
+
+@dataclass(frozen=True)
+class RunDirs:
+    """Directories backing a single run."""
+
+    work: Path
+    """Working directory of the tool, bind mounted read-write at /work."""
+
+    inputs: Path
+    """Read-only bind mount targets for the run's input files."""
+
+    tmp: Path
+    """Scratch directory of the tool, bind mounted read-write at /tmp."""
+
 
 async def run_command_in_subprocess(
-    session: Session, run_id: uuid.UUID, command: str, tmp_dir: Path
+    session: Session, run_id: uuid.UUID, argv: list[str], work_dir: Path
 ) -> tuple[int, str]:
     """
     Run a command in an asynchronous subprocess, capture its stdout in real time,
@@ -36,23 +67,18 @@ async def run_command_in_subprocess(
     Args:
         session (Session): Database session.
         run_id (uuid.UUID): Unique ID of the run.
-        command (str): The shell command to execute.
-        tmp_dir (Path): Working directory for the subprocess.
+        argv (list[str]): The command to execute, as an argument vector.
+        work_dir (Path): Working directory for the subprocess.
 
     Returns:
         Tuple[int, str]: (Exit code, full concatenated stdout output)
     """
     print(f"Preparing to execute command safely for Run(id={run_id})")
 
-    # Enhance the command for safety.
-    command = f"set -euo pipefail; {command}"
-
     # Start the subprocess with stdout piped.
-    process = await asyncio.create_subprocess_shell(
-        command,
-        shell=True,
-        executable="/bin/bash",
-        cwd=tmp_dir,
+    process = await asyncio.create_subprocess_exec(
+        *argv,
+        cwd=work_dir,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.STDOUT,
         start_new_session=True,  # Prevents orphaned subprocesses
@@ -106,8 +132,56 @@ async def run_command_in_subprocess(
                 break
             await asyncio.sleep(1)
 
-    # Run both the log reading and cancellation monitor concurrently.
-    await asyncio.gather(read_stdout(), monitor_cancellation())
+    async def sample_metrics():
+        """Record what the command's process tree is using, until it finishes."""
+        interval = settings.RUN_METRICS_INTERVAL
+        if interval <= 0:
+            return
+
+        started = time.monotonic()
+        seen: dict[int, float] = {}
+        samples: list[dict] = []
+        last = started
+
+        while process.returncode is None:
+            await asyncio.sleep(interval)
+            if process.returncode is not None:
+                break
+            now = time.monotonic()
+            elapsed = now - last
+            if elapsed <= 0:
+                continue
+            last = now
+
+            reading = await asyncio.to_thread(read_tree, process.pid, seen)
+            if reading is None:
+                continue
+
+            samples.append(
+                {
+                    "t": round(now - started, 1),
+                    "cpu": round(reading.cpu_seconds / elapsed * 100, 1),
+                    "rss": reading.rss_bytes,
+                    "procs": reading.processes,
+                    "threads": reading.threads,
+                    "read": reading.read_bytes,
+                    "write": reading.write_bytes,
+                }
+            )
+            if len(samples) >= settings.RUN_METRICS_MAX_SAMPLES:
+                # Keep the shape of a long run without growing the row forever.
+                del samples[1::2]
+
+            # Its own session: the run's own is busy streaming logs.
+            with Session(engine) as metrics_session:
+                metrics_run = metrics_session.get(Run, run_id)
+                if metrics_run is not None:
+                    metrics_run.metrics = list(samples)
+                    metrics_session.add(metrics_run)
+                    metrics_session.commit()
+
+    # Read the logs, watch for cancellation, and profile the run together.
+    await asyncio.gather(read_stdout(), monitor_cancellation(), sample_metrics())
 
     # Wait for the process to finish
     await process.wait()
@@ -137,6 +211,10 @@ def update_run(session: Session, run: Run, status: RunStatus, message=None):
             subject=email_data.subject,
             html_content=email_data.html_content,
         )
+    # A finished run gets its stats record here, in the same commit that sets the
+    # status, so the admin stats keep it after the owner deletes the run.
+    if is_terminal(status):
+        record_run(session, run)
     session.add(run)
     session.commit()
     try:
@@ -152,41 +230,68 @@ def update_run(session: Session, run: Run, status: RunStatus, message=None):
 
 
 @contextmanager
-def create_tmp_dir(run_id: uuid.UUID) -> Path:
-    """Context manager to create and clean up a temporary directory."""
+def create_tmp_dir(run_id: uuid.UUID) -> Iterator[RunDirs]:
+    """Context manager to create and clean up the directories of a run."""
     tmp_dir = Path(settings.TMP_PATH) / str(run_id)
+    dirs = RunDirs(
+        work=tmp_dir / WORK_SUBDIR,
+        inputs=tmp_dir / INPUTS_SUBDIR,
+        tmp=tmp_dir / TMP_SUBDIR,
+    )
     try:
-        tmp_dir.mkdir(parents=True, exist_ok=False)
-        yield tmp_dir
+        for directory in (dirs.work, dirs.inputs, dirs.tmp):
+            directory.mkdir(parents=True, exist_ok=False)
+        yield dirs
     finally:
         if tmp_dir.exists():
             shutil.rmtree(tmp_dir)
 
 
-def symlink_input_files(session, run, tmp_dir):
-    """Symlink input files to the temporary directory."""
+def link_input_files(session, run, dirs: RunDirs) -> dict[str, Path] | None:
+    """Expose the run's input files in the working directory of the tool.
+
+    Returns the mapping of the file name the tool sees to its storage location,
+    or None if the run has to be marked as failed.
+    """
+    input_files: dict[str, Path] = {}
     if not run.input_file_ids:
-        return True
+        return input_files
     try:
         for file_id in run.input_file_ids:
             file = session.get(File, file_id)
-            file_name = Path(file.location).name
-            print(f"Symlinking {file.location} to {tmp_dir / file_name}")
-            os.symlink(Path(file.location), tmp_dir / file_name)
-        return True
+            location = Path(file.location)
+            # The tool sees the file's own name, not the id-prefixed one it is
+            # stored under.
+            file_name = input_file_name(file.name)
+            if file_name in input_files:
+                # The same file can be given to two parameters.
+                continue
+            print(f"Linking {location} to {dirs.work / file_name}")
+            if settings.SANDBOX_ENABLED:
+                # The sandbox mounts the file read-only on top of this
+                # placeholder, and the working directory links to it so that
+                # the tool finds the file name it was given in its command.
+                (dirs.inputs / file_name).touch()
+                os.symlink(
+                    f"{sandbox.CONTAINER_INPUTS_DIR}/{file_name}", dirs.work / file_name
+                )
+            else:
+                os.symlink(location, dirs.work / file_name)
+            input_files[file_name] = location
+        return input_files
     except Exception as e:
-        print(f"Error symlinking files: {e}")
-        update_run(session, run, RunStatus.failed, "Error symlinking files!")
-        return False
+        print(f"Error linking input files: {e}")
+        update_run(session, run, RunStatus.failed, "Error linking input files!")
+        return None
 
 
-def write_setup_files(session, run, tmp_dir):
-    """Render and write setup files to the temporary directory."""
+def write_setup_files(session, run, work_dir):
+    """Render and write setup files to the working directory."""
     env = JinjaEnvironment()
     if run.tool.setup_files:
         for setup_file_data in run.tool.setup_files:
             setup_file = SetupFile(**setup_file_data)
-            file_path = tmp_dir / setup_file.name
+            file_path = work_dir / setup_file.name
             if file_path.exists():
                 print(f"File '{file_path}' already exists")
                 update_run(
@@ -204,32 +309,71 @@ def write_setup_files(session, run, tmp_dir):
     return True
 
 
-def setup_conda_env(session, run, run_command):
+def tool_conda_prefix(run) -> Path | None:
+    """Path of the tool's conda environment, if the tool has one."""
+    if not run.tool.conda_env:
+        return None
+    return Path(settings.CONDA_PATH) / str(run.tool_id)
+
+
+def setup_conda_env(session, run, run_command, conda_prefix: Path | None):
     """Prepare the conda environment if required, and update the command accordingly."""
-    if run.tool.conda_env:
-        conda_env = CondaEnvManger(
-            path=Path(settings.CONDA_PATH) / str(run.tool_id),
-            env_dict=run.tool.conda_env,
-            post_install_command=run.tool.post_install,
+    if conda_prefix is None:
+        return run_command
+    if not conda_prefix.exists():
+        update_run(
+            session,
+            run,
+            RunStatus.failed,
+            "Tool environment not found. Please contact an administrator.",
         )
-        if not conda_env.is_created:
-            update_run(
-                session,
-                run,
-                RunStatus.failed,
-                "Tool environment not found. Please contact an administrator.",
-            )
-            run.tool.status = "uninstalled"
-            return None
-        # Prepend the conda activation command.
-        run_command = f"{conda_env.activate_command} && {run_command}"
-    return run_command
+        run.tool.status = "uninstalled"
+        return None
+    # Prepend the conda activation command.
+    return f"{sandbox.conda_activation(conda_prefix)} && {run_command}"
+
+
+def sandbox_data_path() -> Path | None:
+    """Reference data directory to expose to runs, if the worker has one."""
+    path = Path(settings.SANDBOX_DATA_PATH)
+    return path if path.is_dir() else None
+
+
+def build_run_argv(
+    *,
+    command: str,
+    conda_prefix: Path | None,
+    dirs: RunDirs,
+    input_files: dict[str, Path],
+    cpus: int,
+) -> list[str]:
+    """Build the argv of the process that executes the command of a run."""
+    shell_command = f"set -euo pipefail; {command}"
+    if not settings.SANDBOX_ENABLED:
+        return ["/bin/bash", "-c", shell_command]
+    sandbox.check_sandbox_image(settings.SANDBOX_IMAGE)
+    sandbox.check_sandbox_limits()
+    sandbox.check_sandbox_network(settings.SANDBOX_NETWORK)
+    return sandbox.sandbox_exec_command(
+        image=settings.SANDBOX_IMAGE,
+        work_dir=dirs.work,
+        tmp_dir=dirs.tmp,
+        inputs_dir=dirs.inputs,
+        input_files=input_files,
+        conda_prefix=conda_prefix,
+        data_path=sandbox_data_path(),
+        cpus=cpus,
+        network=settings.SANDBOX_NETWORK,
+        dns=settings.SANDBOX_DNS,
+        command=shell_command,
+    )
 
 
 def handle_return_code(session, run, returncode):
     """Handle the subprocess return code and update the run accordingly."""
     if returncode != 0:
-        if returncode == -15:
+        # A container killed by a signal is reported as 128 + signal.
+        if returncode in (-signal.SIGTERM, 128 + signal.SIGTERM):
             run.status = RunStatus.cancelled
         else:
             run.status = RunStatus.failed
@@ -238,7 +382,7 @@ def handle_return_code(session, run, returncode):
     return True
 
 
-def process_targets(session, run, tmp_dir):
+def process_targets(session, run, work_dir):
     """Process target files: check their existence and save them."""
     env = JinjaEnvironment()
     missing_targets = []
@@ -255,11 +399,12 @@ def process_targets(session, run, tmp_dir):
             rendered_path = template.render(**escaped_params)
 
             # Get matching file paths, ignoring anything that resolves outside
-            # the run's tmp dir (e.g. `..` segments or symlinks)
-            tmp_root = tmp_dir.resolve()
+            # the working directory (e.g. `..` segments, or the symlinks to the
+            # input files that the sandbox mounts read-only)
+            work_root = work_dir.resolve()
             matched_files = []
-            for match in tmp_dir.glob(rendered_path):
-                if match.resolve().is_relative_to(tmp_root):
+            for match in work_dir.glob(rendered_path):
+                if match.resolve().is_relative_to(work_root):
                     matched_files.append(match)
                 else:
                     print(f"Skipping target outside run directory: {match}")
@@ -329,24 +474,33 @@ async def run_tool(
     session.commit()
 
     try:
-        with create_tmp_dir(run_id) as tmp_dir:
+        with create_tmp_dir(run_id) as dirs:
             # Process input files.
-            if not symlink_input_files(session, run, tmp_dir):
+            input_files = link_input_files(session, run, dirs)
+            if input_files is None:
                 return False
 
             # Write any required setup files.
-            if not write_setup_files(session, run, tmp_dir):
+            if not write_setup_files(session, run, dirs.work):
                 return False
 
             # Set up the conda environment if necessary.
-            updated_command = setup_conda_env(session, run, run_command)
+            conda_prefix = tool_conda_prefix(run)
+            updated_command = setup_conda_env(session, run, run_command, conda_prefix)
             if updated_command is None:
                 return False
 
             # Run the command in a subprocess.
             try:
+                argv = build_run_argv(
+                    command=updated_command,
+                    conda_prefix=conda_prefix,
+                    dirs=dirs,
+                    input_files=input_files,
+                    cpus=run.cpus,
+                )
                 returncode, stdout = await run_command_in_subprocess(
-                    session, run_id, updated_command, tmp_dir
+                    session, run_id, argv, dirs.work
                 )
                 print(f"Run(id={run_id}) finished with return code: {returncode}")
             except Exception as e:
@@ -362,7 +516,7 @@ async def run_tool(
                 return False
 
             # Process any target files.
-            if not process_targets(session, run, tmp_dir):
+            if not process_targets(session, run, dirs.work):
                 return False
 
             # Mark the run as completed.
@@ -377,6 +531,12 @@ async def run_tool(
     except Exception as e:
         update_run(session, run, RunStatus.failed, f"An unexpected error occurred: {e}")
         return False
+    finally:
+        # The CPUs of this run are free again, so start what is waiting for them.
+        try:
+            await dispatch_pending_runs(session)
+        except Exception as e:
+            print(f"Error dispatching pending runs: {e}")
 
 
 @broker.task
@@ -432,6 +592,51 @@ async def install_tool(
     tool.conda_env_pinned = conda_env_pinned
     session.add(tool)
     session.commit()
+    return True
+
+
+@broker.task
+async def update_tool(
+    tool_id: uuid.UUID,
+    session: Session = TaskiqDepends(get_db),
+) -> bool:
+    """Re-run a tool's post-install command, keeping its environment."""
+    tool = session.get(Tool, tool_id)
+    if tool is None:
+        print(f"Tool(id={tool_id}) not found")
+        return False
+    if tool.status not in {ToolStatus.update_queued, ToolStatus.updating}:
+        print(
+            f"Tool(id={tool_id}) update task skipped because status is {tool.status}"
+        )
+        return False
+    # Mark it as actually running, the way an install does.
+    tool.status = ToolStatus.updating
+    session.add(tool)
+    session.commit()
+    conda_env = CondaEnvManger(
+        path=Path(settings.CONDA_PATH) / str(tool_id),
+        env_dict=tool.conda_env or {},
+        post_install_command=tool.post_install,
+        version=tool.version,
+    )
+    try:
+        stdout = await conda_env.update()
+    except CondaEnvMangerError as e:
+        print(f"Updating Tool(id={tool_id}) failed: {e}")
+        tool.status = ToolStatus.failed
+        tool.installation_log = str(e)
+        session.add(tool)
+        session.commit()
+        return False
+
+    print(f"Conda environment for Tool(id={tool_id}) updated")
+    tool.status = ToolStatus.installed
+    tool.installation_log = stdout
+    session.add(tool)
+    session.commit()
+    # Runs that were waiting for the tool to come back can start now.
+    await dispatch_pending_runs(session)
     return True
 
 

@@ -35,7 +35,7 @@ function FileMetadata({ file }: { file: FilePublic }) {
       value: (
         <Badge>
           {file.is_group
-            ? `${file.file_type} (group)`
+            ? `${file.file_type} (group of ${file.children?.length ?? 0})`
             : file.file_type === "pair"
               ? "paired-end reads"
               : file.file_type || "Unknown"}

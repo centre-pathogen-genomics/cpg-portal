@@ -47,7 +47,10 @@ function About() {
       "Lightweight Docker deployment",
       "Runs on anything from a laptop to a cluster",
     ],
-    ["Modular task registry", "Add new assays in minutes - no front-end coding"],
+    [
+      "Modular task registry",
+      "Add new assays in minutes - no front-end coding",
+    ],
     [
       "Completely open source",
       "Encourages local ownership and regional collaboration",
@@ -95,10 +98,10 @@ function About() {
               Centre for Pathogen Genomics
             </ExternalLink>{" "}
             at the University of Melbourne. It is designed to help laboratories
-            and public-health teams analyse pathogen genomics data with ease. The
-            Portal turns complex genomics pipelines into a{" "}
-            <strong>point-and-click web experience</strong>, so laboratorians and
-            public-health teams can move from raw reads to actionable
+            and public-health teams analyse pathogen genomics data with ease.
+            The Portal turns complex genomics pipelines into a{" "}
+            <strong>point-and-click web experience</strong>, so laboratorians
+            and public-health teams can move from raw reads to actionable
             insight - without touching the command line. Whether you are
             investigating an outbreak in a provincial hospital or curating
             national surveillance data, The Portal lets you focus on science and

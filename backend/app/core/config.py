@@ -41,6 +41,21 @@ class Settings(BaseSettings):
     TMP_PATH: str = "/tmp/cpg-portal"
     MAX_FILE_UPLOAD_SIZE: int = 1024 * 1024 * 1024  # 1 GB
 
+    # Tool runs are executed inside an Apptainer container, see app/sandbox.py.
+    # SANDBOX_NETWORK is one of "none" (own namespace, loopback only),
+    # "internet" (own namespace with internet access, private networks blocked)
+    # or "host" (the worker's network namespace).
+    SANDBOX_ENABLED: bool = True
+    SANDBOX_IMAGE: str = "/apptainer/runtime.sif"
+    SANDBOX_NETWORK: Literal["none", "internet", "host"] = "none"
+    SANDBOX_DNS: str = "1.1.1.1"
+    # CPUs the worker hands out to runs; runs wait in the queue until the CPUs
+    # they asked for are free. 0 detects the CPUs available to the worker.
+    TOTAL_CPUS: int = 0
+    # Reference data mounted read-only into every run, at the same path it has
+    # on the worker (the ./DB directory of the httpOnly stack).
+    SANDBOX_DATA_PATH: str = "/DB"
+
     @computed_field  # type: ignore[prop-decorator]
     @property
     def server_host(self) -> str:
@@ -62,6 +77,19 @@ class Settings(BaseSettings):
 
     PROJECT_NAME: str
     SENTRY_DSN: HttpUrl | None = None
+    # Cloudflare Turnstile keeps automated signups out. Verification only
+    # happens when a secret key is set, so a deployment without one leaves
+    # signups as they were.
+    TURNSTILE_SECRET_KEY: str | None = None
+    # The frontend hostnames a token may come from. Required once a
+    # secret key is set: the verified hostname is checked against it.
+    TURNSTILE_HOSTNAMES: str | None = None
+    # The action the check expects back from Cloudflare.
+    TURNSTILE_ACTION: str = "signup"
+    # Runs are sampled for CPU, memory, threads and I/O while they
+    # execute. The series is halved whenever it passes the cap.
+    RUN_METRICS_INTERVAL: float = 5.0
+    RUN_METRICS_MAX_SAMPLES: int = 720
     POSTGRES_SERVER: str
     POSTGRES_PORT: int = 5432
     POSTGRES_USER: str

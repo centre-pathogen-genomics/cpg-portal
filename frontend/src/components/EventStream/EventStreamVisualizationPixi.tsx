@@ -64,10 +64,8 @@ const EventStreamContent = forwardRef<
     const viewSpawnMaxX = Math.max(viewSpawnMinX, width - radius)
     const viewSpawnMinY = Math.min(radius, height / 2)
     const viewSpawnMaxY = Math.max(viewSpawnMinY, height - radius)
-    let spawnX =
-      viewSpawnMinX + Math.random() * (viewSpawnMaxX - viewSpawnMinX)
-    let spawnY =
-      viewSpawnMinY + Math.random() * (viewSpawnMaxY - viewSpawnMinY)
+    let spawnX = viewSpawnMinX + Math.random() * (viewSpawnMaxX - viewSpawnMinX)
+    let spawnY = viewSpawnMinY + Math.random() * (viewSpawnMaxY - viewSpawnMinY)
 
     if (spawnMode === "edges") {
       const spawnPadding = radius + 40
@@ -206,10 +204,7 @@ const EventStreamContent = forwardRef<
   })
 
   return (
-    <pixiContainer
-      eventMode="static"
-      onPointerDown={handlePointerDown}
-    >
+    <pixiContainer eventMode="static" onPointerDown={handlePointerDown}>
       {circlesRef.current.map((circle) => (
         <CircleDisplay key={circle.id} circle={circle} />
       ))}

@@ -13,6 +13,7 @@ import type { RunPublic } from "../../client"
 import useWebSocket from "../../hooks/useWebsocket"
 import CodeBlock from "../Common/CodeBlock"
 import Markdown from "../Common/Markdown"
+import RunProfiler from "./RunProfiler"
 
 interface OutputAccordionItemProps {
   title: string
@@ -44,7 +45,8 @@ const OutputAccordionItem = ({
   )
   const [currentStatus, setCurrentStatus] = useState(status)
   const lineCount = output?.trim().split("\n").length || 0
-  const active = currentStatus === "running" || currentStatus === "pending"
+  const queued = currentStatus === "pending"
+  const active = currentStatus === "running" || queued
 
   useEffect(() => {
     setOutput((previous) => {
@@ -97,6 +99,8 @@ const OutputAccordionItem = ({
             follow
             maxHeight="500px"
           />
+        ) : queued ? (
+          <p>Waiting for run to start...</p>
         ) : active ? (
           <p>Running...</p>
         ) : (
@@ -162,6 +166,7 @@ const OutputAccordion = ({ run }: { run: RunPublic }) => (
         )}
       </AccordionContent>
     </AccordionItem>
+    <RunProfiler run={run} />
   </Accordion>
 )
 

@@ -408,12 +408,11 @@ def test_create_run_rejects_path_traversal_params(db: Session) -> None:
     db.refresh(tool)
 
     bad_params = [
-        {"output_file": "../../../../../../etc/passwd"},
-        {"output_file": "sub/out.txt"},
         {"output_file": ".."},
+        # a backslash is a path separator on Windows and stays rejected
         {"output_file": "..\\out.txt"},
         # undeclared params are validated too
-        {"output_file": "ok.txt", "undeclared": "../secret"},
+        {"output_file": "ok.txt", "undeclared": "..\\secret"},
     ]
     for params in bad_params:
         with pytest.raises(HTTPException) as exc_info:
@@ -428,6 +427,40 @@ def test_create_run_rejects_path_traversal_params(db: Session) -> None:
             )
         assert exc_info.value.status_code == 400
         assert "not allowed" in exc_info.value.detail
+
+
+def test_create_run_allows_slashes_in_string_params(
+    monkeypatch: pytest.MonkeyPatch, db: Session
+) -> None:
+    """A slash in a string param passes, masked to "_" for the template."""
+    owner = create_random_user(db)
+    tool = _create_tool(db=db, owner=owner)
+    # The tool masks the value to "_" and asks for the slashes back, like a
+    # Nextclade dataset name such as community/v-gen-lab/chikV/genotypes.
+    tool.command = "echo {{ output_file | replace('_', '/') }}"
+    tool.params = [{"name": "output_file", "param_type": "str", "required": True}]
+    db.add(tool)
+    db.commit()
+    db.refresh(tool)
+
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
+
+    slashed = "community/v-gen-lab/chikV/genotypes"
+    run = asyncio.run(
+        create_run(
+            session=db,
+            current_user=owner,
+            tool_id=tool.id,
+            params={"output_file": slashed},
+            tags=[],
+        )
+    )
+
+    # The run keeps what was typed; the command gets it masked, so the tool's
+    # replace hands the slashes back.
+    assert run.params["output_file"] == slashed
+    assert slashed in run.command
 
 
 def test_create_run_allows_slashes_in_enum_values(db: Session) -> None:
@@ -447,7 +480,7 @@ def test_create_run_allows_slashes_in_enum_values(db: Session) -> None:
     db.refresh(tool)
 
     monkeypatch = pytest.MonkeyPatch()
-    monkeypatch.setattr("app.api.routes.runs.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
     monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
     try:
         run = asyncio.run(
@@ -477,7 +510,7 @@ def test_process_targets_ignores_files_outside_tmp_dir(
 
     saved: list[str] = []
 
-    def _fake_save_file(*, name, **kwargs):  # noqa: ANN003
+    def _fake_save_file(*, name, **kwargs):  # noqa: ANN003, ARG001
         saved.append(name)
         return SimpleNamespace(name=name)
 
@@ -537,7 +570,7 @@ def test_create_run_skips_hidden_params(db: Session) -> None:
     db.refresh(tool)
 
     monkeypatch = pytest.MonkeyPatch()
-    monkeypatch.setattr("app.api.routes.runs.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
     monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
     try:
         run = asyncio.run(
@@ -616,7 +649,7 @@ def test_create_run_flattens_group_children_when_pairs_are_allowed(
     db.commit()
     db.refresh(group)
 
-    monkeypatch.setattr("app.api.routes.runs.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
     monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
 
     run = asyncio.run(
@@ -665,7 +698,7 @@ def test_create_run_preserves_pair_children_when_pairs_are_allowed(
     db.commit()
     db.refresh(pair)
 
-    monkeypatch.setattr("app.api.routes.runs.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
     monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
 
     run = asyncio.run(
@@ -679,3 +712,737 @@ def test_create_run_preserves_pair_children_when_pairs_are_allowed(
     )
 
     assert run.params["reads"] == [["sample_R1.fastq.gz", "sample_R2.fastq.gz"]]
+
+
+async def _fake_broadcast(*args, **kwargs):  # noqa: ANN002, ANN003, ARG001
+    return None
+
+
+def _tool_with_threads(
+    db: Session,
+    owner: User,
+    *,
+    min_cpus: int = 1,
+    max_cpus: int | None = None,
+    default_cpus: int | None = None,
+) -> Tool:
+    tool = _create_tool(db=db, owner=owner)
+    tool.min_cpus = min_cpus
+    tool.max_cpus = max_cpus
+    tool.default_cpus = default_cpus
+    db.add(tool)
+    db.commit()
+    db.refresh(tool)
+    return tool
+
+
+def test_create_run_validates_threads(db: Session, monkeypatch) -> None:
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
+    owner = create_random_user(db)
+    owner.max_cpus = 4
+    db.add(owner)
+    db.commit()
+    tool = _tool_with_threads(db, owner, max_cpus=8, default_cpus=2)
+
+    # The user's own limit (4) caps the tool's limit (8).
+    run = asyncio.run(
+        create_run(
+            session=db,
+            current_user=owner,
+            tool_id=tool.id,
+            params={},
+            tags=[],
+            cpus=4,
+        )
+    )
+    assert run.cpus == 4
+
+    # One thread is always allowed, above the user's limit is not.
+    one = asyncio.run(
+        create_run(
+            session=db,
+            current_user=owner,
+            tool_id=tool.id,
+            params={},
+            tags=[],
+            cpus=1,
+        )
+    )
+    assert one.cpus == 1
+
+    for cpus in (0, 5):
+        with pytest.raises(HTTPException) as exc_info:
+            asyncio.run(
+                create_run(
+                    session=db,
+                    current_user=owner,
+                    tool_id=tool.id,
+                    params={},
+                    tags=[],
+                    cpus=cpus,
+                )
+            )
+        assert exc_info.value.status_code == 400
+        assert "between 1 and 4" in exc_info.value.detail
+
+
+def test_create_run_defaults_threads_to_the_tool_default(
+    db: Session, monkeypatch
+) -> None:
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
+    owner = create_random_user(db)
+    tool = _tool_with_threads(db, owner, max_cpus=3, default_cpus=3)
+
+    run = asyncio.run(
+        create_run(
+            session=db,
+            current_user=owner,
+            tool_id=tool.id,
+            params={},
+            tags=[],
+        )
+    )
+
+    assert run.cpus == 3
+
+
+def test_create_run_threads_when_the_user_limit_is_below_the_tool(
+    db: Session, monkeypatch
+) -> None:
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
+    owner = create_random_user(db)
+    owner.max_cpus = 2
+    db.add(owner)
+    db.commit()
+    tool = _tool_with_threads(db, owner, max_cpus=16, default_cpus=4)
+
+    # The tool's default is clamped to what the user may use.
+    defaulted = asyncio.run(
+        create_run(
+            session=db,
+            current_user=owner,
+            tool_id=tool.id,
+            params={},
+            tags=[],
+        )
+    )
+    assert defaulted.cpus == 2
+
+    with pytest.raises(HTTPException) as exc_info:
+        asyncio.run(
+            create_run(
+                session=db,
+                current_user=owner,
+                tool_id=tool.id,
+                params={},
+                tags=[],
+                cpus=4,
+            )
+        )
+
+    assert exc_info.value.status_code == 400
+    assert "between 1 and 2" in exc_info.value.detail
+
+
+def test_create_run_keeps_threads_at_least_the_tool_minimum(
+    db: Session, monkeypatch
+) -> None:
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
+    owner = create_random_user(db)
+    owner.max_cpus = 8
+    db.add(owner)
+    db.commit()
+    # A tool that needs at least four threads, for instance because its command
+    # hardcodes them.
+    tool = _tool_with_threads(db, owner, min_cpus=4, max_cpus=8, default_cpus=6)
+
+    defaulted = asyncio.run(
+        create_run(
+            session=db,
+            current_user=owner,
+            tool_id=tool.id,
+            params={},
+            tags=[],
+        )
+    )
+    assert defaulted.cpus == 6
+
+    at_the_minimum = asyncio.run(
+        create_run(
+            session=db,
+            current_user=owner,
+            tool_id=tool.id,
+            params={},
+            tags=[],
+            cpus=4,
+        )
+    )
+    assert at_the_minimum.cpus == 4
+
+    for cpus in (1, 3, 9):
+        with pytest.raises(HTTPException) as exc_info:
+            asyncio.run(
+                create_run(
+                    session=db,
+                    current_user=owner,
+                    tool_id=tool.id,
+                    params={},
+                    tags=[],
+                    cpus=cpus,
+                )
+            )
+        assert exc_info.value.status_code == 400
+        assert "between 4 and 8" in exc_info.value.detail
+
+
+def test_create_run_without_a_tool_maximum_or_default(
+    db: Session, monkeypatch
+) -> None:
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
+    owner = create_random_user(db)
+    owner.max_cpus = 3
+    db.add(owner)
+    db.commit()
+    # A tool that leaves the maximum out does not care how many threads a run
+    # takes, so the user's own limit is the maximum, and one that leaves the
+    # default out starts at its minimum.
+    tool = _tool_with_threads(db, owner, min_cpus=1)
+
+    defaulted = asyncio.run(
+        create_run(
+            session=db, current_user=owner, tool_id=tool.id, params={}, tags=[]
+        )
+    )
+    assert defaulted.cpus == 1
+
+    at_the_top = asyncio.run(
+        create_run(
+            session=db,
+            current_user=owner,
+            tool_id=tool.id,
+            params={},
+            tags=[],
+            cpus=owner.max_cpus,
+        )
+    )
+    assert at_the_top.cpus == 3
+
+    with pytest.raises(HTTPException) as exc_info:
+        asyncio.run(
+            create_run(
+                session=db,
+                current_user=owner,
+                tool_id=tool.id,
+                params={},
+                tags=[],
+                cpus=4,
+            )
+        )
+    assert exc_info.value.status_code == 400
+    assert "between 1 and 3" in exc_info.value.detail
+
+    # A minimum without a maximum behaves the same way.
+    tool_with_minimum = _tool_with_threads(db, owner, min_cpus=2)
+
+    defaulted_to_the_minimum = asyncio.run(
+        create_run(
+            session=db,
+            current_user=owner,
+            tool_id=tool_with_minimum.id,
+            params={},
+            tags=[],
+        )
+    )
+    assert defaulted_to_the_minimum.cpus == 2
+
+    with pytest.raises(HTTPException) as exc_info:
+        asyncio.run(
+            create_run(
+                session=db,
+                current_user=owner,
+                tool_id=tool_with_minimum.id,
+                params={},
+                tags=[],
+                cpus=1,
+            )
+        )
+    assert exc_info.value.status_code == 400
+    assert "between 2 and 3" in exc_info.value.detail
+
+
+def test_create_run_passes_the_cpus_to_the_command(db: Session, monkeypatch) -> None:
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
+    owner = create_random_user(db)
+    tool = _create_tool(db=db, owner=owner)
+    tool.command = "echo accessions | seqkit stats --threads {{ cpus }}"
+    tool.max_cpus = 8
+    db.add(tool)
+    db.commit()
+
+    run = asyncio.run(
+        create_run(
+            session=db,
+            current_user=owner,
+            tool_id=tool.id,
+            params={},
+            tags=[],
+            cpus=3,
+        )
+    )
+
+    assert run.command == "echo accessions | seqkit stats --threads 3"
+    assert run.cpus == 3
+
+
+def test_create_run_defaults_threads_to_the_input_files(
+    db: Session, monkeypatch
+) -> None:
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
+    owner = create_random_user(db)
+    owner.max_cpus = 4
+    db.add(owner)
+    db.commit()
+    tool = _create_tool(db=db, owner=owner)
+    tool.params = [{"name": "file", "param_type": "file", "multiple": True}]
+    db.add(tool)
+    db.commit()
+    files = [
+        _create_saved_file(db=db, owner=owner, name=f"sample_{index}.fastq.gz")
+        for index in range(3)
+    ]
+
+    def run_with(files_for_run: list[File]):
+        return asyncio.run(
+            create_run(
+                session=db,
+                current_user=owner,
+                tool_id=tool.id,
+                params={"file": [str(file.id) for file in files_for_run]},
+                tags=[],
+            )
+        )
+
+    # A tool that takes a batch of input files wants a thread per file.
+    assert run_with(files).cpus == 3
+
+    # The user's own limit still caps that.
+    more_files = [
+        _create_saved_file(db=db, owner=owner, name=f"extra_{index}.fastq.gz")
+        for index in range(5)
+    ]
+    assert run_with(files + more_files).cpus == 4
+
+    # Without input files the tool's minimum is the default.
+    assert run_with([]).cpus == 1
+
+    # A single-file param does not multiply anything.
+    tool.params = [{"name": "file", "param_type": "file", "multiple": False}]
+    db.add(tool)
+    db.commit()
+    assert run_with(files[:1]).cpus == 1
+
+
+def test_create_run_records_the_files_of_each_parameter(
+    db: Session, monkeypatch
+) -> None:
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
+    owner = create_random_user(db)
+    tool = _create_tool(db=db, owner=owner)
+    tool.command = "echo {{ first }} {{ second }}"
+    tool.params = [
+        {"name": "first", "param_type": "file", "multiple": True},
+        {"name": "second", "param_type": "file", "multiple": False},
+    ]
+    db.add(tool)
+    db.commit()
+    first = _create_saved_file(db=db, owner=owner, name="one.fasta")
+    second = _create_saved_file(db=db, owner=owner, name="two.fasta")
+
+    run = asyncio.run(
+        create_run(
+            session=db,
+            current_user=owner,
+            tool_id=tool.id,
+            params={
+                "first": [str(first.id)],
+                "second": [str(second.id)],
+            },
+            tags=[],
+        )
+    )
+
+    # What each parameter was given is kept, so the run can be repeated later.
+    assert run.param_files == {
+        "first": [str(first.id)],
+        "second": [str(second.id)],
+    }
+
+    # A group is recorded by its own id, not by the files it holds, so a rerun
+    # offers the very same group.
+    group = _create_saved_file(
+        db=db, owner=owner, name="group-of-two.fasta", file_type="fasta"
+    )
+    group.is_group = True
+    db.add(group)
+    db.commit()
+    group_run = asyncio.run(
+        create_run(
+            session=db,
+            current_user=owner,
+            tool_id=tool.id,
+            params={"first": [str(group.id)]},
+            tags=[],
+        )
+    )
+
+    assert group_run.param_files == {"first": [str(group.id)]}
+    assert group_run.input_file_ids == [str(group.id)]
+
+
+def test_create_run_gives_the_tool_the_file_name_without_the_stored_id(
+    db: Session, monkeypatch
+) -> None:
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
+    owner = create_random_user(db)
+    tool = _create_tool(db=db, owner=owner)
+    tool.command = "samtools view -o out.bam {{ input_file }}"
+    tool.params = [{"name": "input_file", "param_type": "file", "multiple": False}]
+    db.add(tool)
+    db.commit()
+    file = _create_saved_file(db=db, owner=owner, name="reads.bam", file_type="bam")
+    # On disk the name carries the file id, but the tool is given the name the
+    # file was uploaded under.
+    file.location = f"/storage/ab/cd/{file.id}_{file.name}"
+    db.add(file)
+    db.commit()
+
+    run = asyncio.run(
+        create_run(
+            session=db,
+            current_user=owner,
+            tool_id=tool.id,
+            params={"input_file": [str(file.id)]},
+            tags=[],
+        )
+    )
+
+    assert run.command == "samtools view -o out.bam reads.bam"
+    assert run.params["input_file"] == "reads.bam"
+
+
+def test_create_run_rejects_two_files_with_the_same_name(
+    db: Session, monkeypatch
+) -> None:
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
+    owner = create_random_user(db)
+    tool = _create_tool(db=db, owner=owner)
+    tool.params = [
+        {"name": "first", "param_type": "file", "multiple": False},
+        {"name": "second", "param_type": "file", "multiple": False},
+    ]
+    db.add(tool)
+    db.commit()
+    first = _create_saved_file(db=db, owner=owner, name="reads.fastq.gz")
+    second = _create_saved_file(db=db, owner=owner, name="reads.fastq.gz")
+
+    with pytest.raises(HTTPException) as exc_info:
+        asyncio.run(
+            create_run(
+                session=db,
+                current_user=owner,
+                tool_id=tool.id,
+                params={"first": [str(first.id)], "second": [str(second.id)]},
+                tags=[],
+            )
+        )
+
+    assert exc_info.value.status_code == 400
+    assert exc_info.value.detail == (
+        "Files with the same name cannot be used in one run: `reads.fastq.gz` is "
+        "used by parameters `first` and `second`. Rename one of the files and "
+        "try again."
+    )
+
+
+def test_create_run_accepts_one_file_in_two_parameters(
+    db: Session, monkeypatch
+) -> None:
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
+    owner = create_random_user(db)
+    tool = _create_tool(db=db, owner=owner)
+    tool.command = "echo {{ first }} {{ second }}"
+    tool.params = [
+        {"name": "first", "param_type": "file", "multiple": False},
+        {"name": "second", "param_type": "file", "multiple": False},
+    ]
+    db.add(tool)
+    db.commit()
+    file = _create_saved_file(db=db, owner=owner, name="genome.fasta")
+
+    run = asyncio.run(
+        create_run(
+            session=db,
+            current_user=owner,
+            tool_id=tool.id,
+            params={"first": [str(file.id)], "second": [str(file.id)]},
+            tags=[],
+        )
+    )
+
+    assert run.command == "echo genome.fasta genome.fasta"
+    # The worker links the file once, so the run lists it once.
+    assert run.input_file_ids == [str(file.id)]
+
+
+def test_create_run_scales_the_default_by_the_cpus_per_file(
+    db: Session, monkeypatch
+) -> None:
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
+    owner = create_random_user(db)
+    owner.max_cpus = 8
+    db.add(owner)
+    db.commit()
+    tool = _create_tool(db=db, owner=owner)
+    tool.params = [
+        {
+            "name": "file",
+            "param_type": "file",
+            "multiple": True,
+            "cpus_per_file": 2,
+        }
+    ]
+    db.add(tool)
+    db.commit()
+    files = [
+        _create_saved_file(db=db, owner=owner, name=f"scaled_{index}.fastq.gz")
+        for index in range(3)
+    ]
+
+    def run_with(files_for_run: list[File]):
+        return asyncio.run(
+            create_run(
+                session=db,
+                current_user=owner,
+                tool_id=tool.id,
+                params={"file": [str(file.id) for file in files_for_run]},
+                tags=[],
+            )
+        )
+
+    # Two CPUs per file and three files is six.
+    assert run_with(files).cpus == 6
+
+    # A default the tool names instead wins.
+    tool.default_cpus = 2
+    db.add(tool)
+    db.commit()
+    assert run_with(files).cpus == 2
+
+
+def test_create_run_counts_groups_but_not_pairs(db: Session, monkeypatch) -> None:
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
+    owner = create_random_user(db)
+    owner.max_cpus = 8
+    db.add(owner)
+    db.commit()
+    tool = _create_tool(db=db, owner=owner)
+    tool.params = [{"name": "file", "param_type": "file", "multiple": True}]
+    db.add(tool)
+    db.commit()
+
+    def make(container: str, *, is_group: bool, children: list[File]) -> File:
+        file = File(
+            name=container,
+            file_type=FileTypeEnum.PAIR.value,
+            size=20,
+            saved=True,
+            location=None,
+            owner_id=owner.id,
+            is_group=is_group,
+            children=children,
+        )
+        db.add(file)
+        db.commit()
+        db.refresh(file)
+        return file
+
+    pair = make(
+        "sample",
+        is_group=False,
+        children=[
+            _create_saved_file(db=db, owner=owner, name="sample_R1.fastq.gz"),
+            _create_saved_file(db=db, owner=owner, name="sample_R2.fastq.gz"),
+        ],
+    )
+    group = make(
+        "batch",
+        is_group=True,
+        children=[
+            _create_saved_file(db=db, owner=owner, name="batch_1.fastq.gz"),
+            _create_saved_file(db=db, owner=owner, name="batch_2.fastq.gz"),
+        ],
+    )
+
+    def run_with(chosen: list[File]):
+        return asyncio.run(
+            create_run(
+                session=db,
+                current_user=owner,
+                tool_id=tool.id,
+                params={"file": [str(file.id) for file in chosen]},
+                tags=[],
+            )
+        )
+
+    # A pair is one unit of work even though it carries two files.
+    assert run_with([pair]).cpus == 1
+
+    # A group stands for the files it holds.
+    assert run_with([group]).cpus == 2
+
+    # And they add up: a pair, a group and a plain file.
+    plain = _create_saved_file(db=db, owner=owner, name="single.fastq.gz")
+    assert run_with([pair, group, plain]).cpus == 4
+
+
+def test_create_run_skips_file_params_with_a_disabled_multiplier(
+    db: Session, monkeypatch
+) -> None:
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
+    owner = create_random_user(db)
+    owner.max_cpus = 8
+    db.add(owner)
+    db.commit()
+    tool = _create_tool(db=db, owner=owner)
+    # Two file parameters, but only the reference scales the default.
+    tool.params = [
+        {"name": "reads", "param_type": "file", "multiple": True, "cpus_per_file": 0},
+        {
+            "name": "reference",
+            "param_type": "file",
+            "multiple": True,
+            "cpus_per_file": 2,
+        },
+    ]
+    db.add(tool)
+    db.commit()
+    reads = [
+        _create_saved_file(db=db, owner=owner, name=f"reads_{index}.fastq.gz")
+        for index in range(3)
+    ]
+    references = [
+        _create_saved_file(db=db, owner=owner, name=f"ref_{index}.fasta")
+        for index in range(1)
+    ]
+
+    def run_with(chosen: dict):
+        return asyncio.run(
+            create_run(
+                session=db,
+                current_user=owner,
+                tool_id=tool.id,
+                params={
+                    name: [str(file.id) for file in files]
+                    for name, files in chosen.items()
+                },
+                tags=[],
+            )
+        )
+
+    # Three reads do not count, one reference counts double.
+    assert run_with({"reads": reads, "reference": references}).cpus == 2
+
+    # With only the disabled parameter there is nothing to scale.
+    assert run_with({"reads": reads}).cpus == 1
+
+
+def test_create_run_threads_when_the_tool_minimum_is_above_the_user_limit(
+    db: Session, monkeypatch
+) -> None:
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
+    owner = create_random_user(db)
+    owner.max_cpus = 2
+    db.add(owner)
+    db.commit()
+    tool = _tool_with_threads(db, owner, min_cpus=4, max_cpus=8, default_cpus=4)
+
+    with pytest.raises(HTTPException) as exc_info:
+        asyncio.run(
+            create_run(
+                session=db,
+                current_user=owner,
+                tool_id=tool.id,
+                params={},
+                tags=[],
+            )
+        )
+
+    assert exc_info.value.status_code == 400
+    assert "needs at least 4" in exc_info.value.detail
+
+
+def test_create_run_threads_of_an_admin_are_not_capped(
+    db: Session, monkeypatch
+) -> None:
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
+    owner = create_random_user(db)
+    owner.max_cpus = 2
+    owner.is_superuser = True
+    db.add(owner)
+    db.commit()
+    tool = _tool_with_threads(db, owner, max_cpus=8, default_cpus=4)
+
+    run = asyncio.run(
+        create_run(
+            session=db,
+            current_user=owner,
+            tool_id=tool.id,
+            params={},
+            tags=[],
+            cpus=8,
+        )
+    )
+
+    assert run.cpus == 8
+
+
+def test_create_run_names_unnamed_runs(db: Session, monkeypatch) -> None:
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
+    monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
+    owner = create_random_user(db)
+    tool = _create_tool(db=db, owner=owner)
+    today = datetime.now(UTC).strftime("%Y%m%d")
+
+    def run(name: str | None = None):
+        return asyncio.run(
+            create_run(
+                session=db,
+                current_user=owner,
+                tool_id=tool.id,
+                params={},
+                tags=[],
+                name=name,
+            )
+        )
+
+    assert run().name == f"{tool.name}-{today}-001"
+    assert run().name == f"{tool.name}-{today}-002"
+    # A blank name is a missing name, and a given name is kept as it is.
+    assert run("   ").name == f"{tool.name}-{today}-003"
+    assert run("my own name").name == "my own name"

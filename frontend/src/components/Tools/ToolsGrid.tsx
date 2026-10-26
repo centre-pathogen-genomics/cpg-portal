@@ -1,23 +1,29 @@
 import { useSuspenseQuery } from "@tanstack/react-query"
+import { LayoutGrid, List } from "lucide-react"
 import type React from "react"
 import { Suspense, useState } from "react"
 import { ErrorBoundary } from "react-error-boundary"
-import { Label } from "@/components/ui/label"
+import { HiHeart, HiOutlineHeart } from "react-icons/hi"
+import { Button } from "@/components/ui/button"
+import { ButtonGroup } from "@/components/ui/button-group"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Switch } from "@/components/ui/switch"
 import ErrorLogo from "/assets/images/500.png"
 import type { ToolsOrderBy } from "../../client"
 import { readToolsOptions } from "../../client/@tanstack/react-query.gen"
+import useViewMode, { type ViewMode } from "../../hooks/useViewMode"
 import ToolCard from "./ToolCard"
+import ToolRow from "./ToolRow"
 
 function ToolCards({
   orderBy,
   showFavourites,
   search,
+  view,
 }: {
   orderBy: ToolsOrderBy
   showFavourites: boolean
   search?: string
+  view: ViewMode
 }) {
   const { data: tools } = useSuspenseQuery({
     ...readToolsOptions({
@@ -31,11 +37,19 @@ function ToolCards({
           <h2 className="text-lg font-semibold">No matches found</h2>
         </div>
       )}
-      <div className="mb-8 grid grid-cols-[repeat(auto-fill,minmax(min(100%,300px),1fr))] gap-4">
-        {tools.data.map((tool) => (
-          <ToolCard key={tool.id} tool={tool} />
-        ))}
-      </div>
+      {view === "list" ? (
+        <div className="mb-8 flex flex-col gap-2">
+          {tools.data.map((tool) => (
+            <ToolRow key={tool.id} tool={tool} />
+          ))}
+        </div>
+      ) : (
+        <div className="mb-8 grid grid-cols-[repeat(auto-fill,minmax(min(100%,300px),1fr))] gap-4">
+          {tools.data.map((tool) => (
+            <ToolCard key={tool.id} tool={tool} />
+          ))}
+        </div>
+      )}
     </>
   )
 }
@@ -49,6 +63,9 @@ function ToolsGrid({
 }) {
   const [orderBy, setOrderBy] = useState<ToolsOrderBy>("run_count")
   const [showFavourites, setShowFavourites] = useState(false)
+  // The tool list keeps its own choice, apart from the runs and files lists.
+  // It has no table, so only the list view changes it from the cards.
+  const [view, setView] = useViewMode("tools", "cards")
   return (
     <>
       <div className="mt-2">
@@ -74,18 +91,51 @@ function ToolsGrid({
               <option value="run_count">Popular</option>
               <option value="created_at">New &amp; Noteworthy</option>
             </select>
-            {!hideFilters && (
-              <div className="flex items-center">
-                <div className="flex items-center gap-1">
-                  <Label htmlFor="show-favourites">Favourites</Label>
-                  <Switch
-                    id="show-favourites"
-                    checked={showFavourites}
-                    onCheckedChange={setShowFavourites}
-                  />
-                </div>
-              </div>
-            )}
+            <div className="flex items-center gap-3">
+              {!hideFilters && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={showFavourites ? "secondary" : "ghost"}
+                  aria-pressed={showFavourites}
+                  title={
+                    showFavourites ? "Show all tools" : "Show favourites only"
+                  }
+                  onClick={() => setShowFavourites((previous) => !previous)}
+                >
+                  {showFavourites ? (
+                    <HiHeart className="text-red-500" />
+                  ) : (
+                    <HiOutlineHeart />
+                  )}
+                  <span className="hidden sm:inline">Favourites</span>
+                </Button>
+              )}
+              <ButtonGroup>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={view !== "list" ? "secondary" : "ghost"}
+                  aria-pressed={view !== "list"}
+                  title="Card view"
+                  onClick={() => setView("cards")}
+                >
+                  <LayoutGrid />
+                  <span className="hidden sm:inline">Cards</span>
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={view === "list" ? "secondary" : "ghost"}
+                  aria-pressed={view === "list"}
+                  title="List view"
+                  onClick={() => setView("list")}
+                >
+                  <List />
+                  <span className="hidden sm:inline">List</span>
+                </Button>
+              </ButtonGroup>
+            </div>
           </div>
         </div>
       </div>
@@ -102,6 +152,7 @@ function ToolsGrid({
             orderBy={orderBy}
             showFavourites={showFavourites}
             search={search}
+            view={view}
           />
         </Suspense>
       </ErrorBoundary>

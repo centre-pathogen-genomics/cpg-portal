@@ -9,10 +9,12 @@ from sqlmodel import Session
 
 from app.api.routes.files import (
     create_group,
+    create_pair,
     delete_files,
     get_current_file_types,
     read_files,
 )
+from app.crud import rename_file as rename_file_crud
 from app.models import File, User
 from tests.utils.user import create_random_user
 from tests.utils.utils import random_lower_string
@@ -92,6 +94,57 @@ def test_create_group_combines_selected_group_and_file(db: Session) -> None:
     assert child.parent_id == result.id
     assert existing_child.parent_id == result.id
     assert result.size == 15
+
+
+def test_create_group_sanitises_the_name(db: Session) -> None:
+    owner = create_random_user(db)
+    child = _create_saved_file(
+        db=db,
+        owner=owner,
+        name=f"child-{random_lower_string()}.fa",
+        size=5,
+        created_at=_utc_now(),
+        file_type="fasta",
+    )
+
+    group = create_group(
+        session=db,
+        current_user=owner,
+        name="my group; rm -rf /",
+        file_ids=[child.id],
+    )
+
+    assert group.name == "my_group__rm_-rf__"
+
+
+def test_create_pair_sanitises_the_name(db: Session) -> None:
+    owner = create_random_user(db)
+    forward = _create_saved_file(
+        db=db,
+        owner=owner,
+        name=f"r1-{random_lower_string()}.fa",
+        size=5,
+        created_at=_utc_now(),
+        file_type="fasta",
+    )
+    reverse = _create_saved_file(
+        db=db,
+        owner=owner,
+        name=f"r2-{random_lower_string()}.fa",
+        size=5,
+        created_at=_utc_now(),
+        file_type="fasta",
+    )
+
+    pair = create_pair(
+        session=db,
+        current_user=owner,
+        name="reads 1 & 2",
+        forward=forward.id,
+        reverse=reverse.id,
+    )
+
+    assert pair.name == "reads_1___2"
 
 
 def test_create_group_rejects_mismatched_group_and_file_type(db: Session) -> None:
@@ -176,6 +229,46 @@ def test_read_files_filters_by_name_and_sorts(
 
     assert result.count == 3
     assert [item.id for item in result.data[:2]] == [newer.id, older.id]
+
+
+def test_read_files_sorts_by_updated_at(db: Session) -> None:
+    owner = create_random_user(db)
+    prefix = random_lower_string()
+    older = _create_saved_file(
+        db=db,
+        owner=owner,
+        name=f"{prefix}-older.txt",
+        size=10,
+        created_at=_utc_now() - timedelta(days=2),
+    )
+    newer = _create_saved_file(
+        db=db,
+        owner=owner,
+        name=f"{prefix}-newer.txt",
+        size=10,
+        created_at=_utc_now() - timedelta(days=1),
+    )
+    # Creating a file sets updated_at too, so age them on purpose.
+    older.updated_at = _utc_now() - timedelta(days=2)
+    newer.updated_at = _utc_now() - timedelta(days=1)
+    db.add(older)
+    db.add(newer)
+    db.commit()
+
+    # Renaming the older file moves it to the top of the list.
+    rename_file_crud(
+        session=db, file=older, new_name=f"{prefix}-older-renamed.txt"
+    )
+
+    result = read_files(
+        session=db,
+        current_user=owner,
+        name=prefix,
+        order_by="-updated_at",
+        types=[],
+    )
+
+    assert [item.id for item in result.data[:2]] == [older.id, newer.id]
 
 
 def test_read_files_rejects_unknown_sort_column(db: Session) -> None:

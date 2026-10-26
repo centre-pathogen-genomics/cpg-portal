@@ -5,7 +5,7 @@ from sqlmodel import Session, func, select
 
 from app.api.routes.admin import QueuePauseRequest, pause_queue, resume_queue
 from app.api.routes.runs import create_run
-from app.api.routes.settings import read_queue_status
+from app.api.routes.settings import read_queue_drain_status
 from app.core.app_settings import get_or_create_app_settings
 from app.models import Run, Tool, ToolStatus, User
 from app.tasks import run_tool
@@ -30,7 +30,7 @@ def test_queue_pause_and_resume_endpoints(monkeypatch, db: Session) -> None:
     async def fake_kiq(*args, **kwargs):  # noqa: ARG001
         return SimpleNamespace(task_id="task-id")
 
-    monkeypatch.setattr("app.api.routes.admin.run_tool.kiq", fake_kiq)
+    monkeypatch.setattr("app.tasks.run_tool.kiq", fake_kiq)
 
     pause_data = pause_queue(
         session=db,
@@ -64,7 +64,7 @@ def test_queue_pause_keeps_new_runs_pending_without_dispatch(monkeypatch, db: Se
     async def fake_broadcast(*args, **kwargs):  # noqa: ARG001
         return None
 
-    monkeypatch.setattr("app.api.routes.runs.run_tool.kiq", fake_kiq)
+    monkeypatch.setattr("app.tasks.run_tool.kiq", fake_kiq)
     monkeypatch.setattr("app.api.routes.runs.manager.broadcast", fake_broadcast)
     before_count = db.exec(select(func.count()).select_from(Run)).one()
 
@@ -99,7 +99,9 @@ def test_user_visible_queue_status_returns_pause_reason(db: Session) -> None:
     db.commit()
 
     try:
-        status = read_queue_status(session=db, _current_user=create_random_user(db))
+        status = read_queue_drain_status(
+            session=db, _current_user=create_random_user(db)
+        )
     finally:
         app_settings.queue_paused = False
         app_settings.queue_pause_reason = None
@@ -137,7 +139,7 @@ def test_queue_resume_dispatches_held_pending_runs(monkeypatch, db: Session) -> 
         dispatched_run_ids.append(run_id)
         return SimpleNamespace(task_id="task-id")
 
-    monkeypatch.setattr("app.api.routes.admin.run_tool.kiq", fake_kiq)
+    monkeypatch.setattr("app.tasks.run_tool.kiq", fake_kiq)
 
     resume_data = asyncio.run(resume_queue(session=db))
     db.refresh(run)
@@ -199,7 +201,7 @@ def test_queue_resume_allows_run_creation(monkeypatch, db: Session) -> None:
     async def fake_broadcast(*args, **kwargs):  # noqa: ARG001
         return None
 
-    monkeypatch.setattr("app.api.routes.runs.run_tool.kiq", fake_kiq)
+    monkeypatch.setattr("app.tasks.run_tool.kiq", fake_kiq)
     monkeypatch.setattr("app.api.routes.runs.manager.broadcast", fake_broadcast)
 
     run = asyncio.run(

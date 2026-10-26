@@ -1,7 +1,7 @@
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import func, select
 
 from app import crud
@@ -12,9 +12,12 @@ from app.api.deps import (
 )
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
+from app.core.turnstile import verify_turnstile
 from app.models import (
     AuthTokenPurpose,
+    File,
     Message,
+    Run,
     UpdatePassword,
     User,
     UserCreate,
@@ -40,13 +43,19 @@ router = APIRouter()
 )
 def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
     """
-    Retrieve users.
+    Retrieve users, newest first.
+
+    The order matters to the admin table: it asks for a page of users and
+    filters them in the browser, so without it a new account can fall outside
+    the page and be impossible to find.
     """
 
     count_statement = select(func.count()).select_from(User)
     count = session.exec(count_statement).one()
 
-    statement = select(User).offset(skip).limit(limit)
+    statement = (
+        select(User).order_by(User.created_at.desc()).offset(skip).limit(limit)
+    )
     users = session.exec(statement).all()
 
     return UsersPublic(data=users, count=count)
@@ -153,10 +162,17 @@ def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Any:
 
 
 @router.post("/signup", response_model=UserPublic)
-def register_user(session: SessionDep, user_in: UserRegister) -> Any:
+def register_user(
+    session: SessionDep, user_in: UserRegister, request: Request
+) -> Any:
     """
     Register a new inactive user and send them an account activation email.
     """
+    # Only asks for anything when a Turnstile secret key is configured.
+    verify_turnstile(
+        user_in.turnstile_token,
+        request.client.host if request.client else None,
+    )
     existing_user = crud.get_user_by_email(session=session, email=user_in.email)
     if existing_user:
         raise HTTPException(
@@ -273,9 +289,23 @@ def delete_user(
         raise HTTPException(
             status_code=403, detail="Super users are not allowed to delete themselves"
         )
-    # TODO: delete all items owned by the user
-    # statement = delete(Item).where(col(Item.owner_id) == user_id)
-    # session.exec(statement)  # type: ignore
+    # Runs and files keep a hard reference to their owner, so a user who still
+    # owns either cannot go: the deletion would either fail against the not-null
+    # foreign key or leave the rows behind.
+    owned_runs = session.exec(
+        select(func.count()).select_from(Run).where(Run.owner_id == user_id)
+    ).one()
+    owned_files = session.exec(
+        select(func.count()).select_from(File).where(File.owner_id == user_id)
+    ).one()
+    if owned_runs or owned_files:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"This user still owns {owned_runs} run(s) and {owned_files} "
+                "file(s). Delete those first."
+            ),
+        )
     session.delete(user)
     session.commit()
     return Message(message="User deleted successfully")

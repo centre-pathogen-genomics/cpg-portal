@@ -310,7 +310,9 @@ const FileUpload = ({
     setIsDragging(true)
   }
 
-  const handleDropZoneKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+  const handleDropZoneKeyDown = (
+    event: React.KeyboardEvent<HTMLDivElement>,
+  ) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault()
       handleButtonClick()

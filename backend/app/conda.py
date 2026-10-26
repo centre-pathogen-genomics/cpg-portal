@@ -83,6 +83,16 @@ class CondaEnvManger:
                     raise e
         return stdout
 
+    async def update(self) -> str:
+        """Run the post-install command again, leaving the environment alone."""
+        if not self.path.exists():
+            raise CondaEnvMangerError(
+                f"Conda environment '{self.path}' does not exist"
+            )
+        if not self.post_install_command:
+            return "No post-install command to run."
+        return await self._run_post_install()
+
     async def remove(self) -> None:
         if not self.path.exists():
             raise CondaEnvMangerRemoveError(f"Conda environment '{self.path}' does not exist")

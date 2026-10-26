@@ -173,6 +173,20 @@ Set the `BACKEND_CORS_ORIGINS` to include your domain:
 export BACKEND_CORS_ORIGINS="https://dashboard.${DOMAIN?Variable not set},https://api.${DOMAIN?Variable not set}"
 ```
 
+Set the credentials of Redis and NATS, which carry the task queue and the live
+output of runs. Anything on the Docker network can reach those ports, so a
+compromised tool run could otherwise read them (see the tool sandbox section):
+
+```bash
+export NATS_USER=portal
+export REDIS_PASSWORD="changethis"
+export NATS_PASSWORD="changethis"
+```
+
+Docker Compose builds `REDIS_URI` and `NATS_URIS` from these, so the services and
+the backend always use the same credentials. Use the `python` command above to
+generate secure values.
+
 You can set several other environment variables:
 
 * `PROJECT_NAME`: The name of the project, used in the API for the docs and emails.
@@ -187,6 +201,10 @@ You can set several other environment variables:
 * `POSTGRES_PORT`: The port of the PostgreSQL server. You can leave the default. You normally wouldn't need to change this unless you are using a third-party provider.
 * `POSTGRES_USER`: The Postgres user, you can leave the default.
 * `POSTGRES_DB`: The database name to use for this application. You can leave the default of `app`.
+* `REDIS_PASSWORD`: Password of the Redis service, compose uses it to build `REDIS_URI`.
+* `NATS_USER`, `NATS_PASSWORD`: Credentials of the NATS service, compose uses them to build `NATS_URIS`.
+* `SANDBOX_ENABLED`, `SANDBOX_IMAGE`, `SANDBOX_NETWORK`, `SANDBOX_DNS`, `SANDBOX_DATA_PATH`: See the tool sandbox section.
+* `TOTAL_CPUS`: CPUs the worker hands out to runs, `0` detects them. See the CPUs section.
 * `SENTRY_DSN`: The DSN for Sentry, if you are using it.
 
 ## GitHub Actions Environment Variables
@@ -207,6 +225,211 @@ docker compose -f compose.yml up -d
 ```
 
 For production you wouldn't want to have the overrides in `compose.override.yml`, that's why we explicitly specify `compose.yml` as the file to use.
+
+## Tool Sandbox (Apptainer)
+
+Tool commands are arbitrary pipelines defined by tool authors, so the worker
+does not execute them directly. Every run is executed inside an
+[Apptainer](https://apptainer.org/) container that only sees the run's working
+directory (read-write), its input files (read-only), a scratch directory
+(read-write, used as `/tmp`) and the tool's conda environment (read-only). See
+`backend/app/sandbox.py`.
+
+The reference data directory (`SANDBOX_DATA_PATH`, `/DB` by default, i.e. the
+`./DB` directory of the httpOnly stack) is mounted read-only into every run at
+the same path, so tools can read curated databases without copying them. Keep
+secrets out of it.
+
+Nothing else is visible: a tool command has to work with its inputs, the
+reference data, files it creates in the working directory, and its conda
+environment. Tools that reach for other paths fail at runtime.
+
+`SANDBOX_NETWORK` in `.env` decides what a run can reach:
+
+* `none` (default): its own network namespace with a loopback interface only, so
+  it cannot reach the database, redis, nats, other containers or the internet.
+* `internet`: its own network namespace, masqueraded out of the worker so it can
+  download from the internet, while every private address is dropped. Tools like
+  "Download Genome" (NCBI Datasets) work; the database, redis and nats stay out
+  of reach. `SANDBOX_DNS` (default `1.1.1.1`) is the resolver runs use, and it
+  stays reachable even when it lives on a private address.
+* `host`: the worker's network namespace, i.e. everything the worker can reach.
+  Only useful for debugging a tool.
+
+The worker applies the `internet` rules before it starts, from
+`scripts/sandbox_setup.sh` in its command. They match traffic from the
+sandbox subnet only, so the worker keeps its own access to the database, redis
+and nats while a run is in progress.
+
+Whichever mode you use, the neighbouring services are the next line of defence:
+Postgres, Redis and NATS all require credentials that are not part of a run's
+environment (see [Required Environment Variables](#required-environment-variables)).
+Prefer fetching reference data while a tool is installed, or placing it in a
+read-only volume, over giving runs network access.
+
+This requires:
+
+* The `worker` service to be privileged (`privileged: true` in `compose.yml`):
+  Apptainer needs `SYS_ADMIN` and the loop devices of the host to create the
+  container. The container it creates runs without privileges, with a read-only
+  root filesystem, private namespaces and a cleaned environment, so it cannot
+  see the worker's filesystem, `/storage`, or the worker's environment variables.
+* A sandbox image in the `app-sandbox-data` volume. The `prestart` service builds
+  it on the first `docker compose up` if it is missing. Rebuild it after changing
+  `backend/container/runtime.def`:
+
+```bash
+docker compose -f compose.yml exec worker bash scripts/build_sandbox_image.sh
+```
+
+Until the image exists, runs fail with `Sandbox image '/apptainer/runtime.sif'
+was not found`. `SANDBOX_ENABLED=false` in `.env` runs tool commands directly on
+the worker again (not recommended), and `SANDBOX_IMAGE` points the worker at a
+different image, e.g. one pulled from a registry with `apptainer pull`.
+
+The build runs its `%post` section inside a user namespace, so the host has to
+allow unprivileged user namespaces. On hosts where AppArmor restricts them, e.g.
+Ubuntu 24.04 and later, add `apparmor=unconfined` to `security_opt` of the
+`prestart` service.
+
+Tools that need system packages which are neither in the sandbox image nor in
+their conda environment fail at runtime; add them to
+`backend/container/runtime.def` and rebuild.
+
+## Signup Protection (Cloudflare Turnstile)
+
+The signup form can carry a [Cloudflare Turnstile](https://www.cloudflare.com/products/turnstile)
+challenge, which keeps automated signups and bots out. It is off until you
+supply keys, so an existing deployment is unaffected:
+
+| Variable | Where | Meaning |
+| --- | --- | --- |
+| `TURNSTILE_SITE_KEY` | host env, feeding the frontend build arg | the public key the signup form shows |
+| `TURNSTILE_SECRET_KEY` | backend env or secret manager | what the backend verifies each token with |
+| `TURNSTILE_HOSTNAMES` | backend env react | comma-separated frontend hostnames a token may come from; required once a secret key is set |
+| `TURNSTILE_ACTION` | backend env | the action the widget names, `signup` by default |
+| `VITE_TURNSTILE_ACTION` | host env, feeding the frontend build arg | the same action on the widget side |
+
+Add a widget at <https://dash.cloudflare.com/> (Turnstile > Add site), give it
+every hostname you serve from (including `localhost` and `127.0.0.1` for local
+work), then:
+
+```bash
+TURNSTILE_SITE_KEY=<site key> docker compose up -d --build frontend
+TURNSTILE_SECRET_KEY=<secret key> TURNSTILE_HOSTNAMES=dashboard.example.org \
+  docker compose up -d --build backend worker
+```
+
+All three live in `.env`, and ship empty so a fresh deployment runs without a
+challenge. The site key is public; if your `.env` is committed (it is here),
+feed the secret from your deployment environment, your CI secrets, or your
+secret manager rather than writing it into the file. Compose also accepts the
+three from the shell, so
+`TURNSTILE_SECRET_KEY=... TURNSTILE_HOSTNAMES=... docker compose up -d backend worker`
+works without touching `.env`.
+
+With a secret key set, `POST /users/signup` refuses a request when the token is
+missing or oversized, when Cloudflare rejects it, when Cloudflare cannot be
+reached, when the verified `action` is not the one this deployment expects, or
+when the verified `hostname` is not in `TURNSTILE_HOSTNAMES` - the door fails
+shut rather than open. A production `TURNSTILE_HOSTNAMES` must not contain
+`localhost` or `127.0.0.1`.
+
+Cloudflare publishes [testing keys](https://developers.cloudflare.com/turnstile/troubleshooting/testing/)
+that answer without a challenge: the always-pass pair is site key
+`1x00000000000000000000AA` with secret `1x0000000000000000000000000000000AA`,
+and `2x0000000000000000000000000000000AA` always fails. They report
+`hostname: example.com`, so local runs pair them with
+`TURNSTILE_HOSTNAMES=example.com`.
+
+Only the signup route is guarded; login and password recovery are untouched.
+
+## Run Profiler
+
+While a run works, the worker samples the command's process tree with psutil - CPU percent,
+resident memory, process and thread counts, and bytes read and written - and
+stores the readings on the run, where the run page charts them. A tool that
+shells out to other programs is counted as one run, sandbox or not. The sandbox's
+own runtime is skipped: apptainer's starter and the container's init are Go
+programs with a handful of threads each, and counting them would describe the
+sandbox rather than the tool. The thread count is the OS threads of that tree, so
+a command that goes through a shell to start something - a tool with a conda
+environment, say, whose activation is prepended - reports one more than the
+CPUs it was given; the CPUs a run reserved are the separate `cpus` figure,
+and that is the one the run form sets.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `RUN_METRICS_INTERVAL` | `5.0` | seconds between readings; `0` turns sampling off |
+| `RUN_METRICS_MAX_SAMPLES` | `720` | cap on readings kept per run; the series is halved whenever it passes it, so an hour at the default interval fits, and a long run keeps its shape without growing the row |
+
+Readings live in the `run.metrics` JSON column, so they travel with the run's
+history and add nothing to the runs list payload.
+
+## Admin Statistics
+
+The admin dashboard's numbers are generated from the `run` table: the runs a
+user owns, with their tools, statuses and timings. A user deleting their runs
+takes them out of those numbers with them.
+
+## Public Tool Pages (Prerendering)
+
+Tool pages (`/tools/<name>`) are prerendered into the directory nginx serves, so
+crawlers and social scrapers - which never run JavaScript - get each tool's own
+title, description, image, canonical URL and a summary listing its versions,
+tags, parameters and links (home page, documentation, GitHub repository, DOI,
+license and citation). Each file
+is the app's own shell, so a browser loads the SPA over it and hydrates: visitors
+always read the live catalogue from the API, and adding or editing a tool needs
+no rebuild.
+
+The frontend container runs `frontend/scripts/prerender.py` at start and then
+every `PRERENDER_INTERVAL_SECONDS` (default 21600, six hours). It writes
+`/tools/<name>.html` for every tool name, plus `sitemap.xml` and `robots.txt`,
+into `/usr/share/nginx/html`; nginx serves `/tools/<name>` from the matching
+`<name>.html` file and falls back to the app for everything else.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `PRERENDER_ENABLED` | `true` | `false` skips prerendering altogether |
+| `PRERENDER_API_URL` | `http://backend:8000/api/v1` | where the catalogue is read from |
+| `PRERENDER_SITE_URL` | - | public origin, e.g. `https://dashboard.example.org`. Without it pages carry no canonical URL and no sitemap is written |
+| `PRERENDER_INTERVAL_SECONDS` | `21600` | refresh interval; `0` prerenders once and exits |
+| `PRERENDER_SITE_DIR` | `/usr/share/nginx/html` | the served directory |
+
+`compose.yml`, `docker-compose.httpOnly.yml` and `compose.override.yml` set
+`PRERENDER_SITE_URL` already. To refresh sooner than the interval, restart the
+container or run a single pass:
+
+```bash
+docker compose restart frontend
+docker compose exec -e PRERENDER_INTERVAL_SECONDS=0 frontend /usr/local/bin/prerender.py
+```
+
+## CPUs and Scheduling
+
+Every run reserves a number of CPUs, and the worker only hands out
+`TOTAL_CPUS` of them (`0` detects the CPUs available to the worker):
+
+* each tool has `max_cpus` (the most a run of that tool may use) and
+  `default_cpus` (used when the user picks nothing),
+* each user has `max_cpus`, a limit per job,
+* a run may ask for 1 up to `min(tool.max_cpus, user.max_cpus)` CPUs, and gets
+  `min(tool.default_cpus, that maximum)` when it asks for nothing,
+* runs stay `pending` until the CPUs they asked for are free: three runs of 5
+  CPUs on a 10 CPU worker start two and leave the third queued until one of
+  them finishes,
+* each container gets exactly those CPUs through `apptainer exec --cpus N`.
+
+`scripts/sandbox_setup.sh`, which the worker runs before it starts, delegates
+the container's cgroup controllers so apptainer can apply that limit (the worker
+container has no systemd, and the image sets `systemd cgroups = no`). A worker
+started without it fails runs with "This worker cannot limit runs to their CPUs"
+instead of running them unlimited.
+
+Existing tools and users start at one and four threads; raise them per tool and
+per user, for example with `PATCH /api/v1/tools/{id}` and
+`PATCH /api/v1/users/{id}`.
 
 ## Continuous Deployment (CD)
 
@@ -308,6 +531,8 @@ The current Github Actions workflows expect these secrets:
 * `FIRST_SUPERUSER`
 * `FIRST_SUPERUSER_PASSWORD`
 * `POSTGRES_PASSWORD`
+* `REDIS_PASSWORD`
+* `NATS_PASSWORD`
 * `SECRET_KEY`
 * `LATEST_CHANGES`
 * `SMOKESHOW_AUTH_KEY`

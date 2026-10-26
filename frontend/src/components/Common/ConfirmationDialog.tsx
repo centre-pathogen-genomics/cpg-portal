@@ -16,6 +16,8 @@ interface ConfirmationDialogProps {
   title: string
   description: ReactNode
   confirmLabel: string
+  /** Red by default, which suits a delete; a plain confirm can ask for `default`. */
+  confirmVariant?: "default" | "destructive" | "secondary" | "outline" | "ghost"
   pending?: boolean
   onConfirm: () => void
 }
@@ -26,6 +28,7 @@ export function ConfirmationDialog({
   title,
   description,
   confirmLabel,
+  confirmVariant = "destructive",
   pending = false,
   onConfirm,
 }: ConfirmationDialogProps) {
@@ -45,7 +48,7 @@ export function ConfirmationDialog({
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="mt-6">
-            <Button type="submit" variant="destructive" disabled={pending}>
+            <Button type="submit" variant={confirmVariant} disabled={pending}>
               {pending && <LoaderCircle className="animate-spin" />}
               {confirmLabel}
             </Button>

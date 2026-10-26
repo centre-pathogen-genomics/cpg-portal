@@ -1,29 +1,32 @@
 import json
 import uuid
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, status
 from jinja2 import Environment as JinjaEnvironment
 from sqlalchemy import and_, desc
-from sqlmodel import func, select
+from sqlmodel import Session, func, select
 
 from app.api.deps import CurrentUser, SessionDep
-from app.core.app_settings import get_or_create_app_settings
 from app.core.file_types import FileTypeEnum
 from app.models import (
     File,
     Message,
     Param,
+    ParamType,
     ParamVisibilityOperator,
     Run,
     RunPublic,
     RunsPublicMinimal,
     RunStatus,
     Tool,
+    ToolStatus,
 )
-from app.tasks import run_tool
-from app.utils import escape, flatten, validate_param_value
+from app.run_records import record_run
+from app.scheduling import dispatch_pending_runs
+from app.utils import escape, flatten, input_file_name, validate_param_value
 from app.wsmanager import manager
 
 router = APIRouter()
@@ -278,6 +281,31 @@ def read_run_tool_names(session: SessionDep, current_user: CurrentUser) -> Any:
     return session.exec(statement).all()
 
 
+def _scaled_file_count(session: Session, file_id: uuid.UUID) -> int:
+    """How many files one chosen file stands for.
+
+    A group is worth its children, but a pair is a single unit of work even
+    though it carries two files, so only groups multiply.
+    """
+    file = session.get(File, file_id)
+    if not file or not file.is_group:
+        return 1
+    return sum(_scaled_file_count(session, child.id) for child in file.children)
+
+
+def default_run_name(session: Session, tool: Tool) -> str:
+    """Name for a run that was left unnamed, e.g. ``Sleep-20261023-001``."""
+    now = datetime.now(UTC)
+    midnight = now.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
+    runs_today = session.exec(
+        select(func.count())
+        .select_from(Run)
+        .where(Run.tool_id == tool.id)
+        .where(Run.created_at >= midnight)
+    ).one()
+    return f"{tool.name}-{now:%Y%m%d}-{runs_today + 1:03d}"
+
+
 @router.post("/", response_model=RunPublic)
 async def create_run(
     *,
@@ -288,6 +316,7 @@ async def create_run(
     tags: list[str] = None,
     email_on_completion: bool = False,
     name: str = None,
+    cpus: int | None = None,
 ) -> Any:
     """
     Create and run a run of a specific tool, validating against predefined tool parameters.
@@ -302,6 +331,68 @@ async def create_run(
         raise HTTPException(status_code=404, detail="Tool not found")
     if not current_user.is_superuser and not tool.enabled:
         raise HTTPException(status_code=403, detail="Tool is disabled")
+    if tool.status == ToolStatus.uninstalled:
+        raise HTTPException(status_code=409, detail="Tool is not installed")
+
+    # Threads: between the tool's minimum and maximum, where a missing maximum
+    # means the user's own limit is the maximum, and everyone but
+    # administrators is capped by their own max_cpus. A missing default means
+    # the tool's minimum.
+    min_cpus = tool.min_cpus
+    max_cpus = tool.max_cpus
+    if max_cpus is None:
+        max_cpus = current_user.max_cpus
+    elif not current_user.is_superuser:
+        max_cpus = min(tool.max_cpus, current_user.max_cpus)
+    if max_cpus < min_cpus:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"This tool needs at least {min_cpus} CPUs and your limit is "
+                f"{max_cpus}"
+            ),
+        )
+    if cpus is None:
+        default_cpus = tool.default_cpus
+        if default_cpus is None:
+            # Tools that take a batch of input files usually want a thread per
+            # file, or the CPUs the tool asked for per file, so that is the
+            # default when the tool has not named one. A parameter with
+            # cpus_per_file zero does not scale at all, for tools where only
+            # some file parameters should, and a group of files counts as the
+            # files it holds.
+            file_count = 0
+            for param in tool.params or []:
+                if (
+                    not param.get("multiple")
+                    or param.get("param_type") != ParamType.file
+                ):
+                    continue
+                chosen = params.get(param.get("name"))
+                if not isinstance(chosen, list):
+                    continue
+                configured = param.get("cpus_per_file")
+                cpus_per_file = 1 if configured is None else configured
+                if cpus_per_file <= 0:
+                    continue
+                files_in_param = 0
+                for file_id in chosen:
+                    try:
+                        chosen_id = uuid.UUID(str(file_id))
+                    except ValueError:
+                        # The parameter validation below reports this properly.
+                        continue
+                    files_in_param += _scaled_file_count(session, chosen_id)
+                file_count += files_in_param * cpus_per_file
+            default_cpus = file_count or min_cpus
+        cpus = min(max(default_cpus, min_cpus), max_cpus)
+    if not min_cpus <= cpus <= max_cpus:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"CPUs must be between {min_cpus} and {max_cpus} for this tool"
+            ),
+        )
 
     # check the user que limit
     count_statement = (
@@ -319,12 +410,37 @@ async def create_run(
         )
 
     files = []
+    # The file ids each parameter was given, in the same shape as the values, so
+    # a run can be repeated later.
+    param_file_ids: dict[str, list] = {}
     tool_params = [Param(**param) for param in (tool.params or [])]
 
+    # A tool sees each input file under its own name, so two different files
+    # cannot share one: the work directory would hold a single file for both.
+    # The same file handed to two parameters is one file, and is allowed.
+    seen_input_files: dict[str, tuple[uuid.UUID, str]] = {}
+
+    def register_input_file(file: File, param_name: str) -> str:
+        """Record the name the tool will see, refusing a clashing file."""
+        name = input_file_name(file.name)
+        previous = seen_input_files.get(name)
+        if previous is not None and previous[0] != file.id:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Files with the same name cannot be used in one run: "
+                    f"`{name}` is used by parameters `{previous[1]}` and "
+                    f"`{param_name}`. Rename one of the files and try again."
+                ),
+            )
+        seen_input_files[name] = (file.id, param_name)
+        return name
+
     # Reject path traversal in free-form user supplied values, including params
-    # the tool doesn't declare. enum values (checked against the tool's options,
-    # and which may legitimately contain "/") and file params (checked as file
-    # ids) are validated separately below.
+    # the tool doesn't declare. A "/" passes: the command template gets it
+    # masked to "_". enum values (checked against the tool's options, and which
+    # may legitimately contain "/") and file params (checked as file ids) are
+    # validated separately below.
     validated_elsewhere = {
         p.name for p in tool_params if p.param_type in ("enum", "file")
     }
@@ -336,7 +452,7 @@ async def create_run(
         except ValueError:
             raise HTTPException(
                 status_code=400,
-                detail=f"Invalid value for parameter `{param_name}`: path separators ('/', '\\') and '..' are not allowed",
+                detail=f"Invalid value for parameter `{param_name}`: backslashes, NUL bytes and '..' are not allowed",
             )
 
     visible_params = _build_visible_param_lookup(tool_params, params)
@@ -403,7 +519,7 @@ async def create_run(
                     child_names = []
                     for child in file.children:
                         files.append(child)
-                        child_names.append(Path(child.location).name)
+                        child_names.append(register_input_file(child, param.name))
 
                     if (
                         file.file_type == FileTypeEnum.PAIR.value
@@ -416,12 +532,16 @@ async def create_run(
                         # otherwise, add the children as separate files
                         file_names.extend(child_names)
                 else:
-                    file_names.append(Path(file.location).name)
+                    file_names.append(register_input_file(file, param.name))
                     files.append(file)
             if param.multiple:
                 normalized_params[param.name] = file_names
             else:
                 normalized_params[param.name] = file_names[0]
+            # What the user picked, group and all, so a rerun can offer the very
+            # same files again. The loop above rewrote its own copy of each id,
+            # so these are the ids as they came in.
+            param_file_ids[param.name] = list(file_ids)
         elif param.param_type == "bool":
             if not isinstance(normalized_params[param.name], bool):
                 raise HTTPException(
@@ -469,6 +589,12 @@ async def create_run(
         except Exception:
             raise HTTPException(status_code=400, detail=f"Invalid parameter value: {v}")
 
+    # The run's CPUs are in the template context as `cpus`, so a tool can ask
+    # for the CPUs it reserved with its own threads flag, e.g.
+    # `--threads {{ cpus }}`. It wins over a
+    # parameter of the same name.
+    escaped_params["cpus"] = cpus
+
     # create command
     env = JinjaEnvironment()
     # add custom filters
@@ -479,25 +605,26 @@ async def create_run(
     # create a run
     run = Run(
         tool_id=tool_id,
-        name=name,
+        tool_version=tool.version,
+        name=(name or "").strip() or default_run_name(session, tool),
         owner_id=current_user.id,
         status="pending",
+        cpus=cpus,
         params=normalized_params,
-        input_file_ids=[str(file.id) for file in files],
+        # A file given to two parameters is listed twice; the worker links it once.
+        input_file_ids=list(dict.fromkeys(str(file.id) for file in files)),
+        param_files=param_file_ids,
         command=cmd,
         tags=tags,
+        email_on_completion=email_on_completion,
     )
     session.add(run)
     session.commit()
     session.refresh(run)
 
-    app_settings = get_or_create_app_settings(session)
-    if not app_settings.queue_paused:
-        taskiq_task = await run_tool.kiq(run.id, cmd)
-        run.taskiq_id = taskiq_task.task_id
-    run.email_on_completion = email_on_completion
-    session.add(run)
-    session.commit()
+    # Starts this run, or leaves it pending until the CPUs it asked for are free
+    # (see app/scheduling.py).
+    await dispatch_pending_runs(session)
     session.refresh(run)
 
     tool.run_count += 1
@@ -654,6 +781,8 @@ def cancel_run(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) ->
     if run.status == "completed":
         raise HTTPException(status_code=400, detail="Run already finished")
     run.status = "cancelled"
+    # Cancelling finishes the run, so it gets its stats record too.
+    record_run(session, run)
     session.add(run)
     session.commit()
     return run

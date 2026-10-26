@@ -4,7 +4,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import {
   ArrowDown,
   ArrowUp,
@@ -21,6 +21,7 @@ import { useCallback, useEffect, useState } from "react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
@@ -44,6 +45,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { cn } from "@/lib/utils"
 import {
   type RunPublicMinimal,
   type RunStatus,
@@ -56,12 +58,14 @@ import {
 } from "../../../components/Common/BulkDeleteMenu"
 import DeleteAlert from "../../../components/Common/DeleteAlert"
 import { PaginatedTableFooter } from "../../../components/Common/PaginatedTableFooter"
+import ViewModeButtons from "../../../components/Common/ViewModeButtons"
 import CancelAlert from "../../../components/Runs/CancelAlert"
 import CancelRunsButton from "../../../components/Runs/CancelRunsButton"
 import ParamTag from "../../../components/Runs/ParamTag"
 import RunRuntime from "../../../components/Runs/RunTime"
-import StatusBadge from "../../../components/Runs/StatusBadge"
+import StatusBadge, { StatusIcon } from "../../../components/Runs/StatusBadge"
 import useCustomToast from "../../../hooks/useCustomToast"
+import useViewMode, { type ViewMode } from "../../../hooks/useViewMode"
 import { useVisibleIds } from "../../../hooks/useVisibleIds"
 import { humanReadableDate } from "../../../utils"
 
@@ -76,11 +80,13 @@ interface RunsTableProps {
   setOrderBy: React.Dispatch<React.SetStateAction<string>>
   setVisibleRunIds: React.Dispatch<React.SetStateAction<string[]>>
   toolFilter: string
+  view: ViewMode
 }
 
 type SortColumn = "name" | "status" | "created_at" | "finished_at" | "runtime"
 
 const inactiveRunStatuses: RunStatus[] = ["completed", "failed", "cancelled"]
+const activeRunStatuses: RunStatus[] = ["pending", "running"]
 
 const sortLabels: Record<SortColumn, string> = {
   name: "Name",
@@ -218,12 +224,222 @@ function RunActionsMenu({ run }: RunActionsMenuProps) {
   )
 }
 
+/** A run's params, matching the table's params cell. */
+function RunParamTags({
+  run,
+  singleLine,
+}: {
+  run: RunPublicMinimal
+  singleLine?: boolean
+}) {
+  const keys = Object.keys(run.params).filter((key) => run.params[key] !== null)
+  if (!keys.length) return null
+
+  return (
+    <div
+      className={cn(
+        "pointer-events-none flex",
+        singleLine ? "flex-nowrap overflow-hidden" : "flex-wrap",
+      )}
+    >
+      {keys.map((key) => (
+        <div key={key} className="m-0.5">
+          <ParamTag param={key} value={run.params[key]} />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/** How many params a run was given, for the list's second line. */
+function RunParamCount({ run }: { run: RunPublicMinimal }) {
+  const count = Object.keys(run.params).filter(
+    (key) => run.params[key] !== null,
+  ).length
+  if (!count) return null
+
+  return (
+    <span className="shrink-0 text-sm text-muted-foreground">
+      {count} {count === 1 ? "param" : "params"}
+    </span>
+  )
+}
+
+/** A run's tags, matching the table's tags cell. */
+function RunTags({
+  run,
+  singleLine,
+}: {
+  run: RunPublicMinimal
+  singleLine?: boolean
+}) {
+  if (!run.tags?.length) return null
+
+  return (
+    <div
+      className={cn(
+        "pointer-events-none flex",
+        singleLine ? "flex-nowrap overflow-hidden" : "flex-wrap",
+      )}
+    >
+      {run.tags.map((tag) => (
+        <Badge
+          key={tag}
+          className="mr-1 bg-cyan-100 text-cyan-800 hover:bg-cyan-100"
+        >
+          {tag}
+        </Badge>
+      ))}
+    </div>
+  )
+}
+
+/** One run as a card, for the cards view. */
+function RunCard({ run }: { run: RunPublicMinimal }) {
+  const name = run.name ?? run.id.split("-")[0]
+  const toolName = run.tool_version
+    ? `${run.tool.name} (v${run.tool_version})`
+    : run.tool.name
+
+  return (
+    // The two groups spread over the card's height, so cards in a row line
+    // their bottom group up.
+    <Card className="relative flex flex-col justify-between gap-3 p-4 transition-colors hover:bg-muted/50">
+      {/* The whole card opens the run, so the actions menu keeps its clicks. */}
+      <Link
+        to="/runs/$runid"
+        params={{ runid: run.id }}
+        aria-label={`Open ${name}`}
+        className="absolute inset-0 rounded-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+      />
+      {/* What the run is: name, its version and the params it was given. */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-start justify-between gap-2">
+          {/* The status shows as a larger icon right of the name, and the label
+              would take the room the details need. */}
+          <div className="pointer-events-none flex min-w-0 items-start gap-2">
+            <div className="min-w-0">
+              <div className="truncate font-semibold">{name}</div>
+              <div className="truncate text-sm text-muted-foreground">
+                {toolName}
+              </div>
+            </div>
+            <StatusIcon
+              status={run.status}
+              className="mt-0.5 ml-1 shrink-0 text-xl"
+            />
+          </div>
+          <div className="relative z-10 flex shrink-0 items-center gap-2">
+            <RunActionsMenu run={run} />
+          </div>
+        </div>
+        <RunParamTags run={run} />
+      </div>
+      {/* How it went: its tags, when it ran and what it was given. */}
+      <div className="flex flex-col gap-2">
+        <RunTags run={run} />
+        <div className="pointer-events-none flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+          <span>{humanReadableDate(run.created_at)}</span>
+          <RunRuntime
+            started_at={run.started_at ?? null}
+            finished_at={run.finished_at ?? null}
+            status={run.status}
+          />
+          <span>{run.cpus} CPUs</span>
+        </div>
+      </div>
+    </Card>
+  )
+}
+
+/** One run as a compact line, for the list view. */
+function RunListRow({ run }: { run: RunPublicMinimal }) {
+  const name = run.name ?? run.id.split("-")[0]
+  const toolName = run.tool_version
+    ? `${run.tool.name} (v${run.tool_version})`
+    : run.tool.name
+
+  return (
+    // One line: whatever does not fit clips instead of wrapping the row.
+    <div className="relative flex items-center gap-3 overflow-hidden rounded-md border bg-card px-3 py-2 transition-colors hover:bg-muted/50">
+      {/* The whole line opens the run, so the actions menu keeps its clicks. */}
+      <Link
+        to="/runs/$runid"
+        params={{ runid: run.id }}
+        aria-label={`Open ${name}`}
+        className="absolute inset-0 rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+      />
+      <span className="pointer-events-none flex shrink-0 items-center">
+        <StatusIcon status={run.status} className="text-xl" />
+      </span>
+      {/* Name over the tool and its tags, like the files list shows a name over
+          its details. The params stay out of the list, which is for scanning. */}
+      <div className="pointer-events-none min-w-0 flex-1">
+        <div className="truncate font-semibold">{name}</div>
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="hidden shrink-0 text-sm text-muted-foreground sm:inline">
+            {toolName}
+          </span>
+          <RunTags run={run} singleLine />
+          <RunParamCount run={run} />
+        </div>
+      </div>
+      {/* Date over runtime. */}
+      <div className="pointer-events-none hidden shrink-0 text-right text-xs text-muted-foreground sm:block">
+        <div>{humanReadableDate(run.created_at)}</div>
+        <div>
+          <RunRuntime
+            started_at={run.started_at ?? null}
+            finished_at={run.finished_at ?? null}
+            status={run.status}
+          />
+        </div>
+      </div>
+      <div className="relative z-10 ml-auto flex shrink-0 items-center">
+        <RunActionsMenu run={run} />
+      </div>
+    </div>
+  )
+}
+
+/** Loading placeholder shaped like `RunCard`. */
+function RunCardSkeleton() {
+  return (
+    <Card className="gap-3 p-4">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1 space-y-2">
+          <Skeleton className="h-5 w-2/3" />
+          <Skeleton className="h-4 w-1/2" />
+        </div>
+        <Skeleton className="size-8" />
+      </div>
+      <Skeleton className="h-5 w-full" />
+      <Skeleton className="h-4 w-3/4" />
+      <Skeleton className="h-4 w-1/2" />
+    </Card>
+  )
+}
+
+/** Loading placeholder shaped like `RunListRow`. */
+function RunListRowSkeleton() {
+  return (
+    <div className="flex items-center gap-3 rounded-md border bg-card px-3 py-2">
+      <Skeleton className="h-5 w-20 shrink-0" />
+      <Skeleton className="h-5 flex-1" />
+      <Skeleton className="hidden h-5 w-32 sm:block" />
+      <Skeleton className="h-5 w-24 shrink-0" />
+      <Skeleton className="size-8 shrink-0" />
+    </div>
+  )
+}
+
 function RunsTable({
   nameFilter,
   orderBy,
   setOrderBy,
   setVisibleRunIds,
   toolFilter,
+  view,
 }: RunsTableProps) {
   const [pageSize, setPageSize] = useState(20)
   const [page, setPage] = useState(1)
@@ -232,7 +448,7 @@ function RunsTable({
 
   useEffect(() => {
     setPage(1)
-  }, [trimmedNameFilter, orderBy, pageSize, toolFilter])
+  }, [])
 
   const { data, isLoading, isFetching, isError, error } = useQuery({
     queryKey: ["runs", pageSize, page, trimmedNameFilter, orderBy, toolFilter],
@@ -289,6 +505,60 @@ function RunsTable({
     )
   }
 
+  // The cards and list views show the same runs as the table, only laid out
+  // differently, so they share its loading, error and empty states.
+  if (view !== "table") {
+    const Entry = view === "cards" ? RunCard : RunListRow
+    const listClassName =
+      view === "cards"
+        ? "grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
+        : "flex flex-col gap-2"
+
+    return (
+      <>
+        {isLoading ? (
+          <div className={listClassName}>
+            {new Array(pageSize)
+              .fill(null)
+              .map((_, index) =>
+                view === "cards" ? (
+                  <RunCardSkeleton key={index} />
+                ) : (
+                  <RunListRowSkeleton key={index} />
+                ),
+              )}
+          </div>
+        ) : isError ? (
+          <Alert variant="destructive">
+            <TriangleAlert />
+            <AlertTitle>Could not load runs</AlertTitle>
+            <AlertDescription>{(error as Error).message}</AlertDescription>
+          </Alert>
+        ) : runs.length ? (
+          <div className={listClassName}>
+            {runs.map((run) => (
+              <Entry key={run.id} run={run} />
+            ))}
+          </div>
+        ) : (
+          <div className="flex h-24 items-center justify-center rounded-md border text-center">
+            No runs found.
+          </div>
+        )}
+        <PaginatedTableFooter
+          isFetching={isFetching}
+          isLoading={isLoading}
+          itemLabel="runs"
+          onPageChange={changePage}
+          onPageSizeChange={changePageSize}
+          page={page}
+          pageSize={pageSize}
+          totalCount={totalCount}
+        />
+      </>
+    )
+  }
+
   return (
     <>
       <div className="w-full overflow-x-auto">
@@ -302,14 +572,15 @@ function RunsTable({
               <TableHead>Tags</TableHead>
               <TableHead>{renderSortableHeading("created_at")}</TableHead>
               <TableHead>{renderSortableHeading("runtime")}</TableHead>
-              <TableHead></TableHead>
+              <TableHead>CPUs</TableHead>
+              <TableHead />
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               new Array(pageSize).fill(null).map((_, row) => (
                 <TableRow key={row}>
-                  {new Array(9).fill(null).map((_, cell) => (
+                  {new Array(10).fill(null).map((_, cell) => (
                     <TableCell key={cell}>
                       <Skeleton className="h-5" />
                     </TableCell>
@@ -318,7 +589,7 @@ function RunsTable({
               ))
             ) : isError ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-destructive">
+                <TableCell colSpan={10} className="text-destructive">
                   Error: {(error as Error).message}
                 </TableCell>
               </TableRow>
@@ -345,7 +616,11 @@ function RunsTable({
                     <StatusBadge status={run.status} />
                   </TableCell>
                   <TableCell>{run.name ?? run.id.split("-")[0]}</TableCell>
-                  <TableCell>{run.tool.name}</TableCell>
+                  <TableCell>
+                    {run.tool_version
+                      ? `${run.tool.name} (v${run.tool_version})`
+                      : run.tool.name}
+                  </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap">
                       {Object.keys(run.params)
@@ -367,9 +642,7 @@ function RunsTable({
                       </Badge>
                     ))}
                   </TableCell>
-                  <TableCell>
-                    {humanReadableDate(run.created_at)}
-                  </TableCell>
+                  <TableCell>{humanReadableDate(run.created_at)}</TableCell>
                   <TableCell>
                     <RunRuntime
                       started_at={run.started_at ?? null}
@@ -377,6 +650,7 @@ function RunsTable({
                       status={run.status}
                     />
                   </TableCell>
+                  <TableCell>{run.cpus}</TableCell>
                   <TableCell
                     data-run-actions-cell
                     onMouseDown={(event) => event.stopPropagation()}
@@ -390,7 +664,7 @@ function RunsTable({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={9} className="h-24 text-center">
+                <TableCell colSpan={10} className="h-24 text-center">
                   No runs found.
                 </TableCell>
               </TableRow>
@@ -417,10 +691,7 @@ interface RunsActionsMenuProps {
   visibleRunIds: string[]
 }
 
-function RunsActionsMenu({
-  allCount,
-  visibleRunIds,
-}: RunsActionsMenuProps) {
+function RunsActionsMenu({ allCount, visibleRunIds }: RunsActionsMenuProps) {
   const [deleteMode, setDeleteMode] = useState<BulkDeleteMode | null>(null)
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
@@ -453,9 +724,7 @@ function RunsActionsMenu({
   return (
     <BulkDeleteMenu
       allCount={allCount}
-      confirmLabel={
-        deleteMode === "current" ? "Delete Visible" : "Delete All"
-      }
+      confirmLabel={deleteMode === "current" ? "Delete Visible" : "Delete All"}
       currentCount={visibleRunIds.length}
       descriptionNoun="inactive run"
       descriptionSuffix=" and associated unsaved files"
@@ -476,9 +745,21 @@ function Runs() {
   const [orderBy, setOrderBy] = useState("-created_at")
   const [toolFilter, setToolFilter] = useState("all")
   const [visibleRunIds, setVisibleRunIds] = useState<string[]>([])
+  const [view, setView] = useViewMode("records")
   const { data: toolNames } = useQuery({
     queryKey: ["runs", "tools"],
     queryFn: async () => (await RunsService.readRunToolNames()).data ?? [],
+  })
+  // Runs that are still going, which are the ones Cancel All can stop.
+  const { data: activeRunsCount } = useQuery({
+    queryKey: ["runs-count", "active"],
+    queryFn: async () =>
+      (
+        await RunsService.readRuns({
+          query: { skip: 0, limit: 1, statuses: activeRunStatuses },
+        })
+      ).data?.count ?? 0,
+    refetchInterval: 10_000,
   })
   const { data: allRunsCount } = useQuery({
     queryKey: ["runs-count", "all"],
@@ -491,7 +772,7 @@ function Runs() {
   })
   const { data: queueStatus } = useQuery({
     queryKey: ["settings", "queue"],
-    queryFn: async () => (await SettingsService.readQueueStatus()).data,
+    queryFn: async () => (await SettingsService.readQueueDrainStatus()).data,
     refetchInterval: 15_000,
   })
 
@@ -541,7 +822,8 @@ function Runs() {
           </select>
         </div>
         <div className="flex justify-end gap-4">
-          <CancelRunsButton />
+          {!!activeRunsCount && <CancelRunsButton />}
+          <ViewModeButtons mode={view} onChange={setView} />
           <RunsActionsMenu
             allCount={allRunsCount ?? 0}
             visibleRunIds={visibleRunIds}
@@ -554,6 +836,7 @@ function Runs() {
         setOrderBy={setOrderBy}
         setVisibleRunIds={setVisibleRunIds}
         toolFilter={toolFilter}
+        view={view}
       />
     </div>
   )
