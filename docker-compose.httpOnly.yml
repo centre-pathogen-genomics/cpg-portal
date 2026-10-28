@@ -89,12 +89,11 @@ services:
       dockerfile: backend/Dockerfile
     volumes:
       - app-sandbox-data:/apptainer
-    # Building the sandbox image needs what the worker needs to run it: apptainer
-    # mounts inside a user namespace, which the default seccomp profile blocks
-    # and which needs SYS_ADMIN and the loop devices. Without this the build
-    # fails with "Failed to set mount propagation: Permission denied" and
-    # prestart exits non-zero, so the backend and worker never start.
-    privileged: true
+    # Building the sandbox image needs SYS_ADMIN and the host's loop devices, so
+    # it happens off-host and the result is installed into this volume, see
+    # deployment.md. The script refuses to build in place unless
+    # SANDBOX_BUILD_IN_PLACE=true, so a missing image stops the deployment with
+    # instructions instead of a mount failure halfway through a build.
     networks:
       - traefik-public
       - default
@@ -210,6 +209,26 @@ services:
       # Middleware to redirect www
       - traefik.http.routers.${STACK_NAME?Variable not set}-backend-http.middlewares=${STACK_NAME?Variable not set}-www-redirect
 
+  sandbox-image:
+    image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}"
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    volumes:
+      - app-sandbox-data:/apptainer
+    # The only service that may build the sandbox image: apptainer build needs
+    # SYS_ADMIN and the host's loop devices. It builds once, hands the image over
+    # in the volume and exits, and skips the build entirely when the image there
+    # already matches backend/container/runtime.def - so a shipped image means
+    # this does nothing.
+    privileged: true
+    restart: "no"
+    env_file:
+      - .env
+    environment:
+      - SANDBOX_BUILD_IN_PLACE=true
+    command: bash scripts/build_sandbox_image.sh
+
   worker:
     <<: *backend
     ports: []
@@ -217,8 +236,11 @@ services:
     healthcheck:
       disable: true
     # Apptainer needs SYS_ADMIN and the loop devices to create the container
-    # that tool commands run in; that container itself runs without privileges
-    # and only sees the paths mounted by app/sandbox.py.
+    # that tool commands run in; inside Docker that means `privileged`, since a
+    # user namespace nested in the worker's cannot mount /proc. The container it
+    # creates runs without privileges, with a read-only root filesystem, private
+    # namespaces and a cleaned environment, and only sees the paths mounted by
+    # app/sandbox.py, so tool code never runs with these privileges.
     privileged: true
     command:
       # Applies the sandbox network rules (SANDBOX_NETWORK=internet) before
@@ -230,6 +252,8 @@ services:
       db:
         condition: service_healthy
       prestart:
+        condition: service_completed_successfully
+      sandbox-image:
         condition: service_completed_successfully
       nats:
         condition: service_healthy

@@ -12,7 +12,6 @@ alembic upgrade head
 # Create initial data in DB
 python app/initial_data.py
 
-# Build the image tool commands run inside, if it is missing
-if [ "${SANDBOX_ENABLED:-true}" = "true" ]; then
-    bash scripts/build_sandbox_image.sh
-fi
+# The sandbox image tool commands run inside is not built here: the sandbox-image
+# service builds it into the app-sandbox-data volume, and the worker waits for
+# that, see compose.yml and deployment.md.
