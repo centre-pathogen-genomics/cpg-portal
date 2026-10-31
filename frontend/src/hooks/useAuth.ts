@@ -40,9 +40,6 @@ const useAuth = () => {
   const signUpMutation = useMutation({
     mutationFn: (data: UserRegister) =>
       UsersService.registerUser({ body: data, throwOnError: true }),
-    onSuccess: () => {
-      navigate({ to: "/login" })
-    },
     onError: (error) => handleError(error, showErrorToast),
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] })

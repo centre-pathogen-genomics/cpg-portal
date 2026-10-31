@@ -53,6 +53,13 @@ test("Sign up with valid name, email, and password", async ({ page }) => {
   await page.goto("/signup")
   await fillForm(page, full_name, email, password, password)
   await page.getByRole("button", { name: "Sign Up" }).click()
+
+  await expect(page.getByTestId("check-email")).toBeVisible()
+  await expect(page.getByText("Check your email")).toBeVisible()
+  await expect(page.getByText(email)).toBeVisible()
+  await expect(
+    page.getByRole("link", { name: "Back to log in" }),
+  ).toHaveAttribute("href", "/login")
 })
 
 test("Sign up with invalid email", async ({ page }) => {
@@ -79,7 +86,7 @@ test("Sign up with existing email", async ({ page }) => {
 
   await fillForm(page, fullName, email, password, password)
   await page.getByRole("button", { name: "Sign Up" }).click()
-  await expect(page).toHaveURL(/\/login$/)
+  await expect(page.getByTestId("check-email")).toBeVisible()
 
   await page.goto("/signup")
 
