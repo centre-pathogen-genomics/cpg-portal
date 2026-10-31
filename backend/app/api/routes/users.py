@@ -1,7 +1,10 @@
+import logging
 import uuid
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from sqlalchemy import delete, update
 from sqlmodel import func, select
 
 from app import crud
@@ -21,6 +24,7 @@ from app.models import (
     UpdatePassword,
     User,
     UserCreate,
+    UserFavouriteToolsLink,
     UserPublic,
     UserRegister,
     UsersPublic,
@@ -34,6 +38,74 @@ from app.utils import (
 )
 
 router = APIRouter()
+
+logger = logging.getLogger(__name__)
+
+
+def _delete_user_with_owned_data(*, session: SessionDep, user: User) -> None:
+    """
+    Delete a user together with the runs and files they own.
+
+    Runs and files keep a hard reference to their owner, so they cannot be left
+    behind or set to NULL. Stored file contents are removed after the rows are
+    committed. Files owned by someone else are detached rather than deleted.
+    """
+    active_runs = session.exec(
+        select(func.count())
+        .select_from(Run)
+        .where(
+            Run.owner_id == user.id,
+            Run.status.in_(["pending", "running"]),
+        )
+    ).one()
+    if active_runs:
+        raise HTTPException(
+            status_code=409,
+            detail="Cancel active runs before deleting this account.",
+        )
+
+    run_ids = session.exec(select(Run.id).where(Run.owner_id == user.id)).all()
+    file_ids = session.exec(select(File.id).where(File.owner_id == user.id)).all()
+    locations = session.exec(
+        select(File.location).where(
+            File.owner_id == user.id, File.location.is_not(None)
+        )
+    ).all()
+
+    # A shared run may be given another user's saved input file; only output
+    # files belong to the run. Detach anything foreign that still points at a
+    # row about to disappear, so the foreign row survives.
+    if run_ids:
+        session.exec(
+            update(File)
+            .where(File.run_id.in_(run_ids), File.owner_id != user.id)
+            .values(run_id=None)
+        )
+    if file_ids:
+        session.exec(
+            update(File)
+            .where(File.parent_id.in_(file_ids), File.owner_id != user.id)
+            .values(parent_id=None)
+        )
+
+    session.exec(delete(File).where(File.owner_id == user.id))
+    session.exec(delete(Run).where(Run.owner_id == user.id))
+    session.exec(
+        delete(UserFavouriteToolsLink).where(UserFavouriteToolsLink.user_id == user.id)
+    )
+    user_id = user.id
+    session.delete(user)
+    session.commit()
+
+    for location in locations:
+        try:
+            Path(location).unlink(missing_ok=True)
+        except OSError:
+            logger.warning(
+                "Could not remove stored file %s of deleted user %s",
+                location,
+                user_id,
+            )
 
 
 @router.get(
@@ -153,11 +225,7 @@ def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Any:
         raise HTTPException(
             status_code=403, detail="Super users are not allowed to delete themselves"
         )
-    # TODO: delete all items owned by the user
-    # statement = delete(Item).where(col(Item.owner_id) == current_user.id)
-    # session.exec(statement)  # type: ignore
-    session.delete(current_user)
-    session.commit()
+    _delete_user_with_owned_data(session=session, user=current_user)
     return Message(message="User deleted successfully")
 
 
@@ -289,23 +357,5 @@ def delete_user(
         raise HTTPException(
             status_code=403, detail="Super users are not allowed to delete themselves"
         )
-    # Runs and files keep a hard reference to their owner, so a user who still
-    # owns either cannot go: the deletion would either fail against the not-null
-    # foreign key or leave the rows behind.
-    owned_runs = session.exec(
-        select(func.count()).select_from(Run).where(Run.owner_id == user_id)
-    ).one()
-    owned_files = session.exec(
-        select(func.count()).select_from(File).where(File.owner_id == user_id)
-    ).one()
-    if owned_runs or owned_files:
-        raise HTTPException(
-            status_code=409,
-            detail=(
-                f"This user still owns {owned_runs} run(s) and {owned_files} "
-                "file(s). Delete those first."
-            ),
-        )
-    session.delete(user)
-    session.commit()
+    _delete_user_with_owned_data(session=session, user=user)
     return Message(message="User deleted successfully")
