@@ -1,5 +1,6 @@
 import uuid
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
@@ -8,9 +9,63 @@ from sqlmodel import Session, select
 from app import crud
 from app.core.config import settings
 from app.core.security import create_access_token, verify_password
-from app.models import User, UserCreate
-from tests.utils.user import create_random_user
+from app.models import (
+    File,
+    Run,
+    RunStatus,
+    Tool,
+    ToolStatus,
+    User,
+    UserCreate,
+)
+from tests.utils.user import create_random_user, user_authentication_headers
 from tests.utils.utils import random_email, random_lower_string
+
+
+def _create_owned_run_and_file(
+    db: Session,
+    user: User,
+    tmp_path: Path,
+    *,
+    status: RunStatus = RunStatus.completed,
+) -> tuple[Run, File, Path]:
+    tool = Tool(
+        name=f"tool-{random_lower_string()}",
+        command="echo hello",
+        enabled=True,
+        status=ToolStatus.installed,
+    )
+    db.add(tool)
+    db.commit()
+    db.refresh(tool)
+
+    run = Run(
+        name=f"run-{random_lower_string()}",
+        status=status,
+        created_at=datetime.now(UTC).replace(tzinfo=None),
+        params={},
+        tool_id=tool.id,
+        owner_id=user.id,
+    )
+    db.add(run)
+    db.commit()
+    db.refresh(run)
+
+    location = tmp_path / f"{uuid.uuid4()}.txt"
+    location.write_text("owned data")
+    file = File(
+        name=location.name,
+        file_type="text",
+        size=location.stat().st_size,
+        saved=True,
+        location=str(location),
+        owner_id=user.id,
+        run_id=run.id,
+    )
+    db.add(file)
+    db.commit()
+    db.refresh(file)
+    return run, file, location
 
 
 def test_get_users_superuser_me(
@@ -466,6 +521,58 @@ def test_delete_user_me(client: TestClient, db: Session) -> None:
     assert user_db is None
 
 
+def test_delete_user_me_cascades_owned_runs_and_files(
+    client: TestClient, db: Session, tmp_path: Path
+) -> None:
+    username = random_email()
+    password = random_lower_string()
+    user = crud.create_user(
+        session=db, user_create=UserCreate(email=username, password=password)
+    )
+    run, file, location = _create_owned_run_and_file(db, user, tmp_path)
+    user_id, run_id, file_id = user.id, run.id, file.id
+    headers = user_authentication_headers(
+        client=client, email=username, password=password
+    )
+
+    r = client.delete(f"{settings.API_V1_STR}/users/me", headers=headers)
+
+    assert r.status_code == 200
+    db.expire_all()
+    assert db.exec(select(User).where(User.id == user_id)).first() is None
+    assert db.exec(select(Run).where(Run.id == run_id)).first() is None
+    assert db.exec(select(File).where(File.id == file_id)).first() is None
+    assert not location.exists()
+
+
+def test_delete_user_me_rejects_active_runs(
+    client: TestClient, db: Session, tmp_path: Path
+) -> None:
+    username = random_email()
+    password = random_lower_string()
+    user = crud.create_user(
+        session=db, user_create=UserCreate(email=username, password=password)
+    )
+    run, file, location = _create_owned_run_and_file(
+        db, user, tmp_path, status=RunStatus.running
+    )
+    headers = user_authentication_headers(
+        client=client, email=username, password=password
+    )
+
+    r = client.delete(f"{settings.API_V1_STR}/users/me", headers=headers)
+
+    assert r.status_code == 409
+    assert r.json()["detail"] == ("Cancel active runs before deleting this account.")
+    assert db.exec(select(User).where(User.id == user.id)).first() is not None
+
+    db.delete(file)
+    db.delete(run)
+    db.delete(user)
+    db.commit()
+    location.unlink(missing_ok=True)
+
+
 def test_delete_user_me_as_superuser(
     client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:
@@ -495,6 +602,29 @@ def test_delete_user_super_user(
     assert deleted_user["message"] == "User deleted successfully"
     result = db.exec(select(User).where(User.id == user_id)).first()
     assert result is None
+
+
+def test_delete_user_super_user_cascades_owned_runs_and_files(
+    client: TestClient,
+    superuser_token_headers: dict[str, str],
+    db: Session,
+    tmp_path: Path,
+) -> None:
+    user = create_random_user(db)
+    run, file, location = _create_owned_run_and_file(db, user, tmp_path)
+    user_id, run_id, file_id = user.id, run.id, file.id
+
+    r = client.delete(
+        f"{settings.API_V1_STR}/users/{user_id}",
+        headers=superuser_token_headers,
+    )
+
+    assert r.status_code == 200
+    db.expire_all()
+    assert db.exec(select(User).where(User.id == user_id)).first() is None
+    assert db.exec(select(Run).where(Run.id == run_id)).first() is None
+    assert db.exec(select(File).where(File.id == file_id)).first() is None
+    assert not location.exists()
 
 
 def test_delete_user_not_found(

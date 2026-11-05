@@ -4,6 +4,7 @@ import {
   Link as RouterLink,
   redirect,
 } from "@tanstack/react-router"
+import { MailCheck } from "lucide-react"
 import { useRef, useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
@@ -12,6 +13,7 @@ import Turnstile, {
   type TurnstileHandle,
   turnstileEnabled,
 } from "@/components/Common/Turnstile"
+import { Button } from "@/components/ui/button"
 import {
   Form,
   FormControl,
@@ -79,6 +81,7 @@ function SignUp() {
   // The Turnstile token, and a handle for resetting the widget after a failed
   // submit: a token is only good once.
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
+  const [registeredEmail, setRegisteredEmail] = useState<string | null>(null)
   const turnstile = useRef<TurnstileHandle>(null)
 
   const onSubmit = (data: FormData) => {
@@ -90,11 +93,49 @@ function SignUp() {
     signUpMutation.mutate(
       { ...submitData, turnstile_token: turnstileToken ?? undefined },
       {
+        onSuccess: () => setRegisteredEmail(submitData.email),
         onError: () => {
           setTurnstileToken(null)
           turnstile.current?.reset()
         },
       },
+    )
+  }
+
+  // The account exists but is inactive until the emailed link is used, so the
+  // next step has to be in the page rather than a redirect to the login form.
+  if (registeredEmail) {
+    return (
+      <AuthLayout>
+        <div
+          className="flex flex-col items-center gap-6 text-center"
+          data-testid="check-email"
+        >
+          <div className="flex size-12 items-center justify-center rounded-full bg-primary/10">
+            <MailCheck className="size-6 text-primary" />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <h1 className="text-2xl font-bold">Check your email</h1>
+            <p className="text-muted-foreground text-sm">
+              We sent an activation link to{" "}
+              <span className="font-medium text-foreground">
+                {registeredEmail}
+              </span>
+              . Click the link in that email to activate your account.
+            </p>
+          </div>
+
+          <p className="text-muted-foreground text-sm">
+            Can't find it? Check your spam folder. The email may take a few
+            minutes to arrive.
+          </p>
+
+          <Button asChild className="w-full">
+            <RouterLink to="/login">Back to log in</RouterLink>
+          </Button>
+        </div>
+      </AuthLayout>
     )
   }
 

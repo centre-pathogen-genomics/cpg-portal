@@ -271,33 +271,24 @@ This requires:
 
 * The `worker` service to be privileged (`privileged: true` in `compose.yml`):
   Apptainer needs `SYS_ADMIN` and the loop devices of the host to create the
-  container. The container it creates runs without privileges, with a read-only
-  root filesystem, private namespaces and a cleaned environment, so it cannot
-  see the worker's filesystem, `/storage`, or the worker's environment variables.
-  The `prestart` service needs the same privileges, because it builds the sandbox
-  image. Without them the build fails with `Failed to set mount propagation:
-  Permission denied`, `prestart` exits non-zero, and the backend and worker never
-  start - which also shows up as every `/api` request 404ing at the frontend,
-  because Traefik then has no backend router to match. If you keep your own
-  compose file, it needs the same change; `compose.yml` and
-  `docker-compose.httpOnly.yml` in this repository have it.
-* A sandbox image in the `app-sandbox-data` volume. The `prestart` service builds
-  it on the first `docker compose up` if it is missing. Rebuild it after changing
-  `backend/container/runtime.def`:
-
-```bash
-docker compose -f compose.yml exec worker bash scripts/build_sandbox_image.sh
-```
+  container, and inside Docker there is no way around it - a user namespace
+  nested in the worker's cannot mount `/proc`, which Apptainer needs, even with
+  seccomp and AppArmor relaxed, `/dev/fuse` given and `newuidmap` available. The
+  container it creates runs without privileges, with a read-only root filesystem,
+  private namespaces and a cleaned environment, so tool code never runs with
+  those privileges: the worker itself is the only process that has them. The
+  `sandbox-image` service needs them too, because building the image does.
+* A sandbox image in the `app-sandbox-data` volume. The `sandbox-image` service
+  builds it: it runs once on every `docker compose up`, hands the image over in
+  the volume and exits, and the worker waits for it before starting. It compares
+  the image's `.sha256` with `backend/container/runtime.def` and skips the build
+  when they match, so it does nothing on a stack whose image is already current,
+  and rebuilds by itself when the definition changes.
 
 Until the image exists, runs fail with `Sandbox image '/apptainer/runtime.sif'
 was not found`. `SANDBOX_ENABLED=false` in `.env` runs tool commands directly on
 the worker again (not recommended), and `SANDBOX_IMAGE` points the worker at a
 different image, e.g. one pulled from a registry with `apptainer pull`.
-
-The build runs its `%post` section inside a user namespace, so the host has to
-allow unprivileged user namespaces. On hosts where AppArmor restricts them, e.g.
-Ubuntu 24.04 and later, add `apparmor=unconfined` to `security_opt` of the
-`prestart` service - a privileged service is already unconfined.
 
 Tools that need system packages which are neither in the sandbox image nor in
 their conda environment fail at runtime; add them to
