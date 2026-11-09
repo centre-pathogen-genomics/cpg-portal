@@ -3,6 +3,7 @@
 interface ImportMetaEnv {
   readonly VITE_API_URL: string
   readonly VITE_MAX_FILE_UPLOAD_SIZE: string
+  readonly VITE_TRAKKA_URL?: string
 }
 
 interface ImportMeta {
