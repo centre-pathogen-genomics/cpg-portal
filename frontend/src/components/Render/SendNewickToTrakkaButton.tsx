@@ -8,6 +8,7 @@ import { TabeeException } from "@tabee/protocol"
 import { useMemo, useRef, useState } from "react"
 import { useTheme } from "@/components/theme-provider"
 import { Button } from "@/components/ui/button"
+import useAuth from "@/hooks/useAuth"
 import useCustomToast from "@/hooks/useCustomToast"
 import trakkaLogoLight from "/assets/images/trakka_logo_small.svg"
 import trakkaLogoDark from "/assets/images/trakka_logo_small_dark.svg"
@@ -15,11 +16,28 @@ import trakkaLogoDark from "/assets/images/trakka_logo_small_dark.svg"
 const TRAKKA_URL =
   import.meta.env.VITE_TRAKKA_URL || "https://viz.beta.trakka.org/"
 
-interface SendToTrakkaButtonProps {
+/** Temporary allowlist while the Trakka integration is evaluated. */
+const TRAKKA_ALLOWED_EMAILS = [
+  "t.seemann@unimelb.edu.au",
+  "sloc@unimelb.edu.au",
+]
+
+interface SendNewickToTrakkaButtonProps {
   newick: string
 }
 
-const SendToTrakkaButton = ({ newick }: SendToTrakkaButtonProps) => {
+const SendNewickToTrakkaButton = (props: SendNewickToTrakkaButtonProps) => {
+  const { user } = useAuth()
+  const canSend =
+    user?.is_superuser === true ||
+    TRAKKA_ALLOWED_EMAILS.includes(user?.email.toLowerCase() ?? "")
+
+  if (!canSend) return null
+
+  return <TrakkaSender {...props} />
+}
+
+const TrakkaSender = ({ newick }: SendNewickToTrakkaButtonProps) => {
   // The bridge is created once, so its export adapter reads the tree through a
   // ref instead of capturing the content from the first render.
   const newickRef = useRef(newick)
@@ -92,4 +110,4 @@ const SendToTrakkaButton = ({ newick }: SendToTrakkaButtonProps) => {
   )
 }
 
-export default SendToTrakkaButton
+export default SendNewickToTrakkaButton
