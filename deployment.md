@@ -204,6 +204,7 @@ You can set several other environment variables:
 * `REDIS_PASSWORD`: Password of the Redis service, compose uses it to build `REDIS_URI`.
 * `NATS_USER`, `NATS_PASSWORD`: Credentials of the NATS service, compose uses them to build `NATS_URIS`.
 * `SANDBOX_ENABLED`, `SANDBOX_IMAGE`, `SANDBOX_NETWORK`, `SANDBOX_DNS`, `SANDBOX_DATA_PATH`: See the tool sandbox section.
+* `RUNNER_ARTIFACTS_DIR`, `RUNNER_ARTIFACTS_PATH`, `RUNNER_RUNTIME_TAG`, `RUNNER_PUBLIC_BASE_URL`: See the local runner section.
 * `TOTAL_CPUS`: CPUs the worker hands out to runs, `0` detects them. See the CPUs section.
 * `SENTRY_DSN`: The DSN for Sentry, if you are using it.
 
@@ -293,6 +294,112 @@ different image, e.g. one pulled from a registry with `apptainer pull`.
 Tools that need system packages which are neither in the sandbox image nor in
 their conda environment fail at runtime; add them to
 `backend/container/runtime.def` and rebuild.
+
+## Local Runner (desktop app)
+
+Every tool page offers `Run locally`, which runs that tool inside Docker on the
+visitor's own machine instead of on the worker. The download is split in two so
+that the application is paid for once and shared by every tool:
+
+* the **app**, one per host platform (macOS Apple silicon and Intel, Windows and
+  Linux), roughly 140 MB, containing Electron, the renderer and the Python
+  sidecar;
+* a **tool pack**, one per tool, a single JSON document of a few kilobytes with
+  `tool.json`, `runner.json` (the platform, the Docker architecture and the
+  runtime image URL and checksum), `environment.yml` when the tool has a conda
+  environment, and a README.
+
+The visitor downloads the app once; every later tool is a pack they double-click
+(or drop on the app, or import from the tool list). The app keeps the imported
+tools under its own data directory — on macOS
+`~/Library/Application Support/cpg-runner/tools/<tool id>/` — and starts one
+sidecar per tool when that tool is opened. Nothing but the two downloads ever
+leaves the machine, and neither carries credentials: the pack needs a portal
+account, the runtime image and the app are public.
+
+Three endpoints serve the download, all from `RUNNER_ARTIFACTS_PATH` inside the
+backend container, which compose mounts read-only from `RUNNER_ARTIFACTS_DIR`
+(`./runner/artifacts` by default):
+
+* `GET /api/v1/runner/app/<platform>` serves the app archive unchanged, with
+  `Cache-Control: public, max-age=31536000, immutable` and an ETag, so a browser
+  (and any proxy in front of it) downloads one build of it once and reuses it
+  for every tool. Platforms are `mac-arm64`, `mac-x64`, `win-x64` and
+  `linux-x64`.
+* `GET /api/v1/tools/name/<tool>/runner-pack?platform=<platform>` returns the
+  pack. It is built in memory from the tool's configuration; no app archive is
+  copied or rewritten, which is also why a macOS signature never has to survive
+  an append.
+* `GET /api/v1/runner/runtime-image/<arch>` serves the Docker image the app loads
+  before its first run (`linux-arm64` or `linux-amd64`). It is public and
+  contains no secrets.
+
+The artifact directory layout is:
+
+```
+runtime/linux-arm64.tar          docker save output, tagged cpg-runner-runtime:1
+runtime/linux-arm64.tar.sha256   lowercase hex, one line, no filename
+runtime/linux-amd64.tar
+runtime/linux-amd64.tar.sha256
+apps/mac-arm64.zip               signed and notarized electron-builder output
+apps/mac-x64.zip
+apps/win-x64.zip
+apps/linux-x64.zip
+```
+
+`RUNNER_RUNTIME_TAG` (`cpg-runner-runtime:1` by default) is the tag written into
+a bundle. Bump it whenever the image changes, so existing installs download the
+new one instead of using the copy they already have.
+
+`RUNNER_PUBLIC_BASE_URL` is the origin written into `runner.json` as the image
+URL. Leave it empty when the backend sees the proxy's `X-Forwarded-Proto` and
+`X-Forwarded-Host` headers, which it does behind the bundled Traefik; set it to
+something like `https://portal.example.org` when a proxy strips them, otherwise
+app installs fail with a download error.
+
+Until the artifacts exist, `Run locally` still appears but the download fails
+with `Runner artifacts are not configured` (503) or `Local runner is not
+available for <platform>` (404). Build them once per release:
+
+```
+bash runner/runtime/build.sh                     # runtime/linux-{arm64,amd64}.tar
+bash runner/scripts/build-apps.sh                # apps/mac-{arm64,x64}.zip, apps/linux-x64.zip
+bash runner/scripts/build-apps.sh win-x64        # on a Windows host only
+```
+
+`runner/runtime/build.sh` pins the `condaforge/miniforge3` base image by digest in
+`runner/runtime/image.lock` on its first run and reuses that pin afterwards. It
+builds both architectures, which needs QEMU/binfmt on a machine that is not
+natively one of them: `docker run --privileged --rm tonistiigi/binfmt --install all`.
+
+A macOS app only opens with a double-click when it is signed with a Developer ID
+Application certificate and notarized, which needs an Apple Developer Program
+membership. `build-apps.sh` therefore refuses a macOS release build unless
+`CSC_LINK` (base64 `.p12`), `CSC_KEY_PASSWORD`, `APPLE_ID`,
+`APPLE_APP_SPECIFIC_PASSWORD` and `APPLE_TEAM_ID` are set; `--unsigned` produces
+an ad-hoc signed build for local checks that macOS only opens with
+right-click → Open. Windows builds are unsigned unless `CSC_LINK` and
+`CSC_KEY_PASSWORD` hold an Authenticode certificate, so SmartScreen may warn on
+first start; Linux builds are not signed.
+
+`.github/workflows/runner-release.yml` runs this on every published release: it
+builds the four platforms on matching runners, builds both runtime images with
+QEMU on `ubuntu-22.04`, and attaches the archives to the release. The macOS jobs
+need the five signing secrets above as repository secrets.
+
+What the app does on the visitor's machine is deliberately unprivileged. On
+first start it checks Docker Desktop (macOS and Windows) or Docker Engine
+(Linux), the daemon, and on Windows whether WSL 2 is there. It can start an
+installed Docker Desktop, and install it with `brew install --cask docker` on
+macOS or `winget` on Windows. Everything else - installing WSL, adding a user to
+the `docker` group, starting the daemon on Linux - is printed as a command to
+run, with the upstream documentation link, because it needs administrator rights
+that an app should not ask for behind the visitor's back.
+
+A tool that reads the reference database (`/DB`) is not runnable locally and the
+bundle README says so. Runs have network access by default, matching
+`SANDBOX_NETWORK=internet`; the run settings switch turns it off for tools that
+must stay offline.
 
 ## Signup Protection (Cloudflare Turnstile)
 
