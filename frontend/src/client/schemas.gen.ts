@@ -703,6 +703,22 @@ export const ParamVisibilityOperatorSchema = {
     title: 'ParamVisibilityOperator'
 } as const;
 
+export const PermissionPublicSchema = {
+    properties: {
+        name: {
+            type: 'string',
+            title: 'Name'
+        },
+        description: {
+            type: 'string',
+            title: 'Description'
+        }
+    },
+    type: 'object',
+    required: ['name', 'description'],
+    title: 'PermissionPublic'
+} as const;
+
 export const QueuePauseRequestSchema = {
     properties: {
         reason: {
@@ -798,6 +814,53 @@ export const QueueStatusSchema = {
     title: 'QueueStatus'
 } as const;
 
+export const RbacUserPublicSchema = {
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        email: {
+            type: 'string',
+            title: 'Email'
+        },
+        full_name: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Full Name'
+        }
+    },
+    type: 'object',
+    required: ['id', 'email', 'full_name'],
+    title: 'RbacUserPublic'
+} as const;
+
+export const RbacUsersPublicSchema = {
+    properties: {
+        data: {
+            items: {
+                '$ref': '#/components/schemas/RbacUserPublic'
+            },
+            type: 'array',
+            title: 'Data'
+        },
+        count: {
+            type: 'integer',
+            title: 'Count'
+        }
+    },
+    type: 'object',
+    required: ['data', 'count'],
+    title: 'RbacUsersPublic'
+} as const;
+
 export const RecentRunSchema = {
     properties: {
         id: {
@@ -860,6 +923,143 @@ export const RecentRunSchema = {
     type: 'object',
     required: ['id', 'tool_name', 'owner_email', 'status', 'created_at'],
     title: 'RecentRun'
+} as const;
+
+export const RoleCreateSchema = {
+    properties: {
+        name: {
+            type: 'string',
+            maxLength: 100,
+            minLength: 1,
+            title: 'Name'
+        },
+        description: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Description'
+        },
+        permissions: {
+            items: {
+                type: 'string'
+            },
+            type: 'array',
+            title: 'Permissions'
+        }
+    },
+    type: 'object',
+    required: ['name'],
+    title: 'RoleCreate'
+} as const;
+
+export const RolePublicSchema = {
+    properties: {
+        name: {
+            type: 'string',
+            maxLength: 100,
+            minLength: 1,
+            title: 'Name'
+        },
+        description: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Description'
+        },
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        is_default: {
+            type: 'boolean',
+            title: 'Is Default'
+        },
+        permissions: {
+            items: {
+                type: 'string'
+            },
+            type: 'array',
+            title: 'Permissions'
+        }
+    },
+    type: 'object',
+    required: ['name', 'id', 'is_default', 'permissions'],
+    title: 'RolePublic'
+} as const;
+
+export const RoleUpdateSchema = {
+    properties: {
+        name: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Name'
+        },
+        description: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Description'
+        },
+        permissions: {
+            anyOf: [
+                {
+                    items: {
+                        type: 'string'
+                    },
+                    type: 'array'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Permissions'
+        }
+    },
+    type: 'object',
+    title: 'RoleUpdate'
+} as const;
+
+export const RolesPublicSchema = {
+    properties: {
+        data: {
+            items: {
+                '$ref': '#/components/schemas/RolePublic'
+            },
+            type: 'array',
+            title: 'Data'
+        },
+        count: {
+            type: 'integer',
+            title: 'Count'
+        }
+    },
+    type: 'object',
+    required: ['data', 'count'],
+    title: 'RolesPublic'
 } as const;
 
 export const RunPublicSchema = {
@@ -2554,6 +2754,64 @@ export const UpdatePasswordSchema = {
     title: 'UpdatePassword'
 } as const;
 
+export const UserAccessPublicSchema = {
+    properties: {
+        user_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'User Id'
+        },
+        role_ids: {
+            items: {
+                type: 'string',
+                format: 'uuid'
+            },
+            type: 'array',
+            title: 'Role Ids'
+        },
+        permissions: {
+            items: {
+                type: 'string'
+            },
+            type: 'array',
+            title: 'Permissions'
+        },
+        effective_permissions: {
+            items: {
+                type: 'string'
+            },
+            type: 'array',
+            title: 'Effective Permissions'
+        }
+    },
+    type: 'object',
+    required: ['user_id', 'role_ids', 'permissions', 'effective_permissions'],
+    title: 'UserAccessPublic'
+} as const;
+
+export const UserAccessUpdateSchema = {
+    properties: {
+        role_ids: {
+            items: {
+                type: 'string',
+                format: 'uuid'
+            },
+            type: 'array',
+            title: 'Role Ids'
+        },
+        permissions: {
+            items: {
+                type: 'string'
+            },
+            type: 'array',
+            title: 'Permissions'
+        }
+    },
+    type: 'object',
+    required: ['role_ids', 'permissions'],
+    title: 'UserAccessUpdate'
+} as const;
+
 export const UserCreateSchema = {
     properties: {
         email: {
@@ -2645,6 +2903,79 @@ export const UserDetailStatsSchema = {
     type: 'object',
     required: ['user', 'runs', 'files', 'top_tools', 'recent_runs'],
     title: 'UserDetailStats'
+} as const;
+
+export const UserMeSchema = {
+    properties: {
+        email: {
+            type: 'string',
+            maxLength: 255,
+            format: 'email',
+            title: 'Email'
+        },
+        is_active: {
+            type: 'boolean',
+            title: 'Is Active',
+            default: true
+        },
+        is_superuser: {
+            type: 'boolean',
+            title: 'Is Superuser',
+            default: false
+        },
+        full_name: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Full Name'
+        },
+        max_runs: {
+            type: 'integer',
+            title: 'Max Runs',
+            default: 10
+        },
+        max_cpus: {
+            type: 'integer',
+            title: 'Max Cpus',
+            default: 4
+        },
+        max_storage: {
+            type: 'integer',
+            title: 'Max Storage',
+            default: 26843545600
+        },
+        max_storage_files: {
+            type: 'integer',
+            title: 'Max Storage Files',
+            default: 300
+        },
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        created_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Created At'
+        },
+        permissions: {
+            items: {
+                type: 'string'
+            },
+            type: 'array',
+            title: 'Permissions'
+        }
+    },
+    type: 'object',
+    required: ['email', 'id', 'created_at'],
+    title: 'UserMe'
 } as const;
 
 export const UserPublicSchema = {

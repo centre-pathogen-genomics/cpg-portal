@@ -4,13 +4,14 @@ import {
   FiFile,
   FiHome,
   FiInfo,
+  FiKey,
   FiLogIn,
   FiLogOut,
   FiSettings,
   FiUsers,
 } from "react-icons/fi"
 import { IoGlasses } from "react-icons/io5"
-
+import { hasPermission } from "@/lib/permissions"
 import useAuth from "../../hooks/useAuth"
 import StorageStats from "../Files/StorageStats"
 
@@ -36,9 +37,13 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
         { icon: FiUsers, title: "Sign Up", path: "/signup" },
       ]
 
-  const items = currentUser?.is_superuser
-    ? [...userItems, { icon: FiUsers, title: "Admin", path: "/admin" }]
-    : userItems
+  const items = [...userItems]
+  if (currentUser?.is_superuser) {
+    items.push({ icon: FiUsers, title: "Admin", path: "/admin" })
+  }
+  if (hasPermission(currentUser, "rbac:read")) {
+    items.push({ icon: FiKey, title: "Access", path: "/rbac" })
+  }
 
   return (
     <>

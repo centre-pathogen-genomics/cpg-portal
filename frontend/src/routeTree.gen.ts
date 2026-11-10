@@ -19,6 +19,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
+import { Route as LayoutRbacRouteImport } from './routes/_layout/rbac'
 import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
 import { Route as LayoutRunsIndexRouteImport } from './routes/_layout/runs/index'
 import { Route as LayoutFilesIndexRouteImport } from './routes/_layout/files/index'
@@ -77,6 +78,11 @@ const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutRbacRoute = LayoutRbacRouteImport.update({
+  id: '/rbac',
+  path: '/rbac',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutAdminRoute = LayoutAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -128,6 +134,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/stream': typeof StreamRoute
   '/admin': typeof LayoutAdminRoute
+  '/rbac': typeof LayoutRbacRoute
   '/settings': typeof LayoutSettingsRoute
   '/files/$fileId': typeof LayoutFilesFileIdRoute
   '/runs/$runid': typeof LayoutRunsRunidRoute
@@ -146,6 +153,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/stream': typeof StreamRoute
   '/admin': typeof LayoutAdminRoute
+  '/rbac': typeof LayoutRbacRoute
   '/settings': typeof LayoutSettingsRoute
   '/': typeof LayoutIndexRoute
   '/files/$fileId': typeof LayoutFilesFileIdRoute
@@ -167,6 +175,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/stream': typeof StreamRoute
   '/_layout/admin': typeof LayoutAdminRoute
+  '/_layout/rbac': typeof LayoutRbacRoute
   '/_layout/settings': typeof LayoutSettingsRoute
   '/_layout/': typeof LayoutIndexRoute
   '/_layout/files/$fileId': typeof LayoutFilesFileIdRoute
@@ -189,6 +198,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/stream'
     | '/admin'
+    | '/rbac'
     | '/settings'
     | '/files/$fileId'
     | '/runs/$runid'
@@ -207,6 +217,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/stream'
     | '/admin'
+    | '/rbac'
     | '/settings'
     | '/'
     | '/files/$fileId'
@@ -227,6 +238,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/stream'
     | '/_layout/admin'
+    | '/_layout/rbac'
     | '/_layout/settings'
     | '/_layout/'
     | '/_layout/files/$fileId'
@@ -321,6 +333,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutSettingsRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/rbac': {
+      id: '/_layout/rbac'
+      path: '/rbac'
+      fullPath: '/rbac'
+      preLoaderRoute: typeof LayoutRbacRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/admin': {
       id: '/_layout/admin'
       path: '/admin'
@@ -382,6 +401,7 @@ declare module '@tanstack/react-router' {
 
 interface LayoutRouteChildren {
   LayoutAdminRoute: typeof LayoutAdminRoute
+  LayoutRbacRoute: typeof LayoutRbacRoute
   LayoutSettingsRoute: typeof LayoutSettingsRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
   LayoutFilesFileIdRoute: typeof LayoutFilesFileIdRoute
@@ -395,6 +415,7 @@ interface LayoutRouteChildren {
 
 const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAdminRoute: LayoutAdminRoute,
+  LayoutRbacRoute: LayoutRbacRoute,
   LayoutSettingsRoute: LayoutSettingsRoute,
   LayoutIndexRoute: LayoutIndexRoute,
   LayoutFilesFileIdRoute: LayoutFilesFileIdRoute,

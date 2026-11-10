@@ -1,4 +1,4 @@
-import { Files, FlaskConical, Play, Users } from "lucide-react"
+import { Files, FlaskConical, Play, ShieldCheck, Users } from "lucide-react"
 
 import { SidebarAppearance } from "@/components/Common/Appearance"
 import { Logo } from "@/components/Common/Logo"
@@ -9,6 +9,7 @@ import {
   SidebarHeader,
 } from "@/components/ui/sidebar"
 import useAuth from "@/hooks/useAuth"
+import { hasPermission } from "@/lib/permissions"
 import { type Item, Main } from "./Main"
 import { User } from "./User"
 
@@ -21,9 +22,13 @@ const baseItems: Item[] = [
 export function AppSidebar() {
   const { user: currentUser } = useAuth()
 
-  const items = currentUser?.is_superuser
-    ? [...baseItems, { icon: Users, title: "Admin", path: "/admin" }]
-    : baseItems
+  const items = [...baseItems]
+  if (currentUser?.is_superuser) {
+    items.push({ icon: Users, title: "Admin", path: "/admin" })
+  }
+  if (hasPermission(currentUser, "rbac:read")) {
+    items.push({ icon: ShieldCheck, title: "Access", path: "/rbac" })
+  }
 
   return (
     <Sidebar collapsible="icon">

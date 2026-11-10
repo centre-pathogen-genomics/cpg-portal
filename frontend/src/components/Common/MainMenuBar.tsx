@@ -12,6 +12,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
+import { hasPermission } from "@/lib/permissions"
 import { cn } from "@/lib/utils"
 import Logo from "/assets/images/cpg-logo.png"
 import Icon from "/assets/images/cpg-logo-icon.png"
@@ -44,9 +45,13 @@ function MainMenuBar() {
       ]
     : [{ title: "About", path: "/about" }]
 
-  const items = currentUser?.is_superuser
-    ? [...userItems, { title: "Admin", path: "/admin" }]
-    : userItems
+  const items = [...userItems]
+  if (currentUser?.is_superuser) {
+    items.push({ title: "Admin", path: "/admin" })
+  }
+  if (hasPermission(currentUser, "rbac:read")) {
+    items.push({ title: "Access", path: "/rbac" })
+  }
 
   const onSubmit = ({ search }: { search?: string }) => {
     const query = search?.trim()
