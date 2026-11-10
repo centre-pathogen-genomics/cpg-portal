@@ -2481,6 +2481,45 @@ export type ToolsReadToolVersionsResponses = {
 
 export type ToolsReadToolVersionsResponse = ToolsReadToolVersionsResponses[keyof ToolsReadToolVersionsResponses];
 
+export type ToolsDownloadRunnerPackData = {
+    body?: never;
+    path: {
+        /**
+         * Tool Name
+         */
+        tool_name: string;
+    };
+    query: {
+        /**
+         * Platform
+         * One of mac-arm64, mac-x64, win-x64, linux-x64
+         */
+        platform: string;
+        /**
+         * Version
+         * Version to pack, defaulting to the stack's default
+         */
+        version?: string | null;
+    };
+    url: '/api/v1/tools/name/{tool_name}/runner-pack';
+};
+
+export type ToolsDownloadRunnerPackErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ToolsDownloadRunnerPackError = ToolsDownloadRunnerPackErrors[keyof ToolsDownloadRunnerPackErrors];
+
+export type ToolsDownloadRunnerPackResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
 export type ToolsDeleteToolData = {
     body?: never;
     path: {
@@ -3817,6 +3856,62 @@ export type RunsToggleRunSharingResponses = {
 };
 
 export type RunsToggleRunSharingResponse = RunsToggleRunSharingResponses[keyof RunsToggleRunSharingResponses];
+
+export type RunnerReadAppData = {
+    body?: never;
+    path: {
+        /**
+         * Platform
+         */
+        platform: string;
+    };
+    query?: never;
+    url: '/api/v1/runner/app/{platform}';
+};
+
+export type RunnerReadAppErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RunnerReadAppError = RunnerReadAppErrors[keyof RunnerReadAppErrors];
+
+export type RunnerReadAppResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
+export type RunnerReadRuntimeImageData = {
+    body?: never;
+    path: {
+        /**
+         * Docker Arch
+         */
+        docker_arch: string;
+    };
+    query?: never;
+    url: '/api/v1/runner/runtime-image/{docker_arch}';
+};
+
+export type RunnerReadRuntimeImageErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RunnerReadRuntimeImageError = RunnerReadRuntimeImageErrors[keyof RunnerReadRuntimeImageErrors];
+
+export type RunnerReadRuntimeImageResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
 
 export type LlmGenerateRunSummaryData = {
     body?: never;

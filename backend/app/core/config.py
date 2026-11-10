@@ -56,6 +56,17 @@ class Settings(BaseSettings):
     # on the worker (the ./DB directory of the httpOnly stack).
     SANDBOX_DATA_PATH: str = "/DB"
 
+    # Built desktop apps and Docker runtime images handed out by the local
+    # runner endpoints (see app/api/routes/runner.py). Empty until the release
+    # artefacts are built, so the endpoints report them as not configured.
+    RUNNER_ARTIFACTS_PATH: str = "/runner-artifacts"
+    # Tag of the runtime image baked into the desktop app; a new image needs a
+    # new tag so existing installs download it.
+    RUNNER_RUNTIME_TAG: str = "cpg-runner-runtime:1"
+    # Public origin of this backend, used for the runtime image URL embedded in
+    # the app. Unset derives it from the proxy headers of the request.
+    RUNNER_PUBLIC_BASE_URL: str = ""
+
     @computed_field  # type: ignore[prop-decorator]
     @property
     def server_host(self) -> str:

@@ -6,6 +6,7 @@ from app.api.routes import (
     llm,
     login,
     rbac,
+    runner,
     runs,
     settings,
     stats,
@@ -22,6 +23,7 @@ api_router.include_router(utils.router, prefix="/utils", tags=["utils"])
 api_router.include_router(tools.router, prefix="/tools", tags=["tools"])
 api_router.include_router(files.router, prefix="/files", tags=["files"])
 api_router.include_router(runs.router, prefix="/runs", tags=["runs"])
+api_router.include_router(runner.router, prefix="/runner", tags=["runner"])
 api_router.include_router(websockets.router, prefix="/websockets", tags=["websockets"])
 api_router.include_router(llm.router, prefix="/llm", tags=["llm"])
 api_router.include_router(settings.router, prefix="/settings", tags=["settings"])

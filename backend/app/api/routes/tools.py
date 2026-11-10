@@ -1,13 +1,18 @@
+import json
 import uuid
 from enum import StrEnum
+from pathlib import Path
 from typing import Any
 
-from fastapi import HTTPException, Query
+from fastapi import HTTPException, Query, Request, Response
 from sqlalchemy import or_, update
 from sqlmodel import Session, col, func, select
 
 from app.api.deps import CurrentUser, CurrentUserOrAnonymous, SessionDep
 from app.api.permission_router import PermissionAPIRouter
+from app.api.routes.runner import PLATFORM_IMAGE_ARCH
+from app.conda import CondaEnvManger
+from app.core.config import settings
 from app.models import (
     Message,
     Tool,
@@ -18,6 +23,7 @@ from app.models import (
     ToolUpdate,
     UserFavouriteToolsLink,
 )
+from app.run_spec import sanitise_shell_input
 from app.tasks import install_tool as install_tool_task
 from app.tasks import uninstall_tool as uninstall_tool_task
 from app.tasks import update_tool as update_tool_task
@@ -242,13 +248,148 @@ def read_tool_versions(
         query = query.where(Tool.enabled, Tool.status.in_(VISIBLE_TOOL_STATUSES))
     # A manual order first, then whatever was created earlier, which suits
     # versions that are git commit hashes.
-    query = query.order_by(
-        Tool.version_sort.asc().nulls_last(), Tool.created_at.asc()
-    )
+    query = query.order_by(Tool.version_sort.asc().nulls_last(), Tool.created_at.asc())
     tools = session.exec(query).all()
     if not tools:
         raise HTTPException(status_code=404, detail="Tool not found")
     return tools
+
+
+# The desktop app is built per host OS and CPU, and every build carries one
+# Docker image. A Windows or Intel machine runs the amd64 image, the same one a
+# Linux host runs. The router that serves the app owns the platform list.
+PACK_PLATFORMS = tuple(PLATFORM_IMAGE_ARCH)
+
+# A tool pack is one JSON document holding the files the app keeps for a tool.
+# It is small because the app itself is downloaded once, per platform, and
+# shared by every tool.
+PACK_MEDIA_TYPE = "application/json"
+
+PACK_README_TEMPLATE = """CPG Runner pack for {name} {version}
+Open this file with CPG Runner, or drop it on the window, to add the tool.
+The first run downloads the tool's runtime image and builds its environment,
+which can take a few minutes. Input files stay on this computer; outputs go to
+the folder chosen in Run settings.
+Tools that read the portal reference database (/DB) are not supported.
+"""
+
+
+def _pack_base_url(request: Request) -> str:
+    """Public origin of this backend, for the image URL inside a pack."""
+    configured = settings.RUNNER_PUBLIC_BASE_URL.rstrip("/")
+    if configured:
+        return configured
+    scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
+    host = request.headers.get(
+        "x-forwarded-host", request.headers.get("host", request.url.netloc)
+    )
+    return f"{scheme}://{host}"
+
+
+def _pack_tool_config(tool: ToolPublic) -> dict[str, Any]:
+    """What the app needs to know about the tool, as `tool.json`."""
+    return {
+        "schema_version": 1,
+        "tool": {
+            "id": str(tool.id),
+            "name": tool.name,
+            "version": tool.version,
+            "description": tool.description,
+            "explanation_of_results_markdown": tool.explanation_of_results_markdown,
+            "command": tool.command,
+            "params": [param.model_dump(mode="json") for param in tool.params or []],
+            "targets": [
+                target.model_dump(mode="json") for target in tool.targets or []
+            ],
+            "setup_files": [
+                setup_file.model_dump(mode="json")
+                for setup_file in tool.setup_files or []
+            ],
+            "post_install": tool.post_install,
+            "min_cpus": tool.min_cpus,
+            "max_cpus": tool.max_cpus,
+            "default_cpus": tool.default_cpus,
+        },
+    }
+
+
+def _pack_environment(tool: ToolPublic) -> str | None:
+    """The conda environment of the tool, as `environment.yml`."""
+    if tool.conda_env is None:
+        return None
+    # The manager is the portal's own renderer, so the app installs exactly the
+    # environment the portal would. It only formats YAML, nothing else.
+    manager = CondaEnvManger(
+        path=Path("/conda") / str(tool.id),
+        env_dict=tool.conda_env.model_dump(),
+        version=tool.version,
+    )
+    return manager.env_yaml_str
+
+
+@router.get("/name/{tool_name}/runner-pack", public=True)
+def download_runner_pack(
+    *,
+    request: Request,
+    session: SessionDep,
+    current_user: CurrentUser,
+    tool_name: str,
+    platform: str = Query(description=f"One of {', '.join(PACK_PLATFORMS)}"),
+    version: str | None = Query(
+        None, description="Version to pack, defaulting to the stack's default"
+    ),
+) -> Response:
+    """Download one tool as a small pack the desktop app imports.
+
+    The app itself is `GET /runner/app/<platform>`, downloaded once and shared
+    by every tool, so a pack holds configuration only - a few kilobytes instead
+    of a 170 MB application per tool.
+    """
+    if platform not in PLATFORM_IMAGE_ARCH:
+        raise HTTPException(status_code=400, detail=f"Unknown platform: {platform}")
+
+    tool = read_tool_with_favourite(
+        session, current_user, name=tool_name, version=version
+    )
+    docker_arch = PLATFORM_IMAGE_ARCH[platform]
+    runtime_sha = (
+        Path(settings.RUNNER_ARTIFACTS_PATH) / "runtime" / f"{docker_arch}.tar.sha256"
+    )
+    if not runtime_sha.is_file():
+        raise HTTPException(
+            status_code=503, detail="Runner artifacts are not configured"
+        )
+
+    pack = {
+        "schema_version": 1,
+        "tool": _pack_tool_config(tool),
+        "runner": {
+            "schema_version": 1,
+            "platform": platform,
+            "docker_arch": docker_arch,
+            "runtime_image": {
+                "tag": settings.RUNNER_RUNTIME_TAG,
+                "url": f"{_pack_base_url(request)}"
+                f"/api/v1/runner/runtime-image/{docker_arch}",
+                "sha256": runtime_sha.read_text().strip(),
+            },
+            "tool_name": tool.name,
+        },
+        "environment_yml": _pack_environment(tool),
+        "readme": PACK_README_TEMPLATE.format(
+            name=tool.name, version=tool.version or ""
+        ),
+    }
+
+    file_name = (
+        f"{sanitise_shell_input(tool.name)}-"
+        f"{sanitise_shell_input(tool.version or 'latest')}.cpgpack"
+    )
+    return Response(
+        content=json.dumps(pack, indent=2),
+        media_type=PACK_MEDIA_TYPE,
+        headers={"Content-Disposition": f'attachment; filename="{file_name}"'},
+    )
 
 
 @router.get("/{tool_id}", public=True, response_model=ToolPublic)
@@ -393,8 +534,7 @@ def create_tool(
         raise HTTPException(
             status_code=400,
             detail=(
-                f"Tool `{tool_in.name}` already has a version "
-                f"`{tool_in.version or ''}`"
+                f"Tool `{tool_in.name}` already has a version `{tool_in.version or ''}`"
             ),
         )
     # The JSON columns keep plain dicts, so the validated models are dumped

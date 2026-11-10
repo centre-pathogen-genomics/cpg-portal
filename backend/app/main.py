@@ -31,6 +31,9 @@ if settings.all_cors_origins:
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+        # The app archive names its build in ETag; a frontend on another origin
+        # needs this to read it, and pins the download link to that build.
+        expose_headers=["ETag"],
     )
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
