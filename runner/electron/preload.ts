@@ -1,0 +1,49 @@
+import { contextBridge, ipcRenderer, webUtils } from "electron"
+
+// The shape the renderer sees for an installed tool. It is repeated in
+// `renderer/src/types.d.ts`, which is the contract for the window object.
+type ToolEntry = {
+  id: string
+  name: string
+  version: string
+  description: string | null
+}
+
+const TOKEN_ARGUMENT = "--cpg-token="
+const tokenArgument = process.argv.find((argument) =>
+  argument.startsWith(TOKEN_ARGUMENT),
+)
+const token = tokenArgument
+  ? tokenArgument.slice(TOKEN_ARGUMENT.length)
+  : ""
+
+contextBridge.exposeInMainWorld("cpgRunner", {
+  token,
+  tools: (): Promise<ToolEntry[]> => ipcRenderer.invoke("runner:tools"),
+  importPacks: (): Promise<ToolEntry[]> =>
+    ipcRenderer.invoke("runner:import-packs"),
+  importPackPaths: (files: string[]): Promise<ToolEntry[]> =>
+    ipcRenderer.invoke("runner:import-paths", files),
+  openTool: (toolId: string): Promise<void> =>
+    ipcRenderer.invoke("runner:open-tool", toolId),
+  home: (): Promise<void> => ipcRenderer.invoke("runner:home"),
+  pickFiles: (options: {
+    extensions?: string[]
+    multiple?: boolean
+  }): Promise<string[]> => ipcRenderer.invoke("runner:pick-files", options),
+  pickDirectory: (defaultPath?: string): Promise<string | null> =>
+    ipcRenderer.invoke("runner:pick-directory", defaultPath),
+  revealPath: (target: string): Promise<void> =>
+    ipcRenderer.invoke("runner:reveal", target),
+  openPath: (target: string): Promise<string> =>
+    ipcRenderer.invoke("runner:open-path", target),
+  openExternal: (url: string): Promise<boolean> =>
+    ipcRenderer.invoke("runner:open-external", url),
+  getPathForFile: (file: File): string => {
+    try {
+      return webUtils.getPathForFile(file)
+    } catch {
+      return ""
+    }
+  },
+})

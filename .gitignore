@@ -14,3 +14,10 @@ node_modules/
 DB/*
 .prod.env
 *.pyc
+# CPG Runner build output (runner/runtime/image.lock stays tracked)
+runner/artifacts/
+runner/dist/
+runner/sidecar/dist/
+runner/renderer/dist/
+runner/sidecar/.venv/
+runner/sidecar/build/

@@ -1,0 +1,25 @@
+[project]
+name = "cpg-runner"
+version = "0.1.0"
+description = "Local CPG tool runner sidecar"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "jinja2",
+    "pyyaml",
+    "httpx",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "pyinstaller",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+pythonpath = [".", "../../backend"]
+testpaths = ["tests"]

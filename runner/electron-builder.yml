@@ -1,0 +1,23 @@
+appId: org.cpg.portal.runner
+productName: CPG Runner
+fileAssociations:
+  # Double-clicking a downloaded tool pack opens it in this app.
+  - ext: cpgpack
+    name: CPG Runner tool pack
+    role: Editor
+
+directories: { output: dist, buildResources: build }
+files: ["dist/electron/**/*", "package.json"]
+extraResources:
+  - { from: sidecar/dist/cpg-runner, to: sidecar/cpg-runner }
+  - { from: renderer/dist, to: renderer }
+mac:
+  category: public.app-category.utilities
+  target: [{ target: dir, arch: [arm64, x64] }]
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+win: { target: [{ target: zip, arch: [x64] }] }
+linux: { target: [{ target: zip, arch: [x64] }], category: Science }
+asar: true

@@ -1,0 +1,39 @@
+{
+  "name": "cpg-runner",
+  "private": true,
+  "version": "1.0.0",
+  "description": "CPG Runner desktop shell: Electron around the local tool sidecar",
+  "main": "dist/electron/main.js",
+  "scripts": {
+    "dev": "vite --config renderer/vite.config.ts",
+    "build": "bun run build:renderer && bun run build:main",
+    "build:renderer": "vite build --config renderer/vite.config.ts",
+    "build:main": "bun build ./electron/main.ts ./electron/preload.ts --outdir dist/electron --target node --format cjs --external electron",
+    "package": "bun run build && electron-builder --config electron-builder.yml"
+  },
+  "devDependencies": {
+    "@tailwindcss/typography": "^0.5.20",
+    "@tailwindcss/vite": "^4.3.0",
+    "@types/node": "^25.9.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react-swc": "^4.3.1",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "electron": "45.2.3",
+    "electron-builder": "^26.18.0",
+    "lucide-react": "^1.17.0",
+    "next-themes": "^0.4.6",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "sonner": "^2.0.7",
+    "tailwind-merge": "^3.6.0",
+    "tailwindcss": "^4.2.1",
+    "tw-animate-css": "^1.4.0",
+    "typescript": "^5.9.3",
+    "vite": "^8.0.16"
+  },
+  "dependencies": {}
+}
