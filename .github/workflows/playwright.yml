@@ -33,6 +33,11 @@ jobs:
           changed:
             - backend/**
             - frontend/**
+            # The root workspace and its lockfile decide what the frontend and
+            # playwright images install.
+            - package.json
+            - bun.lock
+            - runner/**
             - .env
             - compose*.yml
             - .github/workflows/playwright.yml
