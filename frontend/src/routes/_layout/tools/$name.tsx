@@ -45,6 +45,7 @@ import Badge from "../../../components/Tools/badges/Badge"
 import GitHubBadge from "../../../components/Tools/badges/GitHubBadge"
 import CreateVersionButton from "../../../components/Tools/CreateVersionButton"
 import FavouriteButton from "../../../components/Tools/FavouriteButton"
+import RunLocallyButton from "../../../components/Tools/RunLocallyButton"
 import RunToolForm from "../../../components/Tools/RunToolForm"
 import ToolVersionsAdmin from "../../../components/Tools/ToolVersionsAdmin"
 import useCustomToast from "../../../hooks/useCustomToast"
@@ -611,6 +612,7 @@ export function Tool() {
                   </RouterLink>
                 </Button>
               )}
+              <RunLocallyButton tool={tool} />
               <FavouriteButton
                 tool={tool}
                 isFavourited={favourited}
