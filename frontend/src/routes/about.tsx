@@ -1,5 +1,5 @@
-import { createFileRoute, Link as RouterLink } from "@tanstack/react-router";
-import { CheckCircle } from "lucide-react";
+import { createFileRoute, Link as RouterLink } from "@tanstack/react-router"
+import { CheckCircle } from "lucide-react"
 import {
   Table,
   TableBody,
@@ -7,21 +7,21 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import Logo from "/assets/images/cpg-logo.png";
-import MainMenuBar from "../components/Common/MainMenuBar";
+} from "@/components/ui/table"
+import Logo from "/assets/images/cpg-logo.png"
+import MainMenuBar from "../components/Common/MainMenuBar"
 
 export const Route = createFileRoute("/about")({
   component: About,
   head: () => ({ meta: [{ title: "About | CPG Portal" }] }),
-});
+})
 
 const ExternalLink = ({
   href,
   children,
 }: {
-  href: string;
-  children: React.ReactNode;
+  href: string
+  children: React.ReactNode
 }) => (
   <a
     href={href}
@@ -31,7 +31,7 @@ const ExternalLink = ({
   >
     {children}
   </a>
-);
+)
 
 function About() {
   const features = [
@@ -55,7 +55,7 @@ function About() {
       "Completely open source",
       "Encourages local ownership and regional collaboration",
     ],
-  ];
+  ]
   const differences = [
     [
       "Built for real-world labs.",
@@ -73,7 +73,7 @@ function About() {
       "Ease of use.",
       " Upload FASTQ files with a simple drag-and-drop interface, and run analyses with a click. The Portal handles the complexity of bioinformatics pipelines, so you can focus on results.",
     ],
-  ];
+  ]
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background w-full">
       <MainMenuBar />
@@ -177,7 +177,7 @@ function About() {
         </div>
       </main>
     </div>
-  );
+  )
 }
 
-export default About;
+export default About
