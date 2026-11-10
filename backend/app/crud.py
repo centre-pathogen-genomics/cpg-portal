@@ -17,8 +17,10 @@ from app.models import (
     File,
     FilesStatistics,
     FileType,
+    Role,
     User,
     UserCreate,
+    UserRole,
     UserUpdate,
     new_token_version,
 )
@@ -30,6 +32,12 @@ def create_user(*, session: Session, user_create: UserCreate) -> User:
         user_create, update={"hashed_password": get_password_hash(user_create.password)}
     )
     session.add(db_obj)
+    # A new account starts with the server-managed default role, so it can use
+    # the portal without an explicit grant. The startup sync creates that role
+    # if it is missing, after which the migration's assignment covers users.
+    default_role = session.exec(select(Role).where(col(Role.is_default).is_(True))).first()
+    if default_role is not None:
+        session.add(UserRole(user_id=db_obj.id, role_id=default_role.id))
     session.commit()
     session.refresh(db_obj)
     return db_obj

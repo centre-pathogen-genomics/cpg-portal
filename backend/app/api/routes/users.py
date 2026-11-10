@@ -3,17 +3,18 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import HTTPException, Request
 from sqlalchemy import delete, update
 from sqlmodel import func, select
 
 from app import crud
-from app.api.deps import (
-    CurrentUser,
-    SessionDep,
-    get_current_active_superuser,
-)
+from app.api.deps import CurrentUser, SessionDep
+from app.api.permission_router import PermissionAPIRouter
 from app.core.config import settings
+from app.core.rbac import (
+    effective_permission_names,
+    has_permission,
+)
 from app.core.security import get_password_hash, verify_password
 from app.core.turnstile import verify_turnstile
 from app.models import (
@@ -25,8 +26,11 @@ from app.models import (
     User,
     UserCreate,
     UserFavouriteToolsLink,
+    UserMe,
+    UserPermission,
     UserPublic,
     UserRegister,
+    UserRole,
     UsersPublic,
     UserUpdate,
     UserUpdateMe,
@@ -37,7 +41,7 @@ from app.utils import (
     send_email,
 )
 
-router = APIRouter()
+router = PermissionAPIRouter(resource="users")
 
 logger = logging.getLogger(__name__)
 
@@ -93,6 +97,8 @@ def _delete_user_with_owned_data(*, session: SessionDep, user: User) -> None:
     session.exec(
         delete(UserFavouriteToolsLink).where(UserFavouriteToolsLink.user_id == user.id)
     )
+    session.exec(delete(UserRole).where(UserRole.user_id == user.id))
+    session.exec(delete(UserPermission).where(UserPermission.user_id == user.id))
     user_id = user.id
     session.delete(user)
     session.commit()
@@ -108,11 +114,7 @@ def _delete_user_with_owned_data(*, session: SessionDep, user: User) -> None:
             )
 
 
-@router.get(
-    "/",
-    dependencies=[Depends(get_current_active_superuser)],
-    response_model=UsersPublic,
-)
+@router.get("/", action="list", response_model=UsersPublic)
 def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
     """
     Retrieve users, newest first.
@@ -133,9 +135,7 @@ def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
     return UsersPublic(data=users, count=count)
 
 
-@router.post(
-    "/", dependencies=[Depends(get_current_active_superuser)], response_model=UserPublic
-)
+@router.post("/", response_model=UserPublic)
 def create_user(*, session: SessionDep, user_in: UserCreate) -> Any:
     """
     Create new user.
@@ -163,7 +163,7 @@ def create_user(*, session: SessionDep, user_in: UserCreate) -> Any:
     return user
 
 
-@router.patch("/me", response_model=UserPublic)
+@router.patch("/me", action="update_self", response_model=UserPublic)
 def update_user_me(
     *, session: SessionDep, user_in: UserUpdateMe, current_user: CurrentUser
 ) -> Any:
@@ -185,7 +185,7 @@ def update_user_me(
     return current_user
 
 
-@router.patch("/me/password", response_model=Message)
+@router.patch("/me/password", action="update_self", response_model=Message)
 def update_password_me(
     *, session: SessionDep, body: UpdatePassword, current_user: CurrentUser
 ) -> Any:
@@ -208,15 +208,21 @@ def update_password_me(
     return Message(message="Password updated successfully")
 
 
-@router.get("/me", response_model=UserPublic)
-def read_user_me(current_user: CurrentUser) -> Any:
+@router.get("/me", response_model=UserMe, public=True)
+def read_user_me(current_user: CurrentUser, session: SessionDep) -> Any:
     """
-    Get current user.
+    Get current user, with the permissions they hold.
+
+    The permissions are read from the database, not the token, so a change
+    takes effect on the next request.
     """
-    return current_user
+    return UserMe(
+        **UserPublic.model_validate(current_user).model_dump(),
+        permissions=sorted(effective_permission_names(session, current_user)),
+    )
 
 
-@router.delete("/me", response_model=Message)
+@router.delete("/me", action="delete_self", response_model=Message)
 def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Any:
     """
     Delete own user.
@@ -229,7 +235,7 @@ def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Any:
     return Message(message="User deleted successfully")
 
 
-@router.post("/signup", response_model=UserPublic)
+@router.post("/signup", public=True, response_model=UserPublic)
 def register_user(
     session: SessionDep, user_in: UserRegister, request: Request
 ) -> Any:
@@ -270,7 +276,7 @@ def register_user(
     return user
 
 
-@router.get("/activate")
+@router.get("/activate", public=True)
 def activate_account(token: str, session: SessionDep) -> Message:
     """
     Activate user account from confirmation email token.
@@ -301,7 +307,7 @@ def read_user_by_id(
     user = session.get(User, user_id)
     if user == current_user:
         return user
-    if not current_user.is_superuser:
+    if not has_permission(session, current_user, "users:list"):
         raise HTTPException(
             status_code=403,
             detail="The user doesn't have enough privileges",
@@ -311,11 +317,7 @@ def read_user_by_id(
     return user
 
 
-@router.patch(
-    "/{user_id}",
-    dependencies=[Depends(get_current_active_superuser)],
-    response_model=UserPublic,
-)
+@router.patch("/{user_id}", response_model=UserPublic)
 def update_user(
     *,
     session: SessionDep,
@@ -343,7 +345,7 @@ def update_user(
     return db_user
 
 
-@router.delete("/{user_id}", dependencies=[Depends(get_current_active_superuser)])
+@router.delete("/{user_id}")
 def delete_user(
     session: SessionDep, current_user: CurrentUser, user_id: uuid.UUID
 ) -> Message:

@@ -666,4 +666,4 @@ def test_delete_user_without_privileges(
         headers=normal_user_token_headers,
     )
     assert r.status_code == 403
-    assert r.json()["detail"] == "The user doesn't have enough privileges"
+    assert r.json()["detail"] == "Missing permission: users:delete"

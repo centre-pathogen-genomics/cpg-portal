@@ -1,4 +1,4 @@
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from typing import Annotated
 
 import jwt
@@ -11,6 +11,7 @@ from sqlmodel import Session
 from app.core import security
 from app.core.config import settings
 from app.core.db import engine
+from app.core.rbac import has_permission
 from app.models import File, TokenPayload, User
 
 reusable_oauth2 = OAuth2PasswordBearer(
@@ -96,15 +97,15 @@ CurrentUser = Annotated[User, Depends(get_current_user)]
 CurrentUserOrAnonymous = Annotated[User | None, Depends(get_current_user_or_anonymous)]
 
 
-def get_current_active_superuser(current_user: CurrentUser) -> User:
-    if not current_user.is_superuser:
-        raise HTTPException(
-            status_code=403, detail="The user doesn't have enough privileges"
-        )
-    return current_user
+def require_permission(permission: str) -> Callable[..., User]:
+    def check_permission(current_user: CurrentUser, session: SessionDep) -> User:
+        if not has_permission(session, current_user, permission):
+            raise HTTPException(
+                status_code=403, detail=f"Missing permission: {permission}"
+            )
+        return current_user
 
-
-SuperUser = Annotated[User, Depends(get_current_active_superuser)]
+    return check_permission
 
 
 def get_file(session: SessionDep, token: str) -> User:

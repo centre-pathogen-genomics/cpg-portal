@@ -1,17 +1,15 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Depends
 from pydantic import Field
 from sqlmodel import SQLModel, func, select
 
-from app.api.deps import SessionDep, get_current_active_superuser
+from app.api.deps import SessionDep
+from app.api.permission_router import PermissionAPIRouter
 from app.core.app_settings import get_or_create_app_settings
 from app.models import Run, RunStatus
 from app.scheduling import dispatch_pending_runs, reserved_cpus, total_cpus
 
-router = APIRouter(
-    dependencies=[Depends(get_current_active_superuser)],
-)
+router = PermissionAPIRouter(resource="admin")
 
 
 class QueueStatus(SQLModel):
@@ -53,7 +51,7 @@ def read_queue_status(session: SessionDep) -> QueueStatus:
     return _queue_status(session)
 
 
-@router.post("/queue/pause", response_model=QueueStatus)
+@router.post("/queue/pause", action="update", response_model=QueueStatus)
 def pause_queue(
     session: SessionDep,
     body: QueuePauseRequest,
@@ -67,7 +65,7 @@ def pause_queue(
     return _queue_status(session)
 
 
-@router.post("/queue/resume", response_model=QueueStatus)
+@router.post("/queue/resume", action="update", response_model=QueueStatus)
 async def resume_queue(session: SessionDep) -> QueueStatus:
     app_settings = get_or_create_app_settings(session)
     app_settings.queue_paused = False

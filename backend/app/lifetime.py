@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from sqlmodel import Session, select
 
 from app.core.db import engine
+from app.core.rbac import sync_rbac
 from app.models import Run, RunStatus, Tool, ToolStatus
 from app.run_records import record_run
 from app.scheduling import dispatch_pending_runs
@@ -119,6 +120,10 @@ async def shutdown_broadcast() -> None:
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    # The permission catalog and the default role come from the code, so they
+    # are aligned before the first request can be authorised.
+    with Session(engine) as session:
+        sync_rbac(session)
     await startup_taskiq()
     await startup_broadcast()
     try:

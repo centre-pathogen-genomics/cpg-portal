@@ -2,17 +2,12 @@ import uuid
 from enum import StrEnum
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import HTTPException, Query
 from sqlalchemy import or_, update
 from sqlmodel import Session, col, func, select
 
-from app.api.deps import (
-    CurrentUser,
-    CurrentUserOrAnonymous,
-    SessionDep,
-    SuperUser,
-    get_current_active_superuser,
-)
+from app.api.deps import CurrentUser, CurrentUserOrAnonymous, SessionDep
+from app.api.permission_router import PermissionAPIRouter
 from app.models import (
     Message,
     Tool,
@@ -27,7 +22,7 @@ from app.tasks import install_tool as install_tool_task
 from app.tasks import uninstall_tool as uninstall_tool_task
 from app.tasks import update_tool as update_tool_task
 
-router = APIRouter()
+router = PermissionAPIRouter(resource="tools")
 
 # Enabled tools stay visible while their environment is being installed or
 # updated: runs for them queue up and start once the tool is ready.
@@ -47,7 +42,7 @@ class ToolsOrderBy(StrEnum):
     run_count = "run_count"
 
 
-@router.get("/", response_model=ToolsPublic)
+@router.get("/", public=True, response_model=ToolsPublic)
 def read_tools(
     session: SessionDep,
     current_user: CurrentUserOrAnonymous,
@@ -206,7 +201,7 @@ def read_tool_with_favourite(
     return tool_public
 
 
-@router.get("/name/{tool_name}", response_model=ToolPublic)
+@router.get("/name/{tool_name}", public=True, response_model=ToolPublic)
 def read_tool_by_name(
     *,
     session: SessionDep,
@@ -229,7 +224,7 @@ def read_tool_by_name(
     return tool_public
 
 
-@router.get("/name/{tool_name}/versions", response_model=list[ToolPublic])
+@router.get("/name/{tool_name}/versions", public=True, response_model=list[ToolPublic])
 def read_tool_versions(
     *,
     session: SessionDep,
@@ -256,7 +251,7 @@ def read_tool_versions(
     return tools
 
 
-@router.get("/{tool_id}", response_model=ToolPublic)
+@router.get("/{tool_id}", public=True, response_model=ToolPublic)
 def read_tool(
     *, session: SessionDep, current_user: CurrentUserOrAnonymous, tool_id: uuid.UUID
 ) -> Any:
@@ -268,7 +263,7 @@ def read_tool(
     return tool_public
 
 
-@router.post("/{tool_id}/favourite", response_model=Message)
+@router.post("/{tool_id}/favourite", action="favourite", response_model=Message)
 def favourite_tool(
     tool_id: uuid.UUID, session: SessionDep, current_user: CurrentUser
 ) -> Any:
@@ -295,7 +290,7 @@ def favourite_tool(
     return Message(message="Tool favourited successfully")
 
 
-@router.delete("/{tool_id}/favourite", response_model=Message)
+@router.delete("/{tool_id}/favourite", action="favourite", response_model=Message)
 def unfavourite_tool(
     tool_id: uuid.UUID, session: SessionDep, current_user: CurrentUser
 ) -> Any:
@@ -388,7 +383,6 @@ def _set_tool_default(session: Session, tool: Tool, is_default: bool) -> None:
 def create_tool(
     *,
     session: SessionDep,
-    current_user: SuperUser,  # noqa: ARG001
     tool_in: ToolCreate,
 ) -> Any:
     """
@@ -417,11 +411,7 @@ def create_tool(
     return tool
 
 
-@router.post(
-    "/{tool_id}/versions",
-    dependencies=[Depends(get_current_active_superuser)],
-    response_model=ToolPublic,
-)
+@router.post("/{tool_id}/versions", action="create", response_model=ToolPublic)
 def create_tool_version(
     *,
     session: SessionDep,
@@ -476,12 +466,11 @@ def create_tool_version(
     return new_tool
 
 
-@router.post("/{tool_id}/enable", response_model=Message)
+@router.post("/{tool_id}/enable", action="update", response_model=Message)
 def enable_tool(
     *,
     session: SessionDep,
     tool_id: uuid.UUID,
-    current_user: SuperUser,  # noqa: ARG001
 ) -> Any:
     """
     Enable a tool by ID.
@@ -495,12 +484,11 @@ def enable_tool(
     return Message(message="Tool enabled successfully")
 
 
-@router.post("/{tool_id}/disable", response_model=Message)
+@router.post("/{tool_id}/disable", action="update", response_model=Message)
 def disable_tool(
     *,
     session: SessionDep,
     tool_id: uuid.UUID,
-    current_user: SuperUser,  # noqa: ARG001
 ) -> Any:
     """
     Disable a tool by ID.
@@ -514,11 +502,7 @@ def disable_tool(
     return Message(message="Tool disabled successfully")
 
 
-@router.post(
-    "/{tool_id}/enable_llm_summary",
-    response_model=Message,
-    dependencies=[Depends(get_current_active_superuser)],
-)
+@router.post("/{tool_id}/enable_llm_summary", action="update", response_model=Message)
 def enable_llm_summary(
     *,
     session: SessionDep,
@@ -536,11 +520,7 @@ def enable_llm_summary(
     return Message(message="LLM summary enabled successfully")
 
 
-@router.post(
-    "/{tool_id}/disable_llm_summary",
-    response_model=Message,
-    dependencies=[Depends(get_current_active_superuser)],
-)
+@router.post("/{tool_id}/disable_llm_summary", action="update", response_model=Message)
 def disable_llm_summary(
     *,
     session: SessionDep,
@@ -558,12 +538,11 @@ def disable_llm_summary(
     return Message(message="LLM summary disabled successfully")
 
 
-@router.post("/{tool_id}/update", response_model=Message)
+@router.post("/{tool_id}/update", action="update", response_model=Message)
 async def update_tool_post_install(
     *,
     session: SessionDep,
     tool_id: uuid.UUID,
-    current_user: SuperUser,  # noqa: ARG001
 ) -> Any:
     """
     Update a tool by ID: its post-install command runs again against the
@@ -601,12 +580,11 @@ async def update_tool_post_install(
     return Message(message=f"Tool update task {taskiq_task.task_id} started")
 
 
-@router.post("/{tool_id}/install", response_model=Message)
+@router.post("/{tool_id}/install", action="update", response_model=Message)
 async def install_tool(
     *,
     session: SessionDep,
     tool_id: uuid.UUID,
-    current_user: SuperUser,  # noqa: ARG001
 ) -> Any:
     """
     Install a tool by ID.
@@ -633,12 +611,11 @@ async def install_tool(
     return Message(message=f"Tool installation task {taskiq_task.task_id} started")
 
 
-@router.delete("/{tool_id}/uninstall", response_model=Message)
+@router.delete("/{tool_id}/uninstall", action="update", response_model=Message)
 async def uninstall_tool(
     *,
     session: SessionDep,
     tool_id: uuid.UUID,
-    current_user: SuperUser,  # noqa: ARG001
 ) -> Any:
     """
     Uninstall a tool by ID.
@@ -662,11 +639,7 @@ async def uninstall_tool(
     return Message(message=f"Tool uninstallation task {taskiq_task.task_id} started")
 
 
-@router.patch(
-    "/{tool_id}",
-    dependencies=[Depends(get_current_active_superuser)],
-    response_model=ToolPublic,
-)
+@router.patch("/{tool_id}", response_model=ToolPublic)
 def update_tool(
     *,
     session: SessionDep,
@@ -705,11 +678,7 @@ def update_tool(
     return tool
 
 
-@router.delete(
-    "/{tool_id}",
-    dependencies=[Depends(get_current_active_superuser)],
-    response_model=Message,
-)
+@router.delete("/{tool_id}", response_model=Message)
 def delete_tool(*, session: SessionDep, tool_id: uuid.UUID) -> Any:
     """
     Delete tool by ID.

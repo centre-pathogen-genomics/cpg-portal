@@ -29,6 +29,53 @@ class UserFavouriteToolsLink(SQLModel, table=True):
     )
 
 
+# RBAC link tables. The names are explicit so the generic `role` and
+# `permission` identifiers stay free.
+class UserRole(SQLModel, table=True):
+    __tablename__ = "rbac_user_role"
+
+    user_id: uuid.UUID | None = Field(
+        default=None,
+        foreign_key="user.id",
+        primary_key=True,
+        ondelete="CASCADE",
+    )
+    role_id: uuid.UUID | None = Field(
+        default=None,
+        foreign_key="rbac_role.id",
+        primary_key=True,
+        ondelete="CASCADE",
+    )
+
+
+class RolePermission(SQLModel, table=True):
+    __tablename__ = "rbac_role_permission"
+
+    role_id: uuid.UUID | None = Field(
+        default=None,
+        foreign_key="rbac_role.id",
+        primary_key=True,
+        ondelete="CASCADE",
+    )
+    permission_name: str = Field(
+        foreign_key="rbac_permission.name", primary_key=True, ondelete="CASCADE"
+    )
+
+
+class UserPermission(SQLModel, table=True):
+    __tablename__ = "rbac_user_permission"
+
+    user_id: uuid.UUID | None = Field(
+        default=None,
+        foreign_key="user.id",
+        primary_key=True,
+        ondelete="CASCADE",
+    )
+    permission_name: str = Field(
+        foreign_key="rbac_permission.name", primary_key=True, ondelete="CASCADE"
+    )
+
+
 def _utcnow_naive() -> datetime:
     return datetime.now(UTC).replace(tzinfo=None)
 
@@ -36,6 +83,37 @@ def _utcnow_naive() -> datetime:
 def new_token_version() -> int:
     """Random (not sequential) so a forged access token cannot guess it."""
     return secrets.randbits(31)
+
+
+class Role(SQLModel, table=True):
+    __tablename__ = "rbac_role"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    name: str = Field(unique=True, index=True, max_length=100)
+    description: str | None = Field(default=None, max_length=255)
+    is_default: bool = Field(default=False)
+    created_at: datetime = Field(default_factory=_utcnow_naive)
+
+    users: list[User] = Relationship(back_populates="roles", link_model=UserRole)
+    permissions: list[Permission] = Relationship(
+        back_populates="roles", link_model=RolePermission
+    )
+
+
+class Permission(SQLModel, table=True):
+    __tablename__ = "rbac_permission"
+
+    name: str = Field(primary_key=True, max_length=100)
+    # Holds one "function: docstring" entry per enforcing endpoint; the size
+    # matches MAX_PERMISSION_DESCRIPTION in app/core/rbac.py.
+    description: str = Field(max_length=1000)
+
+    roles: list[Role] = Relationship(
+        back_populates="permissions", link_model=RolePermission
+    )
+    users: list[User] = Relationship(
+        back_populates="direct_permissions", link_model=UserPermission
+    )
 
 
 # Shared properties
@@ -96,6 +174,10 @@ class User(UserBase, table=True):
     )
     files: list[File] = Relationship(back_populates="owner")
     runs: list[Run] = Relationship(back_populates="owner")
+    roles: list[Role] = Relationship(back_populates="users", link_model=UserRole)
+    direct_permissions: list[Permission] = Relationship(
+        back_populates="users", link_model=UserPermission
+    )
 
 
 class AuthTokenPurpose(StrEnum):
@@ -133,6 +215,64 @@ class UserPublic(UserBase):
 class UsersPublic(SQLModel):
     data: list[UserPublic]
     count: int
+
+
+class UserMe(UserPublic):
+    permissions: list[str] = Field(default_factory=list)
+
+
+class PermissionPublic(SQLModel):
+    name: str
+    description: str
+
+
+class RoleBase(SQLModel):
+    name: str = Field(min_length=1, max_length=100)
+    description: str | None = Field(default=None, max_length=255)
+
+
+class RoleCreate(RoleBase):
+    permissions: list[str] = Field(default_factory=list)
+
+
+class RoleUpdate(SQLModel):
+    name: str | None = None
+    description: str | None = None
+    permissions: list[str] | None = None
+
+
+class RolePublic(RoleBase):
+    id: uuid.UUID
+    is_default: bool
+    permissions: list[str]
+
+
+class RolesPublic(SQLModel):
+    data: list[RolePublic]
+    count: int
+
+
+class RbacUserPublic(SQLModel):
+    id: uuid.UUID
+    email: str
+    full_name: str | None
+
+
+class RbacUsersPublic(SQLModel):
+    data: list[RbacUserPublic]
+    count: int
+
+
+class UserAccessPublic(SQLModel):
+    user_id: uuid.UUID
+    role_ids: list[uuid.UUID]
+    permissions: list[str]
+    effective_permissions: list[str]
+
+
+class UserAccessUpdate(SQLModel):
+    role_ids: list[uuid.UUID]
+    permissions: list[str]
 
 
 # Generic message

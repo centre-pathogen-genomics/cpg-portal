@@ -1,12 +1,12 @@
 from datetime import timedelta
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app import crud
-from app.api.deps import CurrentUser, SessionDep, get_current_active_superuser
+from app.api.deps import CurrentUser, SessionDep
+from app.api.permission_router import PermissionAPIRouter
 from app.core import security
 from app.core.config import settings
 from app.core.security import get_password_hash
@@ -16,10 +16,10 @@ from app.utils import (
     send_email,
 )
 
-router = APIRouter()
+router = PermissionAPIRouter(resource="login")
 
 
-@router.post("/login/access-token")
+@router.post("/login/access-token", public=True)
 def login_access_token(
     session: SessionDep, form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
 ) -> Token:
@@ -43,7 +43,7 @@ def login_access_token(
     )
 
 
-@router.post("/login/test-token", response_model=UserPublic)
+@router.post("/login/test-token", public=True, response_model=UserPublic)
 def test_token(current_user: CurrentUser) -> Any:
     """
     Test access token
@@ -51,7 +51,7 @@ def test_token(current_user: CurrentUser) -> Any:
     return current_user
 
 
-@router.post("/password-recovery/{email}")
+@router.post("/password-recovery/{email}", public=True)
 def recover_password(email: str, session: SessionDep) -> Message:
     """
     Password Recovery
@@ -76,7 +76,7 @@ def recover_password(email: str, session: SessionDep) -> Message:
     )
 
 
-@router.post("/reset-password/")
+@router.post("/reset-password/", public=True)
 def reset_password(session: SessionDep, body: NewPassword) -> Message:
     """
     Reset password.
@@ -96,31 +96,3 @@ def reset_password(session: SessionDep, body: NewPassword) -> Message:
     session.add(user)
     session.commit()
     return Message(message="Password updated successfully")
-
-
-@router.post(
-    "/password-recovery-html-content/{email}",
-    dependencies=[Depends(get_current_active_superuser)],
-    response_class=HTMLResponse,
-)
-def recover_password_html_content(email: str, session: SessionDep) -> Any:
-    """
-    HTML Content for Password Recovery
-    """
-    user = crud.get_user_by_email(session=session, email=email)
-
-    if not user:
-        raise HTTPException(
-            status_code=404,
-            detail="The user with this username does not exist in the system.",
-        )
-    password_reset_token = crud.create_auth_token(
-        session=session, user=user, purpose=AuthTokenPurpose.RESET
-    )
-    email_data = generate_reset_password_email(
-        email_to=user.email, email=email, token=password_reset_token
-    )
-
-    return HTMLResponse(
-        content=email_data.html_content, headers={"subject:": email_data.subject}
-    )

@@ -2,16 +2,17 @@ import uuid
 from enum import StrEnum
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import HTTPException
 from google import genai
 from jinja2 import Environment as JinjaEnvironment
 
 from app.api.deps import CurrentUser, SessionDep
+from app.api.permission_router import PermissionAPIRouter
 from app.core.app_settings import get_or_create_app_settings
 from app.core.config import settings
 from app.models import File, Run
 
-router = APIRouter()
+router = PermissionAPIRouter(resource="llm")
 
 
 def get_file_content_for_prompt(file: File, threshold: int = 10000) -> str:
@@ -52,7 +53,7 @@ class Audience(StrEnum):
 
 
 
-@router.post("/summary/{run_id}", response_model=str)
+@router.post("/summary/{run_id}", action="summarize", response_model=str)
 async def generate_run_summary(
     session: SessionDep,
     current_user: CurrentUser,

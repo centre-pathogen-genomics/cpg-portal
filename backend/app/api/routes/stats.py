@@ -2,13 +2,14 @@ import uuid
 from datetime import datetime, timedelta
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import HTTPException, Query
 from sqlmodel import Session, SQLModel, and_, func, select
 
-from app.api.deps import SessionDep, SuperUser
+from app.api.deps import SessionDep
+from app.api.permission_router import PermissionAPIRouter
 from app.models import File, Run, RunStatus, Tool, ToolPublic, User, UserPublic
 
-router = APIRouter()
+router = PermissionAPIRouter(resource="stats")
 
 
 class CountItem(SQLModel):
@@ -371,7 +372,6 @@ def _recent_runs(
 @router.get("/stats", response_model=SystemStats)
 def get_system_stats(
     session: SessionDep,
-    _current_user: SuperUser,
     start: datetime | None = Query(default=None),
     end: datetime | None = Query(default=None),
 ) -> SystemStats:
@@ -387,7 +387,6 @@ def get_system_stats(
 @router.get("/stats/summary", response_model=StatsResponse)
 def get_stats_summary(
     session: SessionDep,
-    _current_user: SuperUser,
 ) -> StatsResponse:
     total_users = session.exec(select(func.count()).select_from(User)).one()
     total_tools = session.exec(select(func.count()).select_from(Tool)).one()
@@ -415,7 +414,6 @@ def get_stats_summary(
 @router.get("/users/{user_id}", response_model=UserDetailStats)
 def get_user_detail_stats(
     session: SessionDep,
-    _current_user: SuperUser,
     user_id: uuid.UUID,
     start: datetime | None = Query(default=None),
     end: datetime | None = Query(default=None),
@@ -452,7 +450,6 @@ def get_user_detail_stats(
 @router.get("/tools/{tool_id}", response_model=ToolDetailStats)
 def get_tool_detail_stats(
     session: SessionDep,
-    _current_user: SuperUser,
     tool_id: uuid.UUID,
     start: datetime | None = Query(default=None),
     end: datetime | None = Query(default=None),
