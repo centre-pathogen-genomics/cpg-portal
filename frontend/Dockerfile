@@ -7,6 +7,9 @@ COPY package.json bun.lock /app/
 
 COPY frontend/package.json /app/frontend/
 
+# The root lockfile covers the runner workspace too, so bun needs its manifest.
+COPY runner/package.json /app/runner/
+
 WORKDIR /app/frontend
 
 RUN bun install
