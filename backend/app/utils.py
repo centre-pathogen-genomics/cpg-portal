@@ -1,8 +1,6 @@
 import logging
-import re
 from dataclasses import dataclass
 from pathlib import Path
-from shlex import quote
 from typing import Any
 
 import emails  # type: ignore
@@ -132,73 +130,3 @@ def generate_run_finished_email(
         },
     )
     return EmailData(html_content=html_content, subject=subject)
-
-
-def sanitise_shell_input(input_string: str) -> str:
-    """
-    Sanitise input string to allow only allowed characters.
-    Any other character is removed.
-    """
-    return re.sub(
-        r"[^a-zA-Z0-9\-_\.\+]", "_", input_string
-    )  # replace invalid characters with "_"
-
-
-def input_file_name(name: str) -> str:
-    """The name a tool sees for one of its input files.
-
-    On disk a file is stored as `<file id>_<name>` to keep it unique; inside a
-    run the tool gets the plain name, so its command and its working directory
-    agree. The run creation endpoint checks for clashes before it queues a run.
-    """
-    return sanitise_shell_input(name)
-
-
-def escape(value):
-    if isinstance(value, list):
-        return [escape(i) for i in value]
-    elif isinstance(value, str):
-        return quote(sanitise_shell_input(value))
-    elif isinstance(value, bool):
-        return value
-    elif isinstance(value, int):
-        return value
-    elif isinstance(value, float):
-        return value
-    elif value is None:
-        return None
-    else:
-        raise Exception(f"Unknown parameter type: {type(value)}")
-
-
-def validate_param_value(value) -> None:
-    """
-    Reject string parameter values that could be used for path traversal.
-
-    A "/" is allowed: `escape` masks it to "_" before the command template
-    renders, and that is why a tool that wants a slash asks for it back with a
-    replace. A backslash, a NUL byte, or a parent-directory reference is
-    rejected instead.
-
-    Raises ValueError if the value (or any string nested in a list) contains a
-    backslash, a NUL byte, or is a parent-directory reference.
-    """
-    if isinstance(value, list):
-        for item in value:
-            validate_param_value(item)
-    elif isinstance(value, str):
-        if "\\" in value or "\x00" in value or value == "..":
-            raise ValueError(
-                "Backslashes, NUL bytes and traversal sequences are not allowed"
-            )
-
-
-def flatten(lst: list) -> list:
-    """Recursively flattens a nested list."""
-    result = []
-    for item in lst:
-        if isinstance(item, list):
-            result.extend(flatten(item))
-        else:
-            result.append(item)
-    return result

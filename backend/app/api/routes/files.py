@@ -37,7 +37,7 @@ from app.models import (
     Message,
     Run,
 )
-from app.utils import sanitise_shell_input
+from app.run_spec import sanitise_shell_input
 
 router = PermissionAPIRouter(resource="files")
 

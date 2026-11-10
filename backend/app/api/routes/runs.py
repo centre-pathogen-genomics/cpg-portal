@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import HTTPException, Query, status
-from jinja2 import Environment as JinjaEnvironment
 from sqlalchemy import and_, desc
 from sqlmodel import Session, func, select
 
@@ -17,7 +16,6 @@ from app.models import (
     Message,
     Param,
     ParamType,
-    ParamVisibilityOperator,
     Run,
     RunPublic,
     RunsPublicMinimal,
@@ -26,8 +24,14 @@ from app.models import (
     ToolStatus,
 )
 from app.run_records import record_run
+from app.run_spec import (
+    input_file_name,
+    is_missing_param_value,
+    render_command,
+    validate_param_value,
+    visible_params,
+)
 from app.scheduling import dispatch_pending_runs
-from app.utils import escape, flatten, input_file_name, validate_param_value
 from app.wsmanager import manager
 
 router = PermissionAPIRouter(resource="runs")
@@ -45,178 +49,6 @@ RUN_SORT_COLUMNS = {
     "started_at": Run.started_at,
     "status": Run.status,
 }
-
-
-def is_missing_param_value(value: Any) -> bool:
-    return (
-        value is None
-        or (isinstance(value, str) and value.strip() == "")
-        or (isinstance(value, list) and len(value) == 0)
-    )
-
-
-def _parse_visibility_condition_value(
-    *,
-    value: Any,
-    dependency: Param,
-    operator: ParamVisibilityOperator,
-) -> Any:
-    def parse_scalar(raw_value: Any) -> Any:
-        if raw_value is None:
-            return None
-
-        if dependency.param_type == "bool":
-            if isinstance(raw_value, bool):
-                return raw_value
-            if isinstance(raw_value, str):
-                lowered = raw_value.strip().lower()
-                if lowered in {"true", "1", "yes", "on"}:
-                    return True
-                if lowered in {"false", "0", "no", "off"}:
-                    return False
-            raise HTTPException(
-                status_code=400,
-                detail=f"Invalid visibility condition value for parameter `{dependency.name}`",
-            )
-
-        if dependency.param_type == "int":
-            try:
-                return int(raw_value)
-            except (TypeError, ValueError) as exc:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Invalid visibility condition value for parameter `{dependency.name}`",
-                ) from exc
-
-        if dependency.param_type == "float":
-            try:
-                return float(raw_value)
-            except (TypeError, ValueError) as exc:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Invalid visibility condition value for parameter `{dependency.name}`",
-                ) from exc
-
-        if isinstance(raw_value, list):
-            return [str(item) for item in raw_value]
-
-        return str(raw_value)
-
-    if operator in {
-        ParamVisibilityOperator.truthy,
-        ParamVisibilityOperator.falsy,
-        ParamVisibilityOperator.is_set,
-        ParamVisibilityOperator.is_empty,
-    }:
-        return None
-
-    if operator in {ParamVisibilityOperator.in_, ParamVisibilityOperator.not_in}:
-        if value is None:
-            return []
-        if isinstance(value, list):
-            return [parse_scalar(item) for item in value]
-        if isinstance(value, str):
-            return [
-                parse_scalar(item.strip()) for item in value.split(",") if item.strip()
-            ]
-        return [parse_scalar(value)]
-
-    if value is None:
-        return None
-    return parse_scalar(value)
-
-
-def _is_visible_if_match(
-    *, dependency_value: Any, operator: ParamVisibilityOperator, expected_value: Any
-) -> bool:
-    if operator == ParamVisibilityOperator.truthy:
-        return bool(dependency_value)
-    if operator == ParamVisibilityOperator.falsy:
-        return not bool(dependency_value)
-    if operator == ParamVisibilityOperator.is_set:
-        return not is_missing_param_value(dependency_value)
-    if operator == ParamVisibilityOperator.is_empty:
-        return is_missing_param_value(dependency_value)
-
-    if operator == ParamVisibilityOperator.equals:
-        return dependency_value == expected_value
-    if operator == ParamVisibilityOperator.not_equals:
-        return dependency_value != expected_value
-    if operator == ParamVisibilityOperator.in_:
-        if isinstance(dependency_value, list):
-            return any(item in expected_value for item in dependency_value)
-        return dependency_value in expected_value
-    if operator == ParamVisibilityOperator.not_in:
-        if isinstance(dependency_value, list):
-            return all(item not in expected_value for item in dependency_value)
-        return dependency_value not in expected_value
-    if operator == ParamVisibilityOperator.greater_than:
-        return dependency_value > expected_value
-    if operator == ParamVisibilityOperator.greater_than_or_equal:
-        return dependency_value >= expected_value
-    if operator == ParamVisibilityOperator.less_than:
-        return dependency_value < expected_value
-    if operator == ParamVisibilityOperator.less_than_or_equal:
-        return dependency_value <= expected_value
-    return False
-
-
-def _build_visible_param_lookup(
-    tool_params: list[Param], params: dict[str, Any]
-) -> dict[str, bool]:
-    params_by_name = {param.name: param for param in tool_params}
-    raw_values = dict(params)
-    visibility_cache: dict[str, bool] = {}
-    visiting: set[str] = set()
-
-    def is_visible(param_name: str) -> bool:
-        if param_name in visibility_cache:
-            return visibility_cache[param_name]
-        if param_name in visiting:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Circular visibility condition detected for parameter `{param_name}`",
-            )
-
-        param = params_by_name.get(param_name)
-        if param is None:
-            visibility_cache[param_name] = True
-            return True
-
-        visiting.add(param_name)
-        try:
-            condition_param_name = param.visible_if_param
-            if not condition_param_name:
-                visible = True
-            else:
-                dependency = params_by_name.get(condition_param_name)
-                if dependency is None:
-                    visible = False
-                else:
-                    visible = is_visible(condition_param_name)
-                    if visible:
-                        dependency_value = raw_values.get(
-                            condition_param_name, dependency.default
-                        )
-                        expected_value = _parse_visibility_condition_value(
-                            value=param.visible_if_value,
-                            dependency=dependency,
-                            operator=param.visible_if_operator,
-                        )
-                        visible = _is_visible_if_match(
-                            dependency_value=dependency_value,
-                            operator=param.visible_if_operator,
-                            expected_value=expected_value,
-                        )
-            visibility_cache[param_name] = visible
-            return visible
-        finally:
-            visiting.discard(param_name)
-
-    for param in tool_params:
-        is_visible(param.name)
-
-    return visibility_cache
 
 
 @router.get("/", response_model=RunsPublicMinimal)
@@ -352,8 +184,7 @@ async def create_run(
         raise HTTPException(
             status_code=400,
             detail=(
-                f"This tool needs at least {min_cpus} CPUs and your limit is "
-                f"{max_cpus}"
+                f"This tool needs at least {min_cpus} CPUs and your limit is {max_cpus}"
             ),
         )
     if cpus is None:
@@ -390,9 +221,7 @@ async def create_run(
     if not min_cpus <= cpus <= max_cpus:
         raise HTTPException(
             status_code=400,
-            detail=(
-                f"CPUs must be between {min_cpus} and {max_cpus} for this tool"
-            ),
+            detail=(f"CPUs must be between {min_cpus} and {max_cpus} for this tool"),
         )
 
     # check the user que limit
@@ -456,10 +285,17 @@ async def create_run(
                 detail=f"Invalid value for parameter `{param_name}`: backslashes, NUL bytes and '..' are not allowed",
             )
 
-    visible_params = _build_visible_param_lookup(tool_params, params)
+    param_dicts = [
+        param if isinstance(param, dict) else param.model_dump()
+        for param in tool_params
+    ]
+    try:
+        params_visible = visible_params(param_dicts, params)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
     normalized_params = dict(params)
     for param in tool_params:
-        if not visible_params.get(param.name, True):
+        if not params_visible.get(param.name, True):
             normalized_params.pop(param.name, None)
             continue
 
@@ -582,26 +418,11 @@ async def create_run(
                 status_code=500, detail=f"Unknown parameter type: {param.param_type}"
             )
 
-    # escape parameters
-    escaped_params = {}
-    for k, v in normalized_params.items():
-        try:
-            escaped_params[k] = escape(v)
-        except Exception:
-            raise HTTPException(status_code=400, detail=f"Invalid parameter value: {v}")
-
-    # The run's CPUs are in the template context as `cpus`, so a tool can ask
-    # for the CPUs it reserved with its own threads flag, e.g.
-    # `--threads {{ cpus }}`. It wins over a
-    # parameter of the same name.
-    escaped_params["cpus"] = cpus
-
     # create command
-    env = JinjaEnvironment()
-    # add custom filters
-    env.filters["flatten"] = flatten
-    command_template = env.from_string(tool.command)
-    cmd = command_template.render(**escaped_params)
+    try:
+        cmd = render_command(tool.command, normalized_params, cpus)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
 
     # create a run
     run = Run(

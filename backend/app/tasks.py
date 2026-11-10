@@ -26,14 +26,10 @@ from app.crud import save_file
 from app.metrics import read_tree
 from app.models import File, Run, RunStatus, SetupFile, Target, Tool, ToolStatus
 from app.run_records import is_terminal, record_run
+from app.run_spec import escape, input_file_name
 from app.scheduling import dispatch_pending_runs
 from app.tkq import broker
-from app.utils import (
-    escape,
-    generate_run_finished_email,
-    input_file_name,
-    send_email,
-)
+from app.utils import generate_run_finished_email, send_email
 from app.wsmanager import manager
 
 SessionDep = Annotated[Session, TaskiqDepends(get_db)]
@@ -606,9 +602,7 @@ async def update_tool(
         print(f"Tool(id={tool_id}) not found")
         return False
     if tool.status not in {ToolStatus.update_queued, ToolStatus.updating}:
-        print(
-            f"Tool(id={tool_id}) update task skipped because status is {tool.status}"
-        )
+        print(f"Tool(id={tool_id}) update task skipped because status is {tool.status}")
         return False
     # Mark it as actually running, the way an install does.
     tool.status = ToolStatus.updating
