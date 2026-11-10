@@ -5,6 +5,7 @@ from app.api.routes import (
     files,
     llm,
     login,
+    rbac,
     runs,
     settings,
     stats,
@@ -26,3 +27,4 @@ api_router.include_router(llm.router, prefix="/llm", tags=["llm"])
 api_router.include_router(settings.router, prefix="/settings", tags=["settings"])
 api_router.include_router(stats.router, prefix="/stats", tags=["stats"])
 api_router.include_router(admin.router, prefix="/admin", tags=["admin"])
+api_router.include_router(rbac.router, prefix="/rbac", tags=["rbac"])
