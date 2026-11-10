@@ -131,6 +131,8 @@ services:
       - app-conda-data:/conda
       - app-sandbox-data:/apptainer
       - ./DB:/DB # Mount the DB folder to share external databases with the backend container.
+      # Prebuilt CPG Runner artifacts: runtime images and per-platform app bundles.
+      - ${RUNNER_ARTIFACTS_DIR:-./runner/artifacts}:/runner-artifacts:ro
     networks:
       - traefik-public
       - default
@@ -174,6 +176,8 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - REDIS_URI=redis://:${REDIS_PASSWORD:?Variable not set}@redis/
       - NATS_URIS=nats://${NATS_USER:?Variable not set}:${NATS_PASSWORD:?Variable not set}@nats:4222/
+      - RUNNER_ARTIFACTS_PATH=/runner-artifacts
+      - RUNNER_RUNTIME_TAG=${RUNNER_RUNTIME_TAG:-cpg-runner-runtime:1}
 
     healthcheck:
       test:
