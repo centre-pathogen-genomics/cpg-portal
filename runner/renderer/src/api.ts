@@ -1,4 +1,15 @@
 let sessionToken = ""
+// Development serves the UI from vite while the API stays on the sidecar, so
+// the window is told where the API is. Same origin otherwise.
+let apiBase = ""
+
+export function setApiBase(value: string | null): void {
+  apiBase = (value ?? "").replace(/\/+$/, "")
+}
+
+function apiRoot(): string {
+  return apiBase || window.location.origin
+}
 
 export function setSessionToken(value: string | null): void {
   sessionToken = value ?? ""
@@ -50,7 +61,7 @@ async function request<T>(
   path: string,
   body?: unknown,
 ): Promise<T> {
-  const response = await fetch(`/api${path}`, {
+  const response = await fetch(`${apiBase}/api${path}`, {
     method,
     headers: {
       "X-CPG-Token": getToken(),
@@ -65,7 +76,7 @@ async function request<T>(
 }
 
 function socketUrl(path: string): string {
-  const url = new URL(`/api${path}`, window.location.href)
+  const url = new URL(`/api${path}`, `${apiRoot()}/`)
   url.protocol = url.protocol === "https:" ? "wss:" : "ws:"
   url.searchParams.set("token", getToken())
   return url.toString()
@@ -77,7 +88,7 @@ export const api = {
   put: <T>(path: string, body?: unknown) => request<T>("PUT", path, body),
   delete: <T>(path: string) => request<T>("DELETE", path),
   async blob(path: string): Promise<Blob> {
-    const response = await fetch(`/api${path}`, {
+    const response = await fetch(`${apiBase}/api${path}`, {
       headers: { "X-CPG-Token": getToken() },
     })
     if (!response.ok) throw await toApiError(response)

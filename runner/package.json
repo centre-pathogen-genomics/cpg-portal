@@ -5,11 +5,12 @@
   "description": "CPG Runner desktop shell: Electron around the local tool sidecar",
   "main": "dist/electron/main.js",
   "scripts": {
-    "dev": "vite --config renderer/vite.config.ts",
+    "dev": "bash scripts/dev.sh",
     "build": "bun run build:renderer && bun run build:main",
     "build:renderer": "vite build --config renderer/vite.config.ts",
     "build:main": "bun build ./electron/main.ts ./electron/preload.ts --outdir dist/electron --target node --format cjs --external electron",
-    "package": "bun run build && electron-builder --config electron-builder.yml"
+    "package": "bun run build && electron-builder --config electron-builder.yml",
+    "dev:renderer": "vite --config renderer/vite.config.ts"
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.20",

@@ -53,6 +53,16 @@ type PackDocument = {
 
 type Sidecar = { child: ChildProcess; port: number }
 
+// Development: a separate UI origin (vite, with hot reload) and a data
+// directory of its own, so a dev session never touches real installs.
+if (process.env.CPG_RUNNER_DATA_DIR) {
+  app.setPath("userData", path.resolve(process.env.CPG_RUNNER_DATA_DIR))
+}
+const uiOrigin = (process.env.CPG_RUNNER_UI_URL || "").replace(/\/+$/, "")
+const uiDir =
+  process.env.CPG_RUNNER_UI_DIR ||
+  path.join(process.resourcesPath, "renderer")
+
 const token = randomUUID()
 
 let mainWindow: BrowserWindow | null = null
@@ -248,7 +258,14 @@ function createWindow(): BrowserWindow {
 }
 
 function toolUrl(port: number, view: string): string {
-  return `http://127.0.0.1:${port}${view}?token=${encodeURIComponent(token)}`
+  const query = new URLSearchParams({ token })
+  if (uiOrigin) {
+    // The renderer is served by vite; the API stays on the sidecar, so the
+    // window is told where it is.
+    query.set("api", `http://127.0.0.1:${port}`)
+    return `${uiOrigin}${view}?${query}`
+  }
+  return `http://127.0.0.1:${port}${view}?${query}`
 }
 
 // The tool list and the empty state come from the packaged renderer. A tool's
@@ -257,9 +274,11 @@ async function showHome(): Promise<void> {
   const window = createWindow()
   const tools = listTools()
   if (tools.length === 0) {
-    await window.loadFile(
-      path.join(process.resourcesPath, "renderer", "index.html"),
-    )
+    if (uiOrigin) {
+      await window.loadURL(`${uiOrigin}/?${new URLSearchParams({ token })}`)
+    } else {
+      await window.loadFile(path.join(uiDir, "index.html"))
+    }
     return
   }
   const toolId =
@@ -351,7 +370,7 @@ function startSidecar(toolId: string): Promise<number> {
           "--resources-dir",
           resources,
           "--ui-dir",
-          path.join(process.resourcesPath, "renderer"),
+          uiDir,
         ],
         {
           env: {

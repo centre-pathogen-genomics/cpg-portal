@@ -14,6 +14,7 @@ from fastapi import (
     WebSocket,
     WebSocketDisconnect,
 )
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -61,6 +62,16 @@ def create_app(
     file_types: FileTypes | None = None,
 ) -> FastAPI:
     app = FastAPI(title="CPG Runner", docs_url=None, redoc_url=None, openapi_url=None)
+    # Development serves the UI from vite on another local port; every request
+    # still carries the token, so a localhost origin is enough to allow.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origin_regex=r"^http://(127\.0\.0\.1|localhost)(:\d+)?$",
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+        expose_headers=["*"],
+    )
     file_types = file_types or FileTypes()
     doctor_channel = EventChannel()
     action_state = {"running": False}

@@ -21,3 +21,4 @@ runner/sidecar/dist/
 runner/renderer/dist/
 runner/sidecar/.venv/
 runner/sidecar/build/
+runner/.dev/

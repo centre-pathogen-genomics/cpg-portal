@@ -156,3 +156,16 @@ def test_environment_is_absent_for_a_tool_without_one(tmp_path):
     client, _ = _client(tmp_path)
 
     assert client.get("/api/environment", headers=HEADERS).json() == {"yml": None}
+
+
+def test_a_local_dev_origin_may_call_the_api(tmp_path):
+    """Vite serves the UI in development; the sidecar answers its requests."""
+    client, _ = _client(tmp_path)
+
+    response = client.get(
+        "/api/health",
+        headers={**HEADERS, "Origin": "http://127.0.0.1:5174"},
+    )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "http://127.0.0.1:5174"
