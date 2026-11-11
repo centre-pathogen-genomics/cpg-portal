@@ -1,21 +1,21 @@
-import { ExternalLink, FolderOpen } from "lucide-react"
-import { useCallback, useEffect, useState } from "react"
-import { toast } from "sonner"
-import RenderMarkdown from "@/components/Common/Markdown"
-import ToolRunForm from "@/components/Tools/ToolRunForm"
-import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
-import { ApiError, api, errorMessage } from "./api"
-import { DockerSetupDialog } from "./components/DockerSetupDialog"
-import { InstallDialog } from "./components/InstallDialog"
-import { LocalFilePicker } from "./components/LocalFilePicker"
-import { ToolBadges } from "./components/ToolBadges"
-import { ToolImage, useToolImages } from "./components/ToolImage"
-import { ToolSidebar } from "./components/ToolSidebar"
+import { ExternalLink, FolderOpen } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
+import RenderMarkdown from "@/components/Common/Markdown";
+import ToolRunForm from "@/components/Tools/ToolRunForm";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { ApiError, api, errorMessage } from "./api";
+import { DockerSetupDialog } from "./components/DockerSetupDialog";
+import { InstallDialog } from "./components/InstallDialog";
+import { LocalFilePicker } from "./components/LocalFilePicker";
+import { ToolBadges } from "./components/ToolBadges";
+import { ToolImage, useToolImages } from "./components/ToolImage";
+import { ToolSidebar } from "./components/ToolSidebar";
 import {
   currentInstallState,
   type DoctorReport,
@@ -26,34 +26,34 @@ import {
   type ToolConfig,
   type ToolPayload,
   unwrapTool,
-} from "./contracts"
-import { openExternal, openPath, pickDirectory } from "./lib/desktop"
-import { portalToolUrl } from "./lib/portal"
-import { navigate } from "./router"
+} from "./contracts";
+import { openExternal, openPath, pickDirectory } from "./lib/desktop";
+import { portalToolUrl } from "./lib/portal";
+import { navigate } from "./router";
 
 const FIELD_ERROR =
-  /^(?:Missing required parameter|Invalid value for parameter): (.+)$/
+  /^(?:Missing required parameter|Invalid value for parameter): (.+)$/;
 
 export function ToolPage() {
-  const [tool, setTool] = useState<ToolConfig | null>(null)
-  const [status, setStatus] = useState<StatusPayload | null>(null)
-  const [settings, setSettings] = useState<Settings | null>(null)
-  const [fileTypes, setFileTypes] = useState<FileTypesMap>({})
-  const [forcedDoctor, setForcedDoctor] = useState<DoctorReport | null>(null)
-  const [loadError, setLoadError] = useState<string | null>(null)
-  const [installDismissed, setInstallDismissed] = useState(false)
-  const [runName, setRunName] = useState("")
-  const [descriptionOpen, setDescriptionOpen] = useState(false)
-  const images = useToolImages()
-  const [rerunRun, setRerunRun] = useState<RunRecord | null>(null)
-  const [rerunChecked, setRerunChecked] = useState(false)
+  const [tool, setTool] = useState<ToolConfig | null>(null);
+  const [status, setStatus] = useState<StatusPayload | null>(null);
+  const [settings, setSettings] = useState<Settings | null>(null);
+  const [fileTypes, setFileTypes] = useState<FileTypesMap>({});
+  const [forcedDoctor, setForcedDoctor] = useState<DoctorReport | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [installDismissed, setInstallDismissed] = useState(false);
+  const [runName, setRunName] = useState("");
+  const [descriptionOpen, setDescriptionOpen] = useState(false);
+  const images = useToolImages();
+  const [rerunRun, setRerunRun] = useState<RunRecord | null>(null);
+  const [rerunChecked, setRerunChecked] = useState(false);
 
   const refreshStatus = useCallback(async () => {
-    const next = await api.get<StatusPayload>("/status")
-    setStatus(next)
-    setForcedDoctor(null)
-    return next
-  }, [])
+    const next = await api.get<StatusPayload>("/status");
+    setStatus(next);
+    setForcedDoctor(null);
+    return next;
+  }, []);
 
   const loadAll = useCallback(async () => {
     try {
@@ -63,70 +63,73 @@ export function ToolPage() {
           api.get<StatusPayload>("/status"),
           api.get<Settings>("/settings"),
           api.get<FileTypesMap>("/file-types"),
-        ])
-      const loadedTool = unwrapTool(toolPayload)
-      setTool(loadedTool)
-      setStatus(statusPayload)
-      setSettings(settingsPayload)
-      setFileTypes(types)
-      setLoadError(null)
+        ]);
+      const loadedTool = unwrapTool(toolPayload);
+      setTool(loadedTool);
+      setStatus(statusPayload);
+      setSettings(settingsPayload);
+      setFileTypes(types);
+      setLoadError(null);
     } catch (error) {
-      setLoadError(errorMessage(error))
+      setLoadError(errorMessage(error));
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
-    void loadAll()
-  }, [loadAll])
+    void loadAll();
+  }, [loadAll]);
 
   // A rerun arrives as ?rerun=<run id>: its values prefill the form.
   useEffect(() => {
-    const rerunId = new URLSearchParams(window.location.search).get("rerun")
+    const rerunId = new URLSearchParams(window.location.search).get("rerun");
     if (!rerunId) {
-      setRerunChecked(true)
-      return
+      setRerunChecked(true);
+      return;
     }
     void api
       .get<RunRecord>(`/runs/${rerunId}`)
       .then((record) => setRerunRun(record))
       .catch(() => toast.error("Could not load the run to repeat"))
-      .finally(() => setRerunChecked(true))
-  }, [])
+      .finally(() => setRerunChecked(true));
+  }, []);
 
-  const effectiveDoctor = forcedDoctor ?? status?.doctor ?? null
-  const doctorReady = effectiveDoctor?.ready === true
-  const installState = status ? currentInstallState(status) : null
+  const effectiveDoctor = forcedDoctor ?? status?.doctor ?? null;
+  const doctorReady = effectiveDoctor?.ready === true;
+  const installState = status ? currentInstallState(status) : null;
   const installOpen =
-    !!status && doctorReady && installState !== "installed" && !installDismissed
-  const shouldPoll = (status?.installing ?? false) || installOpen
+    !!status &&
+    doctorReady &&
+    installState !== "installed" &&
+    !installDismissed;
+  const shouldPoll = (status?.installing ?? false) || installOpen;
 
   useEffect(() => {
-    if (!shouldPoll) return
+    if (!shouldPoll) return;
     const interval = setInterval(() => {
-      void refreshStatus().catch(() => {})
-    }, 2000)
-    return () => clearInterval(interval)
-  }, [shouldPoll, refreshStatus])
+      void refreshStatus().catch(() => {});
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [shouldPoll, refreshStatus]);
 
-  const canRun = !!settings && doctorReady && installState === "installed"
+  const canRun = !!settings && doctorReady && installState === "installed";
 
   const blockedReason = !doctorReady
     ? "Docker is not ready."
     : installState !== "installed"
       ? "The tool environment is not installed."
-      : null
+      : null;
 
   // Settings save as they change: there is nothing to confirm afterwards.
   async function updateSettings(patch: Partial<Settings>) {
-    if (!settings) return
-    const previous = settings
-    const next = { ...settings, ...patch }
-    setSettings(next)
+    if (!settings) return;
+    const previous = settings;
+    const next = { ...settings, ...patch };
+    setSettings(next);
     try {
-      await api.put("/settings", next)
+      await api.put("/settings", next);
     } catch (error) {
-      setSettings(previous)
-      toast.error(errorMessage(error))
+      setSettings(previous);
+      toast.error(errorMessage(error));
     }
   }
 
@@ -136,44 +139,44 @@ export function ToolPage() {
     params,
     cpus,
   }: {
-    params: Record<string, unknown>
-    cpus: number
+    params: Record<string, unknown>;
+    cpus: number;
   }) {
     try {
       const record = await api.post<RunRecord>("/runs", {
         params,
         cpus,
         name: runName.trim() || undefined,
-      })
-      navigate(`/run?id=${record.id}`)
+      });
+      navigate(`/run?id=${record.id}`);
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
         const doctor = (error.payload as { doctor?: DoctorReport } | null)
-          ?.doctor
-        if (doctor) setForcedDoctor(doctor)
-        setInstallDismissed(false)
-        void refreshStatus().catch(() => {})
+          ?.doctor;
+        if (doctor) setForcedDoctor(doctor);
+        setInstallDismissed(false);
+        void refreshStatus().catch(() => {});
       }
-      const message = errorMessage(error)
-      if (!FIELD_ERROR.test(message)) toast.error(message)
-      throw error
+      const message = errorMessage(error);
+      if (!FIELD_ERROR.test(message)) toast.error(message);
+      throw error;
     }
   }
 
   function fieldError(error: unknown): Record<string, string> | null {
-    const message = errorMessage(error)
-    const field = FIELD_ERROR.exec(message)
-    return field ? { [field[1]]: message } : null
+    const message = errorMessage(error);
+    const field = FIELD_ERROR.exec(message);
+    return field ? { [field[1]]: message } : null;
   }
 
   async function reinstall() {
     try {
-      await api.delete("/install")
-      setInstallDismissed(false)
-      await refreshStatus()
-      toast.success("Environment removed; install it again to run tools")
+      await api.delete("/install");
+      setInstallDismissed(false);
+      await refreshStatus();
+      toast.success("Environment removed; install it again to run tools");
     } catch (error) {
-      toast.error(errorMessage(error))
+      toast.error(errorMessage(error));
     }
   }
 
@@ -188,7 +191,7 @@ export function ToolPage() {
           <Button onClick={() => void loadAll()}>Retry</Button>
         </div>
       </div>
-    )
+    );
   }
 
   if (!tool || !settings || !status) {
@@ -199,7 +202,7 @@ export function ToolPage() {
           <p className="text-muted-foreground text-sm">Loading…</p>
         </div>
       </div>
-    )
+    );
   }
 
   // A run recorded by an older version has no file paths, only the names the
@@ -208,7 +211,7 @@ export function ToolPage() {
     tool.params
       .filter((param) => param.param_type === "file")
       .map((param) => param.name),
-  )
+  );
   const rerunValues = rerunRun
     ? {
         ...Object.fromEntries(
@@ -218,7 +221,7 @@ export function ToolPage() {
         ),
         ...(rerunRun.param_files ?? {}),
       }
-    : undefined
+    : undefined;
 
   return (
     <div className="flex h-full">
@@ -252,7 +255,7 @@ export function ToolPage() {
                 onClick={() => openExternal(portalToolUrl(tool.name))}
               >
                 <ExternalLink />
-                Open in portal
+                Open in The CPG Portal
               </Button>
               <Button
                 type="button"
@@ -395,9 +398,9 @@ export function ToolPage() {
                             void pickDirectory(settings.output_dir).then(
                               (chosen) => {
                                 if (chosen)
-                                  void updateSettings({ output_dir: chosen })
+                                  void updateSettings({ output_dir: chosen });
                               },
-                            )
+                            );
                           }}
                         >
                           Browse…
@@ -480,5 +483,5 @@ export function ToolPage() {
         onDismiss={() => setInstallDismissed(true)}
       />
     </div>
-  )
+  );
 }

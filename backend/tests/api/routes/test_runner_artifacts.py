@@ -231,16 +231,17 @@ def test_pack_reports_an_unconfigured_runtime(
     assert response.json()["detail"] == "Runner artifacts are not configured"
 
 
-def test_pack_requires_authentication(
+def test_pack_is_available_to_anonymous_visitors(
     client: TestClient,
     db: Session,
     _artifacts: Path,
 ) -> None:
+    """The desktop app has no portal session: the pack is public like the page."""
     tool = _create_tool(db=db, name=_tool_name("packauth"), conda_env=None)
 
     response = _pack(client, headers={}, name=tool.name)
 
-    assert response.status_code == 401
+    assert response.status_code == 200, response.text
 
 
 def test_pack_of_an_unknown_tool_is_404(

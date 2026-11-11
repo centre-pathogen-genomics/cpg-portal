@@ -56,6 +56,25 @@ type PackDocument = {
 
 type Sidecar = { child: ChildProcess; port: number }
 
+// What the sidebar needs from the portal's catalogue.
+type PortalToolSummary = {
+  name: string
+  version: string
+  description: string | null
+  image: string | null
+  tags: string[]
+}
+
+type PortalToolDetail = PortalToolSummary & {
+  url: string | null
+  docs_url: string | null
+  paper_doi: string | null
+  license: string | null
+  github_repo: string | null
+  badges: { badge?: string | null; url?: string | null }[]
+  versions: string[]
+}
+
 // Development: a separate UI origin (vite, with hot reload) and a data
 // directory of its own, so a dev session never touches real installs.
 if (process.env.CPG_RUNNER_DATA_DIR) {
@@ -100,6 +119,123 @@ function sidecarBinaryPath(): string {
   return app.isPackaged
     ? path.join(process.resourcesPath, "sidecar", "cpg-runner", name)
     : path.join(app.getAppPath(), "sidecar", "dist", "cpg-runner", name)
+}
+
+function portalBase(): string {
+  return portalUrl.replace(/\/+$/, "")
+}
+
+async function portalGet<T>(path: string): Promise<T> {
+  const response = await fetch(`${portalBase()}${path}`, {
+    signal: AbortSignal.timeout(15_000),
+  })
+  if (!response.ok) throw new Error(`The portal answered ${response.status}`)
+  return (await response.json()) as T
+}
+
+// The tools the portal offers, one row per name.
+async function listPortalTools(): Promise<PortalToolSummary[]> {
+  const payload = await portalGet<{
+    data: {
+      name: string
+      version?: string
+      description?: string | null
+      image?: string | null
+      tags?: string[] | null
+    }[]
+  }>("/api/v1/tools/?limit=100")
+  return payload.data
+    .map((tool) => ({
+      name: tool.name,
+      version: tool.version ?? "",
+      description: tool.description ?? null,
+      image: tool.image ?? null,
+      tags: tool.tags ?? [],
+    }))
+    .sort((left, right) => left.name.localeCompare(right.name))
+}
+
+async function portalToolDetail(
+  name: string,
+  version?: string,
+): Promise<PortalToolDetail> {
+  const query = version ? `?version=${encodeURIComponent(version)}` : ""
+  type PortalTool = {
+    name: string
+    version?: string
+    description?: string | null
+    image?: string | null
+    url?: string | null
+    docs_url?: string | null
+    paper_doi?: string | null
+    license?: string | null
+    github_repo?: string | null
+    tags?: string[] | null
+    badges?: { badge?: string | null; url?: string | null }[] | null
+  }
+  const tool = await portalGet<PortalTool>(
+    `/api/v1/tools/name/${encodeURIComponent(name)}${query}`,
+  )
+  const versions = await portalGet<{ version?: string }[]>(
+    `/api/v1/tools/name/${encodeURIComponent(name)}/versions`,
+  )
+  return {
+    name: tool.name,
+    version: tool.version ?? "",
+    description: tool.description ?? null,
+    image: tool.image ?? null,
+    url: tool.url ?? null,
+    docs_url: tool.docs_url ?? null,
+    paper_doi: tool.paper_doi ?? null,
+    license: tool.license ?? null,
+    github_repo: tool.github_repo ?? null,
+    tags: tool.tags ?? [],
+    badges: tool.badges ?? [],
+    versions: versions.map((entry) => entry.version ?? ""),
+  }
+}
+
+function platformName(): string {
+  const arch = process.arch === "arm64" ? "arm64" : "x64"
+  const os =
+    process.platform === "darwin"
+      ? "mac"
+      : process.platform === "win32"
+        ? "win"
+        : "linux"
+  return `${os}-${arch}`
+}
+
+// Downloads a portal tool as a pack and installs it, replacing the local copy
+// of the same name and version (a pack of the same tool has the same id).
+async function addPortalTool(target: {
+  name: string
+  version?: string
+}): Promise<ToolEntry> {
+  const query = new URLSearchParams({ platform: platformName() })
+  if (target.version) query.set("version", target.version)
+  const response = await fetch(
+    `${portalBase()}/api/v1/tools/name/${encodeURIComponent(target.name)}/runner-pack?${query}`,
+    { signal: AbortSignal.timeout(60_000) },
+  )
+  if (!response.ok) throw new Error(`The portal answered ${response.status}`)
+  const file = path.join(
+    app.getPath("temp"),
+    `cpg-portal-${Date.now()}.cpgpack`,
+  )
+  fs.writeFileSync(file, Buffer.from(await response.arrayBuffer()))
+  try {
+    const entry = importPack(file)
+    // A replaced tool has to install its environment again.
+    fs.rmSync(path.join(dataDir(entry.id), "environments"), {
+      recursive: true,
+      force: true,
+    })
+    void ensureToolImage(entry.id)
+    return entry
+  } finally {
+    fs.rmSync(file, { force: true })
+  }
 }
 
 function toolsRoot(): string {
@@ -656,6 +792,23 @@ function registerIpcHandlers(): void {
   ipcMain.handle(
     "runner:tool-images",
     (): Record<string, string> => toolImages(),
+  )
+
+  ipcMain.handle("runner:portal-tools", () => listPortalTools())
+
+  ipcMain.handle(
+    "runner:portal-tool",
+    (_event, target: { name: string; version?: string }) =>
+      portalToolDetail(target.name, target.version),
+  )
+
+  ipcMain.handle(
+    "runner:add-portal-tool",
+    async (_event, target: { name: string; version?: string }) => {
+      const entry = await addPortalTool(target)
+      await showTool(entry.id)
+      return entry
+    },
   )
 
   ipcMain.handle("runner:import-packs", async (): Promise<ToolEntry[]> => {

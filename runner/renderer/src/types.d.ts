@@ -1,3 +1,5 @@
+import type { PortalToolDetail, PortalToolSummary } from "./contracts"
+
 export {}
 
 // An installed tool, as the main process describes it to the window. Kept in
@@ -9,6 +11,7 @@ type ToolEntry = {
   description: string | null
 }
 
+
 declare global {
   interface Window {
     cpgRunner?: {
@@ -18,6 +21,17 @@ declare global {
       tools(): Promise<ToolEntry[]>
       /** Cached tool pictures, by tool id, as data URLs. */
       toolImages(): Promise<Record<string, string>>
+      /** The portal's catalogue, one row per tool name. */
+      portalTools(): Promise<PortalToolSummary[]>
+      portalTool(target: {
+        name: string
+        version?: string
+      }): Promise<PortalToolDetail>
+      /** Downloads a portal tool and opens it; replaces the same name and version. */
+      addPortalTool(target: {
+        name: string
+        version?: string
+      }): Promise<ToolEntry>
       importPacks(): Promise<ToolEntry[]>
       importPackPaths(files: string[]): Promise<ToolEntry[]>
       openTool(toolId: string): Promise<void>

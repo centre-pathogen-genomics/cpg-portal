@@ -29,6 +29,14 @@ contextBridge.exposeInMainWorld("cpgRunner", {
   tools: (): Promise<ToolEntry[]> => ipcRenderer.invoke("runner:tools"),
   toolImages: (): Promise<Record<string, string>> =>
     ipcRenderer.invoke("runner:tool-images"),
+  portalTools: (): Promise<unknown[]> =>
+    ipcRenderer.invoke("runner:portal-tools"),
+  portalTool: (target: { name: string; version?: string }): Promise<unknown> =>
+    ipcRenderer.invoke("runner:portal-tool", target),
+  addPortalTool: (target: {
+    name: string
+    version?: string
+  }): Promise<ToolEntry> => ipcRenderer.invoke("runner:add-portal-tool", target),
   importPacks: (): Promise<ToolEntry[]> =>
     ipcRenderer.invoke("runner:import-packs"),
   importPackPaths: (files: string[]): Promise<ToolEntry[]> =>

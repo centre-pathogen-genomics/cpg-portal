@@ -344,7 +344,7 @@ def download_runner_pack(
     *,
     request: Request,
     session: SessionDep,
-    current_user: CurrentUser,
+    current_user: CurrentUserOrAnonymous,
     tool_name: str,
     platform: str = Query(description=f"One of {', '.join(PACK_PLATFORMS)}"),
     version: str | None = Query(
@@ -363,6 +363,9 @@ def download_runner_pack(
     tool = read_tool_with_favourite(
         session, current_user, name=tool_name, version=version
     )
+    # Anonymous lookups hand back the row, signed-in ones a validated model.
+    if not isinstance(tool, ToolPublic):
+        tool = ToolPublic.model_validate(tool)
     docker_arch = PLATFORM_IMAGE_ARCH[platform]
     runtime_sha = (
         Path(settings.RUNNER_ARTIFACTS_PATH) / "runtime" / f"{docker_arch}.tar.sha256"

@@ -22,6 +22,26 @@ export type SetupFile = {
 /** The `tool` object written into tool.json next to the desktop app. */
 export type ToolBadge = { badge?: string | null; url?: string | null }
 
+/** One tool from the portal's catalogue, as the sidebar lists it. */
+export type PortalToolSummary = {
+  name: string
+  version: string
+  description: string | null
+  image: string | null
+  tags: string[]
+}
+
+/** What the portal says about one version of a tool. */
+export type PortalToolDetail = PortalToolSummary & {
+  url: string | null
+  docs_url: string | null
+  paper_doi: string | null
+  license: string | null
+  github_repo: string | null
+  badges: ToolBadge[]
+  versions: string[]
+}
+
 export type ToolConfig = {
   image?: string | null
   url?: string | null
