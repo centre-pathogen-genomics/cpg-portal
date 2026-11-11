@@ -44,7 +44,7 @@ export function ToolSidebar({
     // The bridge is fixed for the window's lifetime.
     void window.cpgRunner?.tools().then(setTools)
     void window.cpgRunner
-      ?.portalTools()
+      ?.portalTools?.()
       .then((catalogue) => {
         setPortalTools(catalogue)
         setPortalState("ready")

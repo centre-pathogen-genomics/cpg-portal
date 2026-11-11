@@ -228,26 +228,23 @@ export function ToolPage() {
       <ToolSidebar activeToolId={tool.id} />
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <header className="shrink-0 border-b px-8 py-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex min-w-0 items-center gap-3">
+        <header className="shrink-0 px-8 py-4">
+          <div className="flex items-center justify-between gap-4 border-b pb-2">
+            <div className="flex min-w-0 items-center">
               <ToolImage
                 id={tool.id}
                 name={tool.name}
                 images={images}
-                className="size-12"
+                className="mr-2 size-12 border-2"
               />
-              <div className="grid min-w-0 gap-2">
-                <div className="flex min-w-0 flex-wrap items-center gap-2">
-                  <h1 className="truncate text-2xl font-bold">{tool.name}</h1>
-                  {tool.version && (
-                    <Badge variant="secondary">v{tool.version}</Badge>
-                  )}
-                </div>
-                <ToolBadges tool={tool} />
-              </div>
+              <h1 className="truncate text-4xl font-bold">{tool.name}</h1>
+              {tool.version && (
+                <Badge className="ml-1 bg-green-500 text-white">
+                  v{tool.version}
+                </Badge>
+              )}
             </div>
-            <div className="flex shrink-0 gap-2">
+            <div className="flex shrink-0 items-center gap-2">
               <Button
                 type="button"
                 size="sm"
@@ -276,8 +273,11 @@ export function ToolPage() {
               </Button>
             </div>
           </div>
+          <div className="mt-2">
+            <ToolBadges tool={tool} />
+          </div>
           {tool.description && (
-            <div className="mt-3">
+            <div className="mt-2">
               {descriptionOpen ? (
                 <>
                   <p className="text-sm">{tool.description}</p>

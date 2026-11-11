@@ -1,7 +1,7 @@
 import { LoaderCircle } from "lucide-react"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
-import Badge from "@/components/Tools/badges/Badge"
+import { Badge as UiBadge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -55,7 +55,7 @@ export function PortalToolDialog({
     if (!target) return
     let cancelled = false
     void window.cpgRunner
-      ?.portalTool({ name: target.name, version: version || undefined })
+      ?.portalTool?.({ name: target.name, version: version || undefined })
       .then((loaded) => {
         if (!cancelled) setDetail(loaded)
       })
@@ -77,7 +77,7 @@ export function PortalToolDialog({
     if (!detail) return
     setAdding(true)
     try {
-      await window.cpgRunner?.addPortalTool({
+      await window.cpgRunner?.addPortalTool?.({
         name: detail.name,
         version: detail.version || undefined,
       })
@@ -102,14 +102,28 @@ export function PortalToolDialog({
     <Dialog open={target !== null} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            {detail?.name ?? target?.name}
-          </DialogTitle>
-          <DialogDescription>
-            This tool lives on the portal. Install it here to run it on this
-            computer.
-          </DialogDescription>
+          <div className="flex items-center justify-between gap-2 border-b pb-2">
+            <div className="flex min-w-0 items-center">
+              <img
+                src={detail?.image ?? placeholderImage(detail?.name ?? target?.name ?? "")}
+                alt={detail?.name ?? target?.name ?? ""}
+                className="mr-2 size-12 shrink-0 rounded-md border-2 object-cover"
+              />
+              <DialogTitle className="truncate text-3xl font-bold">
+                {detail?.name ?? target?.name}
+              </DialogTitle>
+              {detail?.version && (
+                <UiBadge className="ml-1 bg-green-500 text-white">
+                  v{detail.version}
+                </UiBadge>
+              )}
+            </div>
+          </div>
         </DialogHeader>
+        <DialogDescription className="mt-2">
+          This tool lives on the portal. Install it here to run it on this
+          computer.
+        </DialogDescription>
 
         {error && <p className="text-destructive text-sm">{error}</p>}
         {!error && !detail && (
@@ -121,20 +135,7 @@ export function PortalToolDialog({
 
         {detail && (
           <div className="grid gap-3">
-            <div className="flex items-start gap-3">
-              <img
-                src={detail.image ?? placeholderImage(detail.name)}
-                alt={detail.name}
-                className="size-12 shrink-0 rounded-md border object-cover"
-              />
-              <div className="grid min-w-0 gap-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-semibold">{detail.name}</span>
-                  <Badge value={detail.version || "latest"} label="version" />
-                </div>
-                {tool && <ToolBadges tool={tool} />}
-              </div>
-            </div>
+            {tool && <ToolBadges tool={tool} />}
 
             {detail.versions.length > 1 && (
               <div className="grid gap-2">

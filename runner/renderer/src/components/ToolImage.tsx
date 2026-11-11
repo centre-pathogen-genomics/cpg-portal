@@ -41,7 +41,7 @@ export function useToolImages(): Record<string, string> {
   const [images, setImages] = useState<Record<string, string>>({})
   useEffect(() => {
     void window.cpgRunner
-      ?.toolImages()
+      ?.toolImages?.()
       .then(setImages)
       .catch(() => {})
   }, [])
