@@ -39,8 +39,6 @@ export function ToolPage() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [installDismissed, setInstallDismissed] = useState(false)
   const [runName, setRunName] = useState("")
-  const [draft, setDraft] = useState<Settings | null>(null)
-  const [saving, setSaving] = useState(false)
 
   const refreshStatus = useCallback(async () => {
     const next = await api.get<StatusPayload>("/status")
@@ -73,10 +71,6 @@ export function ToolPage() {
     void loadAll()
   }, [loadAll])
 
-  useEffect(() => {
-    if (settings) setDraft(settings)
-  }, [settings])
-
   const effectiveDoctor = forcedDoctor ?? status?.doctor ?? null
   const doctorReady = effectiveDoctor?.ready === true
   const installState = status ? currentInstallState(status) : null
@@ -100,16 +94,17 @@ export function ToolPage() {
       ? "The tool environment is not installed."
       : null
 
-  async function saveSettings(next: Settings) {
-    setSaving(true)
+  // Settings save as they change: there is nothing to confirm afterwards.
+  async function updateSettings(patch: Partial<Settings>) {
+    if (!settings) return
+    const previous = settings
+    const next = { ...settings, ...patch }
+    setSettings(next)
     try {
       await api.put("/settings", next)
-      setSettings(next)
-      toast.success("Settings saved")
     } catch (error) {
+      setSettings(previous)
       toast.error(errorMessage(error))
-    } finally {
-      setSaving(false)
     }
   }
 
@@ -176,8 +171,6 @@ export function ToolPage() {
       </div>
     )
   }
-
-  const settingsDraft = draft ?? settings
 
   return (
     <div className="flex h-full">
@@ -289,7 +282,7 @@ export function ToolPage() {
                       <Input
                         id="runner-output"
                         readOnly
-                        value={settingsDraft.output_dir}
+                        value={settings.output_dir}
                         className="font-mono text-xs"
                       />
                       <div className="mt-2 flex gap-2">
@@ -299,13 +292,10 @@ export function ToolPage() {
                           size="sm"
                           disabled={!doctorReady}
                           onClick={() => {
-                            void pickDirectory(settingsDraft.output_dir).then(
+                            void pickDirectory(settings.output_dir).then(
                               (chosen) => {
                                 if (chosen)
-                                  setDraft({
-                                    ...settingsDraft,
-                                    output_dir: chosen,
-                                  })
+                                  void updateSettings({ output_dir: chosen })
                               },
                             )
                           }}
@@ -317,7 +307,7 @@ export function ToolPage() {
                           variant="outline"
                           size="sm"
                           disabled={!doctorReady}
-                          onClick={() => openPath(settingsDraft.output_dir)}
+                          onClick={() => openPath(settings.output_dir)}
                         >
                           <FolderOpen />
                           Open
@@ -336,26 +326,12 @@ export function ToolPage() {
                       </div>
                       <Switch
                         id="runner-network"
-                        checked={settingsDraft.network}
+                        checked={settings.network}
                         disabled={!doctorReady}
                         onCheckedChange={(checked) =>
-                          setDraft({
-                            ...settingsDraft,
-                            network: checked === true,
-                          })
+                          void updateSettings({ network: checked === true })
                         }
                       />
-                    </div>
-
-                    <div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        disabled={!doctorReady || saving}
-                        onClick={() => void saveSettings(settingsDraft)}
-                      >
-                        {saving ? "Saving…" : "Save settings"}
-                      </Button>
                     </div>
                   </div>
                 </div>
