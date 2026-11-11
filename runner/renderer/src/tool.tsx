@@ -164,7 +164,7 @@ export function ToolPage() {
     )
   }
 
-  if (!tool || !settings) {
+  if (!tool || !settings || !status) {
     return (
       <div className="flex h-full items-center justify-center">
         <p className="text-muted-foreground text-sm">Loading…</p>
@@ -207,7 +207,7 @@ export function ToolPage() {
           formKey={tool.id}
           params={tool.params}
           minCpus={tool.min_cpus}
-          maxCpus={tool.max_cpus}
+          userMaxCpus={status.cpus_available}
           defaultCpus={settings.cpus}
           isDisabled={!canRun}
           submitLabel="Run locally"

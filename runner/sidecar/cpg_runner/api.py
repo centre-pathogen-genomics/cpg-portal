@@ -1,6 +1,7 @@
 """The sidecar's HTTP and WebSocket API."""
 
 import json
+import os
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -189,6 +190,7 @@ def create_app(
                 "present": image_present,
                 "tag": runner.runtime_image.tag,
             },
+            "cpus_available": os.cpu_count() or 1,
             "env": {
                 "needed": installer.needs_environment,
                 "installed": installer.env_installed(),
@@ -268,7 +270,7 @@ def create_app(
 
     @app.put("/api/settings", dependencies=[auth])
     def update_settings(payload: SettingsUpdate) -> dict[str, Any]:
-        maximum = tool.max_cpus if tool.max_cpus is not None else MAX_CPUS
+        maximum = max(1, tool.min_cpus, os.cpu_count() or MAX_CPUS)
         if payload.cpus < 1 or payload.cpus > maximum:
             raise HTTPException(
                 status_code=400,

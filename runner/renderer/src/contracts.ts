@@ -89,6 +89,8 @@ export type InstallState =
   | "installed"
 
 export type StatusPayload = {
+  /** The CPUs of this machine, the most a local run may use. */
+  cpus_available: number
   docker: { available: boolean; version: string | null }
   doctor: DoctorReport
   image: { present: boolean; tag: string }

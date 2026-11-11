@@ -136,3 +136,18 @@ def test_a_run_keeps_the_given_name_or_names_itself(tmp_path):
     unnamed = manager.start({}, 1)
     # Named after the tool and the day, numbered after the runs before it.
     assert unnamed.name == f"my tool-{datetime.now(timezone.utc):%Y%m%d}-002"
+
+
+def test_a_local_run_may_use_more_cpus_than_the_tool_allows(tmp_path):
+    """The tool's maximum is the portal's limit, not this computer's."""
+    manager = _manager(tmp_path, make_tool(max_cpus=2), WritingDocker())
+    record = manager.start({}, 8)
+    assert record.cpus == 8
+    wait_for(lambda: manager.get(record.id).status in TERMINAL_STATUSES)
+
+
+def test_a_run_still_gets_the_tools_minimum(tmp_path):
+    manager = _manager(tmp_path, make_tool(min_cpus=4), WritingDocker())
+    record = manager.start({}, 1)
+    assert record.cpus == 4
+    wait_for(lambda: manager.get(record.id).status in TERMINAL_STATUSES)

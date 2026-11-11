@@ -83,12 +83,12 @@ def resolve_cpus(
     params: dict[str, Any],
     requested: int,
 ) -> int:
-    minimum = max(1, tool.min_cpus)
-    if tool.max_cpus is None:
-        base = max(minimum, requested)
-    else:
-        base = max(minimum, min(requested, tool.max_cpus))
+    """The CPUs a local run gets.
 
+    The tool's ``max_cpus`` bounds the portal's scheduler, not this computer:
+    locally the user may give a run every CPU the machine has.
+    """
+    minimum = max(1, tool.min_cpus)
     scaled = 0
     for param in tool.params:
         if str(param["param_type"]) != "file":
@@ -104,10 +104,7 @@ def resolve_cpus(
         else:
             count = 0
         scaled += per_file * count
-    if scaled <= 0:
-        return base
-    upper = tool.max_cpus if tool.max_cpus is not None else scaled
-    return min(upper, max(minimum, max(scaled, requested)))
+    return max(minimum, scaled, requested)
 
 
 class RunManager:

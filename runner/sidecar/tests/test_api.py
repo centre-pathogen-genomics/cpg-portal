@@ -1,3 +1,5 @@
+import os
+
 from fastapi.testclient import TestClient
 
 from cpg_runner.api import create_app
@@ -49,6 +51,24 @@ def test_requests_need_the_token(tmp_path):
     assert (
         client.get("/api/doctor", headers={"X-CPG-Token": "wrong"}).status_code == 401
     )
+
+
+def test_status_reports_the_machines_cpus(tmp_path):
+    client, _ = _client(tmp_path)
+    payload = client.get("/api/status", headers=HEADERS).json()
+    assert payload["cpus_available"] == (os.cpu_count() or 1)
+
+
+def test_settings_take_every_cpu_of_the_machine(tmp_path):
+    client, _ = _client(tmp_path)
+    cpus = os.cpu_count() or 1
+    response = client.put(
+        "/api/settings",
+        headers=HEADERS,
+        json={"cpus": cpus, "output_dir": "/tmp/out", "network": True},
+    )
+    assert response.status_code == 200
+    assert response.json()["cpus"] == cpus
 
 
 def test_a_run_takes_its_name(tmp_path):
