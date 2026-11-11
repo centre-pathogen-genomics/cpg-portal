@@ -12,14 +12,18 @@ extraResources:
   - { from: sidecar/dist/cpg-runner, to: sidecar/cpg-runner }
   # The portal's mark, shown by the splash window while the runner starts.
   - { from: ../frontend/public/assets/images/cpg-logo.png, to: logo.png }
+  # The same icon the bundle uses, for the window and the dock.
+  - { from: build/icon.png, to: icon.png }
   - { from: renderer/dist, to: renderer }
 mac:
+  icon: build/icon.png
   category: public.app-category.utilities
   target: [{ target: dir, arch: [arm64, x64] }]
   hardenedRuntime: true
   gatekeeperAssess: false
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
-win: { target: [{ target: zip, arch: [x64] }] }
-linux: { target: [{ target: zip, arch: [x64] }], category: Science }
+win: { icon: build/icon.png, target: [{ target: zip, arch: [x64] }] }
+linux:
+  { icon: build/icon.png, target: [{ target: zip, arch: [x64] }], category: Science }
 asar: true

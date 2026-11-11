@@ -261,6 +261,24 @@ function logoFile(): string {
   )
 }
 
+// The app icon: the round CPG mark. Packaged, electron-builder embeds it in
+// the bundle and this copy serves the window and the dock as well.
+function iconFile(): string {
+  if (process.env.CPG_RUNNER_ICON) {
+    return path.resolve(process.env.CPG_RUNNER_ICON)
+  }
+  if (app.isPackaged) {
+    return path.join(process.resourcesPath, "icon.png")
+  }
+  return path.resolve(
+    path.dirname(process.argv[1] ?? ""),
+    "..",
+    "..",
+    "build",
+    "icon.png",
+  )
+}
+
 // A data: document may not load a file:// image, so the logo travels inline.
 function logoDataUrl(): string {
   try {
@@ -287,6 +305,7 @@ function showSplash(): void {
     alwaysOnTop: true,
     focusable: false,
     backgroundColor: "#ffffff",
+    icon: iconFile(),
     webPreferences: { sandbox: true, contextIsolation: true },
   })
   splashWindow.once("ready-to-show", () => splashWindow?.show())
@@ -315,6 +334,7 @@ function createWindow(): BrowserWindow {
   const window = new BrowserWindow({
     width: 1100,
     height: 800,
+    icon: iconFile(),
     // Shown once the first page has painted, so the splash stays until then.
     show: false,
     webPreferences: {
@@ -693,6 +713,14 @@ function start(): void {
   app
     .whenReady()
     .then(async () => {
+      if (!app.isPackaged && process.platform === "darwin") {
+        // The bundle carries the icon; a dev run would show Electron's.
+        try {
+          app.dock?.setIcon(iconFile())
+        } catch (error) {
+          console.error(`Could not set the dock icon: ${String(error)}`)
+        }
+      }
       registerIpcHandlers()
       // The first start builds the tool environment, so show something at once.
       showSplash()
