@@ -5,7 +5,8 @@ import RunTime from "@/components/Runs/RunTime"
 import StatusBadge from "@/components/Runs/StatusBadge"
 import { Button } from "@/components/ui/button"
 import { api, errorMessage } from "./api"
-import { RunOutputs } from "./components/RunOutputs"
+import { RunFiles } from "./components/RunFiles"
+import { RunResults } from "./components/RunResults"
 import { ToolSidebar } from "./components/ToolSidebar"
 import {
   isRunActive,
@@ -148,6 +149,13 @@ export function RunPage({ id }: { id: string }) {
               <p className="text-destructive text-sm">{loadError}</p>
             )}
 
+            {record && !isRunActive(record.status) && (
+              <>
+                <RunFiles files={record.files ?? []} />
+                <RunResults runId={id} files={record.files ?? []} />
+              </>
+            )}
+
             {run && (
               <OutputAccordion
                 run={run}
@@ -168,11 +176,6 @@ export function RunPage({ id }: { id: string }) {
                 )}
               </section>
             )}
-
-            <section className="grid gap-2">
-              <h2 className="text-lg font-semibold">Outputs</h2>
-              <RunOutputs runId={id} files={record?.files ?? []} />
-            </section>
 
             {record?.output_dir && (
               <section className="grid gap-2">

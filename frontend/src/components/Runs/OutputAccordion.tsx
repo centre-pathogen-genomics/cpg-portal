@@ -137,7 +137,7 @@ const OutputAccordion = ({
   /** Extra accordion content, e.g. the resource charts. */
   resources?: ReactNode;
 }) => (
-  <Accordion type="multiple" className="mb-4 break-all">
+  <Accordion type="multiple" defaultValue={["logs"]} className="mb-4 break-all">
     {run.tool.explanation_of_results_markdown && (
       <AccordionItem value="explanation">
         <AccordionTrigger>
