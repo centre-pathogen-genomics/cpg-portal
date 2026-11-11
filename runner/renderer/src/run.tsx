@@ -1,3 +1,4 @@
+import { RotateCcw } from "lucide-react"
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import OutputAccordion from "@/components/Runs/OutputAccordion";
@@ -104,14 +105,6 @@ export function RunPage({ id }: { id: string }) {
         <header className="shrink-0 border-b px-8 py-6">
           <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-3">
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                onClick={() => navigate("/tool")}
-              >
-                New run
-              </Button>
               <h1 className="text-xl font-semibold">
                 {record?.name ||
                   `Run ${record?.id ? record.id.slice(0, 8) : id.slice(0, 8)}`}
@@ -128,6 +121,18 @@ export function RunPage({ id }: { id: string }) {
               )}
             </div>
             <div className="flex gap-2">
+              {record && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  aria-label="Rerun this run"
+                  onClick={() => navigate(`/tool?rerun=${record.id}`)}
+                >
+                  <RotateCcw />
+                  Rerun
+                </Button>
+              )}
               {active && (
                 <Button
                   type="button"

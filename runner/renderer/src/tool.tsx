@@ -39,6 +39,8 @@ export function ToolPage() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [installDismissed, setInstallDismissed] = useState(false)
   const [runName, setRunName] = useState("")
+  const [rerunRun, setRerunRun] = useState<RunRecord | null>(null)
+  const [rerunChecked, setRerunChecked] = useState(false)
 
   const refreshStatus = useCallback(async () => {
     const next = await api.get<StatusPayload>("/status")
@@ -70,6 +72,20 @@ export function ToolPage() {
   useEffect(() => {
     void loadAll()
   }, [loadAll])
+
+  // A rerun arrives as ?rerun=<run id>: its values prefill the form.
+  useEffect(() => {
+    const rerunId = new URLSearchParams(window.location.search).get("rerun")
+    if (!rerunId) {
+      setRerunChecked(true)
+      return
+    }
+    void api
+      .get<RunRecord>(`/runs/${rerunId}`)
+      .then((record) => setRerunRun(record))
+      .catch(() => toast.error("Could not load the run to repeat"))
+      .finally(() => setRerunChecked(true))
+  }, [])
 
   const effectiveDoctor = forcedDoctor ?? status?.doctor ?? null
   const doctorReady = effectiveDoctor?.ready === true
@@ -213,6 +229,13 @@ export function ToolPage() {
           submitLabel="Run locally"
           onSubmit={submitLocally}
           mapError={fieldError}
+          initialValues={
+            rerunRun
+              ? { ...rerunRun.params, ...(rerunRun.param_files ?? {}) }
+              : undefined
+          }
+          initialValuesReady={rerunChecked}
+          initialThreads={rerunRun?.cpus ?? null}
           className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_360px]"
           renderFilePicker={({ param, values, onChange, disabled }) => (
             <LocalFilePicker

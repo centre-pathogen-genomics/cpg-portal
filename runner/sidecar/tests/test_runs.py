@@ -131,6 +131,8 @@ def test_input_files_are_mounted_into_work(tmp_path):
     assert not (run_dir / "work" / "input.fasta").exists()
     assert source.read_text() == ">a\nACGT\n"
     assert manager.get(record.id).params["seq"] == "input.fasta"
+    # Kept for a rerun, which offers the very same files again.
+    assert manager.get(record.id).param_files == {"seq": [str(source)]}
 
 
 def test_setup_files_are_rendered(tmp_path):

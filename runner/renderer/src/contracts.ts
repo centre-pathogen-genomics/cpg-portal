@@ -127,6 +127,7 @@ export type RunRecord = {
   command?: string
   cpus?: number
   params?: Record<string, unknown>
+  param_files?: Record<string, string[]>
   stdout?: string
   exit_code?: number | null
   error?: string | null

@@ -299,8 +299,12 @@ const ToolRunForm = ({
       if (param.param_type === "file") {
         const allowed = new Set(filesByParam.get(param.name)?.map((f) => f.id))
         const ids = (Array.isArray(recorded) ? recorded : [recorded]).flat()
+        // An empty set means the caller has no list to check against (the
+        // desktop's files come from the disk, not from a query), so what the
+        // run recorded is offered as it was.
         const usable = ids.filter(
-          (id): id is string => typeof id === "string" && allowed.has(id),
+          (id): id is string =>
+            typeof id === "string" && (allowed.size === 0 || allowed.has(id)),
         )
         if (usable.length) next[param.name] = usable
         continue

@@ -44,6 +44,8 @@ class RunRecord(BaseModel):
     name: str = ""
     status: str = "pending"
     params: dict[str, Any] = Field(default_factory=dict)
+    # The files the user picked, by parameter, so a rerun can offer the same.
+    param_files: dict[str, list[str]] = Field(default_factory=dict)
     cpus: int = 1
     command: str = ""
     created_at: str
@@ -176,6 +178,7 @@ class RunManager:
             name=name.strip()[:255] or default_name(self.tool, self._records),
             status="pending",
             params=resolved,
+            param_files={name: list(paths) for name, paths in file_paths.items()},
             cpus=actual_cpus,
             created_at=_now(),
         )
