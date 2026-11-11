@@ -25,7 +25,9 @@ export function RunPage({ id }: { id: string }) {
   const [tool, setTool] = useState<ToolConfig | null>(null);
   const [environment, setEnvironment] = useState<string | null>(null);
   const [logs, setLogs] = useState<string[]>([])
-  const [leavingTo, setLeavingTo] = useState<string | null>(null)
+  const [leaveAction, setLeaveAction] = useState<{
+    go: () => void | Promise<void>
+  } | null>(null)
   const [leaving, setLeaving] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -86,16 +88,26 @@ export function RunPage({ id }: { id: string }) {
     return () => socket.close();
   }, [id, refresh]);
 
-  // Leaving while the run is still going ends it, so the sidebar asks first.
-  async function leave(toolId: string) {
+  // Leaving while the run is still going ends it, so both the sidebar and the
+  // way back to the tool ask first.
+  async function confirmLeave() {
+    if (!leaveAction) return
     setLeaving(true)
     try {
       await api.post(`/runs/${id}/cancel`).catch(() => {})
-      await window.cpgRunner?.openTool(toolId)
+      await leaveAction.go()
     } finally {
       setLeaving(false)
-      setLeavingTo(null)
+      setLeaveAction(null)
     }
+  }
+
+  function goBack() {
+    if (inProgress) {
+      setLeaveAction({ go: () => navigate("/tool") })
+      return
+    }
+    navigate("/tool")
   }
 
   async function cancel() {
@@ -118,13 +130,22 @@ export function RunPage({ id }: { id: string }) {
         activeToolId={tool?.id ?? null}
         beforeOpen={(toolId) => {
           if (!inProgress || toolId === tool?.id) return true
-          setLeavingTo(toolId)
+          setLeaveAction({ go: () => window.cpgRunner?.openTool(toolId) })
           return false
         }}
       />
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <header className="shrink-0 border-b px-8 py-6">
+          <div className="mx-auto mb-3 max-w-4xl">
+            <button
+              type="button"
+              className="hover:text-primary flex items-center font-semibold whitespace-nowrap"
+              onClick={goBack}
+            >
+              ← Back to {tool?.name ?? "the tool"}
+            </button>
+          </div>
           <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="text-xl font-semibold">
@@ -235,17 +256,15 @@ export function RunPage({ id }: { id: string }) {
       </div>
 
       <ConfirmationDialog
-        open={leavingTo !== null}
+        open={leaveAction !== null}
         onOpenChange={(open) => {
-          if (!open) setLeavingTo(null)
+          if (!open) setLeaveAction(null)
         }}
         title="Cancel this run?"
-        description="This run is still going. Opening another tool ends it here."
+        description="This run is still going. Leaving this page ends it."
         confirmLabel="Cancel run and leave"
         pending={leaving}
-        onConfirm={() => {
-          if (leavingTo) void leave(leavingTo)
-        }}
+        onConfirm={() => void confirmLeave()}
       />
     </div>
   )
