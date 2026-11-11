@@ -33,14 +33,12 @@ def build_run_args(
     shell_command: str,
     tool_id: str | None = None,
     input_files: Sequence[tuple[str, str]] = (),
-    work_input_files: Sequence[tuple[str, str]] = (),
 ) -> list[str]:
     """The argv for one run.
 
-    ``input_files`` are the chosen files, each mounted read-only where the
-    container looks for it — the file the user picked, never a copy of it.
-    ``work_input_files`` are the ones whose work-dir symlink could not be
-    made (Windows without symlink privileges), so they are mounted there.
+    ``input_files`` are the chosen files as (host path, name the tool sees),
+    each mounted read-only under that name in the work directory: the file
+    the user picked, never a copy of it.
     """
     args = [
         docker_bin,
@@ -58,11 +56,6 @@ def build_run_args(
         f"type=bind,source={tmp_dir},target=/tmp",
     ]
     for source, name in input_files:
-        args += [
-            "--mount",
-            f"type=bind,source={source},target=/inputs/{name},readonly",
-        ]
-    for source, name in work_input_files:
         args += [
             "--mount",
             f"type=bind,source={source},target=/work/{name},readonly",

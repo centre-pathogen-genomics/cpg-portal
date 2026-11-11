@@ -234,7 +234,6 @@ class RunManager:
             record.output_dir = str(output_dir)
             dirs = self._prepare_dirs(record, output_dir)
             input_files = self._input_files(record)
-            linked = self._link_inputs(dirs["work"], input_files)
             self._write_setup_files(record, dirs["work"])
             command = self._render_command(record)
         except Exception as exc:  # noqa: BLE001 - surfaced to the user
@@ -255,9 +254,6 @@ class RunManager:
             work_dir=dirs["work"],
             tmp_dir=dirs["tmp"],
             input_files=[(str(path), name) for path, name in input_files],
-            work_input_files=[
-                (str(path), name) for path, name in input_files if name not in linked
-            ],
             image_tag=self.runner.runtime_image.tag,
             shell_command=f"set -euo pipefail; {command}",
             tool_id=self.tool.id if self.environment_yml is not None else None,
@@ -330,35 +326,13 @@ class RunManager:
         seen: set[str] = set()
         for sources in self._file_paths.get(record.id, {}).values():
             for source in sources:
-                path = Path(source).expanduser()
+                path = Path(source).expanduser().resolve()
                 name = input_file_name(path.name)
                 if name in seen:
                     continue
                 seen.add(name)
                 files.append((path, name))
         return files
-
-    def _link_inputs(
-        self, work_dir: Path, input_files: list[tuple[Path, str]]
-    ) -> set[str]:
-        """Expose each input by bare name, as the tool's command expects.
-
-        The link points at the read-only mount, so the tool never writes into
-        the user's file. Returns the names that got a link.
-        """
-        linked: set[str] = set()
-        for _path, name in input_files:
-            link = work_dir / name
-            if link.exists() or link.is_symlink():
-                continue
-            try:
-                os.symlink(f"/inputs/{name}", link)
-            except OSError:
-                # Windows without symlink privileges: the file is mounted into
-                # the work directory instead (see build_run_args).
-                continue
-            linked.add(name)
-        return linked
 
     def _write_setup_files(self, record: RunRecord, work_dir: Path) -> None:
         for setup_file in self.tool.setup_files:

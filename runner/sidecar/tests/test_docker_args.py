@@ -34,7 +34,7 @@ def test_network_enabled_argv():
         "--mount",
         "type=bind,source=/data/runs/run-1/tmp,target=/tmp",
         "--mount",
-        "type=bind,source=/data/seq.fa,target=/inputs/seq.fa,readonly",
+        "type=bind,source=/data/seq.fa,target=/work/seq.fa,readonly",
         "-e",
         "PYTHONUNBUFFERED=1",
         "--workdir",
@@ -87,7 +87,7 @@ def test_paths_with_spaces_and_windows_style_path():
     )
     assert (
         "type=bind,source=/Users/Test User/CPG Runs/seq one.fa,"
-        "target=/inputs/seq_one.fa,readonly" in args
+        "target=/work/seq_one.fa,readonly" in args
     )
 
     windows = build_run_args(
@@ -108,7 +108,7 @@ def test_paths_with_spaces_and_windows_style_path():
     # A Windows drive path is a single argv element, not split on the colon.
     assert any(
         arg
-        == r"type=bind,source=C:\Users\Test User\CPG Runs\seq.fa,target=/inputs/seq.fa,readonly"
+        == r"type=bind,source=C:\Users\Test User\CPG Runs\seq.fa,target=/work/seq.fa,readonly"
         for arg in windows
     )
 
