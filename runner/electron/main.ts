@@ -329,25 +329,6 @@ function showSplash(): void {
   )
 }
 
-/**
- * Runs a navigation with the splash as its backdrop: it only appears if the
- * work takes longer than a moment, so switching between running tools never
- * flashes it, while a first start (installing the environment) does.
- */
-async function withSplash<T>(
-  window: BrowserWindow,
-  work: () => Promise<T>,
-): Promise<T> {
-  const timer = setTimeout(() => showSplash(), 300)
-  try {
-    return await work()
-  } finally {
-    clearTimeout(timer)
-    closeSplash()
-    if (!window.isVisible()) window.show()
-  }
-}
-
 function closeSplash(): void {
   splashWindow?.destroy()
   splashWindow = null
@@ -430,24 +411,22 @@ async function showHome(): Promise<void> {
     lastToolId && tools.some((tool) => tool.id === lastToolId)
       ? lastToolId
       : tools[0].id
-  await withSplash(window, async () => {
-    const port = await ensureSidecarWithRetry(toolId)
-    await window.loadURL(toolUrl(port, "/"))
-  })
+  const port = await ensureSidecarWithRetry(toolId)
+  await window.loadURL(toolUrl(port, "/"))
+  if (!window.isVisible()) window.show()
 }
 
 async function showTool(toolId: string): Promise<void> {
   const window = createWindow()
-  await withSplash(window, async () => {
-    try {
-      const port = await ensureSidecarWithRetry(toolId)
-      lastToolId = toolId
-      await window.loadURL(toolUrl(port, "/tool"))
-    } catch (error) {
-      console.error(`Could not open ${toolId}: ${String(error)}`)
-      throw error
-    }
-  })
+  try {
+    const port = await ensureSidecarWithRetry(toolId)
+    lastToolId = toolId
+    await window.loadURL(toolUrl(port, "/tool"))
+  } catch (error) {
+    console.error(`Could not open ${toolId}: ${String(error)}`)
+    throw error
+  }
+  if (!window.isVisible()) window.show()
 }
 
 function delay(ms: number): Promise<void> {
@@ -779,19 +758,25 @@ function start(): void {
         }
       }
       registerIpcHandlers()
-      // The first start builds the tool environment, so show something at once.
-      showSplash()
-      const packs = [...openedBeforeReady, ...packArguments(process.argv)]
-      openedBeforeReady.length = 0
-      if (packs.length > 0) {
-        const { imported, failures } = importPackFiles(packs)
-        reportImportFailures(failures)
-        if (imported.length > 0) {
-          await showTool(imported[0].id)
-          return
+      // The splash covers the first paint only: opening a tool later shows the
+      // tool page's own loading state instead.
+      const splashTimer = setTimeout(() => showSplash(), 200)
+      try {
+        const packs = [...openedBeforeReady, ...packArguments(process.argv)]
+        openedBeforeReady.length = 0
+        if (packs.length > 0) {
+          const { imported, failures } = importPackFiles(packs)
+          reportImportFailures(failures)
+          if (imported.length > 0) {
+            await showTool(imported[0].id)
+            return
+          }
         }
+        await showHome()
+      } finally {
+        clearTimeout(splashTimer)
+        closeSplash()
       }
-      await showHome()
     })
     .catch((error) => {
       fail(
