@@ -188,6 +188,24 @@ export function ToolPage() {
     )
   }
 
+  // A run recorded by an older version has no file paths, only the names the
+  // tool saw: those are not paths, so such files have to be picked again.
+  const fileParamNames = new Set(
+    tool.params
+      .filter((param) => param.param_type === "file")
+      .map((param) => param.name),
+  )
+  const rerunValues = rerunRun
+    ? {
+        ...Object.fromEntries(
+          Object.entries(rerunRun.params ?? {}).filter(
+            ([name]) => !fileParamNames.has(name),
+          ),
+        ),
+        ...(rerunRun.param_files ?? {}),
+      }
+    : undefined
+
   return (
     <div className="flex h-full">
       <ToolSidebar activeToolId={tool.id} />
@@ -229,11 +247,7 @@ export function ToolPage() {
           submitLabel="Run locally"
           onSubmit={submitLocally}
           mapError={fieldError}
-          initialValues={
-            rerunRun
-              ? { ...rerunRun.params, ...(rerunRun.param_files ?? {}) }
-              : undefined
-          }
+          initialValues={rerunValues}
           initialValuesReady={rerunChecked}
           initialThreads={rerunRun?.cpus ?? null}
           className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_360px]"
