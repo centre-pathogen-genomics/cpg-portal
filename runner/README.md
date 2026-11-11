@@ -66,6 +66,26 @@ The renderer deliberately reuses portal code — `ToolRunForm`, `StatusBadge`,
 stay one product. Anything the desktop app needs that the portal also has should
 be fixed in `frontend/src`, not copied into `renderer/src`.
 
+## What a run leaves behind
+
+A run works in `<output folder>/.cpg_work/<run id>/` (bind-mounted as `/work`,
+`/tmp` and `/inputs`) and copies what its targets name into
+`<output folder>/<tool>-<timestamp>/`. That folder also gets the run's
+provenance, so it describes itself after the app is gone:
+
+| File | What it holds |
+|---|---|
+| `README.md` | the run's name, date and CPUs, the tool's results explanation, and the file list |
+| `log.txt` | everything the run printed |
+| `command.sh` | the command that produced the files, conda activation included |
+| `environment.yml` | the tool's conda environment, when it has one |
+| `install.sh` | rebuilds that environment next to the outputs (`mamba`/`conda env create`) and runs the post-install step |
+| `post_install.sh` | the post-install step on its own, when the tool has one |
+
+`Clean up work folder` (on by default) removes `.cpg_work/<run id>` once the
+outputs are copied; turn it off to inspect the inputs and leftovers, which the
+run page then links as a work folder.
+
 ## Test and build
 
 ```bash

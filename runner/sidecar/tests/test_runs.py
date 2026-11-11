@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -195,3 +196,57 @@ def test_the_work_folder_can_be_kept(tmp_path):
     finished = manager.get(record.id)
     assert finished.work_dir == str(_work_root(tmp_path, record))
     assert (Path(finished.work_dir) / "work" / "out.txt").read_text() == "hi"
+
+
+def test_outputs_come_with_their_provenance(tmp_path):
+    resources = tmp_path / "resources"
+    resources.mkdir()
+    (resources / "environment.yml").write_text("channels: [conda-forge]\n")
+    tool = make_tool(
+        post_install="conda install -y fastqc",
+        explanation_of_results_markdown="## What you get\n\nOne row per gene.",
+    )
+    manager = RunManager(
+        tool=tool,
+        runner=make_runner(),
+        docker=WritingDocker(),
+        store=_store(tmp_path, tool),
+        resources_dir=resources,
+    )
+    record = manager.start({}, 1)
+    wait_for(lambda: manager.get(record.id).status in TERMINAL_STATUSES)
+    record = manager.get(record.id)
+    assert record.status == "completed"
+
+    output = Path(record.output_dir)
+    readme = (output / "README.md").read_text()
+    assert readme.startswith("# my tool")
+    assert f"Run `{record.name}`" in readme
+    assert "One row per gene." in readme
+    assert "`out.txt`" in readme
+    assert (output / "log.txt").read_text() == record.stdout
+    assert "printf hi > out.txt" in (output / "command.sh").read_text()
+    assert (output / "environment.yml").read_text() == "channels: [conda-forge]\n"
+    assert "conda install -y fastqc" in (output / "post_install.sh").read_text()
+
+    install = output / "install.sh"
+    script = install.read_text()
+    assert script.startswith("#!/usr/bin/env bash")
+    assert "env create --yes --file environment.yml --prefix ./env" in script
+    assert "conda install -y fastqc" in script
+    assert os.access(install, os.X_OK)
+    assert "`install.sh`" in readme
+
+
+def test_a_tool_without_environment_or_post_install_saves_what_it_has(tmp_path):
+    manager = _manager(tmp_path, make_tool(), WritingDocker())
+    record = manager.start({}, 1)
+    wait_for(lambda: manager.get(record.id).status in TERMINAL_STATUSES)
+
+    readme = (Path(manager.get(record.id).output_dir) / "README.md").read_text()
+    assert "does not describe its results" in readme
+    output = Path(manager.get(record.id).output_dir)
+    assert not (output / "environment.yml").exists()
+    assert not (output / "post_install.sh").exists()
+    assert not (output / "install.sh").exists()
+    assert (output / "log.txt").is_file()

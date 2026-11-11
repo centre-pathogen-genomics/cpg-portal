@@ -269,6 +269,7 @@ class RunManager:
         try:
             matched = self._collect_targets(record, dirs["work"])
             output_dir = self._write_outputs(record, matched)
+            self._write_report(record, output_dir)
         except Exception as exc:  # noqa: BLE001 - surfaced to the user
             self._finish(record, "failed", exit_code=exit_code, error=str(exc))
             return
@@ -395,6 +396,99 @@ class RunManager:
             ) from exc
         record.files = files
         return output_dir
+
+    def _write_report(self, record: RunRecord, output_dir: Path) -> None:
+        """The provenance of the run, next to the files it produced."""
+        settings = self.store.load_settings()
+        try:
+            (output_dir / "command.sh").write_text(
+                f"set -euo pipefail\n{record.command}\n", encoding="utf-8"
+            )
+            (output_dir / "log.txt").write_text(record.stdout, encoding="utf-8")
+            if self.environment_yml is not None:
+                shutil.copy2(self.environment_yml, output_dir / "environment.yml")
+                install = output_dir / "install.sh"
+                install.write_text(self._install_script(), encoding="utf-8")
+                install.chmod(0o755)
+            if self.tool.post_install:
+                (output_dir / "post_install.sh").write_text(
+                    f"set -euo pipefail\n{self.tool.post_install}\n",
+                    encoding="utf-8",
+                )
+            (output_dir / "README.md").write_text(
+                self._readme(record, network=settings.network), encoding="utf-8"
+            )
+        except OSError as exc:
+            raise RuntimeError(
+                f"Could not write to output folder: {settings.output_dir}"
+            ) from exc
+
+    def _install_script(self) -> str:
+        """A script that rebuilds the run's environment next to the outputs."""
+        lines = [
+            "#!/usr/bin/env bash",
+            "# Recreates the environment this run used, then runs the tool's",
+            "# post-install step. Needs conda or mamba on PATH:",
+            "# https://conda-forge.org/download/",
+            "set -euo pipefail",
+            'cd "$(dirname "$0")"',
+            "",
+            'CONDA_BIN="$(command -v mamba || command -v conda || true)"',
+            'if [ -z "$CONDA_BIN" ]; then',
+            '  echo "Conda or mamba is required to recreate this environment." >&2',
+            "  exit 1",
+            "fi",
+            "",
+            "# A prefix next to these files, so nothing global is touched.",
+            "if [ ! -d env ]; then",
+            '  "$CONDA_BIN" env create --yes --file environment.yml --prefix ./env',
+            "fi",
+            "",
+            "# The post-install step expects the environment to be active.",
+            'export PATH="$PWD/env/bin:$PATH"',
+        ]
+        if self.tool.post_install:
+            lines += ["", self.tool.post_install.strip()]
+        return "\n".join(lines) + "\n"
+
+    def _readme(self, record: RunRecord, *, network: bool) -> str:
+        version = f" {self.tool.version}" if self.tool.version else ""
+        lines = [
+            f"# {self.tool.name}{version}",
+            "",
+            (
+                f"Run `{record.name}` finished on "
+                f"{datetime.now().astimezone():%Y-%m-%d %H:%M} with "
+                f"{record.cpus} {'CPU' if record.cpus == 1 else 'CPUs'}"
+                f"{', network access on.' if network else ', offline.'}"
+            ),
+        ]
+        if self.tool.description:
+            lines += ["", self.tool.description.strip()]
+        explanation = (self.tool.explanation_of_results_markdown or "").strip()
+        lines += [
+            "",
+            "## Results",
+            "",
+            explanation or "This tool does not describe its results.",
+            "",
+            "## Files",
+            "",
+        ]
+        for file in record.files:
+            lines.append(f"- `{file.name}` — what the run produced")
+        lines += [
+            "- `log.txt` — everything the run printed",
+            "- `command.sh` — the command that produced these files",
+        ]
+        if self.environment_yml is not None:
+            lines.append("- `environment.yml` — the conda environment it ran in")
+            lines.append(
+                "- `install.sh` — rebuilds that environment and runs the post-install step"
+            )
+        if self.tool.post_install:
+            lines.append("- `post_install.sh` — how the environment was prepared")
+        return "\n".join(lines) + "\n"
 
     # -- state helpers -----------------------------------------------------
 
