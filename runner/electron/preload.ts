@@ -13,9 +13,7 @@ const TOKEN_ARGUMENT = "--cpg-token="
 const tokenArgument = process.argv.find((argument) =>
   argument.startsWith(TOKEN_ARGUMENT),
 )
-const token = tokenArgument
-  ? tokenArgument.slice(TOKEN_ARGUMENT.length)
-  : ""
+const token = tokenArgument ? tokenArgument.slice(TOKEN_ARGUMENT.length) : ""
 
 const PORTAL_ARGUMENT = "--cpg-portal="
 const portalArgument = process.argv.find((argument) =>
