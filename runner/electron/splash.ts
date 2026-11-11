@@ -83,5 +83,5 @@ export function splashHtml(logoSrc: string): string {
     <p class="caption">Starting CPG Runner…</p>
     <div class="spinner" role="progressbar" aria-label="Starting"></div>
   </body>
-</html>`;
+</html>`
 }

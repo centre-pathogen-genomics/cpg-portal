@@ -65,7 +65,9 @@ export function InstallDialog({
     socket.onerror = () => {
       closeSocket()
       setWorking(false)
-      setFailure((previous) => previous ?? "The installation log connection was lost")
+      setFailure(
+        (previous) => previous ?? "The installation log connection was lost",
+      )
     }
     socket.onclose = () => {
       if (socketRef.current === socket) socketRef.current = null
@@ -125,7 +127,11 @@ export function InstallDialog({
         </div>
 
         <DialogFooter>
-          <Button type="button" disabled={busy} onClick={() => void startInstall()}>
+          <Button
+            type="button"
+            disabled={busy}
+            onClick={() => void startInstall()}
+          >
             {busy ? "Installing…" : failure ? "Retry" : "Install"}
           </Button>
           <Button type="button" variant="ghost" onClick={onDismiss}>

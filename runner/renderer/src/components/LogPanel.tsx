@@ -11,6 +11,8 @@ export function LogPanel({
   const ref = useRef<HTMLPreElement>(null)
 
   useEffect(() => {
+    // New lines are the trigger; the effect itself only scrolls the panel.
+    // biome-ignore lint/correctness/useExhaustiveDependencies: follows the log
     const node = ref.current
     if (node) node.scrollTop = node.scrollHeight
   }, [lines])

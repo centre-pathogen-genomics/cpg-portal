@@ -42,7 +42,9 @@ export type ToolPayload =
   | { schema_version: number; tool: ToolConfig }
 
 export function unwrapTool(payload: ToolPayload): ToolConfig {
-  return "tool" in payload && payload.tool ? payload.tool : (payload as ToolConfig)
+  return "tool" in payload && payload.tool
+    ? payload.tool
+    : (payload as ToolConfig)
 }
 
 export type Settings = {

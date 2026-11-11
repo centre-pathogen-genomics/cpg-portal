@@ -1,7 +1,7 @@
-import type { Param } from "@/client"
 import { Plus, XIcon } from "lucide-react"
-import { useState, type DragEvent } from "react"
+import { type DragEvent, useState } from "react"
 import { toast } from "sonner"
+import type { Param } from "@/client"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import type { FileTypesMap } from "../contracts"
@@ -78,9 +78,7 @@ export function LocalFilePicker({
     setDragOver(false)
     if (disabled) return
     acceptPaths(
-      Array.from(event.dataTransfer.files)
-        .map(filePathOf)
-        .filter(Boolean),
+      Array.from(event.dataTransfer.files).map(filePathOf).filter(Boolean),
     )
   }
 

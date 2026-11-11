@@ -3,9 +3,9 @@ import RenderMarkdown from "@/components/Common/Markdown"
 import { Button } from "@/components/ui/button"
 import { humanReadableFileSize } from "@/utils"
 import { api, errorMessage } from "../api"
+import type { RunFile } from "../contracts"
 import { openPath, revealPath } from "../lib/desktop"
 import { extensionOf, fileName } from "../lib/format"
-import type { RunFile } from "../contracts"
 
 const TEXT_EXTENSIONS: Record<string, true> = {
   ".txt": true,
@@ -126,7 +126,9 @@ export function RunOutputs({
   runId: string
   files: RunFile[]
 }) {
-  const [previews, setPreviews] = useState<Map<number, Preview>>(() => new Map())
+  const [previews, setPreviews] = useState<Map<number, Preview>>(
+    () => new Map(),
+  )
   const objectUrls = useRef<string[]>([])
 
   useEffect(
@@ -152,7 +154,9 @@ export function RunOutputs({
       clearPreview(index)
       return
     }
-    setPreviews((previous) => new Map(previous).set(index, { status: "loading" }))
+    setPreviews((previous) =>
+      new Map(previous).set(index, { status: "loading" }),
+    )
     try {
       const blob = await api.blob(`/runs/${runId}/files/${index}`)
       const extension = extensionOf(file.name)
@@ -214,10 +218,7 @@ export function RunOutputs({
           IMAGE_EXTENSIONS[extension] === true
         const preview = previews.get(index)
         return (
-          <li
-            key={`${file.path}-${index}`}
-            className="rounded-md border p-3"
-          >
+          <li key={`${file.path}-${index}`} className="rounded-md border p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="min-w-0">
                 <p className="truncate font-mono text-sm" title={file.path}>

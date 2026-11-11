@@ -11,8 +11,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { api, errorMessage } from "../api"
-import { openExternal } from "../lib/desktop"
 import type { DoctorReport } from "../contracts"
+import { openExternal } from "../lib/desktop"
 import { LogPanel } from "./LogPanel"
 
 function fencedCommands(markdown: string): string[] {
