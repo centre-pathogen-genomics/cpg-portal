@@ -13,8 +13,9 @@ import { ApiError, api, errorMessage } from "./api";
 import { DockerSetupDialog } from "./components/DockerSetupDialog";
 import { InstallDialog } from "./components/InstallDialog";
 import { LocalFilePicker } from "./components/LocalFilePicker";
-import { ToolBadges } from "./components/ToolBadges";
-import { ToolImage, useToolImages } from "./components/ToolImage";
+import { ToolBadges } from "./components/ToolBadges"
+import { ToolHeading } from "./components/ToolHeading";
+import { placeholderImage, useToolImages } from "./components/ToolImage";
 import { ToolSidebar } from "./components/ToolSidebar";
 import {
   currentInstallState,
@@ -229,21 +230,12 @@ export function ToolPage() {
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <header className="shrink-0 px-8 py-4">
-          <div className="flex items-center justify-between gap-4 border-b pb-2">
-            <div className="flex min-w-0 items-center">
-              <ToolImage
-                id={tool.id}
-                name={tool.name}
-                images={images}
-                className="mr-2 size-12 border-2"
-              />
-              <h1 className="truncate text-4xl font-bold">{tool.name}</h1>
-              {tool.version && (
-                <Badge className="ml-1 bg-green-500 text-white">
-                  v{tool.version}
-                </Badge>
-              )}
-            </div>
+          <ToolHeading
+            image={images[tool.id] ?? placeholderImage(tool.name)}
+            name={tool.name}
+            version={tool.version}
+            badges={<ToolBadges tool={tool} />}
+          >
             <div className="flex shrink-0 items-center gap-2">
               <Button
                 type="button"
@@ -272,10 +264,7 @@ export function ToolPage() {
                 Quit
               </Button>
             </div>
-          </div>
-          <div className="mt-2">
-            <ToolBadges tool={tool} />
-          </div>
+          </ToolHeading>
           {tool.description && (
             <div className="mt-2">
               {descriptionOpen ? (

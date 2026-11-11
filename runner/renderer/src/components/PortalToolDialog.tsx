@@ -1,7 +1,6 @@
 import { LoaderCircle } from "lucide-react"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
-import { Badge as UiBadge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -23,6 +22,7 @@ import type { PortalToolDetail, ToolConfig } from "../contracts"
 import { openExternal } from "../lib/desktop"
 import { portalToolUrl } from "../lib/portal"
 import { ToolBadges } from "./ToolBadges"
+import { ToolHeading } from "./ToolHeading"
 import { placeholderImage } from "./ToolImage"
 
 type Target = { name: string; version: string }
@@ -102,23 +102,16 @@ export function PortalToolDialog({
     <Dialog open={target !== null} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <div className="flex items-center justify-between gap-2 border-b pb-2">
-            <div className="flex min-w-0 items-center">
-              <img
-                src={detail?.image ?? placeholderImage(detail?.name ?? target?.name ?? "")}
-                alt={detail?.name ?? target?.name ?? ""}
-                className="mr-2 size-12 shrink-0 rounded-md border-2 object-cover"
-              />
-              <DialogTitle className="truncate text-3xl font-bold">
-                {detail?.name ?? target?.name}
-              </DialogTitle>
-              {detail?.version && (
-                <UiBadge className="ml-1 bg-green-500 text-white">
-                  v{detail.version}
-                </UiBadge>
-              )}
-            </div>
-          </div>
+          <ToolHeading
+            image={
+              detail?.image ??
+              placeholderImage(detail?.name ?? target?.name ?? "")
+            }
+            name={detail?.name ?? target?.name ?? ""}
+            version={detail?.version}
+            heading={DialogTitle}
+            badges={tool ? <ToolBadges tool={tool} /> : undefined}
+          />
         </DialogHeader>
         <DialogDescription className="mt-2">
           This tool lives on the portal. Install it here to run it on this
@@ -135,7 +128,6 @@ export function PortalToolDialog({
 
         {detail && (
           <div className="grid gap-3">
-            {tool && <ToolBadges tool={tool} />}
 
             {detail.versions.length > 1 && (
               <div className="grid gap-2">
