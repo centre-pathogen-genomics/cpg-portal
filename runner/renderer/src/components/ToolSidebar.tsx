@@ -1,4 +1,4 @@
-import { LoaderCircle, Plus } from "lucide-react"
+import { LoaderCircle, PanelLeftClose, PanelLeftOpen, Plus } from "lucide-react"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -14,9 +14,20 @@ type ToolEntry = {
   description: string | null
 }
 
+const COLLAPSED_KEY = "cpg-runner.sidebar"
+
+function readCollapsed(): boolean {
+  try {
+    return localStorage.getItem(COLLAPSED_KEY) === "collapsed"
+  } catch {
+    return false
+  }
+}
+
 /**
  * The tools this computer has, then the ones the portal offers. The former are
- * a workspace list; the latter are one click from being installed.
+ * a workspace list; the latter are one click from being installed. It folds to
+ * an icon bar, which is remembered for the window and across launches.
  */
 export function ToolSidebar({
   activeToolId,
@@ -28,6 +39,7 @@ export function ToolSidebar({
 }) {
   const bridge = window.cpgRunner
   const images = useToolImages()
+  const [collapsed, setCollapsed] = useState(readCollapsed)
   const [tools, setTools] = useState<ToolEntry[]>([])
   const [portalTools, setPortalTools] = useState<PortalToolSummary[]>([])
   const [portalState, setPortalState] = useState<"loading" | "ready" | "offline">(
@@ -51,6 +63,14 @@ export function ToolSidebar({
       })
       .catch(() => setPortalState("offline"))
   }, [])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(COLLAPSED_KEY, collapsed ? "collapsed" : "expanded")
+    } catch {
+      // A window that refuses storage simply forgets the choice.
+    }
+  }, [collapsed])
 
   async function openTool(toolId: string) {
     if (!bridge || openingId) return
@@ -78,22 +98,57 @@ export function ToolSidebar({
   }
 
   return (
-    <aside className="bg-muted/40 flex w-56 shrink-0 flex-col border-r">
-      <div className="px-4 py-4">
-        <p className="text-sm font-semibold tracking-tight">CPG Runner</p>
-        <p className="text-muted-foreground text-xs">Runs on this computer</p>
+    <aside
+      className={cn(
+        "bg-muted/40 flex shrink-0 flex-col border-r",
+        collapsed ? "w-14" : "w-56",
+      )}
+    >
+      <div
+        className={cn(
+          "flex items-center gap-2 py-4",
+          collapsed ? "justify-center px-2" : "px-4",
+        )}
+      >
+        {!collapsed && (
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold tracking-tight">
+              CPG Runner
+            </p>
+            <p className="text-muted-foreground truncate text-xs">
+              Runs on this computer
+            </p>
+          </div>
+        )}
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="text-muted-foreground size-7 shrink-0"
+          aria-label={collapsed ? "Expand the sidebar" : "Collapse the sidebar"}
+          aria-expanded={!collapsed}
+          title={collapsed ? "Expand the sidebar" : "Collapse the sidebar"}
+          onClick={() => setCollapsed((current) => !current)}
+        >
+          {collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
+        </Button>
       </div>
 
-      <nav aria-label="Tools" className="min-h-0 flex-1 overflow-y-auto px-2">
-        <p className="text-muted-foreground px-2 pt-1 pb-1 text-xs font-semibold tracking-wide uppercase">
-          My tools
-        </p>
+      <nav
+        aria-label="Tools"
+        className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-2"
+      >
+        {!collapsed && (
+          <p className="text-muted-foreground px-2 pt-1 pb-1 text-xs font-semibold tracking-wide uppercase">
+            My tools
+          </p>
+        )}
         {tools.length === 0 ? (
           <p className="text-muted-foreground px-2 py-2 text-xs">
             No tools yet. Add one below, or pick one from the portal.
           </p>
         ) : (
-          <ul className="grid gap-0.5">
+          <ul className="grid grid-cols-1 gap-0.5">
             {tools.map((tool) => {
               const active = tool.id === activeToolId
               return (
@@ -102,33 +157,47 @@ export function ToolSidebar({
                     type="button"
                     onClick={() => void openTool(tool.id)}
                     aria-current={active ? "page" : undefined}
+                    aria-label={collapsed ? tool.name : undefined}
                     disabled={openingId !== null}
                     title={tool.description ?? tool.name}
                     className={cn(
-                      "flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-sm",
+                      "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm",
+                      collapsed ? "justify-center" : "justify-between",
                       active
                         ? "bg-background font-medium shadow-sm"
                         : "hover:bg-background/70",
                     )}
                   >
-                    <span className="flex min-w-0 items-center gap-2">
-                      <ToolImage
-                        id={tool.id}
-                        name={tool.name}
-                        images={images}
-                        className="size-5"
-                      />
-                      <span className="truncate">{tool.name}</span>
+                    <span
+                      className={cn(
+                        "flex min-w-0 items-center gap-2",
+                        !collapsed && "flex-1",
+                      )}
+                    >
+                      {collapsed && openingId === tool.id ? (
+                        <LoaderCircle className="text-muted-foreground size-4 shrink-0 animate-spin" />
+                      ) : (
+                        <ToolImage
+                          id={tool.id}
+                          name={tool.name}
+                          images={images}
+                          className="size-5"
+                        />
+                      )}
+                      {!collapsed && (
+                        <span className="truncate">{tool.name}</span>
+                      )}
                     </span>
-                    {openingId === tool.id ? (
-                      <LoaderCircle className="text-muted-foreground size-3.5 shrink-0 animate-spin" />
-                    ) : (
-                      tool.version && (
-                        <span className="text-muted-foreground shrink-0 text-xs">
-                          {tool.version}
-                        </span>
-                      )
-                    )}
+                    {!collapsed &&
+                      (openingId === tool.id ? (
+                        <LoaderCircle className="text-muted-foreground size-3.5 shrink-0 animate-spin" />
+                      ) : (
+                        tool.version && (
+                          <span className="text-muted-foreground shrink-0 text-xs">
+                            {tool.version}
+                          </span>
+                        )
+                      ))}
                   </button>
                 </li>
               )
@@ -136,22 +205,27 @@ export function ToolSidebar({
           </ul>
         )}
 
-        <p className="text-muted-foreground mt-4 px-2 pt-1 pb-1 text-xs font-semibold tracking-wide uppercase">
-          CPG Portal tools
-        </p>
+        {!collapsed && (
+          <p className="text-muted-foreground mt-4 px-2 pt-1 pb-1 text-xs font-semibold tracking-wide uppercase">
+            CPG Portal tools
+          </p>
+        )}
+        {collapsed && portalState === "ready" && portalTools.length > 0 && (
+          <div className="bg-border mx-1 my-2 h-px" />
+        )}
         {portalState === "loading" && (
           <p className="text-muted-foreground flex items-center gap-2 px-2 py-2 text-xs">
             <LoaderCircle className="size-3.5 animate-spin" />
-            Reading the portal…
+            {!collapsed && "Reading the portal…"}
           </p>
         )}
         {portalState === "offline" && (
           <p className="text-muted-foreground px-2 py-2 text-xs">
-            The portal is not reachable right now.
+            {collapsed ? "—" : "The portal is not reachable right now."}
           </p>
         )}
         {portalState === "ready" && (
-          <ul className="grid gap-0.5">
+          <ul className="grid grid-cols-1 gap-0.5">
             {portalTools.map((tool) => (
               <li key={`${tool.name}-${tool.version}`}>
                 <button
@@ -162,18 +236,29 @@ export function ToolSidebar({
                       version: tool.version,
                     })
                   }
+                  aria-label={collapsed ? tool.name : undefined}
                   title={tool.description ?? tool.name}
-                  className="flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-background/70"
+                  className={cn(
+                    "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-background/70",
+                    collapsed ? "justify-center" : "justify-between",
+                  )}
                 >
-                  <span className="flex min-w-0 items-center gap-2">
+                  <span
+                    className={cn(
+                      "flex min-w-0 items-center gap-2",
+                      !collapsed && "flex-1",
+                    )}
+                  >
                     <img
                       src={tool.image ?? placeholderImage(tool.name)}
-                      alt={tool.name}
+                      alt={collapsed ? "" : tool.name}
                       className="size-5 shrink-0 rounded-md border object-cover"
                     />
-                    <span className="truncate">{tool.name}</span>
+                    {!collapsed && (
+                      <span className="truncate">{tool.name}</span>
+                    )}
                   </span>
-                  {tool.version && (
+                  {!collapsed && tool.version && (
                     <span className="text-muted-foreground shrink-0 text-xs">
                       {tool.version}
                     </span>
@@ -189,14 +274,16 @@ export function ToolSidebar({
         <Button
           type="button"
           variant="ghost"
-          className="w-full justify-start"
+          className={cn("w-full", collapsed ? "justify-center" : "justify-start")}
           disabled={busy || openingId !== null || !bridge}
+          title={collapsed ? (busy ? "Adding tool…" : "Add tool") : undefined}
+          aria-label={collapsed ? (busy ? "Adding tool" : "Add tool") : undefined}
           onClick={() => void addTool()}
         >
           {busy ? <LoaderCircle className="animate-spin" /> : <Plus />}
-          {busy ? "Adding tool…" : "Add tool"}
+          {!collapsed && (busy ? "Adding tool…" : "Add tool")}
         </Button>
-        {busy && (
+        {busy && !collapsed && (
           <p className="text-muted-foreground px-2 pb-1 text-xs">
             Reading the pack and starting its runner…
           </p>
