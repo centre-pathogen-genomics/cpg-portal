@@ -28,6 +28,8 @@ from .state import StateStore
 TERMINAL_STATUSES = {"completed", "failed", "cancelled"}
 # Where a run works, inside the output folder the settings name.
 WORK_DIR_NAME = ".cpg_work"
+# Where the files its targets name end up, next to the run's report.
+RESULTS_DIR_NAME = "results"
 MAX_CPUS = 1024
 
 
@@ -383,9 +385,13 @@ class RunManager:
     ) -> None:
         settings = self.store.load_settings()
         files: list[RunFile] = []
+        # The tool's files go in their own folder, so the run folder stays a
+        # report: results, provenance and the work folder, each in its place.
+        results_dir = output_dir / RESULTS_DIR_NAME
         try:
+            results_dir.mkdir(parents=True, exist_ok=True)
             for path in matched:
-                destination = output_dir / path.name
+                destination = results_dir / path.name
                 shutil.copy2(path, destination)
                 files.append(
                     RunFile(
@@ -542,7 +548,7 @@ class RunManager:
             ]
         lines += ["", "## Files", ""]
         for file in record.files:
-            lines.append(f"- `{file.name}` — what the run produced")
+            lines.append(f"- `{RESULTS_DIR_NAME}/{file.name}` — what the run produced")
         descriptions = {
             "log.txt": "everything the run printed",
             "command.sh": "the command that produced these files, runnable here",

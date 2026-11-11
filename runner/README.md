@@ -70,11 +70,12 @@ be fixed in `frontend/src`, not copied into `renderer/src`.
 
 Each run owns one folder in the output folder, `<output folder>/<tool>-<timestamp>/`,
 and works inside its `.cpg_work/` (bind-mounted as `/work`, `/tmp` and `/inputs`).
-The files its targets name are copied next to that folder, together with the
-run's provenance, so it describes itself after the app is gone:
+The folder keeps the run's provenance at its top level and what the tool
+produced in `results/`, so it describes itself after the app is gone:
 
-| File | What it holds |
+| Path | What it holds |
 |---|---|
+| `results/` | the files the tool's targets name |
 | `README.md` | the run's name, date and CPUs, the results explanation, the reproduction steps, and the file list |
 | `log.txt` | everything the run printed |
 | `command.sh` | the command, runnable in the folder (it puts `./env` on `PATH` when `install.sh` made it) |

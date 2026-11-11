@@ -55,7 +55,7 @@ def test_completed_run_copies_outputs_and_streams_status(tmp_path):
     assert record.command == "printf hi > out.txt"
     output = Path(record.output_dir)
     assert output.name.startswith("my_tool-")
-    assert (output / "out.txt").read_text() == "hi"
+    assert (output / "results" / "out.txt").read_text() == "hi"
     assert record.files[0].name == "out.txt"
     assert record.files[0].size == 2
 
@@ -183,9 +183,9 @@ def test_a_run_works_in_the_output_folder_and_cleans_up_afterwards(tmp_path):
     finished = manager.get(record.id)
     assert finished.status == "completed"
     assert finished.work_dir is None
-    # The outputs and the report stay; the work folder goes with the run.
+    # The results and the report stay; the work folder goes with the run.
     output = Path(finished.output_dir)
-    assert (output / "out.txt").read_text() == "hi"
+    assert (output / "results" / "out.txt").read_text() == "hi"
     assert (output / "README.md").is_file()
     assert not (output / ".cpg_work").exists()
 
@@ -199,7 +199,7 @@ def test_the_work_folder_can_be_kept(tmp_path):
     finished = manager.get(record.id)
     assert finished.work_dir == str(_work_root(record))
     assert (Path(finished.work_dir) / "work" / "out.txt").read_text() == "hi"
-    assert (Path(finished.output_dir) / "out.txt").is_file()
+    assert (Path(finished.output_dir) / "results" / "out.txt").is_file()
 
 
 def test_outputs_come_with_their_provenance(tmp_path):
@@ -227,7 +227,7 @@ def test_outputs_come_with_their_provenance(tmp_path):
     assert readme.startswith("# my tool")
     assert f"Run `{record.name}`" in readme
     assert "One row per gene." in readme
-    assert "`out.txt`" in readme
+    assert "`results/out.txt`" in readme
     assert (output / "log.txt").read_text() == record.stdout
     assert (output / "environment.yml").read_text() == "channels: [conda-forge]\n"
 
