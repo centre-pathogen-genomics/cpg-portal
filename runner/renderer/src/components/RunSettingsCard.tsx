@@ -1,13 +1,7 @@
 import { FolderOpen } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
@@ -46,21 +40,15 @@ export function RunSettingsCard({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Run settings</CardTitle>
-        <CardDescription>
-          Kept on this computer and reused for every run.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="grid gap-4">
+      <CardContent className="grid gap-4 pt-6">
         <div className="grid gap-2">
           <Label htmlFor="runner-output">Output folder</Label>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Input
               id="runner-output"
               readOnly
               value={draft.output_dir}
-              className="font-mono text-xs"
+              className="w-full min-w-0 font-mono text-xs"
             />
             <Button
               type="button"

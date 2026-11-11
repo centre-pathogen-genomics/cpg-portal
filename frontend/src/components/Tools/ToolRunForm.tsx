@@ -74,6 +74,18 @@ export interface ToolRunFormProps {
   fileUnits?: (param: Param) => FileUnit[]
   /** Field errors to show under a parameter, keyed by parameter name. */
   mapError?: (error: unknown) => Record<string, string> | null
+  /** Class for the `<form>` element, e.g. a grid for a desktop layout. */
+  className?: string
+  /**
+   * Arranges the form's parts. The default stacks them, which is what the
+   * portal wants; the desktop app puts the parameters in the middle and the
+   * settings in a side panel.
+   */
+  renderShell?: (parts: {
+    params: ReactNode
+    settings: ReactNode
+    submit: ReactNode
+  }) => ReactNode
   /** Portal-only fields, e.g. run name and tags, shown inside Run Settings. */
   extras?: ReactNode
   /** Portal-only buttons shown next to submit, e.g. email on completion. */
@@ -159,6 +171,8 @@ const ToolRunForm = ({
   renderFilePicker,
   fileUnits,
   mapError,
+  className,
+  renderShell,
   extras,
   submitExtras,
   initialValues,
@@ -368,8 +382,8 @@ const ToolRunForm = ({
     }
   }
 
-  return (
-    <form onSubmit={handleSubmit(submit)} className="w-full">
+  const paramFields = (
+    <>
       {params.map((param) => {
         if (!visibleParams.get(param.name)) return null
         return (
@@ -464,6 +478,139 @@ const ToolRunForm = ({
           </div>
         )
       })}
+    </>
+  )
+
+  // The CPUs control plus whatever the caller adds, e.g. the portal's run name
+  // and tags. The desktop app shows these in its configuration panel.
+  const settingsFields = (
+    <>
+      {extras}
+      {!fixedThreads && (
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-1">
+              <Label htmlFor="CPG_RUN_THREADS">CPUs</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    className="text-muted-foreground size-5"
+                    aria-label="What are CPUs?"
+                  >
+                    <HelpCircle className="size-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80">
+                  <PopoverHeader>
+                    <PopoverTitle>CPUs</PopoverTitle>
+                    <PopoverDescription>
+                      The CPUs reserved for this run.
+                    </PopoverDescription>
+                  </PopoverHeader>
+                  <ul className="text-muted-foreground mt-2 list-disc space-y-1 pl-4 text-sm">
+                    <li>
+                      {maxCpus == null
+                        ? `This tool needs at least ${minThreads} CPUs.`
+                        : `This tool allows ${minThreads}-${maxCpus} CPUs.`}
+                    </li>
+                    {cappedByUser && (
+                      <li>{`Your own limit is ${userMaxCpus} CPUs per run.`}</li>
+                    )}
+                    {scalesWithFiles && (
+                      <li>
+                        {`CPUs scale with the chosen files, which allow at most ${maxThreads} ${
+                          maxThreads === 1 ? "CPU" : "CPUs"
+                        }.`}
+                      </li>
+                    )}
+                    <li>
+                      A run starts as soon as that many CPUs are free, and waits
+                      in the queue until then.
+                    </li>
+                    <li>
+                      More CPUs usually finish sooner, but may wait longer to
+                      start.
+                    </li>
+                  </ul>
+                </PopoverContent>
+              </Popover>
+            </div>
+            <p className="text-sm text-gray-500">
+              {minThreads === maxThreads
+                ? `${minThreads} available`
+                : `${minThreads}-${maxThreads} available`}
+            </p>
+          </div>
+          <Select
+            value={String(threadsToUse)}
+            onValueChange={(value) => {
+              const selected = Number(value)
+              // Radix echoes its own controlled value back through this
+              // callback, and an empty string while its options are not
+              // mounted. Neither is a pick the user made.
+              if (
+                !Number.isInteger(selected) ||
+                selected < 1 ||
+                selected === threadsToUse
+              ) {
+                return
+              }
+              chooseThreads(selected)
+            }}
+            disabled={isDisabled}
+          >
+            <SelectTrigger id="CPG_RUN_THREADS" className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {threadOptions.map((value) => (
+                <SelectItem key={value} value={String(value)}>
+                  {value}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+    </>
+  )
+
+  const submitRow = (
+    <div className="my-4 flex items-center gap-2">
+      <Button type="submit" disabled={isDisabled || isLoading}>
+        {isLoading && <LoaderCircle className="animate-spin" />}
+        {submitLabel}
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        disabled={isDisabled}
+        onClick={() => reset(defaults)}
+      >
+        Reset
+      </Button>
+      {submitExtras && <div className="ml-2">{submitExtras}</div>}
+    </div>
+  )
+
+  if (renderShell) {
+    return (
+      <form onSubmit={handleSubmit(submit)} className={className ?? "w-full"}>
+        {renderShell({
+          params: paramFields,
+          settings: settingsFields,
+          submit: submitRow,
+        })}
+      </form>
+    )
+  }
+
+  return (
+    <form onSubmit={handleSubmit(submit)} className={className ?? "w-full"}>
+      {paramFields}
 
       <h2 className="mt-2 mb-4 text-lg ">
         <button
@@ -490,113 +637,10 @@ const ToolRunForm = ({
 
       {settingsOpen && (
         <div id="CPG_RUN_SETTINGS" className="flex flex-col gap-4">
-          {extras}
-          {!fixedThreads && (
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-1">
-                  <Label htmlFor="CPG_RUN_THREADS">CPUs</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        className="text-muted-foreground size-5"
-                        aria-label="What are CPUs?"
-                      >
-                        <HelpCircle className="size-4" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-80">
-                      <PopoverHeader>
-                        <PopoverTitle>CPUs</PopoverTitle>
-                        <PopoverDescription>
-                          The CPUs reserved for this run.
-                        </PopoverDescription>
-                      </PopoverHeader>
-                      <ul className="text-muted-foreground mt-2 list-disc space-y-1 pl-4 text-sm">
-                        <li>
-                          {maxCpus == null
-                            ? `This tool needs at least ${minThreads} CPUs.`
-                            : `This tool allows ${minThreads}-${maxCpus} CPUs.`}
-                        </li>
-                        {cappedByUser && (
-                          <li>{`Your own limit is ${userMaxCpus} CPUs per run.`}</li>
-                        )}
-                        {scalesWithFiles && (
-                          <li>
-                            {`CPUs scale with the chosen files, which allow at most ${maxThreads} ${
-                              maxThreads === 1 ? "CPU" : "CPUs"
-                            }.`}
-                          </li>
-                        )}
-                        <li>
-                          A run starts as soon as that many CPUs are free, and
-                          waits in the queue until then.
-                        </li>
-                        <li>
-                          More CPUs usually finish sooner, but may wait longer
-                          to start.
-                        </li>
-                      </ul>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <p className="text-sm text-gray-500">
-                  {minThreads === maxThreads
-                    ? `${minThreads} available`
-                    : `${minThreads}-${maxThreads} available`}
-                </p>
-              </div>
-              <Select
-                value={String(threadsToUse)}
-                onValueChange={(value) => {
-                  const selected = Number(value)
-                  // Radix echoes its own controlled value back through this
-                  // callback, and an empty string while its options are not
-                  // mounted. Neither is a pick the user made.
-                  if (
-                    !Number.isInteger(selected) ||
-                    selected < 1 ||
-                    selected === threadsToUse
-                  ) {
-                    return
-                  }
-                  chooseThreads(selected)
-                }}
-                disabled={isDisabled}
-              >
-                <SelectTrigger id="CPG_RUN_THREADS" className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {threadOptions.map((value) => (
-                    <SelectItem key={value} value={String(value)}>
-                      {value}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+          {settingsFields}
         </div>
       )}
-      <div className="my-4 flex items-center gap-2">
-        <Button type="submit" disabled={isDisabled || isLoading}>
-          {isLoading && <LoaderCircle className="animate-spin" />}
-          {submitLabel}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={isDisabled}
-          onClick={() => reset(defaults)}
-        >
-          Reset
-        </Button>
-        {submitExtras && <div className="ml-2">{submitExtras}</div>}
-      </div>
+      {submitRow}
     </form>
   )
 }
