@@ -228,75 +228,7 @@ export function ToolPage() {
     <div className="flex h-full">
       <ToolSidebar activeToolId={tool.id} />
 
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <header className="shrink-0 px-8 py-4">
-          <ToolHeading
-            image={images[tool.id] ?? placeholderImage(tool.name)}
-            name={tool.name}
-            version={tool.version}
-            badges={<ToolBadges tool={tool} />}
-          >
-            <div className="flex shrink-0 items-center gap-2">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => openExternal(portalToolUrl(tool.name))}
-              >
-                <ExternalLink />
-                Open in The CPG Portal
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={!doctorReady}
-                onClick={() => void reinstall()}
-              >
-                Reinstall environment
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                onClick={() => window.close()}
-              >
-                Quit
-              </Button>
-            </div>
-          </ToolHeading>
-          {tool.description && (
-            <div className="mt-2">
-              {descriptionOpen ? (
-                <>
-                  <p className="text-sm">{tool.description}</p>
-                  <button
-                    type="button"
-                    className="hover:text-primary mt-1 text-xs font-medium"
-                    onClick={() => setDescriptionOpen(false)}
-                  >
-                    Show less
-                  </button>
-                </>
-              ) : (
-                // One line: the text truncates and the way to expand it sits
-                // at its end instead of taking a line of its own.
-                <div className="flex min-w-0 items-baseline gap-1">
-                  <p className="min-w-0 truncate text-sm">{tool.description}</p>
-                  <button
-                    type="button"
-                    className="hover:text-primary shrink-0 text-xs font-medium"
-                    onClick={() => setDescriptionOpen(true)}
-                  >
-                    Show more…
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-        </header>
-
-        <ToolRunForm
+      <ToolRunForm
           formKey={tool.id}
           params={tool.params}
           minCpus={tool.min_cpus}
@@ -335,8 +267,49 @@ export function ToolPage() {
           }
           renderShell={({ params, settings: settingsPanel, submit }) => (
             <>
-              <section className="min-h-0 overflow-y-auto px-8 py-6">
-                <div className="mx-auto grid max-w-2xl gap-6">
+              <div className="flex min-h-0 min-w-0 flex-col">
+                <header className="shrink-0 px-8 py-4">
+                  <ToolHeading
+                    image={images[tool.id] ?? placeholderImage(tool.name)}
+                    name={tool.name}
+                    version={tool.version}
+                    badges={<ToolBadges tool={tool} />}
+                  />
+                  {tool.description && (
+                    <div className="mt-2">
+                      {descriptionOpen ? (
+                        <>
+                          <p className="text-sm">{tool.description}</p>
+                          <button
+                            type="button"
+                            className="hover:text-primary mt-1 text-xs font-medium"
+                            onClick={() => setDescriptionOpen(false)}
+                          >
+                            Show less
+                          </button>
+                        </>
+                      ) : (
+                        // One line: the text truncates and the way to expand it
+                        // sits at its end instead of taking a line of its own.
+                        <div className="flex min-w-0 items-baseline gap-1">
+                          <p className="min-w-0 truncate text-sm">
+                            {tool.description}
+                          </p>
+                          <button
+                            type="button"
+                            className="hover:text-primary shrink-0 text-xs font-medium"
+                            onClick={() => setDescriptionOpen(true)}
+                          >
+                            Show more…
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </header>
+
+                <section className="min-h-0 flex-1 overflow-y-auto px-8 py-6">
+                <div className="grid max-w-3xl gap-6">
                   <div>{params}</div>
 
                   {blockedReason && (
@@ -357,10 +330,43 @@ export function ToolPage() {
                     Input files stay on this computer; outputs go to the output
                     folder in the run settings.
                   </p>
-                </div>
-              </section>
+                  </div>
+                </section>
+              </div>
 
               <aside className="flex min-h-0 flex-col border-l">
+                <div className="grid shrink-0 gap-2 border-b px-6 py-4">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => openExternal(portalToolUrl(tool.name))}
+                  >
+                    <ExternalLink />
+                    Open in The CPG Portal
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="w-full justify-start"
+                    disabled={!doctorReady}
+                    onClick={() => void reinstall()}
+                  >
+                    Reinstall environment
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="w-full justify-start"
+                    onClick={() => window.close()}
+                  >
+                    Quit
+                  </Button>
+                </div>
+
                 <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
                   <h2 className="mb-4 text-sm font-semibold">Run settings</h2>
                   <div className="grid gap-6">
@@ -456,8 +462,7 @@ export function ToolPage() {
               </aside>
             </>
           )}
-        />
-      </div>
+      />
 
       <DockerSetupDialog
         open={!!effectiveDoctor && !effectiveDoctor.ready}
