@@ -20,6 +20,7 @@ declare global {
       importPackPaths(files: string[]): Promise<ToolEntry[]>
       openTool(toolId: string): Promise<void>
       home(): Promise<void>
+      ready(): void
       pickFiles(options: {
         extensions?: string[]
         multiple?: boolean

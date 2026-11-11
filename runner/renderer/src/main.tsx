@@ -32,4 +32,6 @@ if (container) {
       <Toaster />
     </ThemeProvider>,
   )
+  // Tell the main process the window is drawn, so the splash can close.
+  window.cpgRunner?.ready()
 }

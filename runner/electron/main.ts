@@ -313,6 +313,12 @@ function showSplash(): void {
     webPreferences: { sandbox: true, contextIsolation: true },
   })
   splashWindow.once("ready-to-show", () => splashWindow?.show())
+  const watchdog = setTimeout(() => {
+    if (!splashWindow) return
+    console.error("Splash closed by its watchdog")
+    closeSplash()
+  }, 60_000)
+  watchdog.unref?.()
   splashWindow.on("closed", () => {
     splashWindow = null
   })
@@ -321,6 +327,25 @@ function showSplash(): void {
       splashHtml(logoDataUrl()),
     )}`,
   )
+}
+
+/**
+ * Runs a navigation with the splash as its backdrop: it only appears if the
+ * work takes longer than a moment, so switching between running tools never
+ * flashes it, while a first start (installing the environment) does.
+ */
+async function withSplash<T>(
+  window: BrowserWindow,
+  work: () => Promise<T>,
+): Promise<T> {
+  const timer = setTimeout(() => showSplash(), 300)
+  try {
+    return await work()
+  } finally {
+    clearTimeout(timer)
+    closeSplash()
+    if (!window.isVisible()) window.show()
+  }
 }
 
 function closeSplash(): void {
@@ -362,6 +387,12 @@ function createWindow(): BrowserWindow {
     closeSplash()
     window.show()
   })
+  // Every later navigation (opening another tool) also ends the splash;
+  // `ready-to-show` only fires once per window.
+  window.webContents.on("did-finish-load", () => {
+    closeSplash()
+    if (!window.isVisible()) window.show()
+  })
   window.on("closed", () => {
     mainWindow = null
   })
@@ -391,22 +422,32 @@ async function showHome(): Promise<void> {
     } else {
       await window.loadFile(path.join(uiDir, "index.html"))
     }
+    closeSplash()
+    if (!window.isVisible()) window.show()
     return
   }
   const toolId =
     lastToolId && tools.some((tool) => tool.id === lastToolId)
       ? lastToolId
       : tools[0].id
-  const port = await ensureSidecarWithRetry(toolId)
-  await window.loadURL(toolUrl(port, "/"))
+  await withSplash(window, async () => {
+    const port = await ensureSidecarWithRetry(toolId)
+    await window.loadURL(toolUrl(port, "/"))
+  })
 }
 
 async function showTool(toolId: string): Promise<void> {
-  if (!sidecars.has(toolId)) showSplash()
   const window = createWindow()
-  const port = await ensureSidecarWithRetry(toolId)
-  lastToolId = toolId
-  await window.loadURL(toolUrl(port, "/tool"))
+  await withSplash(window, async () => {
+    try {
+      const port = await ensureSidecarWithRetry(toolId)
+      lastToolId = toolId
+      await window.loadURL(toolUrl(port, "/tool"))
+    } catch (error) {
+      console.error(`Could not open ${toolId}: ${String(error)}`)
+      throw error
+    }
+  })
 }
 
 function delay(ms: number): Promise<void> {
@@ -578,6 +619,11 @@ function isAllowedExternalUrl(rawUrl: string): boolean {
 }
 
 function registerIpcHandlers(): void {
+  ipcMain.on("runner:ready", () => {
+    closeSplash()
+    if (mainWindow && !mainWindow.isVisible()) mainWindow.show()
+  })
+
   ipcMain.handle("runner:tools", (): ToolEntry[] => listTools())
 
   ipcMain.handle("runner:import-packs", async (): Promise<ToolEntry[]> => {

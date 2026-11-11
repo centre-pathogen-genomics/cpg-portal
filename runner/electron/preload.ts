@@ -36,6 +36,8 @@ contextBridge.exposeInMainWorld("cpgRunner", {
   openTool: (toolId: string): Promise<void> =>
     ipcRenderer.invoke("runner:open-tool", toolId),
   home: (): Promise<void> => ipcRenderer.invoke("runner:home"),
+  /** The window has rendered: the splash can go. */
+  ready: (): void => ipcRenderer.send("runner:ready"),
   pickFiles: (options: {
     extensions?: string[]
     multiple?: boolean
