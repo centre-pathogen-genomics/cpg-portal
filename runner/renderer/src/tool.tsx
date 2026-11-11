@@ -1,14 +1,13 @@
-import type { Param } from "@/client"
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { toast } from "sonner"
 import RenderMarkdown from "@/components/Common/Markdown"
+import ToolRunForm from "@/components/Tools/ToolRunForm"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { buildVisibilityMap } from "@/lib/run-params"
 import { api, ApiError, errorMessage } from "./api"
 import { DockerSetupDialog } from "./components/DockerSetupDialog"
 import { InstallDialog } from "./components/InstallDialog"
-import { LocalParamsForm } from "./components/LocalParamsForm"
+import { LocalFilePicker } from "./components/LocalFilePicker"
 import { RunSettingsCard } from "./components/RunSettingsCard"
 import { navigate } from "./router"
 import {
@@ -25,29 +24,12 @@ import {
 
 const FIELD_ERROR = /^(?:Missing required parameter|Invalid value for parameter): (.+)$/
 
-function initialValues(params: Param[]): Record<string, unknown> {
-  const values: Record<string, unknown> = {}
-  for (const param of params) {
-    if (param.param_type === "file") {
-      values[param.name] = []
-    } else if (param.param_type === "bool") {
-      values[param.name] = param.default === true
-    } else {
-      values[param.name] = param.default ?? ""
-    }
-  }
-  return values
-}
-
 export function ToolPage() {
   const [tool, setTool] = useState<ToolConfig | null>(null)
   const [status, setStatus] = useState<StatusPayload | null>(null)
   const [settings, setSettings] = useState<Settings | null>(null)
   const [fileTypes, setFileTypes] = useState<FileTypesMap>({})
   const [forcedDoctor, setForcedDoctor] = useState<DoctorReport | null>(null)
-  const [values, setValues] = useState<Record<string, unknown>>({})
-  const [errors, setErrors] = useState<Record<string, string>>({})
-  const [submitting, setSubmitting] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [installDismissed, setInstallDismissed] = useState(false)
 
@@ -72,7 +54,6 @@ export function ToolPage() {
       setStatus(statusPayload)
       setSettings(settingsPayload)
       setFileTypes(types)
-      setValues(initialValues(loadedTool.params))
       setLoadError(null)
     } catch (error) {
       setLoadError(errorMessage(error))
@@ -101,32 +82,14 @@ export function ToolPage() {
     return () => clearInterval(interval)
   }, [shouldPoll, refreshStatus])
 
-  const visibility = useMemo(
-    () => buildVisibilityMap(tool?.params ?? [], values),
-    [tool, values],
-  )
-
   const canRun =
-    !!settings &&
-    doctorReady &&
-    installState === "installed" &&
-    !submitting
+    !!settings && doctorReady && installState === "installed"
 
   const blockedReason = !doctorReady
     ? "Docker is not ready."
     : installState !== "installed"
       ? "The tool environment is not installed."
       : null
-
-  function updateValue(name: string, value: unknown) {
-    setValues((previous) => ({ ...previous, [name]: value }))
-    setErrors((previous) => {
-      if (!previous[name]) return previous
-      const next = { ...previous }
-      delete next[name]
-      return next
-    })
-  }
 
   async function saveSettings(draft: Settings) {
     try {
@@ -138,17 +101,17 @@ export function ToolPage() {
     }
   }
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (!settings || submitting || !doctorReady || installState !== "installed")
-      return
-    setSubmitting(true)
-    setErrors({})
+  // The portal's run form drives a local run: files come from this computer,
+  // and the run is created by the sidecar instead of the portal.
+  async function submitLocally({
+    params,
+    cpus,
+  }: {
+    params: Record<string, unknown>
+    cpus: number
+  }) {
     try {
-      const record = await api.post<RunRecord>("/runs", {
-        params: values,
-        cpus: settings.cpus,
-      })
+      const record = await api.post<RunRecord>("/runs", { params, cpus })
       navigate(`/run?id=${record.id}`)
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
@@ -159,15 +122,15 @@ export function ToolPage() {
         void refreshStatus().catch(() => {})
       }
       const message = errorMessage(error)
-      const field = FIELD_ERROR.exec(message)
-      if (field) {
-        setErrors({ [field[1]]: message })
-      } else {
-        toast.error(message)
-      }
-    } finally {
-      setSubmitting(false)
+      if (!FIELD_ERROR.test(message)) toast.error(message)
+      throw error
     }
+  }
+
+  function fieldError(error: unknown): Record<string, string> | null {
+    const message = errorMessage(error)
+    const field = FIELD_ERROR.exec(message)
+    return field ? { [field[1]]: message } : null
   }
 
   async function reinstall() {
@@ -229,31 +192,36 @@ export function ToolPage() {
       <main className="min-h-0 flex-1 overflow-auto px-8 py-6">
         <div className="mx-auto grid max-w-3xl gap-6">
           <RunSettingsCard
-            tool={tool}
             settings={settings}
             disabled={!doctorReady}
             onSave={saveSettings}
           />
 
-          <form className="grid gap-5" onSubmit={(event) => void submit(event)}>
-            <LocalParamsForm
+          <div className="grid gap-3">
+            <ToolRunForm
+              formKey={tool.id}
               params={tool.params}
-              values={values}
-              visible={visibility}
-              fileTypes={fileTypes}
-              errors={errors}
-              disabled={!canRun}
-              onChange={updateValue}
-            />
-            <div className="flex flex-wrap items-center gap-3">
-              <Button type="submit" disabled={!canRun}>
-                {submitting ? "Starting…" : "Run locally"}
-              </Button>
-              {blockedReason && (
-                <p className="text-muted-foreground text-sm">{blockedReason}</p>
+              minCpus={tool.min_cpus}
+              maxCpus={tool.max_cpus}
+              defaultCpus={settings.cpus}
+              isDisabled={!canRun}
+              submitLabel="Run locally"
+              onSubmit={submitLocally}
+              mapError={fieldError}
+              renderFilePicker={({ param, values, onChange, disabled }) => (
+                <LocalFilePicker
+                  param={param}
+                  values={values}
+                  fileTypes={fileTypes}
+                  disabled={disabled}
+                  onChange={onChange}
+                />
               )}
-            </div>
-          </form>
+            />
+            {blockedReason && (
+              <p className="text-muted-foreground text-sm">{blockedReason}</p>
+            )}
+          </div>
 
           {tool.explanation_of_results_markdown && (
             <section className="border-t pt-6">

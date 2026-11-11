@@ -1,4 +1,15 @@
-import type { FilePublic, Param, ParamVisibilityOperator } from "@/client"
+import type { Param, ParamVisibilityOperator } from "@/client"
+
+/**
+ * The parts of a file a run form needs: the value it stores, whether it stands
+ * for a group, and how many files that group holds. The portal's file records
+ * and a local path both satisfy it.
+ */
+export interface FileUnit {
+  id: string
+  is_group?: boolean
+  children?: readonly unknown[] | null
+}
 
 export function isEmptyValue(value: unknown): boolean {
   return (
@@ -170,7 +181,7 @@ export function buildVisibilityMap(
 // and a pair stays one unit of work, exactly as the backend counts them.
 export function countFileCpus(
   params: Param[],
-  filesByParam: Map<string, FilePublic[]>,
+  filesByParam: Map<string, FileUnit[]>,
   values: Record<string, unknown>,
 ): number {
   return params.reduce((count, param) => {

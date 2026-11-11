@@ -1,27 +1,8 @@
 import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query"
-import { ChevronDown, HelpCircle, LoaderCircle } from "lucide-react"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { type SubmitHandler, useForm } from "react-hook-form"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
+import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { MultiSelect } from "@/components/ui/multi-select"
-import {
-  Popover,
-  PopoverContent,
-  PopoverDescription,
-  PopoverHeader,
-  PopoverTitle,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import {
   type FilePublic,
   FilesService,
@@ -32,16 +13,12 @@ import {
 import { createRunMutation } from "../../client/@tanstack/react-query.gen"
 import useAuth from "../../hooks/useAuth"
 import useCustomToast from "../../hooks/useCustomToast"
-import {
-  buildVisibilityMap,
-  countFileCpus,
-  isEmptyValue,
-} from "../../lib/run-params"
-import { cn } from "../../lib/utils"
+import type { FileUnit } from "../../lib/run-params"
 import { handleError } from "../../utils"
 import TagInput from "../Common/TagInput"
 import FileUploadButton from "../Files/UploadFileButtonWithProgress"
 import EmailOnFinished from "./EmailOnFinished"
+import ToolRunForm, { type LocalFilePickerProps } from "./ToolRunForm"
 
 interface FileParamProps {
   param: Param
@@ -123,53 +100,11 @@ interface RunToolFormProps {
   initialThreads?: number | null
 }
 
-const THREADS_STORAGE_PREFIX = "CPG_PORTAL_RUN_THREADS_"
-
-// One key for every tool: the run settings section is either shown everywhere
-// or hidden everywhere, which is what a user expects from a shared panel.
-const RUN_SETTINGS_OPEN_KEY = "CPG_PORTAL_RUN_SETTINGS_OPEN"
-
-function readStoredSettingsOpen(): boolean | null {
-  try {
-    const stored = window.localStorage.getItem(RUN_SETTINGS_OPEN_KEY)
-    return stored === null ? null : stored === "true"
-  } catch {
-    return null
-  }
-}
-
-function storeSettingsOpen(open: boolean): void {
-  try {
-    window.localStorage.setItem(RUN_SETTINGS_OPEN_KEY, String(open))
-  } catch {
-    // Storage may be unavailable (private browsing); remembering is a nicety.
-  }
-}
-
-// The threads picked for a tool are remembered per browser, clamped to what is
-// allowed right now (the limits may have changed since).
-function readStoredThreads(
-  key: string,
-  min: number,
-  max: number,
-): number | null {
-  try {
-    const stored = Number(window.localStorage.getItem(key))
-    if (!Number.isInteger(stored) || stored < 1) return null
-    return Math.min(Math.max(stored, min), max)
-  } catch {
-    return null
-  }
-}
-
-function storeThreads(key: string, value: number): void {
-  try {
-    window.localStorage.setItem(key, String(value))
-  } catch {
-    // Storage may be unavailable (private browsing); remembering is a nicety.
-  }
-}
-
+/**
+ * The portal's run form: the shared form plus what only the portal has — the
+ * signed-in user's CPU limit, files stored on the portal, run name, tags and
+ * email on completion.
+ */
 const RunToolForm = ({
   toolId,
   params,
@@ -185,68 +120,12 @@ const RunToolForm = ({
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
   const { user } = useAuth()
-  const [isLoading, setIsLoading] = useState(false)
-  const [settingsOpen, setSettingsOpen] = useState<boolean>(
-    () => readStoredSettingsOpen() ?? true,
-  )
-  const toggleSettings = () => {
-    setSettingsOpen((open) => {
-      storeSettingsOpen(!open)
-      return !open
-    })
-  }
-  const [tags, setTags] = useState<string[]>([])
+  const [tags, setTags] = useState<string[]>(initialTags ?? [])
   const [emailOnFinished, setEmailOnFinished] = useState(false)
   const [runName, setRunName] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
 
-  // A tool that needs a fixed number of threads does not offer the choice at
-  // all. A tool without a maximum leaves the user's own limit as the maximum,
-  // and a tool without a default starts at its minimum.
-  const minThreads = Math.max(1, minCpus ?? 1)
-  const toolMax = maxCpus ?? user?.max_cpus ?? 1
-  const fixedThreads = maxCpus != null && minThreads === maxCpus
-  const effectiveMax = user?.is_superuser
-    ? Math.max(minThreads, toolMax)
-    : Math.max(minThreads, Math.min(toolMax, user?.max_cpus ?? toolMax))
-  // Whether the user's own limit is what caps the tool's range.
-  const cappedByUser =
-    !user?.is_superuser && (user?.max_cpus ?? toolMax) < toolMax
-  const threadsKey = `${THREADS_STORAGE_PREFIX}${toolId}`
-  // Only a pick made on this page counts as an override; a remembered one is
-  // just the starting point, and the files decide when they have a say.
-  const [threads, setThreads] = useState<number | null>(null)
-  const chooseThreads = useCallback(
-    (value: number) => {
-      setThreads(value)
-      storeThreads(threadsKey, value)
-    },
-    [threadsKey],
-  )
-
-  const defaults = useMemo(() => {
-    const values: Record<string, unknown> = {}
-    for (const param of params) values[param.name] = param.default
-    return values
-  }, [params])
-
-  const {
-    register,
-    clearErrors,
-    getValues,
-    handleSubmit,
-    reset,
-    setError,
-    setValue,
-    watch,
-    formState: { errors },
-  } = useForm<Record<string, unknown>>({
-    mode: "onBlur",
-    criteriaMode: "all",
-    defaultValues: defaults,
-  })
-
-  // The file pickers and the threads default both need the files a tool's file
-  // parameters may choose from, so they are loaded here.
+  // The file pickers need the files a tool's file parameters may choose from.
   const fileParams = params.filter((param) => param.param_type === "file")
   const fileQueries = useQueries({
     queries: fileParams.map((param) => ({
@@ -265,128 +144,6 @@ const RunToolForm = ({
   const fileQueriesByParam = new Map(
     fileParams.map((param, index) => [param.name, fileQueries[index]]),
   )
-  const filesByParam = new Map(
-    fileParams.map((param, index) => [
-      param.name,
-      fileQueries[index].data ?? [],
-    ]),
-  )
-
-  // A tool that names a cpus_per_file only gets work out of the CPUs its files
-  // imply, so it cannot be given more than they add up to: fewer files mean
-  // fewer CPUs, and the rest would sit idle.
-  const scalesWithFiles = params.some(
-    (param) =>
-      param.multiple &&
-      param.param_type === "file" &&
-      (param.cpus_per_file ?? 0) > 0,
-  )
-  const chosenFileCount = countFileCpus(params, filesByParam, getValues())
-  const maxThreads = scalesWithFiles
-    ? Math.min(effectiveMax, Math.max(minThreads, chosenFileCount))
-    : effectiveMax
-  const threadOptions = useMemo(
-    () =>
-      Array.from(
-        { length: maxThreads - minThreads + 1 },
-        (_, index) => minThreads + index,
-      ),
-    [maxThreads, minThreads],
-  )
-  const defaultThreads = Math.max(
-    minThreads,
-    Math.min(defaultCpus ?? (chosenFileCount || minThreads), maxThreads),
-  )
-  const storedThreads = useMemo(
-    () => readStoredThreads(threadsKey, minThreads, maxThreads),
-    [threadsKey, minThreads, maxThreads],
-  )
-  // A pick made here wins, then the default the chosen files imply, then the
-  // threads this browser used for the tool last time. The files cap the pick,
-  // so removing files lowers the CPUs even when one was picked by hand.
-  const threadsToUse = fixedThreads
-    ? minThreads
-    : Math.min(
-        maxThreads,
-        threads ??
-          (chosenFileCount > 0
-            ? defaultThreads
-            : (storedThreads ?? defaultThreads)),
-      )
-
-  // Prefill from an earlier run once its files have loaded: a parameter the
-  // tool no longer has, a file that no longer exists and a choice the tool no
-  // longer offers are all left at their default.
-  const prefilled = useRef(false)
-  useEffect(() => {
-    // Nothing to prefill from, or the files are still loading: keep waiting.
-    if (prefilled.current || !initialValues) return
-    if (fileQueries.some((query) => query.isLoading)) return
-    prefilled.current = true
-    const next: Record<string, unknown> = {}
-    for (const param of params) {
-      const recorded = initialValues?.[param.name]
-      if (recorded === undefined || recorded === null) continue
-      if (param.param_type === "file") {
-        const allowed = new Set(
-          (fileQueriesByParam.get(param.name)?.data ?? []).map(
-            (file) => file.id,
-          ),
-        )
-        const ids = (Array.isArray(recorded) ? recorded : [recorded]).flat()
-        const usable = ids.filter(
-          (id): id is string => typeof id === "string" && allowed.has(id),
-        )
-        if (usable.length) next[param.name] = usable
-        continue
-      }
-      if (
-        param.param_type === "enum" &&
-        !(param.options ?? []).includes(String(recorded))
-      ) {
-        continue
-      }
-      next[param.name] = recorded
-    }
-    const nextValues = { ...getValues(), ...next }
-    reset(nextValues)
-    if (initialTags?.length) setTags(initialTags)
-    if (initialThreads != null) {
-      // The threads may no longer fit, e.g. the tool's limits changed or the
-      // prefilled files imply fewer, and a select with no matching option
-      // shows blank.
-      const prefillMax = scalesWithFiles
-        ? Math.min(
-            effectiveMax,
-            Math.max(
-              minThreads,
-              countFileCpus(params, filesByParam, nextValues),
-            ),
-          )
-        : effectiveMax
-      chooseThreads(Math.max(minThreads, Math.min(initialThreads, prefillMax)))
-    }
-  }, [
-    initialValues,
-    initialTags,
-    initialThreads,
-    params,
-    fileQueries,
-    fileQueriesByParam,
-    filesByParam,
-    getValues,
-    reset,
-    minThreads,
-    effectiveMax,
-    scalesWithFiles,
-    chooseThreads,
-  ])
-
-  const formValues = watch()
-  const visibleParams = useMemo(
-    () => buildVisibilityMap(params, formValues),
-    [formValues, params],
-  )
 
   const mutation = useMutation({
     ...createRunMutation(),
@@ -396,172 +153,59 @@ const RunToolForm = ({
     },
     onError: (error) => handleError(error, showToast),
     onSettled: () => {
-      setIsLoading(false)
       queryClient.invalidateQueries({ queryKey: ["toolRuns"] })
     },
   })
 
-  const submit: SubmitHandler<Record<string, unknown>> = async (formData) => {
-    clearErrors()
-    let hasValidationError = false
-    for (const param of params) {
-      if (!visibleParams.get(param.name)) continue
-      if (param.required && isEmptyValue(formData[param.name])) {
-        setError(param.name, { type: "required", message: "Required" })
-        hasValidationError = true
-      }
-    }
-    if (hasValidationError) return
+  const renderFilePicker = ({
+    param,
+    values,
+    onChange,
+    disabled,
+  }: LocalFilePickerProps) => (
+    <FileParam
+      param={param}
+      disabled={disabled}
+      setIsLoading={setUploading}
+      data={fileQueriesByParam.get(param.name)?.data ?? []}
+      isLoading={fileQueriesByParam.get(param.name)?.isLoading ?? false}
+      values={values}
+      updateValues={(update) => onChange(update(values))}
+    />
+  )
 
-    const filtered = Object.fromEntries(
-      Object.entries(formData).filter(
-        ([name, value]) => visibleParams.get(name) && !isEmptyValue(value),
-      ),
-    )
-    setIsLoading(true)
-    await mutation.mutateAsync({
-      body: { params: filtered, tags },
-      query: {
-        tool_id: toolId,
-        email_on_completion: emailOnFinished,
-        name: runName ?? undefined,
-        cpus: threadsToUse,
-      },
-    })
-  }
+  // A portal file stands for one unit, or for the files a group holds.
+  const fileUnits = (param: Param): FileUnit[] =>
+    fileQueriesByParam.get(param.name)?.data ?? []
 
   return (
-    <form onSubmit={handleSubmit(submit)} className="w-full">
-      {params.map((param) => {
-        if (!visibleParams.get(param.name)) return null
-        return (
-          <div className="pb-4" key={param.name}>
-            <Label htmlFor={param.name}>
-              {param.name.toUpperCase()}
-              {param.required && " *"}
-              {errors[param.name] && (
-                <div className="text-destructive pt-0 mt-0">
-                  {String(errors[param.name]?.message)}
-                </div>
-              )}
-            </Label>
-            {param.param_type !== "bool" && (
-              <p className="mb-2 text-sm text-gray-500">{param.description}</p>
-            )}
-            {param.param_type === "str" && (
-              <Input
-                id={param.name}
-                disabled={isDisabled}
-                {...register(param.name, {
-                  required: param.required ? "Required" : false,
-                })}
-              />
-            )}
-            {(param.param_type === "int" || param.param_type === "float") && (
-              <Input
-                id={param.name}
-                disabled={isDisabled}
-                type="number"
-                step={param.param_type === "float" ? "0.01" : undefined}
-                {...register(param.name, {
-                  required: param.required ? "Required" : false,
-                  valueAsNumber: true,
-                })}
-              />
-            )}
-            {param.param_type === "enum" && (
-              <select
-                id={param.name}
-                disabled={isDisabled}
-                className="h-10 w-full rounded-md border bg-background px-3"
-                value={(watch(param.name) as string | undefined) ?? ""}
-                onChange={(event) => {
-                  clearErrors(param.name)
-                  setValue(param.name, event.target.value, {
-                    shouldDirty: true,
-                    shouldValidate: true,
-                  })
-                }}
-              >
-                <option value="">Select an option</option>
-                {param.options?.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            )}
-            {param.param_type === "bool" && (
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id={param.name}
-                  disabled={isDisabled}
-                  defaultChecked={param.default as boolean}
-                  onCheckedChange={(checked) => {
-                    clearErrors(param.name)
-                    setValue(param.name, checked === true, {
-                      shouldDirty: true,
-                      shouldValidate: true,
-                    })
-                  }}
-                />
-                <Label htmlFor={param.name}>
-                  {param.description || "Check to enable"}
-                </Label>
-              </div>
-            )}
-            {param.param_type === "file" && (
-              <FileParam
-                param={param}
-                disabled={isDisabled}
-                setIsLoading={setIsLoading}
-                data={fileQueriesByParam.get(param.name)?.data ?? []}
-                isLoading={
-                  fileQueriesByParam.get(param.name)?.isLoading ?? false
-                }
-                values={(watch(param.name) as string[] | undefined) || []}
-                updateValues={(update) => {
-                  clearErrors(param.name)
-                  setValue(
-                    param.name,
-                    update((getValues(param.name) as string[]) || []),
-                    {
-                      shouldDirty: true,
-                      shouldValidate: true,
-                    },
-                  )
-                }}
-              />
-            )}
-          </div>
-        )
-      })}
-
-      <h2 className="mt-2 mb-4 text-lg ">
-        <button
-          type="button"
-          className="flex w-full items-center justify-between gap-4 border-b pb-1 font-semibold"
-          onClick={toggleSettings}
-          aria-expanded={settingsOpen}
-          aria-controls="CPG_PORTAL_RUN_SETTINGS"
-        >
-          Run Settings
-          <div className="flex items-center justify-between gap-2 font-normal">
-            {!settingsOpen && (
-              <p className="text-sm text-gray-400">click to open</p>
-            )}
-            <ChevronDown
-              className={cn(
-                "text-muted-foreground size-5 transition-transform",
-                settingsOpen && "rotate-180",
-              )}
-            />
-          </div>
-        </button>
-      </h2>
-
-      {settingsOpen && (
-        <div id="CPG_PORTAL_RUN_SETTINGS" className="flex flex-col gap-4">
+    <ToolRunForm
+      formKey={toolId}
+      params={params}
+      isDisabled={isDisabled || uploading}
+      minCpus={minCpus}
+      maxCpus={maxCpus}
+      defaultCpus={defaultCpus}
+      userMaxCpus={user?.max_cpus}
+      isSuperuser={user?.is_superuser ?? false}
+      initialValues={initialValues}
+      initialValuesReady={!fileQueries.some((query) => query.isLoading)}
+      initialThreads={initialThreads}
+      renderFilePicker={renderFilePicker}
+      fileUnits={fileUnits}
+      onSubmit={async ({ params: values, cpus }) => {
+        await mutation.mutateAsync({
+          body: { params: values, tags },
+          query: {
+            tool_id: toolId,
+            email_on_completion: emailOnFinished,
+            name: runName ?? undefined,
+            cpus,
+          },
+        })
+      }}
+      extras={
+        <>
           <div>
             <Label htmlFor="CPG_PORTAL_RUN_NAME">Run name</Label>
             <p className="mb-2 text-sm text-gray-500">
@@ -580,118 +224,16 @@ const RunToolForm = ({
             </p>
             <TagInput tags={tags} setTags={setTags} isDisabled={isDisabled} />
           </div>
-          {!fixedThreads && (
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-1">
-                  <Label htmlFor="CPG_PORTAL_RUN_THREADS">CPUs</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        className="text-muted-foreground size-5"
-                        aria-label="What are CPUs?"
-                      >
-                        <HelpCircle className="size-4" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-80">
-                      <PopoverHeader>
-                        <PopoverTitle>CPUs</PopoverTitle>
-                        <PopoverDescription>
-                          The CPUs reserved for this run.
-                        </PopoverDescription>
-                      </PopoverHeader>
-                      <ul className="text-muted-foreground mt-2 list-disc space-y-1 pl-4 text-sm">
-                        <li>
-                          {maxCpus == null
-                            ? `This tool needs at least ${minThreads} CPUs.`
-                            : `This tool allows ${minThreads}-${maxCpus} CPUs.`}
-                        </li>
-                        {cappedByUser && (
-                          <li>{`Your own limit is ${user?.max_cpus} CPUs per run.`}</li>
-                        )}
-                        {scalesWithFiles && (
-                          <li>
-                            {`CPUs scale with the chosen files, which allow at most ${maxThreads} ${
-                              maxThreads === 1 ? "CPU" : "CPUs"
-                            }.`}
-                          </li>
-                        )}
-                        <li>
-                          A run starts as soon as that many CPUs are free, and
-                          waits in the queue until then.
-                        </li>
-                        <li>
-                          More CPUs usually finish sooner, but may wait longer
-                          to start.
-                        </li>
-                      </ul>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <p className="text-sm text-gray-500">
-                  {minThreads === maxThreads
-                    ? `${minThreads} available`
-                    : `${minThreads}-${maxThreads} available`}
-                </p>
-              </div>
-              <Select
-                value={String(threadsToUse)}
-                onValueChange={(value) => {
-                  const selected = Number(value)
-                  // Radix echoes its own controlled value back through this
-                  // callback, and an empty string while its options are not
-                  // mounted. Neither is a pick the user made.
-                  if (
-                    !Number.isInteger(selected) ||
-                    selected < 1 ||
-                    selected === threadsToUse
-                  ) {
-                    return
-                  }
-                  chooseThreads(selected)
-                }}
-                disabled={isDisabled}
-              >
-                <SelectTrigger id="CPG_PORTAL_RUN_THREADS" className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {threadOptions.map((value) => (
-                    <SelectItem key={value} value={String(value)}>
-                      {value}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-        </div>
-      )}
-      <div className="my-4 flex items-center gap-2">
-        <Button type="submit" disabled={isDisabled || isLoading}>
-          {isLoading && <LoaderCircle className="animate-spin" />}Submit
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={isDisabled}
-          onClick={() => reset(defaults)}
-        >
-          Reset
-        </Button>
-        <div className="ml-2">
-          <EmailOnFinished
-            emailOnFinished={emailOnFinished}
-            setEmailOnFinished={setEmailOnFinished}
-            isDisabled={isDisabled}
-          />
-        </div>
-      </div>
-    </form>
+        </>
+      }
+      submitExtras={
+        <EmailOnFinished
+          emailOnFinished={emailOnFinished}
+          setEmailOnFinished={setEmailOnFinished}
+          isDisabled={isDisabled}
+        />
+      }
+    />
   )
 }
 

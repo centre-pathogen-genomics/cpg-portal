@@ -3,6 +3,8 @@ import { useCallback, useEffect, useRef, useState } from "react"
 export interface UseWebSocketOptions {
   protocols?: string | string[]
   auth?: boolean
+  /** A caller that supplies its own stream leaves the socket closed. */
+  enabled?: boolean
   onOpen?: (event: Event) => void
   onMessage?: (event: MessageEvent) => void
   onError?: (event: Event) => void
@@ -14,6 +16,7 @@ export const useWebSocket = (
   {
     protocols,
     auth = true,
+    enabled = true,
     onOpen,
     onMessage,
     onError,
@@ -76,6 +79,7 @@ export const useWebSocket = (
   }, [auth, channel, protocols])
 
   useEffect(() => {
+    if (!enabled) return
     const connectTimer = window.setTimeout(connect, 0)
     // Clean up on unmount.
     return () => {
@@ -87,7 +91,7 @@ export const useWebSocket = (
         clearInterval(reconnectTimerRef.current)
       }
     }
-  }, [connect])
+  }, [connect, enabled])
 
   const disconnect = useCallback(() => {
     if (wsRef.current) {

@@ -1,24 +1,27 @@
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { toast } from "sonner"
+import OutputAccordion from "@/components/Runs/OutputAccordion"
+import RunTime from "@/components/Runs/RunTime"
+import StatusBadge from "@/components/Runs/StatusBadge"
 import { Button } from "@/components/ui/button"
 import { api, errorMessage } from "./api"
 import { RunOutputs } from "./components/RunOutputs"
-import { StatusPill } from "./components/StatusPill"
-import { openPath } from "./lib/desktop"
-import { formatDuration } from "./lib/format"
-import { navigate } from "./router"
 import {
   isRunActive,
   type RunLogMessage,
   type RunRecord,
+  type ToolConfig,
+  toRunPublic,
 } from "./contracts"
+import { openPath } from "./lib/desktop"
+import { navigate } from "./router"
 
 export function RunPage({ id }: { id: string }) {
   const [record, setRecord] = useState<RunRecord | null>(null)
+  const [tool, setTool] = useState<ToolConfig | null>(null)
+  const [environment, setEnvironment] = useState<string | null>(null)
   const [logs, setLogs] = useState<string[]>([])
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [now, setNow] = useState(() => Date.now())
-  const logRef = useRef<HTMLPreElement>(null)
 
   const refresh = useCallback(async () => {
     const next = await api.get<RunRecord>(`/runs/${id}`)
@@ -28,6 +31,14 @@ export function RunPage({ id }: { id: string }) {
 
   useEffect(() => {
     void refresh().catch((error) => setLoadError(errorMessage(error)))
+    void api
+      .get<ToolConfig>("/tool")
+      .then(setTool)
+      .catch(() => {})
+    void api
+      .get<{ yml: string | null }>("/environment")
+      .then((payload) => setEnvironment(payload.yml))
+      .catch(() => {})
   }, [refresh])
 
   const active = isRunActive(record?.status)
@@ -39,11 +50,6 @@ export function RunPage({ id }: { id: string }) {
     }, 1000)
     return () => clearInterval(interval)
   }, [active, refresh])
-
-  useEffect(() => {
-    const ticker = setInterval(() => setNow(Date.now()), 1000)
-    return () => clearInterval(ticker)
-  }, [])
 
   useEffect(() => {
     const socket = new WebSocket(api.wsUrl(`/runs/${id}/logs`))
@@ -74,11 +80,6 @@ export function RunPage({ id }: { id: string }) {
     return () => socket.close()
   }, [id, refresh])
 
-  useEffect(() => {
-    const node = logRef.current
-    if (node) node.scrollTop = node.scrollHeight
-  }, [logs])
-
   async function cancel() {
     try {
       await api.post(`/runs/${id}/cancel`)
@@ -88,15 +89,10 @@ export function RunPage({ id }: { id: string }) {
     }
   }
 
-  const startedAt = record?.started_at ? Date.parse(record.started_at) : null
-  const finishedAt = record?.finished_at ? Date.parse(record.finished_at) : null
-  const elapsed =
-    startedAt !== null
-      ? (finishedAt !== null ? finishedAt : now) - startedAt
-      : null
   const stdoutTail = record?.stdout
     ? record.stdout.trimEnd().split("\n").slice(-30).join("\n")
     : ""
+  const run = record && tool ? toRunPublic(record, tool, environment) : null
 
   return (
     <div className="flex h-full flex-col">
@@ -114,10 +110,14 @@ export function RunPage({ id }: { id: string }) {
             <h1 className="text-xl font-semibold">
               Run {record?.id ? record.id.slice(0, 8) : id.slice(0, 8)}
             </h1>
-            {record && <StatusPill status={record.status} />}
-            {elapsed !== null && (
+            {record && <StatusBadge status={record.status} />}
+            {record && (
               <span className="text-muted-foreground text-sm">
-                {formatDuration(elapsed)}
+                <RunTime
+                  started_at={record.started_at ?? null}
+                  finished_at={record.finished_at ?? null}
+                  status={record.status}
+                />
               </span>
             )}
           </div>
@@ -150,26 +150,12 @@ export function RunPage({ id }: { id: string }) {
         <div className="mx-auto grid max-w-4xl gap-6">
           {loadError && <p className="text-destructive text-sm">{loadError}</p>}
 
-          {record?.command && (
-            <details className="rounded-md border">
-              <summary className="cursor-pointer px-3 py-2 text-sm font-medium">
-                Command
-              </summary>
-              <pre className="overflow-auto border-t px-3 py-2 font-mono text-xs whitespace-pre-wrap">
-                {record.command}
-              </pre>
-            </details>
+          {run && (
+            <OutputAccordion
+              run={run}
+              logStream={{ lines: logs, status: record?.status }}
+            />
           )}
-
-          <section className="grid gap-2">
-            <h2 className="text-lg font-semibold">Logs</h2>
-            <pre
-              ref={logRef}
-              className="bg-muted h-80 overflow-auto rounded-md p-3 font-mono text-xs whitespace-pre-wrap"
-            >
-              {logs.join("\n")}
-            </pre>
-          </section>
 
           {record?.status === "failed" && (
             <section className="grid gap-2">

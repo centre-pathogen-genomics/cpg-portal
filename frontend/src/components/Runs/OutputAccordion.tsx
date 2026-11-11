@@ -1,33 +1,100 @@
-import { LoaderCircle } from "lucide-react"
-import { HiOutlineDocumentText, HiQuestionMarkCircle } from "react-icons/hi"
-import { HiOutlineCommandLine } from "react-icons/hi2"
-import { SiAnaconda } from "react-icons/si"
+import { LoaderCircle } from "lucide-react";
+import { type ReactNode, useEffect, useState } from "react";
+import { HiOutlineDocumentText, HiQuestionMarkCircle } from "react-icons/hi";
+import { HiOutlineCommandLine } from "react-icons/hi2";
+import { SiAnaconda } from "react-icons/si";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/components/ui/accordion"
-import type { RunPublic, RunStatus } from "../../client"
-import CodeBlock from "../Common/CodeBlock"
-import Markdown from "../Common/Markdown"
-import RunProfiler from "./RunProfiler"
+} from "@/components/ui/accordion";
+import type { RunPublic, RunStatus } from "../../client";
+import CodeBlock from "../Common/CodeBlock";
+import Markdown from "../Common/Markdown";
+import RunProfiler from "./RunProfiler";
 
 interface OutputAccordionItemProps {
-  title: string
-  status: RunStatus
-  content: string | null
+  title: string;
+  status: RunStatus;
+  content: string | null;
+  runId: string;
+  /** Lines from a caller that runs its own stream, e.g. the desktop app. */
+  logStream?: RunLogStream;
 }
+
+/**
+ * Log lines a caller has already collected. Providing this keeps the component
+ * from opening the portal's own log socket.
+ */
+export interface RunLogStream {
+  lines: string[];
+  status?: string;
+}
+
+const normalizeLogSnapshot = (value: string | null | undefined) =>
+  value ? value.replace(/\n+$/g, "") : null;
+
+const appendLogLine = (
+  previous: string | null,
+  line: string,
+): string | null => {
+  const normalizedPrevious = normalizeLogSnapshot(previous);
+  if (!normalizedPrevious) return line;
+  return `${normalizedPrevious}\n${line}`;
+};
 
 const OutputAccordionItem = ({
   title,
   content,
   status,
+  runId,
+  logStream,
 }: OutputAccordionItemProps) => {
-  const output = content
-  const lineCount = output?.trim().split("\n").length || 0
-  const queued = status === "pending"
-  const active = status === "running" || queued
+  const [output, setOutput] = useState<string | null>(
+    normalizeLogSnapshot(content),
+  );
+  const [currentStatus, setCurrentStatus] = useState(status);
+  const streamed = logStream ? logStream.lines.join("\n") : null;
+  const shown = logStream ? streamed : output;
+  // An empty capture is no output, not a single blank line.
+  const lineCount = shown && shown.trim() ? shown.trim().split("\n").length : 0;
+  const queued = (logStream?.status ?? currentStatus) === "pending";
+  const active = (logStream?.status ?? currentStatus) === "running" || queued;
+
+  useEffect(() => {
+    setOutput((previous) => {
+      const normalizedContent = normalizeLogSnapshot(content);
+      if (!normalizedContent) return previous || null;
+      if (!active) return normalizedContent;
+      if (!previous) return normalizedContent;
+      return normalizedContent.length >= previous.length
+        ? normalizedContent
+        : previous;
+    });
+  }, [active, content]);
+
+  useEffect(() => {
+    setCurrentStatus(status);
+  }, [status]);
+
+  useWebSocket(`logs/${runId}`, {
+    enabled: !logStream,
+    onMessage: (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (typeof data.status === "string") setCurrentStatus(data.status);
+        if (typeof data.stdout === "string") {
+          setOutput(normalizeLogSnapshot(data.stdout));
+          return;
+        }
+        if (typeof data.log === "string")
+          setOutput((previous) => appendLogLine(previous, data.log));
+      } catch (error) {
+        console.error("Error parsing WebSocket message:", error);
+      }
+    },
+  });
 
   return (
     <AccordionItem value="logs">
@@ -41,7 +108,7 @@ const OutputAccordionItem = ({
       <AccordionContent>
         {lineCount > 0 ? (
           <CodeBlock
-            code={output || ""}
+            code={(logStream ? streamed : output) || ""}
             language="text"
             lineNumbers
             follow
@@ -56,17 +123,19 @@ const OutputAccordionItem = ({
         )}
       </AccordionContent>
     </AccordionItem>
-  )
-}
+  );
+};
 
 const OutputAccordion = ({
   run,
-  logs,
-  status,
+  logStream,
+  resources,
 }: {
-  run: RunPublic
-  logs: string
-  status: RunStatus
+  run: RunPublic;
+  /** Lines the caller streams itself; without it the portal's socket is used. */
+  logStream?: RunLogStream;
+  /** Extra accordion content, e.g. the resource charts. */
+  resources?: ReactNode;
 }) => (
   <Accordion type="multiple" className="mb-4 break-all">
     {run.tool.explanation_of_results_markdown && (
@@ -84,8 +153,10 @@ const OutputAccordion = ({
     )}
     <OutputAccordionItem
       title="Tool Logs"
-      content={logs || null}
-      status={status}
+      content={run.stdout || null}
+      status={run.status}
+      runId={run.id}
+      logStream={logStream}
     />
     <AccordionItem value="command">
       <AccordionTrigger>
@@ -121,8 +192,8 @@ const OutputAccordion = ({
         )}
       </AccordionContent>
     </AccordionItem>
-    <RunProfiler run={run} />
+    {resources}
   </Accordion>
-)
+);
 
-export default OutputAccordion
+export default OutputAccordion;

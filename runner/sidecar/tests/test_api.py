@@ -15,7 +15,7 @@ HEADERS = {"X-CPG-Token": "test"}
 TOKEN = "test"
 
 
-def _client(tmp_path, *, installer=None, doctor=None):
+def _client(tmp_path, *, installer=None, doctor=None, environment_yml=None):
     tool = make_tool()
     installer = installer or FakeInstaller()
     store = StateStore(
@@ -34,6 +34,7 @@ def _client(tmp_path, *, installer=None, doctor=None):
         installer=installer,
         runs=FakeRunManager(),
         store=store,
+        environment_yml=environment_yml,
         ui_dir=None,
     )
     return TestClient(app), installer
@@ -138,3 +139,20 @@ def test_tool_and_file_types(tmp_path):
     assert tool["name"] == "my tool"
     file_types = client.get("/api/file-types", headers=HEADERS).json()
     assert ".fasta" in file_types["fasta"]["extensions"]
+
+
+def test_environment_is_the_packs_yaml(tmp_path):
+    """The run page's Environment section shows what the pack installed."""
+    yaml_text = "channels:\n- conda-forge\ndependencies:\n- python=3.11\n"
+    client, _ = _client(tmp_path, environment_yml=yaml_text)
+
+    response = client.get("/api/environment", headers=HEADERS)
+
+    assert response.status_code == 200
+    assert response.json() == {"yml": yaml_text}
+
+
+def test_environment_is_absent_for_a_tool_without_one(tmp_path):
+    client, _ = _client(tmp_path)
+
+    assert client.get("/api/environment", headers=HEADERS).json() == {"yml": None}

@@ -56,6 +56,7 @@ def create_app(
     installer: Installer,
     runs: RunManager,
     store: StateStore,
+    environment_yml: str | None = None,
     ui_dir: Path | None = None,
     file_types: FileTypes | None = None,
 ) -> FastAPI:
@@ -174,6 +175,11 @@ def create_app(
             "settings": settings.model_dump(),
             "installing": installer.state == "installing",
         }
+
+    @app.get("/api/environment", dependencies=[auth])
+    def read_environment() -> dict[str, str | None]:
+        """The pack's environment.yml, for the run page's Environment section."""
+        return {"yml": environment_yml}
 
     @app.get("/api/tool", dependencies=[auth])
     def read_tool() -> dict[str, Any]:

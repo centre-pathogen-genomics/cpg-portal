@@ -11,16 +11,19 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import type { Settings } from "../contracts"
 import { openPath, pickDirectory } from "../lib/desktop"
-import type { Settings, ToolConfig } from "../contracts"
 
+/**
+ * The settings a local run needs beyond the run form: where outputs go and
+ * whether the container may reach the network. CPUs are chosen per run in the
+ * shared form, like on the portal.
+ */
 export function RunSettingsCard({
-  tool,
   settings,
   disabled,
   onSave,
 }: {
-  tool: ToolConfig
   settings: Settings
   disabled: boolean
   onSave: (settings: Settings) => Promise<void>
@@ -31,9 +34,6 @@ export function RunSettingsCard({
   useEffect(() => {
     setDraft(settings)
   }, [settings])
-
-  const minCpus = tool.min_cpus || 1
-  const maxCpus = tool.max_cpus ?? 1024
 
   async function save() {
     setSaving(true)
@@ -53,28 +53,6 @@ export function RunSettingsCard({
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
-        <div className="grid gap-2">
-          <Label htmlFor="runner-cpus">CPUs</Label>
-          <Input
-            id="runner-cpus"
-            type="number"
-            min={minCpus}
-            max={maxCpus}
-            disabled={disabled}
-            value={draft.cpus}
-            onChange={(event) => {
-              const next = Number.parseInt(event.target.value, 10)
-              if (Number.isNaN(next) || next < 1) return
-              setDraft({ ...draft, cpus: next })
-            }}
-          />
-          <p className="text-muted-foreground text-xs">
-            {maxCpus === 1024
-              ? `This tool needs at least ${minCpus} CPUs.`
-              : `This tool allows ${minCpus}-${maxCpus} CPUs.`}
-          </p>
-        </div>
-
         <div className="grid gap-2">
           <Label htmlFor="runner-output">Output folder</Label>
           <div className="flex gap-2">

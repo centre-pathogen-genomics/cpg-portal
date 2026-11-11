@@ -1,4 +1,4 @@
-import type { Param } from "@/client"
+import type { Param, RunPublic } from "@/client"
 
 export type FileTypeMeta = {
   extensions: string[]
@@ -133,6 +133,44 @@ export type RunRecord = {
 
 export function isRunActive(status: RunStatus | undefined): boolean {
   return status === "pending" || status === "running"
+}
+
+/**
+ * The portal's run page components take a `RunPublic`. A local run has the same
+ * state, so it is shaped into one instead of duplicating those components.
+ */
+export function toRunPublic(
+  run: RunRecord,
+  tool: ToolConfig,
+  environmentYml: string | null,
+): RunPublic {
+  return {
+    id: run.id,
+    status: run.status,
+    params: run.params ?? {},
+    cpus: run.cpus,
+    created_at: run.created_at ?? new Date().toISOString(),
+    started_at: run.started_at ?? null,
+    finished_at: run.finished_at ?? null,
+    owner_id: "",
+    stdout: run.stdout ?? null,
+    command: run.command ?? null,
+    conda_env_pinned: environmentYml,
+    metrics: null,
+    files: [],
+    tool: {
+      id: tool.id,
+      name: tool.name,
+      version: tool.version,
+      description: tool.description,
+      params: tool.params,
+      status: "installed",
+      explanation_of_results_markdown: tool.explanation_of_results_markdown,
+      min_cpus: tool.min_cpus,
+      max_cpus: tool.max_cpus,
+      default_cpus: tool.default_cpus,
+    },
+  }
 }
 
 export type InstallMessage =

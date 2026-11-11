@@ -6,6 +6,11 @@ interface RunRuntimeProps {
   status: string
 }
 
+// The portal stores naive UTC (`2026-01-01T10:00:00`), the desktop sidecar
+// stores a zoned ISO string. Both have to read as the same instant.
+const parseTimestamp = (value: string): Date =>
+  new Date(/(?:Z|[+-]\d{2}:?\d{2})$/.test(value) ? value : `${value}Z`)
+
 // Component that displays the runtime of a run, handling UTC time
 const RunRuntime = ({ started_at, finished_at, status }: RunRuntimeProps) => {
   const [runtime, setRuntime] = useState("...")
@@ -17,14 +22,14 @@ const RunRuntime = ({ started_at, finished_at, status }: RunRuntimeProps) => {
     }
 
     // Initialize start time from UTC string
-    const start = new Date(`${started_at}Z`) // Ensure UTC by appending 'Z' if not already present
+    const start = parseTimestamp(started_at)
 
     let intervalId: NodeJS.Timeout | null = null
 
     const updateRuntime = () => {
       let end: Date
       if (finished_at) {
-        end = new Date(`${finished_at}Z`) // Parse finished_at as UTC
+        end = parseTimestamp(finished_at)
       } else if (status === "running") {
         end = new Date() // Create a Date object for the current time
         end = new Date(
@@ -42,7 +47,9 @@ const RunRuntime = ({ started_at, finished_at, status }: RunRuntimeProps) => {
         return
       }
 
-      const diff = end.getTime() - start.getTime() // Difference in milliseconds
+      // `end` is truncated to whole seconds while a run is going, so it can sit
+      // a moment before `start`; a negative span would print as "-1h -1m -1s".
+      const diff = Math.max(0, end.getTime() - start.getTime())
       const hours = Math.floor(diff / 3600000) // Convert milliseconds to hours
       const minutes = Math.floor((diff % 3600000) / 60000) // Remaining minutes
       const seconds = Math.floor((diff % 60000) / 1000) // Remaining seconds

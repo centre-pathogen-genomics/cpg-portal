@@ -67,6 +67,11 @@ def main(argv: list[str] | None = None) -> int:
         installer=installer,
         runs=runs,
         store=store,
+        environment_yml=(
+            resources.environment_yml.read_text()
+            if resources.environment_yml is not None
+            else None
+        ),
         ui_dir=Path(args.ui_dir) if args.ui_dir else None,
     )
 
