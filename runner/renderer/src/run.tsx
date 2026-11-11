@@ -1,70 +1,70 @@
-import { useCallback, useEffect, useState } from "react"
-import { toast } from "sonner"
-import OutputAccordion from "@/components/Runs/OutputAccordion"
-import RunTime from "@/components/Runs/RunTime"
-import StatusBadge from "@/components/Runs/StatusBadge"
-import { Button } from "@/components/ui/button"
-import { api, errorMessage } from "./api"
-import { RunFiles } from "./components/RunFiles"
-import { RunResults } from "./components/RunResults"
-import { ToolSidebar } from "./components/ToolSidebar"
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
+import OutputAccordion from "@/components/Runs/OutputAccordion";
+import RunTime from "@/components/Runs/RunTime";
+import StatusBadge from "@/components/Runs/StatusBadge";
+import { Button } from "@/components/ui/button";
+import { api, errorMessage } from "./api";
+import { RunFiles } from "./components/RunFiles";
+import { RunResults } from "./components/RunResults";
+import { ToolSidebar } from "./components/ToolSidebar";
 import {
   isRunActive,
   type RunLogMessage,
   type RunRecord,
   type ToolConfig,
   toRunPublic,
-} from "./contracts"
-import { openPath } from "./lib/desktop"
-import { navigate } from "./router"
+} from "./contracts";
+import { openPath } from "./lib/desktop";
+import { navigate } from "./router";
 
 export function RunPage({ id }: { id: string }) {
-  const [record, setRecord] = useState<RunRecord | null>(null)
-  const [tool, setTool] = useState<ToolConfig | null>(null)
-  const [environment, setEnvironment] = useState<string | null>(null)
-  const [logs, setLogs] = useState<string[]>([])
-  const [loadError, setLoadError] = useState<string | null>(null)
+  const [record, setRecord] = useState<RunRecord | null>(null);
+  const [tool, setTool] = useState<ToolConfig | null>(null);
+  const [environment, setEnvironment] = useState<string | null>(null);
+  const [logs, setLogs] = useState<string[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    const next = await api.get<RunRecord>(`/runs/${id}`)
-    setRecord(next)
-    return next
-  }, [id])
+    const next = await api.get<RunRecord>(`/runs/${id}`);
+    setRecord(next);
+    return next;
+  }, [id]);
 
   useEffect(() => {
-    void refresh().catch((error) => setLoadError(errorMessage(error)))
+    void refresh().catch((error) => setLoadError(errorMessage(error)));
     void api
       .get<ToolConfig>("/tool")
       .then(setTool)
-      .catch(() => {})
+      .catch(() => {});
     void api
       .get<{ yml: string | null }>("/environment")
       .then((payload) => setEnvironment(payload.yml))
-      .catch(() => {})
-  }, [refresh])
+      .catch(() => {});
+  }, [refresh]);
 
-  const active = isRunActive(record?.status)
+  const active = isRunActive(record?.status);
 
   useEffect(() => {
-    if (!active) return
+    if (!active) return;
     const interval = setInterval(() => {
-      void refresh().catch(() => {})
-    }, 1000)
-    return () => clearInterval(interval)
-  }, [active, refresh])
+      void refresh().catch(() => {});
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [active, refresh]);
 
   useEffect(() => {
-    const socket = new WebSocket(api.wsUrl(`/runs/${id}/logs`))
+    const socket = new WebSocket(api.wsUrl(`/runs/${id}/logs`));
     socket.onmessage = (event) => {
-      let message: RunLogMessage
+      let message: RunLogMessage;
       try {
-        message = JSON.parse(String(event.data)) as RunLogMessage
+        message = JSON.parse(String(event.data)) as RunLogMessage;
       } catch {
-        return
+        return;
       }
       if (message.type === "log") {
-        setLogs((previous) => [...previous, message.line].slice(-2000))
-        return
+        setLogs((previous) => [...previous, message.line].slice(-2000));
+        return;
       }
       if (message.type === "status") {
         setRecord((previous) =>
@@ -75,26 +75,26 @@ export function RunPage({ id }: { id: string }) {
                 exit_code: message.exit_code ?? previous.exit_code,
               }
             : previous,
-        )
-        if (!isRunActive(message.status)) void refresh()
+        );
+        if (!isRunActive(message.status)) void refresh();
       }
-    }
-    return () => socket.close()
-  }, [id, refresh])
+    };
+    return () => socket.close();
+  }, [id, refresh]);
 
   async function cancel() {
     try {
-      await api.post(`/runs/${id}/cancel`)
-      await refresh()
+      await api.post(`/runs/${id}/cancel`);
+      await refresh();
     } catch (error) {
-      toast.error(errorMessage(error))
+      toast.error(errorMessage(error));
     }
   }
 
   const stdoutTail = record?.stdout
     ? record.stdout.trimEnd().split("\n").slice(-30).join("\n")
-    : ""
-  const run = record && tool ? toRunPublic(record, tool, environment) : null
+    : "";
+  const run = record && tool ? toRunPublic(record, tool, environment) : null;
 
   return (
     <div className="flex h-full">
@@ -138,7 +138,6 @@ export function RunPage({ id }: { id: string }) {
                   Cancel
                 </Button>
               )}
-
             </div>
           </div>
         </header>
@@ -147,20 +146,6 @@ export function RunPage({ id }: { id: string }) {
           <div className="mx-auto grid max-w-4xl gap-6">
             {loadError && (
               <p className="text-destructive text-sm">{loadError}</p>
-            )}
-
-            {record && !isRunActive(record.status) && (
-              <>
-                <RunFiles files={record.files ?? []} />
-                <RunResults runId={id} files={record.files ?? []} />
-              </>
-            )}
-
-            {run && (
-              <OutputAccordion
-                run={run}
-                logStream={{ lines: logs, status: record?.status }}
-              />
             )}
 
             {record?.status === "failed" && (
@@ -177,24 +162,29 @@ export function RunPage({ id }: { id: string }) {
               </section>
             )}
 
+            {record && !isRunActive(record.status) && (
+              <>
+                <RunFiles
+                  files={record.files ?? []}
+                  onOpenOutputFolder={
+                    record.output_dir
+                      ? () => openPath(record.output_dir as string)
+                      : undefined
+                  }
+                />
+                <RunResults runId={id} files={record.files ?? []} />
+              </>
+            )}
+
+            {run && (
+              <OutputAccordion
+                run={run}
+                logStream={{ lines: logs, status: record?.status }}
+              />
+            )}
+
             {(record?.output_dir || record?.work_dir) && (
               <footer className="text-muted-foreground grid gap-1 border-t pt-4 text-xs">
-                {record?.output_dir && (
-                  <div className="flex flex-wrap items-baseline gap-x-2">
-                    <span>Output folder</span>
-                    <span className="font-mono break-all">
-                      {record.output_dir}
-                    </span>
-                    <Button
-                      type="button"
-                      variant="link"
-                      className="h-auto p-0 text-xs"
-                      onClick={() => openPath(record.output_dir as string)}
-                    >
-                      Open
-                    </Button>
-                  </div>
-                )}
                 {record?.work_dir && (
                   <div className="flex flex-wrap items-baseline gap-x-2">
                     <span>Work folder</span>
@@ -217,5 +207,5 @@ export function RunPage({ id }: { id: string }) {
         </main>
       </div>
     </div>
-  )
+  );
 }
