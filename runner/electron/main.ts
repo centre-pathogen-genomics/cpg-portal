@@ -78,6 +78,10 @@ function preloadPath(): string {
   return path.join(path.dirname(process.argv[1] ?? ""), "preload.js")
 }
 
+// Where the app's own portal lives, e.g. to send the user to the tool list on
+// a first run. Passed in by the dev script or the environment.
+const portalUrl = (process.env.CPG_RUNNER_PORTAL_URL || "").replace(/\/+$/, "")
+
 const token = randomUUID()
 
 let mainWindow: BrowserWindow | null = null
@@ -342,7 +346,10 @@ function createWindow(): BrowserWindow {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
-      additionalArguments: [`--cpg-token=${token}`],
+      additionalArguments: [
+        `--cpg-token=${token}`,
+        ...(portalUrl ? [`--cpg-portal=${portalUrl}`] : []),
+      ],
     },
   })
   window.webContents.setWindowOpenHandler(({ url }) => {
@@ -560,7 +567,11 @@ function startSidecar(toolId: string): Promise<number> {
 function isAllowedExternalUrl(rawUrl: string): boolean {
   try {
     const url = new URL(rawUrl)
-    return url.protocol === "https:" && EXTERNAL_HOSTS[url.hostname] === true
+    if (url.protocol === "https:" && EXTERNAL_HOSTS[url.hostname] === true) {
+      return true
+    }
+    // The portal this app belongs to, where tools are downloaded from.
+    return portalUrl !== "" && url.origin === new URL(portalUrl).origin
   } catch {
     return false
   }

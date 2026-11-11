@@ -13,6 +13,8 @@ declare global {
   interface Window {
     cpgRunner?: {
       token: string
+      /** Origin of the portal this build belongs to; empty when unknown. */
+      portalUrl: string
       tools(): Promise<ToolEntry[]>
       importPacks(): Promise<ToolEntry[]>
       importPackPaths(files: string[]): Promise<ToolEntry[]>

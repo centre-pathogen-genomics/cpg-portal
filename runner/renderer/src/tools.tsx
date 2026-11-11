@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ToolSidebar } from "./components/ToolSidebar";
-import { filePathOf } from "./lib/desktop";
+import { filePathOf, openExternal } from "./lib/desktop";
 
 type ToolEntry = {
 	id: string;
@@ -20,15 +20,24 @@ function packPaths(files: FileList | File[]): string[] {
 		.filter((target) => target.length > 0);
 }
 
+function portalUrl(): string {
+	const fromApp = window.cpgRunner?.portalUrl;
+	if (fromApp) return fromApp;
+	const configured = import.meta.env.VITE_CPG_PORTAL_URL;
+	return typeof configured === "string" ? configured : "http://localhost:8000";
+}
+
 /**
- * What the window shows before a tool is open. Choosing one happens in the
- * sidebar; this page is the place to add another.
+ * What the window shows before a tool is open: on a first run, the way to get
+ * one. Choosing a tool afterwards happens in the sidebar.
  */
 export function ToolsPage() {
 	const bridge = window.cpgRunner;
 	const [tools, setTools] = useState<ToolEntry[]>([]);
 	const [busy, setBusy] = useState(false);
 	const [dragging, setDragging] = useState(false);
+	const firstRun = tools.length === 0;
+	const portal = portalUrl();
 
 	useEffect(() => {
 		void bridge?.tools().then(setTools);
@@ -61,43 +70,52 @@ export function ToolsPage() {
 			<ToolSidebar activeToolId={null} />
 
 			<main className="flex min-h-0 min-w-0 flex-1 items-center justify-center p-8">
-				<div className="grid max-w-md gap-4 text-center">
-					<div>
-						<h1 className="text-xl font-semibold">
-							{tools.length > 0 ? "Choose a tool" : "Add a tool"}
-						</h1>
-						<p className="text-muted-foreground mt-1 text-sm">
-							{tools.length > 0
-								? "Pick a tool on the left to run it on this computer."
-								: "Download a tool pack from a tool page on the portal and open it here."}
-						</p>
-					</div>
+				<div className="bg-card w-full max-w-lg rounded-xl border p-8 text-center shadow-sm">
+					<h1 className="text-xl font-semibold">
+						{firstRun ? "Add your first tool to get started" : "Choose a tool"}
+					</h1>
+					<p className="text-muted-foreground mt-2 text-sm">
+						{firstRun
+							? "Pick a tool on the portal, download its pack, then open it here. Input files never leave this computer."
+							: "Pick a tool on the left to run it on this computer."}
+					</p>
 
-					<div
-						className={`rounded-lg border border-dashed p-6 text-sm ${dragging ? "border-primary bg-muted" : "text-muted-foreground"}`}
-						onDragOver={(event) => {
-							event.preventDefault();
-							setDragging(true);
-						}}
-						onDragLeave={() => setDragging(false)}
-						onDrop={(event) => {
-							event.preventDefault();
-							setDragging(false);
-							importDropped(event.dataTransfer.files);
-						}}
-					>
-						<p>Drop a .cpgpack here to add or update a tool.</p>
+					<div className="mt-6 grid gap-3">
 						<Button
 							type="button"
 							variant="outline"
-							className="mt-3"
-							disabled={busy || !bridge}
-							onClick={() =>
-								bridge && void importPacks(() => bridge.importPacks())
-							}
+							onClick={() => openExternal(portal)}
 						>
-							Import tool pack
+							Open the portal
 						</Button>
+
+						<div
+							className={`rounded-lg border border-dashed p-6 text-sm ${dragging ? "border-primary bg-muted" : "text-muted-foreground"}`}
+							onDragOver={(event) => {
+								event.preventDefault();
+								setDragging(true);
+							}}
+							onDragLeave={() => setDragging(false)}
+							onDrop={(event) => {
+								event.preventDefault();
+								setDragging(false);
+								importDropped(event.dataTransfer.files);
+							}}
+						>
+							<p>Drop a .cpgpack here</p>
+							<Button
+								type="button"
+								variant="ghost"
+								size="sm"
+								className="mt-2"
+								disabled={busy || !bridge}
+								onClick={() =>
+									bridge && void importPacks(() => bridge.importPacks())
+								}
+							>
+								or choose a file
+							</Button>
+						</div>
 					</div>
 				</div>
 			</main>

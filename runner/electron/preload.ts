@@ -17,8 +17,17 @@ const token = tokenArgument
   ? tokenArgument.slice(TOKEN_ARGUMENT.length)
   : ""
 
+const PORTAL_ARGUMENT = "--cpg-portal="
+const portalArgument = process.argv.find((argument) =>
+  argument.startsWith(PORTAL_ARGUMENT),
+)
+const portalUrl = portalArgument
+  ? portalArgument.slice(PORTAL_ARGUMENT.length)
+  : ""
+
 contextBridge.exposeInMainWorld("cpgRunner", {
   token,
+  portalUrl,
   tools: (): Promise<ToolEntry[]> => ipcRenderer.invoke("runner:tools"),
   importPacks: (): Promise<ToolEntry[]> =>
     ipcRenderer.invoke("runner:import-packs"),
