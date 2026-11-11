@@ -10,6 +10,8 @@ directories: { output: dist, buildResources: build }
 files: ["dist/electron/**/*", "package.json"]
 extraResources:
   - { from: sidecar/dist/cpg-runner, to: sidecar/cpg-runner }
+  # The portal's mark, shown by the splash window while the runner starts.
+  - { from: ../frontend/public/assets/images/cpg-logo.png, to: logo.png }
   - { from: renderer/dist, to: renderer }
 mac:
   category: public.app-category.utilities

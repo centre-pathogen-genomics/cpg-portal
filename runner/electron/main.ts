@@ -11,6 +11,8 @@ import {
   type OpenDialogOptions,
 } from "electron"
 
+import { splashHtml } from "./splash"
+
 const SIDECAR_READY = /^CPG_RUNNER_READY (\{.*\})$/
 // Generous: the packaged sidecar unpacks itself on first launch, and a machine
 // under load can be slow. A wedged sidecar still fails, it just takes longer.
@@ -79,6 +81,7 @@ function preloadPath(): string {
 const token = randomUUID()
 
 let mainWindow: BrowserWindow | null = null
+let splashWindow: BrowserWindow | null = null
 let shuttingDown = false
 let lastToolId: string | null = null
 const sidecars = new Map<string, Sidecar>()
@@ -239,7 +242,67 @@ function stopAllSidecars(): void {
 
 function fail(title: string, detail: string): void {
   if (shuttingDown) return
+  closeSplash()
   dialog.showErrorBox(title, detail)
+}
+
+// The portal's own mark, so the app looks like the product while it starts.
+function logoFile(): string {
+  if (process.env.CPG_RUNNER_LOGO) {
+    return path.resolve(process.env.CPG_RUNNER_LOGO)
+  }
+  if (app.isPackaged) {
+    return path.join(process.resourcesPath, "logo.png")
+  }
+  // From source, `dist/electron/main.js` sits three levels below the repository.
+  return path.resolve(
+    path.dirname(process.argv[1] ?? ""),
+    "../../../frontend/public/assets/images/cpg-logo.png",
+  )
+}
+
+// A data: document may not load a file:// image, so the logo travels inline.
+function logoDataUrl(): string {
+  try {
+    return `data:image/png;base64,${fs.readFileSync(logoFile()).toString("base64")}`
+  } catch (error) {
+    console.error(`Could not read the logo at ${logoFile()}: ${String(error)}`)
+    return ""
+  }
+}
+
+function showSplash(): void {
+  if (splashWindow) return
+  splashWindow = new BrowserWindow({
+    width: 380,
+    height: 300,
+    show: false,
+    frame: false,
+    resizable: false,
+    movable: true,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    skipTaskbar: true,
+    alwaysOnTop: true,
+    focusable: false,
+    backgroundColor: "#ffffff",
+    webPreferences: { sandbox: true, contextIsolation: true },
+  })
+  splashWindow.once("ready-to-show", () => splashWindow?.show())
+  splashWindow.on("closed", () => {
+    splashWindow = null
+  })
+  void splashWindow.loadURL(
+    `data:text/html;charset=utf-8,${encodeURIComponent(
+      splashHtml(logoDataUrl()),
+    )}`,
+  )
+}
+
+function closeSplash(): void {
+  splashWindow?.destroy()
+  splashWindow = null
 }
 
 function createWindow(): BrowserWindow {
@@ -252,6 +315,8 @@ function createWindow(): BrowserWindow {
   const window = new BrowserWindow({
     width: 1100,
     height: 800,
+    // Shown once the first page has painted, so the splash stays until then.
+    show: false,
     webPreferences: {
       preload: preloadPath(),
       contextIsolation: true,
@@ -265,6 +330,10 @@ function createWindow(): BrowserWindow {
       void shell.openExternal(url)
     }
     return { action: "deny" }
+  })
+  window.once("ready-to-show", () => {
+    closeSplash()
+    window.show()
   })
   window.on("closed", () => {
     mainWindow = null
@@ -306,6 +375,7 @@ async function showHome(): Promise<void> {
 }
 
 async function showTool(toolId: string): Promise<void> {
+  if (!sidecars.has(toolId)) showSplash()
   const window = createWindow()
   const port = await ensureSidecarWithRetry(toolId)
   lastToolId = toolId
@@ -610,11 +680,13 @@ function start(): void {
   })
 
   app.on("window-all-closed", () => {
+    closeSplash()
     app.quit()
   })
 
   app.on("before-quit", () => {
     shuttingDown = true
+    closeSplash()
     stopAllSidecars()
   })
 
@@ -622,6 +694,8 @@ function start(): void {
     .whenReady()
     .then(async () => {
       registerIpcHandlers()
+      // The first start builds the tool environment, so show something at once.
+      showSplash()
       const packs = [...openedBeforeReady, ...packArguments(process.argv)]
       openedBeforeReady.length = 0
       if (packs.length > 0) {
