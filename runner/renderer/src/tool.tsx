@@ -13,7 +13,7 @@ import { ApiError, api, errorMessage } from "./api";
 import { DockerSetupDialog } from "./components/DockerSetupDialog";
 import { InstallDialog } from "./components/InstallDialog";
 import { LocalFilePicker } from "./components/LocalFilePicker";
-import { ToolBadges } from "./components/ToolBadges"
+import { ToolBadges } from "./components/ToolBadges";
 import { ToolHeading } from "./components/ToolHeading";
 import { placeholderImage, useToolImages } from "./components/ToolImage";
 import { ToolSidebar } from "./components/ToolSidebar";
@@ -229,46 +229,47 @@ export function ToolPage() {
       <ToolSidebar activeToolId={tool.id} />
 
       <ToolRunForm
-          formKey={tool.id}
-          params={tool.params}
-          minCpus={tool.min_cpus}
-          userMaxCpus={status.cpus_available}
-          defaultCpus={settings.cpus}
-          isDisabled={!canRun}
-          submitLabel="Run locally"
-          onSubmit={submitLocally}
-          mapError={fieldError}
-          initialValues={rerunValues}
-          initialValuesReady={rerunChecked}
-          initialThreads={rerunRun?.cpus ?? null}
-          className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_360px]"
-          renderFilePicker={({ param, values, onChange, disabled }) => (
-            <LocalFilePicker
-              param={param}
-              values={values}
-              fileTypes={fileTypes}
-              disabled={disabled}
-              onChange={onChange}
+        formKey={tool.id}
+        params={tool.params}
+        minCpus={tool.min_cpus}
+        userMaxCpus={status.cpus_available}
+        defaultCpus={settings.cpus}
+        isDisabled={!canRun}
+        submitLabel="Run locally"
+        onSubmit={submitLocally}
+        mapError={fieldError}
+        initialValues={rerunValues}
+        initialValuesReady={rerunChecked}
+        initialThreads={rerunRun?.cpus ?? null}
+        className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_360px]"
+        renderFilePicker={({ param, values, onChange, disabled }) => (
+          <LocalFilePicker
+            param={param}
+            values={values}
+            fileTypes={fileTypes}
+            disabled={disabled}
+            onChange={onChange}
+          />
+        )}
+        extras={
+          <div>
+            <Label htmlFor="CPG_RUNNER_RUN_NAME">Run name</Label>
+            <p className="mb-2 text-muted-foreground text-xs">
+              Optional, named automatically if left blank
+            </p>
+            <Input
+              id="CPG_RUNNER_RUN_NAME"
+              value={runName}
+              disabled={!canRun}
+              onChange={(event) => setRunName(event.target.value)}
             />
-          )}
-          extras={
-            <div>
-              <Label htmlFor="CPG_RUNNER_RUN_NAME">Run name</Label>
-              <p className="mb-2 text-muted-foreground text-xs">
-                Optional, named automatically if left blank
-              </p>
-              <Input
-                id="CPG_RUNNER_RUN_NAME"
-                value={runName}
-                disabled={!canRun}
-                onChange={(event) => setRunName(event.target.value)}
-              />
-            </div>
-          }
-          renderShell={({ params, settings: settingsPanel, submit }) => (
-            <>
-              <div className="flex min-h-0 min-w-0 flex-col">
-                <header className="shrink-0 px-8 py-4">
+          </div>
+        }
+        renderShell={({ params, settings: settingsPanel, submit }) => (
+          <>
+            <div className="flex min-h-0 min-w-0 flex-col">
+              <header className="shrink-0 px-8 py-4">
+                <div className="mx-auto max-w-6xl">
                   <ToolHeading
                     image={images[tool.id] ?? placeholderImage(tool.name)}
                     name={tool.name}
@@ -289,8 +290,8 @@ export function ToolPage() {
                           </button>
                         </>
                       ) : (
-                        // One line: the text truncates and the way to expand it
-                        // sits at its end instead of taking a line of its own.
+                        // One line: the text truncates and the way to expand
+                        // it sits at its end instead of taking a line.
                         <div className="flex min-w-0 items-baseline gap-1">
                           <p className="min-w-0 truncate text-sm">
                             {tool.description}
@@ -306,10 +307,11 @@ export function ToolPage() {
                       )}
                     </div>
                   )}
-                </header>
+                </div>
+              </header>
 
-                <section className="min-h-0 flex-1 overflow-y-auto px-8 py-6">
-                <div className="grid max-w-3xl gap-6">
+              <section className="min-h-0 flex-1 overflow-y-auto px-8 py-6">
+                <div className="mx-auto grid max-w-6xl gap-6">
                   <div>{params}</div>
 
                   {blockedReason && (
@@ -330,138 +332,138 @@ export function ToolPage() {
                     Input files stay on this computer; outputs go to the output
                     folder in the run settings.
                   </p>
-                  </div>
-                </section>
+                </div>
+              </section>
+            </div>
+
+            <aside className="flex min-h-0 flex-col border-l">
+              <div className="grid shrink-0 gap-2 border-b px-6 py-4">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => openExternal(portalToolUrl(tool.name))}
+                >
+                  <ExternalLink />
+                  Open in The CPG Portal
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="w-full justify-start"
+                  disabled={!doctorReady}
+                  onClick={() => void reinstall()}
+                >
+                  Reinstall environment
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="w-full justify-start"
+                  onClick={() => window.close()}
+                >
+                  Quit
+                </Button>
               </div>
 
-              <aside className="flex min-h-0 flex-col border-l">
-                <div className="grid shrink-0 gap-2 border-b px-6 py-4">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={() => openExternal(portalToolUrl(tool.name))}
-                  >
-                    <ExternalLink />
-                    Open in The CPG Portal
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="w-full justify-start"
-                    disabled={!doctorReady}
-                    onClick={() => void reinstall()}
-                  >
-                    Reinstall environment
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className="w-full justify-start"
-                    onClick={() => window.close()}
-                  >
-                    Quit
-                  </Button>
-                </div>
+              <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
+                <h2 className="mb-4 text-sm font-semibold">Run settings</h2>
+                <div className="grid gap-6">
+                  {settingsPanel}
 
-                <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
-                  <h2 className="mb-4 text-sm font-semibold">Run settings</h2>
-                  <div className="grid gap-6">
-                    {settingsPanel}
-
-                    <div>
-                      <Label htmlFor="runner-output">Output folder</Label>
-                      <p className="mb-2 text-muted-foreground text-xs">
-                        Finished runs are copied here.
-                      </p>
-                      <Input
-                        id="runner-output"
-                        readOnly
-                        value={settings.output_dir}
-                        className="font-mono text-xs"
-                      />
-                      <div className="mt-2 flex gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          disabled={!doctorReady}
-                          onClick={() => {
-                            void pickDirectory(settings.output_dir).then(
-                              (chosen) => {
-                                if (chosen)
-                                  void updateSettings({ output_dir: chosen });
-                              },
-                            );
-                          }}
-                        >
-                          Browse…
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          disabled={!doctorReady}
-                          onClick={() => openPath(settings.output_dir)}
-                        >
-                          <FolderOpen />
-                          Open
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between gap-4">
-                      <div>
-                        <Label htmlFor="runner-network">
-                          Allow network access
-                        </Label>
-                        <p className="text-muted-foreground text-xs">
-                          Turn this off for tools that must run offline.
-                        </p>
-                      </div>
-                      <Switch
-                        id="runner-network"
-                        checked={settings.network}
+                  <div>
+                    <Label htmlFor="runner-output">Output folder</Label>
+                    <p className="mb-2 text-muted-foreground text-xs">
+                      Finished runs are copied here.
+                    </p>
+                    <Input
+                      id="runner-output"
+                      readOnly
+                      value={settings.output_dir}
+                      className="font-mono text-xs"
+                    />
+                    <div className="mt-2 flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
                         disabled={!doctorReady}
-                        onCheckedChange={(checked) =>
-                          void updateSettings({ network: checked === true })
-                        }
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between gap-4">
-                      <div>
-                        <Label htmlFor="runner-clean-work">
-                          Clean up work folder
-                        </Label>
-                        <p className="text-muted-foreground text-xs">
-                          Delete the run&#39;s .cpg_work folder once its outputs
-                          are copied. Keep it to inspect the files a run left
-                          behind.
-                        </p>
-                      </div>
-                      <Switch
-                        id="runner-clean-work"
-                        checked={settings.clean_work_dir}
+                        onClick={() => {
+                          void pickDirectory(settings.output_dir).then(
+                            (chosen) => {
+                              if (chosen)
+                                void updateSettings({ output_dir: chosen });
+                            },
+                          );
+                        }}
+                      >
+                        Browse…
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
                         disabled={!doctorReady}
-                        onCheckedChange={(checked) =>
-                          void updateSettings({
-                            clean_work_dir: checked === true,
-                          })
-                        }
-                      />
+                        onClick={() => openPath(settings.output_dir)}
+                      >
+                        <FolderOpen />
+                        Open
+                      </Button>
                     </div>
                   </div>
+
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <Label htmlFor="runner-network">
+                        Allow network access
+                      </Label>
+                      <p className="text-muted-foreground text-xs">
+                        Turn this off for tools that must run offline.
+                      </p>
+                    </div>
+                    <Switch
+                      id="runner-network"
+                      checked={settings.network}
+                      disabled={!doctorReady}
+                      onCheckedChange={(checked) =>
+                        void updateSettings({ network: checked === true })
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <Label htmlFor="runner-clean-work">
+                        Clean up work folder
+                      </Label>
+                      <p className="text-muted-foreground text-xs">
+                        Delete the run&#39;s .cpg_work folder once its outputs
+                        are copied. Keep it to inspect the files a run left
+                        behind.
+                      </p>
+                    </div>
+                    <Switch
+                      id="runner-clean-work"
+                      checked={settings.clean_work_dir}
+                      disabled={!doctorReady}
+                      onCheckedChange={(checked) =>
+                        void updateSettings({
+                          clean_work_dir: checked === true,
+                        })
+                      }
+                    />
+                  </div>
                 </div>
-                <div className="bg-background shrink-0 border-t px-6 py-4">
-                  {submit}
-                </div>
-              </aside>
-            </>
-          )}
+              </div>
+              <div className="bg-background shrink-0 border-t px-6 py-4">
+                {submit}
+              </div>
+            </aside>
+          </>
+        )}
       />
 
       <DockerSetupDialog
