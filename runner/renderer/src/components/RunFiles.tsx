@@ -1,8 +1,9 @@
-import { Button } from "@/components/ui/button"
-import { humanReadableFileSize } from "@/utils"
-import type { RunFile } from "../contracts"
-import { openPath, revealPath } from "../lib/desktop"
-import { fileName } from "../lib/format"
+import { FolderOpen } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { humanReadableFileSize } from "@/utils";
+import type { RunFile } from "../contracts";
+import { openPath, revealPath } from "../lib/desktop";
+import { fileName } from "../lib/format";
 
 /**
  * What the run produced, one row per file, like the portal's Files section.
@@ -12,22 +13,22 @@ export function RunFiles({
   files,
   onOpenOutputFolder,
 }: {
-  files: RunFile[]
-  onOpenOutputFolder?: () => void
+  files: RunFile[];
+  onOpenOutputFolder?: () => void;
 }) {
   return (
     <section className="grid gap-3">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold">Files</h2>
+        <h2 className="text-xl font-semibold">Files</h2>
         {onOpenOutputFolder && (
-          <Button
+          <button
             type="button"
-            variant="link"
-            className="h-auto p-0 text-sm font-normal"
+            className="hover:text-primary flex items-center gap-1 font-semibold whitespace-nowrap"
             onClick={onOpenOutputFolder}
           >
+            <FolderOpen className="size-4" />
             Open output folder
-          </Button>
+          </button>
         )}
       </div>
       {files.length === 0 ? (
@@ -72,5 +73,5 @@ export function RunFiles({
         </ul>
       )}
     </section>
-  )
+  );
 }
