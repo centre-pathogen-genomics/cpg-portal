@@ -183,6 +183,9 @@ function importPack(file: string): ToolEntry {
   if (!("environment.yml" in files)) {
     fs.rmSync(path.join(directory, "environment.yml"), { force: true })
   }
+  // The running runner service read the old pack files at startup, so it has
+  // to go: the next visit starts one that reads the new ones.
+  stopSidecar(id)
   const entry = entryFor(id)
   if (!entry) throw new Error("The pack could not be read back.")
   return entry

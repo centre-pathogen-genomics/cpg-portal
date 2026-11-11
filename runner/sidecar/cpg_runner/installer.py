@@ -48,7 +48,6 @@ class Installer:
         self.docker = docker
         self.doctor = doctor
         self.store = store
-        self.needs_environment = resources.environment_yml is not None
         self.channel = EventChannel()
         # Injected by tests to keep the heartbeat quick.
         self.heartbeat_seconds = 5.0
@@ -58,6 +57,16 @@ class Installer:
         self._thread: threading.Thread | None = None
 
     # -- state -------------------------------------------------------------
+
+    @property
+    def needs_environment(self) -> bool:
+        """Whether the pack on disk still carries a conda environment.
+
+        Read live: importing a pack replaces its files, and a tool whose
+        environment was removed must not keep installing the old one.
+        """
+        path = self.resources.environment_yml
+        return path is not None and path.is_file()
 
     @property
     def state(self) -> str:
