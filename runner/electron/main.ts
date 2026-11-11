@@ -63,6 +63,19 @@ const uiDir =
   process.env.CPG_RUNNER_UI_DIR ||
   path.join(process.resourcesPath, "renderer")
 
+// Packaged, the preload sits in the app's dist; from source, next to the main
+// script Electron was given. `__dirname` is the source folder once bundled, so
+// it cannot be used here.
+function preloadPath(): string {
+  if (process.env.CPG_RUNNER_PRELOAD) {
+    return path.resolve(process.env.CPG_RUNNER_PRELOAD)
+  }
+  if (app.isPackaged) {
+    return path.join(app.getAppPath(), "dist", "electron", "preload.js")
+  }
+  return path.join(path.dirname(process.argv[1] ?? ""), "preload.js")
+}
+
 const token = randomUUID()
 
 let mainWindow: BrowserWindow | null = null
@@ -231,13 +244,16 @@ function fail(title: string, detail: string): void {
 
 function createWindow(): BrowserWindow {
   if (mainWindow) return mainWindow
+  const preload = preloadPath()
+  if (!fs.existsSync(preload)) {
+    // Without the preload the window has no bridge: no pickers, no imports.
+    console.error(`Preload script not found at ${preload}`)
+  }
   const window = new BrowserWindow({
     width: 1100,
     height: 800,
     webPreferences: {
-      // Bundling rewrites __dirname to the source folder, so derive the
-      // preload path from the packaged app layout instead.
-      preload: path.join(app.getAppPath(), "dist", "electron", "preload.js"),
+      preload: preloadPath(),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
