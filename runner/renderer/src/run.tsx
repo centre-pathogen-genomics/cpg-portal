@@ -112,7 +112,8 @@ export function RunPage({ id }: { id: string }) {
                 New run
               </Button>
               <h1 className="text-xl font-semibold">
-                Run {record?.id ? record.id.slice(0, 8) : id.slice(0, 8)}
+                {record?.name ||
+                  `Run ${record?.id ? record.id.slice(0, 8) : id.slice(0, 8)}`}
               </h1>
               {record && <StatusBadge status={record.status} />}
               {record && (

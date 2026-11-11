@@ -119,6 +119,7 @@ export type RunFile = {
 
 export type RunRecord = {
   id: string
+  name?: string | null
   status: RunStatus
   command?: string
   cpus?: number
@@ -148,6 +149,7 @@ export function toRunPublic(
 ): RunPublic {
   return {
     id: run.id,
+    name: run.name ?? "",
     status: run.status,
     params: run.params ?? {},
     cpus: run.cpus,

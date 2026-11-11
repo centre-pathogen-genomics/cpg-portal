@@ -51,6 +51,15 @@ def test_requests_need_the_token(tmp_path):
     )
 
 
+def test_a_run_takes_its_name(tmp_path):
+    client, _ = _client(tmp_path)
+    response = client.post(
+        "/api/runs", json={"params": {}, "cpus": 1, "name": "my run"}, headers=HEADERS
+    )
+    assert response.status_code == 201
+    assert response.json()["name"] == "my run"
+
+
 def test_install_state_transitions(tmp_path):
     client, installer = _client(tmp_path)
     status = client.get("/api/status", headers=HEADERS).json()

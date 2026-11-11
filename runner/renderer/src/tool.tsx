@@ -1,14 +1,17 @@
+import { FolderOpen } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { toast } from "sonner"
 import RenderMarkdown from "@/components/Common/Markdown"
 import ToolRunForm from "@/components/Tools/ToolRunForm"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
 import { ApiError, api, errorMessage } from "./api"
 import { DockerSetupDialog } from "./components/DockerSetupDialog"
 import { InstallDialog } from "./components/InstallDialog"
 import { LocalFilePicker } from "./components/LocalFilePicker"
-import { RunSettingsCard } from "./components/RunSettingsCard"
 import { ToolSidebar } from "./components/ToolSidebar"
 import {
   currentInstallState,
@@ -21,6 +24,7 @@ import {
   type ToolPayload,
   unwrapTool,
 } from "./contracts"
+import { openPath, pickDirectory } from "./lib/desktop"
 import { navigate } from "./router"
 
 const FIELD_ERROR =
@@ -34,6 +38,9 @@ export function ToolPage() {
   const [forcedDoctor, setForcedDoctor] = useState<DoctorReport | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [installDismissed, setInstallDismissed] = useState(false)
+  const [runName, setRunName] = useState("")
+  const [draft, setDraft] = useState<Settings | null>(null)
+  const [saving, setSaving] = useState(false)
 
   const refreshStatus = useCallback(async () => {
     const next = await api.get<StatusPayload>("/status")
@@ -66,6 +73,10 @@ export function ToolPage() {
     void loadAll()
   }, [loadAll])
 
+  useEffect(() => {
+    if (settings) setDraft(settings)
+  }, [settings])
+
   const effectiveDoctor = forcedDoctor ?? status?.doctor ?? null
   const doctorReady = effectiveDoctor?.ready === true
   const installState = status ? currentInstallState(status) : null
@@ -89,13 +100,16 @@ export function ToolPage() {
       ? "The tool environment is not installed."
       : null
 
-  async function saveSettings(draft: Settings) {
+  async function saveSettings(next: Settings) {
+    setSaving(true)
     try {
-      await api.put("/settings", draft)
-      setSettings(draft)
+      await api.put("/settings", next)
+      setSettings(next)
       toast.success("Settings saved")
     } catch (error) {
       toast.error(errorMessage(error))
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -109,7 +123,11 @@ export function ToolPage() {
     cpus: number
   }) {
     try {
-      const record = await api.post<RunRecord>("/runs", { params, cpus })
+      const record = await api.post<RunRecord>("/runs", {
+        params,
+        cpus,
+        name: runName.trim() || undefined,
+      })
       navigate(`/run?id=${record.id}`)
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
@@ -158,6 +176,8 @@ export function ToolPage() {
       </div>
     )
   }
+
+  const settingsDraft = draft ?? settings
 
   return (
     <div className="flex h-full">
@@ -210,6 +230,20 @@ export function ToolPage() {
               onChange={onChange}
             />
           )}
+          extras={
+            <div>
+              <Label htmlFor="CPG_RUNNER_RUN_NAME">Run name</Label>
+              <p className="mb-2 text-muted-foreground text-xs">
+                Optional, named automatically if left blank
+              </p>
+              <Input
+                id="CPG_RUNNER_RUN_NAME"
+                value={runName}
+                disabled={!canRun}
+                onChange={(event) => setRunName(event.target.value)}
+              />
+            </div>
+          }
           renderShell={({ params, settings: settingsPanel, submit }) => (
             <>
               <section className="min-h-0 overflow-y-auto px-8 py-6">
@@ -235,8 +269,8 @@ export function ToolPage() {
                   )}
 
                   <p className="text-muted-foreground text-xs">
-                    Input files stay on this computer; outputs go to the folder
-                    in the run settings.
+                    Input files stay on this computer; outputs go to the output
+                    folder in the run settings.
                   </p>
                 </div>
               </section>
@@ -246,11 +280,83 @@ export function ToolPage() {
                   <h2 className="mb-4 text-sm font-semibold">Run settings</h2>
                   <div className="grid gap-6">
                     {settingsPanel}
-                    <RunSettingsCard
-                      settings={settings}
-                      disabled={!doctorReady}
-                      onSave={saveSettings}
-                    />
+
+                    <div>
+                      <Label htmlFor="runner-output">Output folder</Label>
+                      <p className="mb-2 text-muted-foreground text-xs">
+                        Finished runs are copied here.
+                      </p>
+                      <Input
+                        id="runner-output"
+                        readOnly
+                        value={settingsDraft.output_dir}
+                        className="font-mono text-xs"
+                      />
+                      <div className="mt-2 flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={!doctorReady}
+                          onClick={() => {
+                            void pickDirectory(settingsDraft.output_dir).then(
+                              (chosen) => {
+                                if (chosen)
+                                  setDraft({
+                                    ...settingsDraft,
+                                    output_dir: chosen,
+                                  })
+                              },
+                            )
+                          }}
+                        >
+                          Browse…
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={!doctorReady}
+                          onClick={() => openPath(settingsDraft.output_dir)}
+                        >
+                          <FolderOpen />
+                          Open
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <Label htmlFor="runner-network">
+                          Allow network access
+                        </Label>
+                        <p className="text-muted-foreground text-xs">
+                          Turn this off for tools that must run offline.
+                        </p>
+                      </div>
+                      <Switch
+                        id="runner-network"
+                        checked={settingsDraft.network}
+                        disabled={!doctorReady}
+                        onCheckedChange={(checked) =>
+                          setDraft({
+                            ...settingsDraft,
+                            network: checked === true,
+                          })
+                        }
+                      />
+                    </div>
+
+                    <div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={!doctorReady || saving}
+                        onClick={() => void saveSettings(settingsDraft)}
+                      >
+                        {saving ? "Saving…" : "Save settings"}
+                      </Button>
+                    </div>
                   </div>
                 </div>
                 <div className="bg-background shrink-0 border-t px-6 py-4">

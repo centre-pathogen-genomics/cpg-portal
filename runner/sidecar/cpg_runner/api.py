@@ -46,6 +46,7 @@ class SettingsUpdate(BaseModel):
 class RunRequest(BaseModel):
     params: dict[str, Any] = Field(default_factory=dict)
     cpus: int = 1
+    name: str | None = None
 
 
 def create_app(
@@ -304,7 +305,7 @@ def create_app(
                 status_code=409, detail="The tool environment is not installed"
             )
         try:
-            record = runs.start(payload.params, payload.cpus)
+            record = runs.start(payload.params, payload.cpus, name=payload.name or "")
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         return record.model_dump()

@@ -217,11 +217,12 @@ class FakeRunManager:
         self.records: dict[str, RunRecord] = {}
         self.channels: dict[str, EventChannel] = {}
 
-    def start(self, params: dict, cpus: int) -> RunRecord:
+    def start(self, params: dict, cpus: int, *, name: str = "") -> RunRecord:
         if params.get("fail"):
             raise ValueError("Missing required parameter: x")
         record = RunRecord(
             id=str(uuid.uuid4()),
+            name=name or "unnamed-run",
             status="pending",
             params=params,
             cpus=cpus,

@@ -37,6 +37,7 @@ class RunFile(BaseModel):
 
 class RunRecord(BaseModel):
     id: str
+    name: str = ""
     status: str = "pending"
     params: dict[str, Any] = Field(default_factory=dict)
     cpus: int = 1
@@ -65,6 +66,16 @@ def _now() -> str:
 
 def _timestamp() -> str:
     return datetime.now().strftime("%Y%m%d-%H%M%S")
+
+
+def default_name(tool: ToolConfig, records: dict[str, RunRecord]) -> str:
+    """Name for a run left unnamed, e.g. ``Sleep-20261023-001``."""
+    now = datetime.now(timezone.utc)
+    today = now.strftime("%Y-%m-%d")
+    runs_today = sum(
+        1 for record in records.values() if record.created_at.startswith(today)
+    )
+    return f"{tool.name}-{now:%Y%m%d}-{runs_today + 1:03d}"
 
 
 def resolve_cpus(
@@ -142,7 +153,9 @@ class RunManager:
                 self.docker.rm_force(run_container_name(record.id))
             self._records[record.id] = record
 
-    def start(self, submitted: dict[str, Any], cpus: int) -> RunRecord:
+    def start(
+        self, submitted: dict[str, Any], cpus: int, *, name: str = ""
+    ) -> RunRecord:
         file_paths: dict[str, list[str]] = {}
         for param in self.tool.params:
             if str(param["param_type"]) != "file":
@@ -157,6 +170,7 @@ class RunManager:
         run_id = str(uuid.uuid4())
         record = RunRecord(
             id=run_id,
+            name=name.strip()[:255] or default_name(self.tool, self._records),
             status="pending",
             params=resolved,
             cpus=actual_cpus,

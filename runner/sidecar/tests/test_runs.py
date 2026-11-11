@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from pathlib import Path
 
 from cpg_runner import runs as runs_module
@@ -124,3 +125,14 @@ def test_setup_files_are_rendered(tmp_path):
     assert manager.get(record.id).status == "completed"
     work = tmp_path / "data" / "runs" / record.id / "work"
     assert (work / "config.txt").read_text() == "x=value"
+
+
+def test_a_run_keeps_the_given_name_or_names_itself(tmp_path):
+    manager = _manager(tmp_path, make_tool(), WritingDocker())
+
+    named = manager.start({}, 1, name="  my run  ")
+    assert named.name == "my run"
+
+    unnamed = manager.start({}, 1)
+    # Named after the tool and the day, numbered after the runs before it.
+    assert unnamed.name == f"my tool-{datetime.now(timezone.utc):%Y%m%d}-002"
