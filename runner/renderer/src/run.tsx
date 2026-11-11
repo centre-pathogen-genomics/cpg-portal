@@ -137,16 +137,7 @@ export function RunPage({ id }: { id: string }) {
                   Cancel
                 </Button>
               )}
-              {record?.output_dir && (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => openPath(record.output_dir as string)}
-                >
-                  Open output folder
-                </Button>
-              )}
+
             </div>
           </div>
         </header>
@@ -182,6 +173,33 @@ export function RunPage({ id }: { id: string }) {
               <h2 className="text-lg font-semibold">Outputs</h2>
               <RunOutputs runId={id} files={record?.files ?? []} />
             </section>
+
+            {record?.output_dir && (
+              <section className="grid gap-2">
+                <h2 className="text-lg font-semibold">Output folder</h2>
+                <p className="text-muted-foreground font-mono text-xs break-all">
+                  {record.output_dir}
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => openPath(record.output_dir as string)}
+                  >
+                    Open
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => revealPath(record.output_dir as string)}
+                  >
+                    Show in folder
+                  </Button>
+                </div>
+              </section>
+            )}
 
             {record?.work_dir && (
               <section className="grid gap-2">
