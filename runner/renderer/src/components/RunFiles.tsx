@@ -1,4 +1,3 @@
-import { FolderOpen } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { humanReadableFileSize } from "@/utils"
 import type { RunFile } from "../contracts"
@@ -23,11 +22,10 @@ export function RunFiles({
         {onOpenOutputFolder && (
           <Button
             type="button"
-            size="sm"
-            variant="outline"
+            variant="link"
+            className="h-auto p-0 text-sm font-normal"
             onClick={onOpenOutputFolder}
           >
-            <FolderOpen />
             Open output folder
           </Button>
         )}
