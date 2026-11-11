@@ -26,6 +26,8 @@ from .params import _path_list, resolve_params
 from .state import StateStore
 
 TERMINAL_STATUSES = {"completed", "failed", "cancelled"}
+# Where a run works, inside the output folder the settings name.
+WORK_DIR_NAME = ".cpg_work"
 MAX_CPUS = 1024
 
 
@@ -48,6 +50,7 @@ class RunRecord(BaseModel):
     exit_code: int | None = None
     stdout: str = ""
     error: str | None = None
+    work_dir: str | None = None
     output_dir: str | None = None
     files: list[RunFile] = Field(default_factory=list)
 
@@ -196,7 +199,7 @@ class RunManager:
             raise RunConflict("Run already finished")
         self._cancelled.add(run_id)
         self.docker.rm_force(run_container_name(run_id))
-        self._set_status(record, "cancelled", finished_at=_now())
+        self._finish(record, "cancelled")
         return record
 
     def subscribe(self, run_id: str) -> tuple[list[dict[str, Any]], EventChannel]:
@@ -224,7 +227,7 @@ class RunManager:
         if run_id in self._cancelled:
             return
         try:
-            dirs = self._prepare_dirs(run_id)
+            dirs = self._prepare_dirs(record)
             self._copy_inputs(record, dirs["inputs"], dirs["work"])
             self._write_setup_files(record, dirs["work"])
             command = self._render_command(record)
@@ -274,17 +277,26 @@ class RunManager:
         self._finish(record, "completed", exit_code=exit_code)
 
     def _run_dir(self, run_id: str) -> Path:
-        return self.store.runs_dir / run_id
+        """The run's own folder inside the output folder's work directory."""
+        output_dir = Path(self.store.load_settings().output_dir)
+        return output_dir / WORK_DIR_NAME / run_id
 
-    def _prepare_dirs(self, run_id: str) -> dict[str, Path]:
-        base = self._run_dir(run_id)
+    def _prepare_dirs(self, record: RunRecord) -> dict[str, Path]:
+        base = self._run_dir(record.id)
         dirs = {
             "work": base / "work",
             "tmp": base / "tmp",
             "inputs": base / "inputs",
         }
-        for path in dirs.values():
-            path.mkdir(parents=True, exist_ok=True)
+        try:
+            for path in dirs.values():
+                path.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            raise RuntimeError(
+                f"Could not write to output folder: "
+                f"{self.store.load_settings().output_dir}"
+            ) from exc
+        record.work_dir = str(base)
         return dirs
 
     def _copy_inputs(self, record: RunRecord, inputs_dir: Path, work_dir: Path) -> None:
@@ -426,4 +438,24 @@ class RunManager:
             record.error = error
         if record.finished_at is None:
             record.finished_at = _now()
+        self._clean_work_dir(record)
         self._set_status(record, status)
+
+    def _clean_work_dir(self, record: RunRecord) -> None:
+        """Remove the run's work folder when the settings ask for it.
+
+        The outputs are already copied out, so all that is left there are the
+        inputs, the command's temp files and whatever else it wrote.
+        """
+        if record.work_dir is None:
+            return
+        if not self.store.load_settings().clean_work_dir:
+            return
+        base = Path(record.work_dir)
+        shutil.rmtree(base, ignore_errors=True)
+        try:
+            base.parent.rmdir()
+        except OSError:
+            # Another run is still working there, or it is gone already.
+            pass
+        record.work_dir = None

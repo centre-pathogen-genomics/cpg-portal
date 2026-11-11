@@ -333,6 +333,29 @@ export function ToolPage() {
                         }
                       />
                     </div>
+
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <Label htmlFor="runner-clean-work">
+                          Clean up work folder
+                        </Label>
+                        <p className="text-muted-foreground text-xs">
+                          Delete the run&#39;s .cpg_work folder once its outputs
+                          are copied. Keep it to inspect the files a run left
+                          behind.
+                        </p>
+                      </div>
+                      <Switch
+                        id="runner-clean-work"
+                        checked={settings.clean_work_dir}
+                        disabled={!doctorReady}
+                        onCheckedChange={(checked) =>
+                          void updateSettings({
+                            clean_work_dir: checked === true,
+                          })
+                        }
+                      />
+                    </div>
                   </div>
                 </div>
                 <div className="bg-background shrink-0 border-t px-6 py-4">

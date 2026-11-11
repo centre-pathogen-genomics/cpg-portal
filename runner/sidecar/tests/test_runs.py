@@ -29,6 +29,17 @@ def _manager(tmp_path, tool, docker):
     )
 
 
+def _work_root(tmp_path, record):
+    return tmp_path / "documents" / "CPG Runs" / "my tool" / ".cpg_work" / record.id
+
+
+def _keep_work(manager):
+    store = manager.store
+    store.save_settings(
+        store.load_settings().model_copy(update={"clean_work_dir": False})
+    )
+
+
 def test_completed_run_copies_outputs_and_streams_status(tmp_path):
     docker = WritingDocker()
     manager = _manager(tmp_path, make_tool(), docker)
@@ -100,11 +111,12 @@ def test_input_files_are_copied_and_linked_into_work(tmp_path):
         ],
     )
     manager = _manager(tmp_path, tool, WritingDocker())
+    _keep_work(manager)
     source = tmp_path / "input.fasta"
     source.write_text(">a\nACGT\n")
     record = manager.start({"seq": [str(source)]}, 1)
     wait_for(lambda: manager.get(record.id).status in TERMINAL_STATUSES)
-    run_dir = tmp_path / "data" / "runs" / record.id
+    run_dir = _work_root(tmp_path, record)
     assert (run_dir / "inputs" / "input.fasta").read_text() == ">a\nACGT\n"
     link = run_dir / "work" / "input.fasta"
     assert link.is_symlink()
@@ -120,10 +132,11 @@ def test_setup_files_are_rendered(tmp_path):
         targets=[],
     )
     manager = _manager(tmp_path, tool, WritingDocker())
+    _keep_work(manager)
     record = manager.start({}, 1)
     wait_for(lambda: manager.get(record.id).status in TERMINAL_STATUSES)
     assert manager.get(record.id).status == "completed"
-    work = tmp_path / "data" / "runs" / record.id / "work"
+    work = _work_root(tmp_path, record) / "work"
     assert (work / "config.txt").read_text() == "x=value"
 
 
@@ -151,3 +164,34 @@ def test_a_run_still_gets_the_tools_minimum(tmp_path):
     record = manager.start({}, 1)
     assert record.cpus == 4
     wait_for(lambda: manager.get(record.id).status in TERMINAL_STATUSES)
+
+
+def test_a_run_works_in_the_output_folder_and_cleans_up_afterwards(tmp_path):
+    docker = WritingDocker()
+    manager = _manager(tmp_path, make_tool(), docker)
+    record = manager.start({}, 1)
+    wait_for(lambda: manager.get(record.id).status in TERMINAL_STATUSES)
+
+    work_mount = next(
+        arg for arg in docker.run_args[0] if arg.endswith(",target=/work")
+    )
+    work_dir = Path(work_mount.split("source=", 1)[1].split(",", 1)[0])
+    assert work_dir == _work_root(tmp_path, record) / "work"
+
+    finished = manager.get(record.id)
+    assert finished.status == "completed"
+    assert finished.work_dir is None
+    # The outputs stay; the work folder and its parent go with the run.
+    assert Path(finished.output_dir, "out.txt").read_text() == "hi"
+    assert not (tmp_path / "documents" / "CPG Runs" / "my tool" / ".cpg_work").exists()
+
+
+def test_the_work_folder_can_be_kept(tmp_path):
+    manager = _manager(tmp_path, make_tool(), WritingDocker())
+    _keep_work(manager)
+    record = manager.start({}, 1)
+    wait_for(lambda: manager.get(record.id).status in TERMINAL_STATUSES)
+
+    finished = manager.get(record.id)
+    assert finished.work_dir == str(_work_root(tmp_path, record))
+    assert (Path(finished.work_dir) / "work" / "out.txt").read_text() == "hi"

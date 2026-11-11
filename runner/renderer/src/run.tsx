@@ -14,7 +14,7 @@ import {
   type ToolConfig,
   toRunPublic,
 } from "./contracts"
-import { openPath } from "./lib/desktop"
+import { openPath, revealPath } from "./lib/desktop"
 import { navigate } from "./router"
 
 export function RunPage({ id }: { id: string }) {
@@ -182,6 +182,33 @@ export function RunPage({ id }: { id: string }) {
               <h2 className="text-lg font-semibold">Outputs</h2>
               <RunOutputs runId={id} files={record?.files ?? []} />
             </section>
+
+            {record?.work_dir && (
+              <section className="grid gap-2">
+                <h2 className="text-lg font-semibold">Work folder</h2>
+                <p className="text-muted-foreground font-mono text-xs break-all">
+                  {record.work_dir}
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => openPath(record.work_dir as string)}
+                  >
+                    Open
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => revealPath(record.work_dir as string)}
+                  >
+                    Show in folder
+                  </Button>
+                </div>
+              </section>
+            )}
           </div>
         </main>
       </div>

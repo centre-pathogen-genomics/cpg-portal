@@ -42,6 +42,7 @@ class SettingsUpdate(BaseModel):
     cpus: int
     output_dir: str
     network: bool = True
+    clean_work_dir: bool = True
 
 
 class RunRequest(BaseModel):
@@ -284,6 +285,7 @@ def create_app(
             cpus=payload.cpus,
             output_dir=payload.output_dir,
             network=payload.network,
+            clean_work_dir=payload.clean_work_dir,
         )
         store.save_settings(settings)
         return settings.model_dump()

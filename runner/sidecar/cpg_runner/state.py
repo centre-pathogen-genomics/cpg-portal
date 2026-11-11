@@ -17,6 +17,10 @@ class Settings(BaseModel):
     cpus: int
     output_dir: str
     network: bool = True
+    # A run works inside <output_dir>/.cpg_work; the folder only keeps the
+    # inputs and leftovers, so removing it once the outputs are copied is the
+    # useful default.
+    clean_work_dir: bool = True
 
 
 class StateStore:
@@ -51,6 +55,7 @@ class StateStore:
             cpus=self.default_cpus,
             output_dir=str(self.documents_dir / "CPG Runs" / self.tool_name),
             network=True,
+            clean_work_dir=True,
         )
 
     def load_settings(self) -> Settings:

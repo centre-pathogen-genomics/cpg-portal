@@ -51,6 +51,7 @@ export type Settings = {
   cpus: number
   output_dir: string
   network: boolean
+  clean_work_dir: boolean
 }
 
 export type DoctorAction = {
@@ -129,6 +130,7 @@ export type RunRecord = {
   stdout?: string
   exit_code?: number | null
   error?: string | null
+  work_dir?: string | null
   output_dir?: string | null
   files?: RunFile[]
   created_at?: string | null
