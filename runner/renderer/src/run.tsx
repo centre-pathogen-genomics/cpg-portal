@@ -1,6 +1,7 @@
 import { RotateCcw } from "lucide-react"
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { ConfirmationDialog } from "@/components/Common/ConfirmationDialog"
 import OutputAccordion from "@/components/Runs/OutputAccordion";
 import RunTime from "@/components/Runs/RunTime";
 import StatusBadge from "@/components/Runs/StatusBadge";
@@ -23,7 +24,9 @@ export function RunPage({ id }: { id: string }) {
   const [record, setRecord] = useState<RunRecord | null>(null);
   const [tool, setTool] = useState<ToolConfig | null>(null);
   const [environment, setEnvironment] = useState<string | null>(null);
-  const [logs, setLogs] = useState<string[]>([]);
+  const [logs, setLogs] = useState<string[]>([])
+  const [leavingTo, setLeavingTo] = useState<string | null>(null)
+  const [leaving, setLeaving] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
@@ -44,15 +47,15 @@ export function RunPage({ id }: { id: string }) {
       .catch(() => {});
   }, [refresh]);
 
-  const active = isRunActive(record?.status);
+  const inProgress = isRunActive(record?.status);
 
   useEffect(() => {
-    if (!active) return;
+    if (!inProgress) return;
     const interval = setInterval(() => {
       void refresh().catch(() => {});
     }, 1000);
     return () => clearInterval(interval);
-  }, [active, refresh]);
+  }, [inProgress, refresh]);
 
   useEffect(() => {
     const socket = new WebSocket(api.wsUrl(`/runs/${id}/logs`));
@@ -83,6 +86,18 @@ export function RunPage({ id }: { id: string }) {
     return () => socket.close();
   }, [id, refresh]);
 
+  // Leaving while the run is still going ends it, so the sidebar asks first.
+  async function leave(toolId: string) {
+    setLeaving(true)
+    try {
+      await api.post(`/runs/${id}/cancel`).catch(() => {})
+      await window.cpgRunner?.openTool(toolId)
+    } finally {
+      setLeaving(false)
+      setLeavingTo(null)
+    }
+  }
+
   async function cancel() {
     try {
       await api.post(`/runs/${id}/cancel`);
@@ -99,7 +114,14 @@ export function RunPage({ id }: { id: string }) {
 
   return (
     <div className="flex h-full">
-      <ToolSidebar activeToolId={tool?.id ?? null} />
+      <ToolSidebar
+        activeToolId={tool?.id ?? null}
+        beforeOpen={(toolId) => {
+          if (!inProgress || toolId === tool?.id) return true
+          setLeavingTo(toolId)
+          return false
+        }}
+      />
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <header className="shrink-0 border-b px-8 py-6">
@@ -121,7 +143,7 @@ export function RunPage({ id }: { id: string }) {
               )}
             </div>
             <div className="flex gap-2">
-              {record && (
+              {record && !inProgress && (
                 <Button
                   type="button"
                   size="sm"
@@ -133,7 +155,7 @@ export function RunPage({ id }: { id: string }) {
                   Rerun
                 </Button>
               )}
-              {active && (
+              {inProgress && (
                 <Button
                   type="button"
                   size="sm"
@@ -211,6 +233,20 @@ export function RunPage({ id }: { id: string }) {
           </div>
         </main>
       </div>
+
+      <ConfirmationDialog
+        open={leavingTo !== null}
+        onOpenChange={(open) => {
+          if (!open) setLeavingTo(null)
+        }}
+        title="Cancel this run?"
+        description="This run is still going. Opening another tool ends it here."
+        confirmLabel="Cancel run and leave"
+        pending={leaving}
+        onConfirm={() => {
+          if (leavingTo) void leave(leavingTo)
+        }}
+      />
     </div>
-  );
+  )
 }

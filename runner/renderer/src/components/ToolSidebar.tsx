@@ -18,8 +18,11 @@ type ToolEntry = {
  */
 export function ToolSidebar({
   activeToolId,
+  beforeOpen,
 }: {
   activeToolId?: string | null
+  /** Asked before a tool is opened; false leaves the click to the caller. */
+  beforeOpen?: (toolId: string) => boolean | Promise<boolean>
 }) {
   const bridge = window.cpgRunner
   const [tools, setTools] = useState<ToolEntry[]>([])
@@ -33,6 +36,7 @@ export function ToolSidebar({
 
   async function openTool(toolId: string) {
     if (!bridge || openingId) return
+    if (beforeOpen && !(await beforeOpen(toolId))) return
     setOpeningId(toolId)
     try {
       // Resolves once the tool's page has loaded; the row spins meanwhile.
