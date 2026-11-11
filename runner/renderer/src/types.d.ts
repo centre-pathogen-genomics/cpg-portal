@@ -16,6 +16,8 @@ declare global {
       /** Origin of the portal this build belongs to; empty when unknown. */
       portalUrl: string
       tools(): Promise<ToolEntry[]>
+      /** Cached tool pictures, by tool id, as data URLs. */
+      toolImages(): Promise<Record<string, string>>
       importPacks(): Promise<ToolEntry[]>
       importPackPaths(files: string[]): Promise<ToolEntry[]>
       openTool(toolId: string): Promise<void>

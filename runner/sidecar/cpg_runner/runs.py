@@ -464,6 +464,25 @@ class RunManager:
         ]
         return "\n".join(lines) + "\n"
 
+    def _readme_badges(self) -> str:
+        """The tool's links and badges, as one markdown line."""
+        parts: list[str] = []
+        if self.tool.url:
+            parts.append(f"[Home]({self.tool.url})")
+        if self.tool.docs_url:
+            parts.append(f"[Docs]({self.tool.docs_url})")
+        if self.tool.paper_doi:
+            parts.append(f"[DOI](https://doi.org/{self.tool.paper_doi})")
+        if self.tool.license:
+            parts.append(f"License {self.tool.license}")
+        if self.tool.github_repo:
+            parts.append(f"[GitHub](https://github.com/{self.tool.github_repo})")
+        for badge in self.tool.badges:
+            url = badge.get("url")
+            parts.append(f"[badge]({url})" if url else "badge")
+        parts += [f"#{tag}" for tag in self.tool.tags]
+        return " · ".join(parts)
+
     def _install_script(self) -> str:
         """A script that rebuilds the run's environment next to the outputs."""
         lines = [
@@ -496,9 +515,13 @@ class RunManager:
         self, record: RunRecord, output_dir: Path, *, status: str, network: bool
     ) -> str:
         version = f" {self.tool.version}" if self.tool.version else ""
-        lines = [
-            f"# {self.tool.name}{version}",
-            "",
+        lines = [f"# {self.tool.name}{version}", ""]
+        if self.tool.image and str(self.tool.image).startswith(("http://", "https://")):
+            lines += [f"![{self.tool.name}]({self.tool.image})", ""]
+        badges = self._readme_badges()
+        if badges:
+            lines += [badges, ""]
+        lines += [
             (
                 f"Run `{record.name}` finished on "
                 f"{datetime.now().astimezone():%Y-%m-%d %H:%M} with "

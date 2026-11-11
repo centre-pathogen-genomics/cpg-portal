@@ -20,7 +20,17 @@ export type SetupFile = {
 }
 
 /** The `tool` object written into tool.json next to the desktop app. */
+export type ToolBadge = { badge?: string | null; url?: string | null }
+
 export type ToolConfig = {
+  image?: string | null
+  url?: string | null
+  docs_url?: string | null
+  paper_doi?: string | null
+  license?: string | null
+  github_repo?: string | null
+  tags?: string[]
+  badges?: ToolBadge[]
   id: string
   name: string
   version: string

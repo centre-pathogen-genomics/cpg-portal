@@ -3,6 +3,7 @@ import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { ToolImage, useToolImages } from "./ToolImage"
 
 type ToolEntry = {
   id: string
@@ -25,6 +26,7 @@ export function ToolSidebar({
   beforeOpen?: (toolId: string) => boolean | Promise<boolean>
 }) {
   const bridge = window.cpgRunner
+  const images = useToolImages()
   const [tools, setTools] = useState<ToolEntry[]>([])
   const [busy, setBusy] = useState(false)
   const [openingId, setOpeningId] = useState<string | null>(null)
@@ -90,7 +92,15 @@ export function ToolSidebar({
                         : "hover:bg-background/70",
                     )}
                   >
-                    <span className="truncate">{tool.name}</span>
+                    <span className="flex min-w-0 items-center gap-2">
+                      <ToolImage
+                        id={tool.id}
+                        name={tool.name}
+                        images={images}
+                        className="size-5"
+                      />
+                      <span className="truncate">{tool.name}</span>
+                    </span>
                     {openingId === tool.id ? (
                       <LoaderCircle className="text-muted-foreground size-3.5 shrink-0 animate-spin" />
                     ) : (

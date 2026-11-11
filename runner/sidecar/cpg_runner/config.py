@@ -12,6 +12,15 @@ class ToolConfig(BaseModel):
     version: str = ""
     description: str | None = None
     explanation_of_results_markdown: str | None = None
+    # What the portal says about the tool: picture, links and badges.
+    image: str | None = None
+    url: str | None = None
+    docs_url: str | None = None
+    paper_doi: str | None = None
+    license: str | None = None
+    github_repo: str | None = None
+    tags: list[str] = Field(default_factory=list)
+    badges: list[dict] = Field(default_factory=list)
     command: str
     params: list[dict] = Field(default_factory=list)
     targets: list[dict] = Field(default_factory=list)

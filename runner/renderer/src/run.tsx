@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { api, errorMessage } from "./api";
 import { RunFiles } from "./components/RunFiles";
 import { RunResults } from "./components/RunResults";
+import { ToolImage, useToolImages } from "./components/ToolImage";
 import { ToolSidebar } from "./components/ToolSidebar";
 import {
   isRunActive,
@@ -50,6 +51,7 @@ export function RunPage({ id }: { id: string }) {
   }, [refresh]);
 
   const inProgress = isRunActive(record?.status);
+  const images = useToolImages();
 
   useEffect(() => {
     if (!inProgress) return;
@@ -148,6 +150,14 @@ export function RunPage({ id }: { id: string }) {
           </div>
           <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-3">
+              {tool && (
+                <ToolImage
+                  id={tool.id}
+                  name={tool.name}
+                  images={images}
+                  className="size-9"
+                />
+              )}
               <h1 className="text-xl font-semibold">
                 {record?.name ||
                   `Run ${record?.id ? record.id.slice(0, 8) : id.slice(0, 8)}`}

@@ -1,9 +1,10 @@
-import { FolderOpen } from "lucide-react"
+import { ExternalLink, FolderOpen } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { toast } from "sonner"
 import RenderMarkdown from "@/components/Common/Markdown"
 import ToolRunForm from "@/components/Tools/ToolRunForm"
 import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,6 +13,8 @@ import { ApiError, api, errorMessage } from "./api"
 import { DockerSetupDialog } from "./components/DockerSetupDialog"
 import { InstallDialog } from "./components/InstallDialog"
 import { LocalFilePicker } from "./components/LocalFilePicker"
+import { ToolBadges } from "./components/ToolBadges"
+import { ToolImage, useToolImages } from "./components/ToolImage"
 import { ToolSidebar } from "./components/ToolSidebar"
 import {
   currentInstallState,
@@ -24,7 +27,8 @@ import {
   type ToolPayload,
   unwrapTool,
 } from "./contracts"
-import { openPath, pickDirectory } from "./lib/desktop"
+import { openExternal, openPath, pickDirectory } from "./lib/desktop"
+import { portalToolUrl } from "./lib/portal"
 import { navigate } from "./router"
 
 const FIELD_ERROR =
@@ -39,6 +43,8 @@ export function ToolPage() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [installDismissed, setInstallDismissed] = useState(false)
   const [runName, setRunName] = useState("")
+  const [descriptionOpen, setDescriptionOpen] = useState(false)
+  const images = useToolImages()
   const [rerunRun, setRerunRun] = useState<RunRecord | null>(null)
   const [rerunChecked, setRerunChecked] = useState(false)
 
@@ -219,30 +225,68 @@ export function ToolPage() {
       <ToolSidebar activeToolId={tool.id} />
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <header className="flex shrink-0 items-center justify-between gap-4 border-b px-8 py-4">
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <h1 className="truncate text-xl font-semibold">{tool.name}</h1>
-            {tool.version && <Badge variant="secondary">v{tool.version}</Badge>}
+        <header className="shrink-0 border-b px-8 py-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <ToolImage
+                id={tool.id}
+                name={tool.name}
+                images={images}
+                className="size-12"
+              />
+              <div className="grid min-w-0 gap-2">
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                  <h1 className="truncate text-2xl font-bold">{tool.name}</h1>
+                  {tool.version && (
+                    <Badge variant="secondary">v{tool.version}</Badge>
+                  )}
+                </div>
+                <ToolBadges tool={tool} />
+              </div>
+            </div>
+            <div className="flex shrink-0 gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => openExternal(portalToolUrl(tool.name))}
+              >
+                <ExternalLink />
+                Open in portal
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={!doctorReady}
+                onClick={() => void reinstall()}
+              >
+                Reinstall environment
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => window.close()}
+              >
+                Quit
+              </Button>
+            </div>
           </div>
-          <div className="flex shrink-0 gap-2">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={!doctorReady}
-              onClick={() => void reinstall()}
-            >
-              Reinstall environment
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              onClick={() => window.close()}
-            >
-              Quit
-            </Button>
-          </div>
+          {tool.description && (
+            <div className="mt-3">
+              <p className={cn("text-sm", !descriptionOpen && "line-clamp-1")}>
+                {tool.description}
+              </p>
+              <button
+                type="button"
+                className="hover:text-primary mt-1 text-xs font-medium"
+                onClick={() => setDescriptionOpen((open) => !open)}
+              >
+                {descriptionOpen ? "Show less" : "Show more…"}
+              </button>
+            </div>
+          )}
         </header>
 
         <ToolRunForm
@@ -286,10 +330,6 @@ export function ToolPage() {
             <>
               <section className="min-h-0 overflow-y-auto px-8 py-6">
                 <div className="mx-auto grid max-w-2xl gap-6">
-                  {tool.description && (
-                    <RenderMarkdown markdown={tool.description} />
-                  )}
-
                   <div>{params}</div>
 
                   {blockedReason && (

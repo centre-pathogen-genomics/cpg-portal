@@ -293,3 +293,30 @@ def test_a_failed_run_still_reports_itself(tmp_path):
     assert (output / "log.txt").is_file()
     assert (output / "command.sh").is_file()
     assert not (output / ".cpg_work").exists()
+
+
+def test_the_readme_carries_the_tools_image_and_badges(tmp_path):
+    tool = make_tool(
+        image="https://example.org/ngmaster.png",
+        url="https://github.com/MDU-PHL/ngmaster",
+        paper_doi="10.1099/mgen.0.000076",
+        license="GPL-3.0",
+        github_repo="MDU-PHL/ngmaster",
+        tags=["AMR detection", "cpg"],
+        badges=[
+            {"badge": "https://img.shields.io/badge/py3-py", "url": "https://x.test"}
+        ],
+    )
+    manager = _manager(tmp_path, tool, WritingDocker())
+    record = manager.start({}, 1)
+    wait_for(lambda: manager.get(record.id).status in TERMINAL_STATUSES)
+
+    readme = (Path(manager.get(record.id).output_dir) / "README.md").read_text()
+    assert "![my tool](https://example.org/ngmaster.png)" in readme
+    assert "[Home](https://github.com/MDU-PHL/ngmaster)" in readme
+    assert "[DOI](https://doi.org/10.1099/mgen.0.000076)" in readme
+    assert "License GPL-3.0" in readme
+    assert "[GitHub](https://github.com/MDU-PHL/ngmaster)" in readme
+    assert "[badge](https://x.test)" in readme
+    assert "#AMR detection" in readme
+    assert "#cpg" in readme

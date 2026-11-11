@@ -39,6 +39,7 @@ type ToolRecord = {
   name?: string
   version?: string
   description?: string | null
+  image?: string | null
 }
 
 // `tool.json` inside an installed pack.
@@ -152,6 +153,48 @@ function entryFor(toolId: string): ToolEntry | null {
     console.error(`Could not read tool ${toolId}: ${String(error)}`)
     return null
   }
+}
+
+// The tool's picture, downloaded once so the window shows it offline too.
+async function ensureToolImage(toolId: string): Promise<void> {
+  const directory = dataDir(toolId)
+  const imagePath = path.join(directory, "tool-image")
+  if (fs.existsSync(imagePath)) return
+  try {
+    const payload = JSON.parse(
+      fs.readFileSync(path.join(packDir(toolId), "tool.json"), "utf-8"),
+    ) as ToolFile
+    const url = payload.tool?.image
+    if (typeof url !== "string" || !/^https?:\/\//i.test(url)) return
+    const response = await fetch(url)
+    if (!response.ok) return
+    const bytes = Buffer.from(await response.arrayBuffer())
+    const type = response.headers.get("content-type") ?? "image/png"
+    fs.mkdirSync(directory, { recursive: true })
+    fs.writeFileSync(imagePath, bytes)
+    fs.writeFileSync(`${imagePath}.type`, type)
+  } catch (error) {
+    console.error(`Could not cache the picture of ${toolId}: ${String(error)}`)
+  }
+}
+
+// Cached pictures as data URLs, for every installed tool.
+function toolImages(): Record<string, string> {
+  const images: Record<string, string> = {}
+  for (const tool of listTools()) {
+    const imagePath = path.join(dataDir(tool.id), "tool-image")
+    if (!fs.existsSync(imagePath)) continue
+    let type = "image/png"
+    try {
+      const stored = fs.readFileSync(`${imagePath}.type`, "utf-8")
+      type = stored.split(";")[0].trim() || type
+    } catch {
+      // Without a recorded type, a PNG is the safe guess.
+    }
+    images[tool.id] =
+      `data:${type};base64,${fs.readFileSync(imagePath).toString("base64")}`
+  }
+  return images
 }
 
 function listTools(): ToolEntry[] {
@@ -492,6 +535,7 @@ function startSidecar(toolId: string): Promise<number> {
     reject(new Error("This tool is not installed any more."))
     return promise
   }
+  void ensureToolImage(toolId)
 
   let child: ChildProcess
   try {
@@ -608,6 +652,11 @@ function registerIpcHandlers(): void {
   })
 
   ipcMain.handle("runner:tools", (): ToolEntry[] => listTools())
+
+  ipcMain.handle(
+    "runner:tool-images",
+    (): Record<string, string> => toolImages(),
+  )
 
   ipcMain.handle("runner:import-packs", async (): Promise<ToolEntry[]> => {
     const options: OpenDialogOptions = {

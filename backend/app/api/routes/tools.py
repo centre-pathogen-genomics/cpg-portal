@@ -306,6 +306,18 @@ def _pack_tool_config(tool: ToolPublic) -> dict[str, Any]:
                 for setup_file in tool.setup_files or []
             ],
             "post_install": tool.post_install,
+            # What the desktop app shows about the tool: its picture, links and
+            # badges, the same as the portal's own header.
+            "image": tool.image,
+            "url": tool.url,
+            "docs_url": tool.docs_url,
+            "paper_doi": tool.paper_doi,
+            "license": tool.license,
+            "github_repo": tool.github_repo,
+            "tags": tool.tags or [],
+            "badges": [
+                badge.model_dump(mode="json") for badge in tool.badges or []
+            ],
             "min_cpus": tool.min_cpus,
             "max_cpus": tool.max_cpus,
             "default_cpus": tool.default_cpus,

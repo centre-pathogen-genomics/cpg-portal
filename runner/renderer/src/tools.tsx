@@ -4,6 +4,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { ToolSidebar } from "./components/ToolSidebar"
 import { filePathOf, openExternal } from "./lib/desktop"
+import { portalUrl } from "./lib/portal"
 
 type ToolEntry = {
   id: string
@@ -19,13 +20,6 @@ function packPaths(files: FileList | File[]): string[] {
     .filter((file) => file.name.toLowerCase().endsWith(PACK_EXTENSION))
     .map(filePathOf)
     .filter((target) => target.length > 0)
-}
-
-function portalUrl(): string {
-  const fromApp = window.cpgRunner?.portalUrl
-  if (fromApp) return fromApp
-  const configured = import.meta.env.VITE_CPG_PORTAL_URL
-  return typeof configured === "string" ? configured : "http://localhost:8000"
 }
 
 /**
