@@ -326,27 +326,32 @@ export function ToolPage() {
               </header>
 
               <section className="min-h-0 flex-1 overflow-y-auto px-8 py-6">
-                <div className="mx-auto grid max-w-6xl gap-6">
-                  <div>{params}</div>
+                <div className="mx-auto max-w-6xl">
+                  <h2 className="mb-4 text-2xl font-semibold">
+                    Configure Tool
+                  </h2>
+                  <div className="grid gap-6">
+                    <div>{params}</div>
 
-                  {blockedReason && (
-                    <p className="text-muted-foreground text-sm">
-                      {blockedReason}
+                    {blockedReason && (
+                      <p className="text-muted-foreground text-sm">
+                        {blockedReason}
+                      </p>
+                    )}
+
+                    {tool.explanation_of_results_markdown && (
+                      <section className="border-t pt-6">
+                        <RenderMarkdown
+                          markdown={tool.explanation_of_results_markdown}
+                        />
+                      </section>
+                    )}
+
+                    <p className="text-muted-foreground text-xs">
+                      Input files stay on this computer; outputs go to the
+                      output folder in the run settings.
                     </p>
-                  )}
-
-                  {tool.explanation_of_results_markdown && (
-                    <section className="border-t pt-6">
-                      <RenderMarkdown
-                        markdown={tool.explanation_of_results_markdown}
-                      />
-                    </section>
-                  )}
-
-                  <p className="text-muted-foreground text-xs">
-                    Input files stay on this computer; outputs go to the output
-                    folder in the run settings.
-                  </p>
+                  </div>
                 </div>
               </section>
             </div>
