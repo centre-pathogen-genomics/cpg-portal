@@ -2,6 +2,7 @@
 
 import json
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
@@ -162,11 +163,19 @@ def create_app(
             headers={"Cache-Control": "no-cache"},
         )
 
+    status_pool = ThreadPoolExecutor(max_workers=3, thread_name_prefix="status")
+
     @app.get("/api/status", dependencies=[auth])
     def read_status() -> dict[str, Any]:
-        report = doctor.diagnose()
+        # Three independent docker probes of ~200 ms each: ask them at once.
+        report_future = status_pool.submit(doctor.diagnose)
+        image_future = status_pool.submit(
+            docker.image_present, runner.runtime_image.tag
+        )
+        state_future = status_pool.submit(lambda: installer.state)
+        report = report_future.result()
         settings = store.load_settings()
-        image_present = docker.image_present(runner.runtime_image.tag)
+        image_present = image_future.result()
         return {
             "docker": {
                 "available": bool(
@@ -184,7 +193,7 @@ def create_app(
                 "installed": installer.env_installed(),
             },
             "settings": settings.model_dump(),
-            "installing": installer.state == "installing",
+            "installing": state_future.result() == "installing",
         }
 
     @app.get("/api/environment", dependencies=[auth])

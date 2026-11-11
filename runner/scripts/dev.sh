@@ -47,7 +47,7 @@ if [ ! -d "${REPO_DIR}/node_modules/electron/dist" ]; then
   (cd "${REPO_DIR}" && bunx electron --version >/dev/null)
 fi
 
-SIDECAR_BIN="${RUNNER_DIR}/sidecar/dist/cpg-runner"
+SIDECAR_BIN="${RUNNER_DIR}/sidecar/dist/cpg-runner/cpg-runner"
 stale=""
 if [ -x "${SIDECAR_BIN}" ]; then
   stale="$(find "${RUNNER_DIR}/sidecar/cpg_runner" "${RUNNER_DIR}/sidecar"/*.spec \

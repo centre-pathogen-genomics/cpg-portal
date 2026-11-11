@@ -43,8 +43,13 @@ Useful overrides:
 | `CPG_RUNNER_PORTAL_URL` | `http://127.0.0.1:8000` | where the runtime image comes from |
 
 Electron's binary is downloaded the first time (`bunx electron --version` does
-it), and the sidecar is built with PyInstaller when `sidecar/dist/cpg-runner`
-is missing. Both are cached afterwards.
+it), and the sidecar is built with PyInstaller whenever `sidecar/cpg_runner`
+is newer than `sidecar/dist/cpg-runner/cpg-runner`. Both are cached afterwards.
+
+The sidecar is a **one-folder** build (`dist/cpg-runner/` with its libraries
+next to the executable). A one-file build unpacks ~20 MB into a temp directory
+on every launch, which costs 10-15 s per start; the folder build starts in
+about half a second, so keep it that way.
 
 ## Layout
 

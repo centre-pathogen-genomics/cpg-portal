@@ -9,6 +9,7 @@ fileAssociations:
 directories: { output: dist, buildResources: build }
 files: ["dist/electron/**/*", "package.json"]
 extraResources:
+  # A folder build: the executable and its libraries, copied together.
   - { from: sidecar/dist/cpg-runner, to: sidecar/cpg-runner }
   # The portal's mark, shown by the splash window while the runner starts.
   - { from: ../frontend/public/assets/images/cpg-logo.png, to: logo.png }

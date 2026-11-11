@@ -4,6 +4,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 from collections.abc import Callable
 from pathlib import Path
 
@@ -86,6 +87,24 @@ class Docker:
     ) -> None:
         self.binary = binary or resolve_docker_binary()
         self._runner = runner or subprocess.run
+        # `docker ...` costs ~200 ms per call, and one page load asks for the
+        # same answers several times; a one-second cache keeps that honest
+        # while making the first paint quick.
+        self._probe_cache: dict[tuple[object, ...], tuple[float, object]] = {}
+        self._cache_seconds = 1.0
+
+    def _cached(self, key: tuple[object, ...], produce):
+        now = time.monotonic()
+        cached = self._probe_cache.get(key)
+        if cached is not None and now - cached[0] < self._cache_seconds:
+            return cached[1]
+        value = produce()
+        self._probe_cache[key] = (now, value)
+        return value
+
+    def forget(self) -> None:
+        """Drop cached probe answers, e.g. after loading or removing an image."""
+        self._probe_cache.clear()
 
     def command(self, *args: str) -> list[str]:
         return [self.binary, *args]
@@ -115,6 +134,9 @@ class Docker:
         return version or None
 
     def image_present(self, tag: str) -> bool:
+        return self._cached(("image", tag), lambda: self._image_present(tag))
+
+    def _image_present(self, tag: str) -> bool:
         try:
             result = self._probe("image", "inspect", tag)
         except (OSError, subprocess.SubprocessError):
@@ -126,9 +148,13 @@ class Docker:
             result = self._probe("load", "-i", str(tar), timeout=None)
         except (OSError, subprocess.SubprocessError):
             return 1
+        self.forget()
         return result.returncode
 
     def volume_exists(self, name: str) -> bool:
+        return self._cached(("volume", name), lambda: self._volume_exists(name))
+
+    def _volume_exists(self, name: str) -> bool:
         try:
             result = self._probe("volume", "inspect", name)
         except (OSError, subprocess.SubprocessError):
@@ -136,6 +162,7 @@ class Docker:
         return result.returncode == 0
 
     def remove_volume(self, name: str) -> int:
+        self.forget()
         try:
             result = self._probe("volume", "rm", "-f", name)
         except (OSError, subprocess.SubprocessError):

@@ -30,16 +30,27 @@ a = Analysis(
 )
 pyz = PYZ(a.pure)
 
+# A one-folder build: the executable next to its libraries. A one-file build
+# unpacks itself into a temp directory on every launch, which costs seconds per
+# start; this starts in about a second.
 exe = EXE(
     pyz,
     a.scripts,
-    a.binaries,
-    a.datas,
     [],
+    exclude_binaries=True,
     name="cpg-runner",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=False,
     console=True,
+)
+
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.datas,
+    strip=False,
+    upx=False,
+    name="cpg-runner",
 )

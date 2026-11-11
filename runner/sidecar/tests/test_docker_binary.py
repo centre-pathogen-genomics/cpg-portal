@@ -1,4 +1,6 @@
-from cpg_runner.docker_cli import docker_candidates, resolve_docker_binary
+import subprocess
+
+from cpg_runner.docker_cli import Docker, docker_candidates, resolve_docker_binary
 
 
 def test_path_wins_when_the_cli_is_on_it():
@@ -51,3 +53,27 @@ def test_windows_candidates_end_in_docker_exe():
     candidates = docker_candidates("win32")
     assert candidates
     assert all(str(candidate).endswith("docker.exe") for candidate in candidates)
+
+
+def test_image_presence_is_asked_once_per_second():
+    """One page load asks several times; the docker CLI should run once."""
+    calls = []
+
+    def runner(argv, **kwargs):
+        calls.append(argv)
+        return subprocess.CompletedProcess(
+            args=argv, returncode=1, stdout="", stderr=""
+        )
+
+    docker = Docker(binary="docker", runner=runner)
+
+    assert docker.image_present("tag") is False
+    assert docker.image_present("tag") is False
+    assert docker.image_present("tag") is False
+
+    assert len(calls) == 1
+
+    # Loading an image invalidates the answer.
+    docker.forget()
+    docker.image_present("tag")
+    assert len(calls) == 2

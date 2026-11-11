@@ -101,7 +101,7 @@ mkdir -p "${APPS_DIR}"
 
 build_inputs() {
   if [ "${skip_build}" -eq 1 ]; then
-    [ -e "${RUNNER_DIR}/sidecar/dist/cpg-runner" ] ||
+    [ -e "${RUNNER_DIR}/sidecar/dist/cpg-runner/cpg-runner" ] ||
       die "Missing sidecar build at ${RUNNER_DIR}/sidecar/dist/cpg-runner; run without --skip-build"
     [ -f "${RUNNER_DIR}/dist/electron/main.js" ] ||
       die "Missing main process build at ${RUNNER_DIR}/dist/electron/main.js; run without --skip-build"

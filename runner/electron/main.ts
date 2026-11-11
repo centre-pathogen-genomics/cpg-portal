@@ -1,4 +1,4 @@
-import { spawn, type ChildProcess } from "node:child_process"
+import { type ChildProcess, spawn } from "node:child_process"
 import { randomUUID } from "node:crypto"
 import fs from "node:fs"
 import path from "node:path"
@@ -7,8 +7,8 @@ import {
   BrowserWindow,
   dialog,
   ipcMain,
-  shell,
   type OpenDialogOptions,
+  shell,
 } from "electron"
 
 import { splashHtml } from "./splash"
@@ -62,8 +62,7 @@ if (process.env.CPG_RUNNER_DATA_DIR) {
 }
 const uiOrigin = (process.env.CPG_RUNNER_UI_URL || "").replace(/\/+$/, "")
 const uiDir =
-  process.env.CPG_RUNNER_UI_DIR ||
-  path.join(process.resourcesPath, "renderer")
+  process.env.CPG_RUNNER_UI_DIR || path.join(process.resourcesPath, "renderer")
 
 // Packaged, the preload sits in the app's dist; from source, next to the main
 // script Electron was given. `__dirname` is the source folder once bundled, so
@@ -93,10 +92,13 @@ const starting = new Map<string, Promise<number>>()
 const sidecarStderr = new Map<string, string[]>()
 
 function sidecarBinaryPath(): string {
-  return (
-    process.env.CPG_RUNNER_SIDECAR ||
-    path.join(process.resourcesPath, "sidecar", "cpg-runner")
-  )
+  if (process.env.CPG_RUNNER_SIDECAR) return process.env.CPG_RUNNER_SIDECAR
+  const name = process.platform === "win32" ? "cpg-runner.exe" : "cpg-runner"
+  // A one-folder build: the executable sits next to its libraries, which
+  // starts in well under a second instead of unpacking on every launch.
+  return app.isPackaged
+    ? path.join(process.resourcesPath, "sidecar", "cpg-runner", name)
+    : path.join(app.getAppPath(), "sidecar", "dist", "cpg-runner", name)
 }
 
 function toolsRoot(): string {
@@ -109,10 +111,6 @@ function packDir(toolId: string): string {
 
 function dataDir(toolId: string): string {
   return path.join(toolsRoot(), toolId, "data")
-}
-
-function stderrText(toolId: string): string {
-  return (sidecarStderr.get(toolId) ?? []).join("").trim()
 }
 
 function readPack(file: string): { id: string; files: Record<string, string> } {
@@ -159,7 +157,8 @@ function entryFor(toolId: string): ToolEntry | null {
 function listTools(): ToolEntry[] {
   let ids: string[]
   try {
-    ids = fs.readdirSync(toolsRoot(), { withFileTypes: true })
+    ids = fs
+      .readdirSync(toolsRoot(), { withFileTypes: true })
       .filter((entry) => entry.isDirectory())
       .map((entry) => entry.name)
   } catch {
@@ -221,7 +220,9 @@ function reportImportFailures(failures: string[]): void {
 }
 
 function packArguments(argv: string[]): string[] {
-  return argv.filter((argument) => argument.toLowerCase().endsWith(PACK_EXTENSION))
+  return argv.filter((argument) =>
+    argument.toLowerCase().endsWith(PACK_EXTENSION),
+  )
 }
 
 function stopSidecar(toolId: string): void {
@@ -489,98 +490,98 @@ function startSidecar(toolId: string): Promise<number> {
     return promise
   }
 
-    let child: ChildProcess
-    try {
-      child = spawn(
-        sidecarBinaryPath(),
-        [
-          "--port",
-          "0",
-          "--data-dir",
-          dataDir(toolId),
-          "--documents-dir",
-          app.getPath("documents"),
-          "--resources-dir",
-          resources,
-          "--ui-dir",
-          uiDir,
-        ],
-        {
-          env: {
-            ...process.env,
-            CPG_RUNNER_TOKEN: token,
-            DOCKER_BIN: process.env.DOCKER_BIN || "docker",
-          },
-          stdio: ["ignore", "pipe", "pipe"],
+  let child: ChildProcess
+  try {
+    child = spawn(
+      sidecarBinaryPath(),
+      [
+        "--port",
+        "0",
+        "--data-dir",
+        dataDir(toolId),
+        "--documents-dir",
+        app.getPath("documents"),
+        "--resources-dir",
+        resources,
+        "--ui-dir",
+        uiDir,
+      ],
+      {
+        env: {
+          ...process.env,
+          CPG_RUNNER_TOKEN: token,
+          DOCKER_BIN: process.env.DOCKER_BIN || "docker",
         },
-      )
-    } catch (error) {
-      reject(error instanceof Error ? error : new Error(String(error)))
-      return promise
-    }
+        stdio: ["ignore", "pipe", "pipe"],
+      },
+    )
+  } catch (error) {
+    reject(error instanceof Error ? error : new Error(String(error)))
+    return promise
+  }
 
-    const chunks: string[] = []
-    sidecarStderr.set(toolId, chunks)
-    child.stderr?.setEncoding("utf-8")
-    child.stderr?.on("data", (chunk: string) => {
-      chunks.push(String(chunk))
-      if (chunks.length > 500) chunks.shift()
-    })
-    child.on("error", (error) => {
-      reject(error)
-    })
+  const chunks: string[] = []
+  sidecarStderr.set(toolId, chunks)
+  child.stderr?.setEncoding("utf-8")
+  child.stderr?.on("data", (chunk: string) => {
+    chunks.push(String(chunk))
+    if (chunks.length > 500) chunks.shift()
+  })
+  child.on("error", (error) => {
+    reject(error)
+  })
 
-    let buffer = ""
-    let ready = false
-    const timeout = setTimeout(() => {
-      if (ready) return
-      // A slow sidecar is not a broken one: report what it said, keep it alive
-      // so a late ready still opens the tool.
-      const detail = `The runner service did not report ready in time.\n\n${chunks.join("").trim()}`
-      console.error(`[${toolId}] ${detail}`)
-      reject(new Error(detail))
-    }, SIDECAR_START_TIMEOUT_MS)
-    timeout.unref?.()
+  let buffer = ""
+  let ready = false
+  const timeout = setTimeout(() => {
+    if (ready) return
+    // A slow sidecar is not a broken one: report what it said, keep it alive
+    // so a late ready still opens the tool.
+    const detail = `The runner service did not report ready in time.\n\n${chunks.join("").trim()}`
+    console.error(`[${toolId}] ${detail}`)
+    reject(new Error(detail))
+  }, SIDECAR_START_TIMEOUT_MS)
+  timeout.unref?.()
 
-    child.stdout?.setEncoding("utf-8")
-    child.stdout?.on("data", (chunk: string) => {
-      buffer += String(chunk)
-      let newline = buffer.indexOf("\n")
-      while (newline >= 0) {
-        const line = buffer.slice(0, newline).trim()
-        buffer = buffer.slice(newline + 1)
-        newline = buffer.indexOf("\n")
-        if (ready) continue
-        const port = readReadyPort(line)
-        if (port === null) continue
-        ready = true
-        clearTimeout(timeout)
-        sidecars.set(toolId, { child, port })
-        resolve(port)
-      }
-    })
-
-    child.on("exit", (code, signal) => {
+  child.stdout?.setEncoding("utf-8")
+  child.stdout?.on("data", (chunk: string) => {
+    buffer += String(chunk)
+    let newline = buffer.indexOf("\n")
+    while (newline >= 0) {
+      const line = buffer.slice(0, newline).trim()
+      buffer = buffer.slice(newline + 1)
+      newline = buffer.indexOf("\n")
+      if (ready) continue
+      const port = readReadyPort(line)
+      if (port === null) continue
+      ready = true
       clearTimeout(timeout)
-      sidecars.delete(toolId)
-      if (shuttingDown) return
-      if (!ready) {
-        reject(
-          new Error(
-            `The runner service stopped before it was ready (exit ${
-              code ?? `signal ${signal}`
-            }).`,
-          ),
-        )
-        return
-      }
-      fail(
-        "CPG Runner stopped",
-        `The runner service exited (code ${
-          code ?? `signal ${signal}`
-        }).\n\n${chunks.join("").trim()}`,
+      sidecars.set(toolId, { child, port })
+      resolve(port)
+    }
+  })
+
+  child.on("exit", (code, signal) => {
+    clearTimeout(timeout)
+    sidecars.delete(toolId)
+    if (shuttingDown) return
+    if (!ready) {
+      reject(
+        new Error(
+          `The runner service stopped before it was ready (exit ${
+            code ?? `signal ${signal}`
+          }).`,
+        ),
       )
-    })
+      return
+    }
+    fail(
+      "CPG Runner stopped",
+      `The runner service exited (code ${
+        code ?? `signal ${signal}`
+      }).\n\n${chunks.join("").trim()}`,
+    )
+  })
   return promise
 }
 
