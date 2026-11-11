@@ -275,16 +275,31 @@ export function ToolPage() {
           </div>
           {tool.description && (
             <div className="mt-3">
-              <p className={cn("text-sm", !descriptionOpen && "line-clamp-1")}>
-                {tool.description}
-              </p>
-              <button
-                type="button"
-                className="hover:text-primary mt-1 text-xs font-medium"
-                onClick={() => setDescriptionOpen((open) => !open)}
-              >
-                {descriptionOpen ? "Show less" : "Show more…"}
-              </button>
+              {descriptionOpen ? (
+                <>
+                  <p className="text-sm">{tool.description}</p>
+                  <button
+                    type="button"
+                    className="hover:text-primary mt-1 text-xs font-medium"
+                    onClick={() => setDescriptionOpen(false)}
+                  >
+                    Show less
+                  </button>
+                </>
+              ) : (
+                // One line: the text truncates and the way to expand it sits
+                // at its end instead of taking a line of its own.
+                <div className="flex min-w-0 items-baseline gap-1">
+                  <p className="min-w-0 truncate text-sm">{tool.description}</p>
+                  <button
+                    type="button"
+                    className="hover:text-primary shrink-0 text-xs font-medium"
+                    onClick={() => setDescriptionOpen(true)}
+                  >
+                    Show more…
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </header>
