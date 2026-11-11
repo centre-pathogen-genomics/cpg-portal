@@ -192,7 +192,10 @@ class Installer:
             raise RuntimeError("Tool environment installation failed")
         self._log("Tool environment installed.")
         if self.tool.post_install:
-            self._log("Running post-install…")
+            command = " ".join(self.tool.post_install.split())
+            if len(command) > 300:
+                command = command[:297] + "..."
+            self._log(f"Running post-install: {command}")
             args, _ = build_post_install_args(
                 docker_bin=self.docker.binary,
                 tool_id=self.tool.id,
