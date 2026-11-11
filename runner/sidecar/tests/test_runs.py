@@ -30,8 +30,9 @@ def _manager(tmp_path, tool, docker):
     )
 
 
-def _work_root(tmp_path, record):
-    return tmp_path / "documents" / "CPG Runs" / "my tool" / ".cpg_work" / record.id
+def _work_root(record):
+    """The work folder inside the run's own output folder."""
+    return Path(record.output_dir) / ".cpg_work"
 
 
 def _keep_work(manager):
@@ -117,7 +118,7 @@ def test_input_files_are_copied_and_linked_into_work(tmp_path):
     source.write_text(">a\nACGT\n")
     record = manager.start({"seq": [str(source)]}, 1)
     wait_for(lambda: manager.get(record.id).status in TERMINAL_STATUSES)
-    run_dir = _work_root(tmp_path, record)
+    run_dir = _work_root(record)
     assert (run_dir / "inputs" / "input.fasta").read_text() == ">a\nACGT\n"
     link = run_dir / "work" / "input.fasta"
     assert link.is_symlink()
@@ -137,7 +138,7 @@ def test_setup_files_are_rendered(tmp_path):
     record = manager.start({}, 1)
     wait_for(lambda: manager.get(record.id).status in TERMINAL_STATUSES)
     assert manager.get(record.id).status == "completed"
-    work = _work_root(tmp_path, record) / "work"
+    work = _work_root(record) / "work"
     assert (work / "config.txt").read_text() == "x=value"
 
 
@@ -177,14 +178,16 @@ def test_a_run_works_in_the_output_folder_and_cleans_up_afterwards(tmp_path):
         arg for arg in docker.run_args[0] if arg.endswith(",target=/work")
     )
     work_dir = Path(work_mount.split("source=", 1)[1].split(",", 1)[0])
-    assert work_dir == _work_root(tmp_path, record) / "work"
+    assert work_dir == _work_root(record) / "work"
 
     finished = manager.get(record.id)
     assert finished.status == "completed"
     assert finished.work_dir is None
-    # The outputs stay; the work folder and its parent go with the run.
-    assert Path(finished.output_dir, "out.txt").read_text() == "hi"
-    assert not (tmp_path / "documents" / "CPG Runs" / "my tool" / ".cpg_work").exists()
+    # The outputs and the report stay; the work folder goes with the run.
+    output = Path(finished.output_dir)
+    assert (output / "out.txt").read_text() == "hi"
+    assert (output / "README.md").is_file()
+    assert not (output / ".cpg_work").exists()
 
 
 def test_the_work_folder_can_be_kept(tmp_path):
@@ -194,8 +197,9 @@ def test_the_work_folder_can_be_kept(tmp_path):
     wait_for(lambda: manager.get(record.id).status in TERMINAL_STATUSES)
 
     finished = manager.get(record.id)
-    assert finished.work_dir == str(_work_root(tmp_path, record))
+    assert finished.work_dir == str(_work_root(record))
     assert (Path(finished.work_dir) / "work" / "out.txt").read_text() == "hi"
+    assert (Path(finished.output_dir) / "out.txt").is_file()
 
 
 def test_outputs_come_with_their_provenance(tmp_path):
@@ -250,3 +254,19 @@ def test_a_tool_without_environment_or_post_install_saves_what_it_has(tmp_path):
     assert not (output / "post_install.sh").exists()
     assert not (output / "install.sh").exists()
     assert (output / "log.txt").is_file()
+
+
+def test_a_failed_run_still_reports_itself(tmp_path):
+    manager = _manager(tmp_path, make_tool(), WritingDocker(write=False))
+    record = manager.start({}, 1)
+    wait_for(lambda: manager.get(record.id).status in TERMINAL_STATUSES)
+
+    failed = manager.get(record.id)
+    assert failed.status == "failed"
+    output = Path(failed.output_dir)
+    readme = (output / "README.md").read_text()
+    assert "## Failure" in readme
+    assert "Missing required target(s): out.txt" in readme
+    assert (output / "log.txt").is_file()
+    assert (output / "command.sh").is_file()
+    assert not (output / ".cpg_work").exists()

@@ -134,6 +134,7 @@ class RunManager:
         self._channels: dict[str, EventChannel] = {}
         self._file_paths: dict[str, dict[str, list[str]]] = {}
         self._cancelled: set[str] = set()
+        self._reported: set[str] = set()
         self._lock = threading.Lock()
         self.recover()
 
@@ -227,7 +228,9 @@ class RunManager:
         if run_id in self._cancelled:
             return
         try:
-            dirs = self._prepare_dirs(record)
+            output_dir = self._new_output_dir()
+            record.output_dir = str(output_dir)
+            dirs = self._prepare_dirs(record, output_dir)
             self._copy_inputs(record, dirs["inputs"], dirs["work"])
             self._write_setup_files(record, dirs["work"])
             command = self._render_command(record)
@@ -268,22 +271,35 @@ class RunManager:
 
         try:
             matched = self._collect_targets(record, dirs["work"])
-            output_dir = self._write_outputs(record, matched)
-            self._write_report(record, output_dir)
+            self._write_outputs(record, matched, output_dir)
         except Exception as exc:  # noqa: BLE001 - surfaced to the user
             self._finish(record, "failed", exit_code=exit_code, error=str(exc))
             return
 
-        record.output_dir = str(output_dir)
         self._finish(record, "completed", exit_code=exit_code)
 
-    def _run_dir(self, run_id: str) -> Path:
-        """The run's own folder inside the output folder's work directory."""
-        output_dir = Path(self.store.load_settings().output_dir)
-        return output_dir / WORK_DIR_NAME / run_id
+    def _new_output_dir(self) -> Path:
+        """The folder this run owns: its outputs, report and work folder."""
+        settings = self.store.load_settings()
+        base = (
+            Path(settings.output_dir)
+            / f"{sanitise_shell_input(self.tool.name)}-{_timestamp()}"
+        )
+        output_dir = base
+        index = 2
+        while output_dir.exists():
+            output_dir = base.with_name(f"{base.name}-{index}")
+            index += 1
+        try:
+            output_dir.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            raise RuntimeError(
+                f"Could not write to output folder: {settings.output_dir}"
+            ) from exc
+        return output_dir
 
-    def _prepare_dirs(self, record: RunRecord) -> dict[str, Path]:
-        base = self._run_dir(record.id)
+    def _prepare_dirs(self, record: RunRecord, output_dir: Path) -> dict[str, Path]:
+        base = output_dir / WORK_DIR_NAME
         dirs = {
             "work": base / "work",
             "tmp": base / "tmp",
@@ -294,8 +310,7 @@ class RunManager:
                 path.mkdir(parents=True, exist_ok=True)
         except OSError as exc:
             raise RuntimeError(
-                f"Could not write to output folder: "
-                f"{self.store.load_settings().output_dir}"
+                f"Could not write to output folder: {output_dir}"
             ) from exc
         record.work_dir = str(base)
         return dirs
@@ -363,21 +378,10 @@ class RunManager:
             raise RuntimeError(f"Missing required target(s): {', '.join(missing)}")
         return matched
 
-    def _write_outputs(self, record: RunRecord, matched: list[Path]) -> Path:
+    def _write_outputs(
+        self, record: RunRecord, matched: list[Path], output_dir: Path
+    ) -> None:
         settings = self.store.load_settings()
-        root = Path(settings.output_dir)
-        base = root / (f"{sanitise_shell_input(self.tool.name)}-{_timestamp()}")
-        output_dir = base
-        index = 2
-        while output_dir.exists():
-            output_dir = base.with_name(f"{base.name}-{index}")
-            index += 1
-        try:
-            output_dir.mkdir(parents=True, exist_ok=True)
-        except OSError as exc:
-            raise RuntimeError(
-                f"Could not write to output folder: {settings.output_dir}"
-            ) from exc
         files: list[RunFile] = []
         try:
             for path in matched:
@@ -395,33 +399,49 @@ class RunManager:
                 f"Could not write to output folder: {settings.output_dir}"
             ) from exc
         record.files = files
-        return output_dir
 
-    def _write_report(self, record: RunRecord, output_dir: Path) -> None:
-        """The provenance of the run, next to the files it produced."""
+    def _write_report(self, record: RunRecord, status: str) -> None:
+        """The provenance of the run, in its own output folder.
+
+        A run that failed has no outputs, and the folder is where its log and
+        command are the only way to see what happened, so every finished run
+        writes one. Files the tool itself produced are never overwritten.
+        """
+        if record.output_dir is None or record.id in self._reported:
+            return
+        self._reported.add(record.id)
+        output_dir = Path(record.output_dir)
         settings = self.store.load_settings()
+
+        def write(name: str, text: str, *, mode: int | None = None) -> None:
+            path = output_dir / name
+            if path.exists():
+                return
+            path.write_text(text, encoding="utf-8")
+            if mode is not None:
+                path.chmod(mode)
+
         try:
-            (output_dir / "command.sh").write_text(
-                f"set -euo pipefail\n{record.command}\n", encoding="utf-8"
-            )
-            (output_dir / "log.txt").write_text(record.stdout, encoding="utf-8")
+            write("command.sh", f"set -euo pipefail\n{record.command}\n")
+            write("log.txt", record.stdout)
             if self.environment_yml is not None:
-                shutil.copy2(self.environment_yml, output_dir / "environment.yml")
-                install = output_dir / "install.sh"
-                install.write_text(self._install_script(), encoding="utf-8")
-                install.chmod(0o755)
+                environment = output_dir / "environment.yml"
+                if not environment.exists():
+                    shutil.copy2(self.environment_yml, environment)
+                write("install.sh", self._install_script(), mode=0o755)
             if self.tool.post_install:
-                (output_dir / "post_install.sh").write_text(
+                write(
+                    "post_install.sh",
                     f"set -euo pipefail\n{self.tool.post_install}\n",
-                    encoding="utf-8",
                 )
-            (output_dir / "README.md").write_text(
-                self._readme(record, network=settings.network), encoding="utf-8"
+            write(
+                "README.md",
+                self._readme(
+                    record, output_dir, status=status, network=settings.network
+                ),
             )
-        except OSError as exc:
-            raise RuntimeError(
-                f"Could not write to output folder: {settings.output_dir}"
-            ) from exc
+        except OSError:
+            self._log(record, "Could not write the run report to the output folder.")
 
     def _install_script(self) -> str:
         """A script that rebuilds the run's environment next to the outputs."""
@@ -451,7 +471,9 @@ class RunManager:
             lines += ["", self.tool.post_install.strip()]
         return "\n".join(lines) + "\n"
 
-    def _readme(self, record: RunRecord, *, network: bool) -> str:
+    def _readme(
+        self, record: RunRecord, output_dir: Path, *, status: str, network: bool
+    ) -> str:
         version = f" {self.tool.version}" if self.tool.version else ""
         lines = [
             f"# {self.tool.name}{version}",
@@ -466,28 +488,35 @@ class RunManager:
         if self.tool.description:
             lines += ["", self.tool.description.strip()]
         explanation = (self.tool.explanation_of_results_markdown or "").strip()
-        lines += [
-            "",
-            "## Results",
-            "",
-            explanation or "This tool does not describe its results.",
-            "",
-            "## Files",
-            "",
-        ]
+        if status == "completed":
+            lines += [
+                "",
+                "## Results",
+                "",
+                explanation or "This tool does not describe its results.",
+            ]
+        else:
+            lines += [
+                "",
+                f"## {'Cancelled' if status == 'cancelled' else 'Failure'}",
+                "",
+                record.error or f"The run {status} before it produced its results.",
+                "",
+                "`log.txt` holds everything the tool printed.",
+            ]
+        lines += ["", "## Files", ""]
         for file in record.files:
             lines.append(f"- `{file.name}` — what the run produced")
-        lines += [
-            "- `log.txt` — everything the run printed",
-            "- `command.sh` — the command that produced these files",
-        ]
-        if self.environment_yml is not None:
-            lines.append("- `environment.yml` — the conda environment it ran in")
-            lines.append(
-                "- `install.sh` — rebuilds that environment and runs the post-install step"
-            )
-        if self.tool.post_install:
-            lines.append("- `post_install.sh` — how the environment was prepared")
+        descriptions = {
+            "log.txt": "everything the run printed",
+            "command.sh": "the command that produced these files",
+            "environment.yml": "the conda environment it ran in",
+            "install.sh": "rebuilds that environment and runs the post-install step",
+            "post_install.sh": "how the environment was prepared",
+        }
+        for name, description in descriptions.items():
+            if (output_dir / name).is_file():
+                lines.append(f"- `{name}` — {description}")
         return "\n".join(lines) + "\n"
 
     # -- state helpers -----------------------------------------------------
@@ -532,24 +561,22 @@ class RunManager:
             record.error = error
         if record.finished_at is None:
             record.finished_at = _now()
+        # The report and the cleanup happen before the status flips, so a
+        # terminal status means the folder is already as it will stay.
+        self._write_report(record, status)
         self._clean_work_dir(record)
         self._set_status(record, status)
 
     def _clean_work_dir(self, record: RunRecord) -> None:
         """Remove the run's work folder when the settings ask for it.
 
-        The outputs are already copied out, so all that is left there are the
-        inputs, the command's temp files and whatever else it wrote.
+        The outputs and the report sit next to it in the run's own folder, so
+        what goes is only the inputs, the command's temp files and whatever
+        else it left in ``.cpg_work``.
         """
         if record.work_dir is None:
             return
         if not self.store.load_settings().clean_work_dir:
             return
-        base = Path(record.work_dir)
-        shutil.rmtree(base, ignore_errors=True)
-        try:
-            base.parent.rmdir()
-        except OSError:
-            # Another run is still working there, or it is gone already.
-            pass
+        shutil.rmtree(Path(record.work_dir), ignore_errors=True)
         record.work_dir = None

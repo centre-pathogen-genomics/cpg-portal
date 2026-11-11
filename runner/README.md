@@ -68,10 +68,10 @@ be fixed in `frontend/src`, not copied into `renderer/src`.
 
 ## What a run leaves behind
 
-A run works in `<output folder>/.cpg_work/<run id>/` (bind-mounted as `/work`,
-`/tmp` and `/inputs`) and copies what its targets name into
-`<output folder>/<tool>-<timestamp>/`. That folder also gets the run's
-provenance, so it describes itself after the app is gone:
+Each run owns one folder in the output folder, `<output folder>/<tool>-<timestamp>/`,
+and works inside its `.cpg_work/` (bind-mounted as `/work`, `/tmp` and `/inputs`).
+The files its targets name are copied next to that folder, together with the
+run's provenance, so it describes itself after the app is gone:
 
 | File | What it holds |
 |---|---|
@@ -82,9 +82,12 @@ provenance, so it describes itself after the app is gone:
 | `install.sh` | rebuilds that environment next to the outputs (`mamba`/`conda env create`) and runs the post-install step |
 | `post_install.sh` | the post-install step on its own, when the tool has one |
 
-`Clean up work folder` (on by default) removes `.cpg_work/<run id>` once the
-outputs are copied; turn it off to inspect the inputs and leftovers, which the
-run page then links as a work folder.
+A run that fails or is cancelled gets the folder too, with its log, command and
+a README that says what happened — that is the only place its output survives.
+
+`Clean up work folder` (on by default) removes `.cpg_work` once the run
+finishes; turn it off to inspect the inputs and leftovers, which the run page
+then links as a work folder.
 
 ## Test and build
 
