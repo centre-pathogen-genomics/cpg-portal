@@ -177,42 +177,41 @@ export function RunPage({ id }: { id: string }) {
               </section>
             )}
 
-            {record?.output_dir && (
-              <section className="grid gap-2">
-                <h2 className="text-lg font-semibold">Output folder</h2>
-                <p className="text-muted-foreground font-mono text-xs break-all">
-                  {record.output_dir}
-                </p>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => openPath(record.output_dir as string)}
-                  >
-                    Open
-                  </Button>
-                </div>
-              </section>
-            )}
-
-            {record?.work_dir && (
-              <section className="grid gap-2">
-                <h2 className="text-lg font-semibold">Work folder</h2>
-                <p className="text-muted-foreground font-mono text-xs break-all">
-                  {record.work_dir}
-                </p>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => openPath(record.work_dir as string)}
-                  >
-                    Open
-                  </Button>
-                </div>
-              </section>
+            {(record?.output_dir || record?.work_dir) && (
+              <footer className="text-muted-foreground grid gap-1 border-t pt-4 text-xs">
+                {record?.output_dir && (
+                  <div className="flex flex-wrap items-baseline gap-x-2">
+                    <span>Output folder</span>
+                    <span className="font-mono break-all">
+                      {record.output_dir}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="h-auto p-0 text-xs"
+                      onClick={() => openPath(record.output_dir as string)}
+                    >
+                      Open
+                    </Button>
+                  </div>
+                )}
+                {record?.work_dir && (
+                  <div className="flex flex-wrap items-baseline gap-x-2">
+                    <span>Work folder</span>
+                    <span className="font-mono break-all">
+                      {record.work_dir}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="h-auto p-0 text-xs"
+                      onClick={() => openPath(record.work_dir as string)}
+                    >
+                      Open
+                    </Button>
+                  </div>
+                )}
+              </footer>
             )}
           </div>
         </main>
