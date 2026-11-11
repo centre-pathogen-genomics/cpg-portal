@@ -1,4 +1,10 @@
-from cpg_runner.docker_args import build_run_args, conda_volume_name
+from cpg_runner.docker_args import (
+    CONDA_PKGS_VOLUME,
+    build_env_create_args,
+    build_post_install_args,
+    build_run_args,
+    conda_volume_name,
+)
 
 
 def test_network_enabled_argv():
@@ -29,6 +35,8 @@ def test_network_enabled_argv():
         "type=bind,source=/data/runs/run-1/tmp,target=/tmp",
         "--mount",
         "type=bind,source=/data/runs/run-1/inputs,target=/inputs,readonly",
+        "-e",
+        "PYTHONUNBUFFERED=1",
         "--workdir",
         "/work",
         "cpg-runner-runtime:1",
@@ -100,3 +108,30 @@ def test_paths_with_spaces_and_windows_style_path():
         == r"type=bind,source=C:\Users\Test User\CPG Runs\run 4\inputs,target=/inputs,readonly"
         for arg in windows
     )
+
+
+def test_environment_creation_uses_a_shared_package_cache():
+    """The second tool reuses the first one's downloaded packages."""
+    args, command = build_env_create_args(
+        docker_bin="docker",
+        tool_id="tool-2",
+        image_tag="runtime:1",
+        environment_yml="/packs/tool-2/environment.yml",
+    )
+
+    assert f"type=volume,source={CONDA_PKGS_VOLUME},target=/opt/conda/pkgs" in args
+    assert "type=volume,source=cpg-runner-conda-tool-2,target=/conda/tool-2" in args
+    assert args[args.index("-e") + 1] == "PYTHONUNBUFFERED=1"
+    assert "mamba env create" in command
+
+
+def test_post_install_streams_output():
+    args, command = build_post_install_args(
+        docker_bin="docker",
+        tool_id="tool-2",
+        image_tag="runtime:1",
+        post_install="python -c 'print(1)'",
+    )
+
+    assert "-e" in args and args[args.index("-e") + 1] == "PYTHONUNBUFFERED=1"
+    assert command.endswith("python -c 'print(1)'")

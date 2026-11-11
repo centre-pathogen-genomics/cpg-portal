@@ -3,6 +3,9 @@
 from pathlib import Path
 
 CONDA_VOLUME_PREFIX = "cpg-runner-conda-"
+# conda downloads every package into this cache; sharing it between tools means
+# the second environment reuses the first one's downloads.
+CONDA_PKGS_VOLUME = "cpg-runner-conda-pkgs"
 
 
 def conda_volume_name(tool_id: str) -> str:
@@ -56,6 +59,8 @@ def build_run_args(
             ),
         ]
     args += [
+        "-e",
+        "PYTHONUNBUFFERED=1",
         "--workdir",
         "/work",
         image_tag,
@@ -88,6 +93,10 @@ def build_env_create_args(
         f"type=bind,source={environment_yml},target=/tmp/environment.yml,readonly",
         "--mount",
         f"type=volume,source={conda_volume_name(tool_id)},target={target}",
+        "--mount",
+        f"type=volume,source={CONDA_PKGS_VOLUME},target=/opt/conda/pkgs",
+        "-e",
+        "PYTHONUNBUFFERED=1",
         image_tag,
         "/bin/bash",
         "-lc",
@@ -115,6 +124,8 @@ def build_post_install_args(
         install_container_name(tool_id),
         "--mount",
         f"type=volume,source={conda_volume_name(tool_id)},target={target}",
+        "-e",
+        "PYTHONUNBUFFERED=1",
         image_tag,
         "/bin/bash",
         "-lc",

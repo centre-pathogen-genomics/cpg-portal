@@ -2,6 +2,7 @@
 
 import hashlib
 import threading
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -49,6 +50,8 @@ class Installer:
         self.store = store
         self.needs_environment = resources.environment_yml is not None
         self.channel = EventChannel()
+        # Injected by tests to keep the heartbeat quick.
+        self.heartbeat_seconds = 5.0
         self._lock = threading.Lock()
         self._installing = False
         self._failure: str | None = None
@@ -184,9 +187,10 @@ class Installer:
             image_tag=self.runner.runtime_image.tag,
             environment_yml=environment_yml,
         )
-        returncode = self.docker.run(args, self._log)
+        returncode = self._run_with_progress(args, "Still installing the environment")
         if returncode != 0:
             raise RuntimeError("Tool environment installation failed")
+        self._log("Tool environment installed.")
         if self.tool.post_install:
             self._log("Running post-install…")
             args, _ = build_post_install_args(
@@ -195,9 +199,10 @@ class Installer:
                 image_tag=self.runner.runtime_image.tag,
                 post_install=self.tool.post_install,
             )
-            returncode = self.docker.run(args, self._log)
+            returncode = self._run_with_progress(args, "Still running post-install")
             if returncode != 0:
                 raise RuntimeError("Post-install failed")
+            self._log("Post-install finished.")
         self.store.write_environment_marker(
             self.tool.id,
             {
@@ -207,6 +212,29 @@ class Installer:
         )
 
     # -- events ------------------------------------------------------------
+
+    def _run_with_progress(self, args: list[str], label: str) -> int:
+        """Run a container command, saying it is still going while it is.
+
+        mamba is quiet for a minute and a tool's post-install may print nothing
+        until it exits, which reads as a freeze; a line every few seconds shows
+        the install is alive.
+        """
+        stopped = threading.Event()
+        started = time.monotonic()
+
+        def beat() -> None:
+            while not stopped.wait(self.heartbeat_seconds):
+                elapsed = int(time.monotonic() - started)
+                self._log(f"{label} ({elapsed}s)")
+
+        thread = threading.Thread(target=beat, daemon=True)
+        thread.start()
+        try:
+            return self.docker.run(args, self._log)
+        finally:
+            stopped.set()
+            thread.join(timeout=1.0)
 
     def _log(self, line: str) -> None:
         self.channel.publish_threadsafe({"type": "log", "line": line})
