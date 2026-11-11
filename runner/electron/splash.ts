@@ -48,7 +48,7 @@ export function splashHtml(logoSrc: string): string {
         }
       }
       .logo {
-        width: 196px;
+        width: 90%;
         height: auto;
       }
       .logo[src=""] {
