@@ -69,7 +69,8 @@ be fixed in `frontend/src`, not copied into `renderer/src`.
 ## What a run leaves behind
 
 Each run owns one folder in the output folder, `<output folder>/<tool>-<timestamp>/`,
-and works inside its `.cpg_work/` (bind-mounted as `/work`, `/tmp` and `/inputs`).
+and works inside its `.cpg_work/` (`work` and `tmp` bind-mounted there; each
+chosen input file is mounted read-only at `/inputs/<name>` — nothing is copied).
 The folder keeps the run's provenance at its top level and what the tool
 produced in `results/`, so it describes itself after the app is gone:
 

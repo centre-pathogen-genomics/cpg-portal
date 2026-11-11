@@ -15,7 +15,7 @@ def test_network_enabled_argv():
         network=True,
         work_dir="/data/runs/run-1/work",
         tmp_dir="/data/runs/run-1/tmp",
-        inputs_dir="/data/runs/run-1/inputs",
+        input_files=[("/data/seq.fa", "seq.fa")],
         image_tag="cpg-runner-runtime:1",
         shell_command="set -euo pipefail; echo hi",
     )
@@ -34,7 +34,7 @@ def test_network_enabled_argv():
         "--mount",
         "type=bind,source=/data/runs/run-1/tmp,target=/tmp",
         "--mount",
-        "type=bind,source=/data/runs/run-1/inputs,target=/inputs,readonly",
+        "type=bind,source=/data/seq.fa,target=/inputs/seq.fa,readonly",
         "-e",
         "PYTHONUNBUFFERED=1",
         "--workdir",
@@ -54,7 +54,6 @@ def test_network_disabled_and_environment_volume():
         network=False,
         work_dir="/w",
         tmp_dir="/t",
-        inputs_dir="/i",
         image_tag="runtime:1",
         shell_command="true",
         tool_id="tool-1",
@@ -76,7 +75,7 @@ def test_paths_with_spaces_and_windows_style_path():
         network=False,
         work_dir="/Users/Test User/CPG Runs/run 3/work",
         tmp_dir="/Users/Test User/CPG Runs/run 3/tmp",
-        inputs_dir="/Users/Test User/CPG Runs/run 3/inputs",
+        input_files=[("/Users/Test User/CPG Runs/seq one.fa", "seq_one.fa")],
         image_tag="runtime:1",
         shell_command="true",
     )
@@ -86,6 +85,10 @@ def test_paths_with_spaces_and_windows_style_path():
         args.count("type=bind,source=/Users/Test User/CPG Runs/run 3/tmp,target=/tmp")
         == 1
     )
+    assert (
+        "type=bind,source=/Users/Test User/CPG Runs/seq one.fa,"
+        "target=/inputs/seq_one.fa,readonly" in args
+    )
 
     windows = build_run_args(
         docker_bin="docker",
@@ -94,7 +97,7 @@ def test_paths_with_spaces_and_windows_style_path():
         network=False,
         work_dir=r"C:\Users\Test User\CPG Runs\run 4\work",
         tmp_dir=r"C:\Users\Test User\CPG Runs\run 4\tmp",
-        inputs_dir=r"C:\Users\Test User\CPG Runs\run 4\inputs",
+        input_files=[(r"C:\Users\Test User\CPG Runs\seq.fa", "seq.fa")],
         image_tag="runtime:1",
         shell_command="true",
     )
@@ -105,7 +108,7 @@ def test_paths_with_spaces_and_windows_style_path():
     # A Windows drive path is a single argv element, not split on the colon.
     assert any(
         arg
-        == r"type=bind,source=C:\Users\Test User\CPG Runs\run 4\inputs,target=/inputs,readonly"
+        == r"type=bind,source=C:\Users\Test User\CPG Runs\seq.fa,target=/inputs/seq.fa,readonly"
         for arg in windows
     )
 

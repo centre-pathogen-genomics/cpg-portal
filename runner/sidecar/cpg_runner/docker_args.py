@@ -1,5 +1,6 @@
 """Pure builders for the ``docker run`` commands the sidecar issues."""
 
+from collections.abc import Sequence
 from pathlib import Path
 
 CONDA_VOLUME_PREFIX = "cpg-runner-conda-"
@@ -28,11 +29,19 @@ def build_run_args(
     network: bool,
     work_dir: str | Path,
     tmp_dir: str | Path,
-    inputs_dir: str | Path,
     image_tag: str,
     shell_command: str,
     tool_id: str | None = None,
+    input_files: Sequence[tuple[str, str]] = (),
+    work_input_files: Sequence[tuple[str, str]] = (),
 ) -> list[str]:
+    """The argv for one run.
+
+    ``input_files`` are the chosen files, each mounted read-only where the
+    container looks for it — the file the user picked, never a copy of it.
+    ``work_input_files`` are the ones whose work-dir symlink could not be
+    made (Windows without symlink privileges), so they are mounted there.
+    """
     args = [
         docker_bin,
         "run",
@@ -47,9 +56,17 @@ def build_run_args(
         f"type=bind,source={work_dir},target=/work",
         "--mount",
         f"type=bind,source={tmp_dir},target=/tmp",
-        "--mount",
-        f"type=bind,source={inputs_dir},target=/inputs,readonly",
     ]
+    for source, name in input_files:
+        args += [
+            "--mount",
+            f"type=bind,source={source},target=/inputs/{name},readonly",
+        ]
+    for source, name in work_input_files:
+        args += [
+            "--mount",
+            f"type=bind,source={source},target=/work/{name},readonly",
+        ]
     if tool_id is not None:
         args += [
             "--mount",

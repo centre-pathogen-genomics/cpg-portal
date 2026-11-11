@@ -101,7 +101,8 @@ def test_output_folder_is_deduplicated(tmp_path, monkeypatch):
     assert Path(manager.get(second.id).output_dir).name == ("my_tool-20260101-000000-2")
 
 
-def test_input_files_are_copied_and_linked_into_work(tmp_path):
+def test_input_files_are_mounted_and_linked_into_work(tmp_path):
+    """The user's file is mounted where the tool reads it, not copied."""
     tool = make_tool(
         command="cat {{ seq }} > out.txt",
         params=[
@@ -112,17 +113,24 @@ def test_input_files_are_copied_and_linked_into_work(tmp_path):
             }
         ],
     )
-    manager = _manager(tmp_path, tool, WritingDocker())
+    docker = WritingDocker()
+    manager = _manager(tmp_path, tool, docker)
     _keep_work(manager)
     source = tmp_path / "input.fasta"
     source.write_text(">a\nACGT\n")
     record = manager.start({"seq": [str(source)]}, 1)
     wait_for(lambda: manager.get(record.id).status in TERMINAL_STATUSES)
+
+    argv = docker.run_args[0]
+    assert f"type=bind,source={source},target=/inputs/input.fasta,readonly" in argv
+
     run_dir = _work_root(record)
-    assert (run_dir / "inputs" / "input.fasta").read_text() == ">a\nACGT\n"
+    # Nothing was copied next to the run: only the link the tool needs.
+    assert not (run_dir / "inputs").exists()
     link = run_dir / "work" / "input.fasta"
     assert link.is_symlink()
     assert link.readlink() == Path("/inputs/input.fasta")
+    assert source.read_text() == ">a\nACGT\n"
     assert manager.get(record.id).params["seq"] == "input.fasta"
 
 
