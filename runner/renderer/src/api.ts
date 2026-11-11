@@ -2,9 +2,19 @@ let sessionToken = ""
 // Development serves the UI from vite while the API stays on the sidecar, so
 // the window is told where the API is. Same origin otherwise.
 let apiBase = ""
+const baseListeners = new Set<() => void>()
+
+/** Notified when the window is pointed at another tool's runner. */
+export function onApiBaseChange(listener: () => void): () => void {
+  baseListeners.add(listener)
+  return () => {
+    baseListeners.delete(listener)
+  }
+}
 
 export function setApiBase(value: string | null): void {
   apiBase = (value ?? "").replace(/\/+$/, "")
+  for (const listener of baseListeners) listener()
 }
 
 function apiRoot(): string {

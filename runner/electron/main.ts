@@ -107,6 +107,11 @@ let mainWindow: BrowserWindow | null = null
 let splashWindow: BrowserWindow | null = null
 let shuttingDown = false
 let lastToolId: string | null = null
+// Which origin the window runs on: "none" until a page with an API is loaded,
+// then the origin that stays while tools are switched.
+let appOrigin: "none" | "dev" | "sidecar" = "none"
+// The tool whose sidecar served the page the window shows.
+let windowToolId: string | null = null
 const sidecars = new Map<string, Sidecar>()
 const starting = new Map<string, Promise<number>>()
 const sidecarStderr = new Map<string, string[]>()
@@ -363,8 +368,14 @@ function importPack(file: string): ToolEntry {
     fs.rmSync(path.join(directory, "environment.yml"), { force: true })
   }
   // The running runner service read the old pack files at startup, so it has
-  // to go: the next visit starts one that reads the new ones.
+  // to go: the next visit starts one that reads the new ones. If it served the
+  // page on screen, that page's origin goes with it, so the next open must
+  // load a page again instead of switching in place.
   stopSidecar(id)
+  if (id === windowToolId) {
+    appOrigin = "none"
+    windowToolId = null
+  }
   const entry = entryFor(id)
   if (!entry) throw new Error("The pack could not be read back.")
   return entry
@@ -559,6 +570,9 @@ function createWindow(): BrowserWindow {
   })
   window.on("closed", () => {
     mainWindow = null
+    // The next window has no page yet, so its first tool has to load one.
+    appOrigin = "none"
+    windowToolId = null
   })
   mainWindow = window
   return window
@@ -583,8 +597,11 @@ async function showHome(): Promise<void> {
   if (tools.length === 0) {
     if (uiOrigin) {
       await window.loadURL(`${uiOrigin}/?${new URLSearchParams({ token })}`)
+      appOrigin = "dev"
     } else {
+      // No API behind a file:// page: the first tool has to load its own.
       await window.loadFile(path.join(uiDir, "index.html"))
+      appOrigin = "none"
     }
     closeSplash()
     if (!window.isVisible()) window.show()
@@ -596,6 +613,8 @@ async function showHome(): Promise<void> {
       : tools[0].id
   const port = await ensureSidecarWithRetry(toolId)
   await window.loadURL(toolUrl(port, "/"))
+  appOrigin = uiOrigin ? "dev" : "sidecar"
+  windowToolId = toolId
   if (!window.isVisible()) window.show()
 }
 
@@ -604,7 +623,17 @@ async function showTool(toolId: string): Promise<void> {
   try {
     const port = await ensureSidecarWithRetry(toolId)
     lastToolId = toolId
-    await window.loadURL(toolUrl(port, "/tool"))
+    if (appOrigin === "none") {
+      // The page has no API behind it yet (a first run's file:// page), so it
+      // has to come from the tool's sidecar.
+      await window.loadURL(toolUrl(port, "/tool"))
+      appOrigin = uiOrigin ? "dev" : "sidecar"
+    } else {
+      // Another tool's runner: the page stays, so the sidebar's lists and the
+      // run settings keep their state instead of flashing through a reload.
+      window.webContents.send("runner:show-tool", { toolId, port })
+    }
+    windowToolId = toolId
   } catch (error) {
     console.error(`Could not open ${toolId}: ${String(error)}`)
     throw error
@@ -788,6 +817,14 @@ function registerIpcHandlers(): void {
   })
 
   ipcMain.handle("runner:tools", (): ToolEntry[] => listTools())
+  // A reloaded page comes from the origin it was first loaded with, but it
+  // must keep showing the tool on screen, so the renderer asks which one it is.
+  ipcMain.handle("runner:current-tool", () => {
+    const toolId = lastToolId
+    if (!toolId) return null
+    const running = sidecars.get(toolId)
+    return running ? { toolId, port: running.port } : null
+  })
 
   ipcMain.handle(
     "runner:tool-images",

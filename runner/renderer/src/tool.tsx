@@ -1,5 +1,5 @@
 import { ExternalLink, FolderOpen } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import RenderMarkdown from "@/components/Common/Markdown";
 import ToolRunForm from "@/components/Tools/ToolRunForm";
@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { ApiError, api, errorMessage } from "./api";
+import { ApiError, api, errorMessage, onApiBaseChange } from "./api";
 import { DockerSetupDialog } from "./components/DockerSetupDialog";
 import { InstallDialog } from "./components/InstallDialog";
 import { LocalFilePicker } from "./components/LocalFilePicker";
@@ -48,6 +48,8 @@ export function ToolPage() {
   const images = useToolImages();
   const [rerunRun, setRerunRun] = useState<RunRecord | null>(null);
   const [rerunChecked, setRerunChecked] = useState(false);
+  // Answers for a tool the window has left must not overwrite the new one's.
+  const loadSeq = useRef(0);
 
   const refreshStatus = useCallback(async () => {
     const next = await api.get<StatusPayload>("/status");
@@ -57,6 +59,7 @@ export function ToolPage() {
   }, []);
 
   const loadAll = useCallback(async () => {
+    const seq = ++loadSeq.current;
     try {
       const [toolPayload, statusPayload, settingsPayload, types] =
         await Promise.all([
@@ -65,6 +68,7 @@ export function ToolPage() {
           api.get<Settings>("/settings"),
           api.get<FileTypesMap>("/file-types"),
         ]);
+      if (seq !== loadSeq.current) return;
       const loadedTool = unwrapTool(toolPayload);
       setTool(loadedTool);
       setStatus(statusPayload);
@@ -72,13 +76,24 @@ export function ToolPage() {
       setFileTypes(types);
       setLoadError(null);
     } catch (error) {
-      setLoadError(errorMessage(error));
+      if (seq === loadSeq.current) setLoadError(errorMessage(error));
     }
   }, []);
 
   useEffect(() => {
     void loadAll();
   }, [loadAll]);
+
+  // Another tool's runner: reload its data, keeping the old one on screen
+  // until the new one answers instead of blanking the page.
+  useEffect(
+    () =>
+      onApiBaseChange(() => {
+        setInstallDismissed(false);
+        void loadAll();
+      }),
+    [loadAll],
+  );
 
   // A rerun arrives as ?rerun=<run id>: its values prefill the form.
   useEffect(() => {

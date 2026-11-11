@@ -27,6 +27,8 @@ contextBridge.exposeInMainWorld("cpgRunner", {
   token,
   portalUrl,
   tools: (): Promise<ToolEntry[]> => ipcRenderer.invoke("runner:tools"),
+  currentTool: (): Promise<{ toolId: string; port: number } | null> =>
+    ipcRenderer.invoke("runner:current-tool"),
   toolImages: (): Promise<Record<string, string>> =>
     ipcRenderer.invoke("runner:tool-images"),
   portalTools: (): Promise<unknown[]> =>
@@ -43,6 +45,19 @@ contextBridge.exposeInMainWorld("cpgRunner", {
     ipcRenderer.invoke("runner:import-paths", files),
   openTool: (toolId: string): Promise<void> =>
     ipcRenderer.invoke("runner:open-tool", toolId),
+  /** The window is pointed at another tool's runner; the page stays mounted. */
+  onShowTool: (
+    handler: (target: { toolId: string; port: number }) => void,
+  ): (() => void) => {
+    const listener = (
+      _event: unknown,
+      target: { toolId: string; port: number },
+    ) => handler(target)
+    ipcRenderer.on("runner:show-tool", listener)
+    return () => {
+      ipcRenderer.removeListener("runner:show-tool", listener)
+    }
+  },
   home: (): Promise<void> => ipcRenderer.invoke("runner:home"),
   /** The window has rendered: the splash can go. */
   ready: (): void => ipcRenderer.send("runner:ready"),

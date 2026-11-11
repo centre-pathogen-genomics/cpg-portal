@@ -19,6 +19,8 @@ declare global {
       /** Origin of the portal this build belongs to; empty when unknown. */
       portalUrl: string
       tools(): Promise<ToolEntry[]>
+      /** The tool the window shows, also after a reload. */
+      currentTool(): Promise<{ toolId: string; port: number } | null>
       /** Cached tool pictures, by tool id, as data URLs. */
       toolImages(): Promise<Record<string, string>>
       /** The portal's catalogue, one row per tool name. */
@@ -35,6 +37,10 @@ declare global {
       importPacks(): Promise<ToolEntry[]>
       importPackPaths(files: string[]): Promise<ToolEntry[]>
       openTool(toolId: string): Promise<void>
+      /** Called instead of a page load when the window shows another tool. */
+      onShowTool(
+        handler: (target: { toolId: string; port: number }) => void,
+      ): () => void
       home(): Promise<void>
       ready(): void
       pickFiles(options: {

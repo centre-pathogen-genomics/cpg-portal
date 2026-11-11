@@ -19,6 +19,7 @@ runner/artifacts/
 runner/dist/
 runner/sidecar/dist/
 runner/renderer/dist/
+runner/electron/dist/
 runner/sidecar/.venv/
 runner/sidecar/build/
 runner/.dev/

@@ -22,7 +22,12 @@ That starts three processes:
 The window is loaded from vite but talks to the sidecar, which is why the app
 passes the API origin to the renderer in development (`?api=`); the sidecar
 allows `http://localhost:*` and `http://127.0.0.1:*` origins for that. In a
-packaged app both are the same origin.
+packaged app the first page also comes from a sidecar.
+
+Switching tools does not load a page: the window keeps the origin it started
+with and is only pointed at the other tool's sidecar (`runner:show-tool`), so
+the sidebar and the run settings panel keep their state. A reload asks the main
+process which tool is on screen (`runner:current-tool`) to find its API again.
 
 State lives in `runner/.dev/userdata`, so a dev session never sees or touches the
 tools installed in the real app (`~/Library/Application Support/cpg-runner`).
