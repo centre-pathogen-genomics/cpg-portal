@@ -171,19 +171,27 @@ export function ToolPage() {
     }
   }
 
+  // The sidebar is the app's frame: it stays while a tool's data loads or
+  // fails, so switching tools never leaves an empty window behind.
   if (loadError) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-4 p-8">
-        <p className="text-destructive text-sm">{loadError}</p>
-        <Button onClick={() => void loadAll()}>Retry</Button>
+      <div className="flex h-full">
+        <ToolSidebar activeToolId={null} />
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 p-8">
+          <p className="text-destructive text-sm">{loadError}</p>
+          <Button onClick={() => void loadAll()}>Retry</Button>
+        </div>
       </div>
     )
   }
 
   if (!tool || !settings || !status) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <p className="text-muted-foreground text-sm">Loading…</p>
+      <div className="flex h-full">
+        <ToolSidebar activeToolId={null} />
+        <div className="flex min-h-0 flex-1 items-center justify-center p-8">
+          <p className="text-muted-foreground text-sm">Loading…</p>
+        </div>
       </div>
     )
   }

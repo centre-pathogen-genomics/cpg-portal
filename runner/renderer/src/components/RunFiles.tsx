@@ -23,7 +23,7 @@ export function RunFiles({
         {onOpenOutputFolder && (
           <button
             type="button"
-            className="hover:text-primary flex items-center gap-1 font-semibold whitespace-nowrap"
+            className="hover:text-primary flex items-center gap-1 font-semibold whitespace-nowrap text-sm"
             onClick={onOpenOutputFolder}
           >
             <FolderOpen className="size-4" />
