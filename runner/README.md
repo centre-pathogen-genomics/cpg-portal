@@ -75,12 +75,11 @@ run's provenance, so it describes itself after the app is gone:
 
 | File | What it holds |
 |---|---|
-| `README.md` | the run's name, date and CPUs, the tool's results explanation, and the file list |
+| `README.md` | the run's name, date and CPUs, the results explanation, the reproduction steps, and the file list |
 | `log.txt` | everything the run printed |
-| `command.sh` | the command that produced the files, conda activation included |
+| `command.sh` | the command, runnable in the folder (it puts `./env` on `PATH` when `install.sh` made it) |
 | `environment.yml` | the tool's conda environment, when it has one |
-| `install.sh` | rebuilds that environment next to the outputs (`mamba`/`conda env create`) and runs the post-install step |
-| `post_install.sh` | the post-install step on its own, when the tool has one |
+| `install.sh` | builds that environment as `./env` (`mamba`/`conda env create`) and runs the post-install step, which lives only here |
 
 A run that fails or is cancelled gets the folder too, with its log, command and
 a README that says what happened — that is the only place its output survives.

@@ -422,18 +422,13 @@ class RunManager:
                 path.chmod(mode)
 
         try:
-            write("command.sh", f"set -euo pipefail\n{record.command}\n")
+            write("command.sh", self._command_script(record), mode=0o755)
             write("log.txt", record.stdout)
             if self.environment_yml is not None:
                 environment = output_dir / "environment.yml"
                 if not environment.exists():
                     shutil.copy2(self.environment_yml, environment)
                 write("install.sh", self._install_script(), mode=0o755)
-            if self.tool.post_install:
-                write(
-                    "post_install.sh",
-                    f"set -euo pipefail\n{self.tool.post_install}\n",
-                )
             write(
                 "README.md",
                 self._readme(
@@ -442,6 +437,24 @@ class RunManager:
             )
         except OSError:
             self._log(record, "Could not write the run report to the output folder.")
+
+    def _command_script(self, record: RunRecord) -> str:
+        """The command this run executed, runnable in this folder.
+
+        The container's activation (``/conda/<tool id>``) gives way to
+        ``./env``, which ``install.sh`` builds here, so the folder reproduces
+        the run with the environment it saved.
+        """
+        lines = [
+            "#!/usr/bin/env bash",
+            "# The command this run executed, on the run's own inputs.",
+            "set -euo pipefail",
+            'cd "$(dirname "$0")"',
+            'if [ -d env ]; then export PATH="$PWD/env/bin:$PATH"; fi',
+            "",
+            render_command(self.tool.command, record.params, record.cpus),
+        ]
+        return "\n".join(lines) + "\n"
 
     def _install_script(self) -> str:
         """A script that rebuilds the run's environment next to the outputs."""
@@ -504,15 +517,37 @@ class RunManager:
                 "",
                 "`log.txt` holds everything the tool printed.",
             ]
+        lines += ["", "## Reproducing this run", ""]
+        if self.environment_yml is not None:
+            lines += [
+                "```bash",
+                "./install.sh   # builds ./env from environment.yml, then runs the post-install step",
+                "./command.sh",
+                "```",
+            ]
+        else:
+            lines += [
+                "```bash",
+                "./command.sh",
+                "```",
+                "",
+                "This tool needs no conda environment: the command runs in the"
+                " runtime image, whose tools it uses.",
+            ]
+        if any(str(param["param_type"]) == "file" for param in self.tool.params):
+            lines += [
+                "",
+                "Input files are read from this folder, so put them here first;"
+                " the work folder is cleaned up unless the setting says otherwise.",
+            ]
         lines += ["", "## Files", ""]
         for file in record.files:
             lines.append(f"- `{file.name}` — what the run produced")
         descriptions = {
             "log.txt": "everything the run printed",
-            "command.sh": "the command that produced these files",
+            "command.sh": "the command that produced these files, runnable here",
             "environment.yml": "the conda environment it ran in",
-            "install.sh": "rebuilds that environment and runs the post-install step",
-            "post_install.sh": "how the environment was prepared",
+            "install.sh": "builds that environment and runs the post-install step",
         }
         for name, description in descriptions.items():
             if (output_dir / name).is_file():

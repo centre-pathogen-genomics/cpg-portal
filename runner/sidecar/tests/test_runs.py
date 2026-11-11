@@ -229,9 +229,7 @@ def test_outputs_come_with_their_provenance(tmp_path):
     assert "One row per gene." in readme
     assert "`out.txt`" in readme
     assert (output / "log.txt").read_text() == record.stdout
-    assert "printf hi > out.txt" in (output / "command.sh").read_text()
     assert (output / "environment.yml").read_text() == "channels: [conda-forge]\n"
-    assert "conda install -y fastqc" in (output / "post_install.sh").read_text()
 
     install = output / "install.sh"
     script = install.read_text()
@@ -239,6 +237,20 @@ def test_outputs_come_with_their_provenance(tmp_path):
     assert "env create --yes --file environment.yml --prefix ./env" in script
     assert "conda install -y fastqc" in script
     assert os.access(install, os.X_OK)
+
+    command = output / "command.sh"
+    assert command.read_text().splitlines()[0] == "#!/usr/bin/env bash"
+    assert 'export PATH="$PWD/env/bin:$PATH"' in command.read_text()
+    assert "printf hi > out.txt" in command.read_text()
+    # The container's own activation would not resolve here.
+    assert "/conda/" not in command.read_text()
+    assert os.access(command, os.X_OK)
+    # The post-install step lives in install.sh, not in a second script.
+    assert not (output / "post_install.sh").exists()
+
+    assert "## Reproducing this run" in readme
+    assert "./install.sh" in readme
+    assert "./command.sh" in readme
     assert "`install.sh`" in readme
 
 
@@ -251,9 +263,11 @@ def test_a_tool_without_environment_or_post_install_saves_what_it_has(tmp_path):
     assert "does not describe its results" in readme
     output = Path(manager.get(record.id).output_dir)
     assert not (output / "environment.yml").exists()
-    assert not (output / "post_install.sh").exists()
     assert not (output / "install.sh").exists()
     assert (output / "log.txt").is_file()
+    assert "## Reproducing this run" in readme
+    assert "./command.sh" in readme
+    assert "runtime image" in readme
 
 
 def test_a_failed_run_still_reports_itself(tmp_path):
