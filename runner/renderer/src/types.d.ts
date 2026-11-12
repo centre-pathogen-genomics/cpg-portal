@@ -25,6 +25,8 @@ declare global {
       toolImages(): Promise<Record<string, string>>
       /** The portal's catalogue, one row per tool name. */
       portalTools(): Promise<PortalToolSummary[]>
+      /** The portal's search, across every tool it hosts. */
+      portalSearch(query: string): Promise<PortalToolSummary[]>
       portalTool(target: {
         name: string
         version?: string

@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react"
-import { toast } from "sonner"
-import { Button } from "@/components/ui/button"
+import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -8,10 +8,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { api, errorMessage } from "../api"
-import type { InstallMessage, ToolConfig } from "../contracts"
-import { LogPanel } from "./LogPanel"
+} from "@/components/ui/dialog";
+import { api, errorMessage } from "../api";
+import type { InstallMessage, ToolConfig } from "../contracts";
+import { LogPanel } from "./LogPanel";
 
 export function InstallDialog({
   open,
@@ -20,84 +20,84 @@ export function InstallDialog({
   onRefreshStatus,
   onDismiss,
 }: {
-  open: boolean
-  tool: ToolConfig | null
-  installing: boolean
-  onRefreshStatus: () => void
-  onDismiss: () => void
+  open: boolean;
+  tool: ToolConfig | null;
+  installing: boolean;
+  onRefreshStatus: () => void;
+  onDismiss: () => void;
 }) {
-  const [lines, setLines] = useState<string[]>([])
-  const [working, setWorking] = useState(false)
-  const [failure, setFailure] = useState<string | null>(null)
-  const socketRef = useRef<WebSocket | null>(null)
+  const [lines, setLines] = useState<string[]>([]);
+  const [working, setWorking] = useState(false);
+  const [failure, setFailure] = useState<string | null>(null);
+  const socketRef = useRef<WebSocket | null>(null);
 
   const closeSocket = useCallback(() => {
-    socketRef.current?.close()
-    socketRef.current = null
-  }, [])
+    socketRef.current?.close();
+    socketRef.current = null;
+  }, []);
 
   const subscribe = useCallback(() => {
-    closeSocket()
-    const socket = new WebSocket(api.wsUrl("/install/logs"))
-    socketRef.current = socket
+    closeSocket();
+    const socket = new WebSocket(api.wsUrl("/install/logs"));
+    socketRef.current = socket;
     socket.onmessage = (event) => {
-      let message: InstallMessage
+      let message: InstallMessage;
       try {
-        message = JSON.parse(String(event.data)) as InstallMessage
+        message = JSON.parse(String(event.data)) as InstallMessage;
       } catch {
-        return
+        return;
       }
       if (message.type === "log") {
-        setLines((previous) => [...previous, message.line].slice(-500))
+        setLines((previous) => [...previous, message.line].slice(-500));
       } else if (message.type === "state") {
         if (message.state === "installed") {
-          closeSocket()
-          setWorking(false)
-          setFailure(null)
-          onRefreshStatus()
+          closeSocket();
+          setWorking(false);
+          setFailure(null);
+          onRefreshStatus();
         } else if (message.state === "failed") {
-          closeSocket()
-          setWorking(false)
-          setFailure("Installation failed")
+          closeSocket();
+          setWorking(false);
+          setFailure("Installation failed");
         }
       }
-    }
+    };
     socket.onerror = () => {
-      closeSocket()
-      setWorking(false)
+      closeSocket();
+      setWorking(false);
       setFailure(
         (previous) => previous ?? "The installation log connection was lost",
-      )
-    }
+      );
+    };
     socket.onclose = () => {
-      if (socketRef.current === socket) socketRef.current = null
-    }
-  }, [closeSocket, onRefreshStatus])
+      if (socketRef.current === socket) socketRef.current = null;
+    };
+  }, [closeSocket, onRefreshStatus]);
 
-  useEffect(() => closeSocket, [closeSocket])
+  useEffect(() => closeSocket, [closeSocket]);
 
   useEffect(() => {
-    if (!open || !installing || socketRef.current) return
-    subscribe()
-  }, [open, installing, subscribe])
+    if (!open || !installing || socketRef.current) return;
+    subscribe();
+  }, [open, installing, subscribe]);
 
   async function startInstall() {
-    if (working) return
-    setWorking(true)
-    setFailure(null)
-    setLines([])
+    if (working) return;
+    setWorking(true);
+    setFailure(null);
+    setLines([]);
     try {
-      await api.post("/install")
+      await api.post("/install");
     } catch (error) {
-      toast.error(errorMessage(error))
-      setWorking(false)
-      onRefreshStatus()
-      return
+      toast.error(errorMessage(error));
+      setWorking(false);
+      onRefreshStatus();
+      return;
     }
-    subscribe()
+    subscribe();
   }
 
-  const busy = working || installing
+  const busy = working || installing;
 
   return (
     <Dialog open={open}>
@@ -137,11 +137,8 @@ export function InstallDialog({
           <Button type="button" variant="ghost" onClick={onDismiss}>
             Cancel
           </Button>
-          <Button type="button" variant="ghost" onClick={() => window.close()}>
-            Quit
-          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

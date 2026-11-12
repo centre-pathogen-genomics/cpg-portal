@@ -72,7 +72,7 @@ export function ToolsPage() {
           </h1>
           <p className="text-muted-foreground mt-2 text-sm">
             {firstRun
-              ? "Pick a tool on the portal, download its pack, then open it here. Input files never leave this computer."
+              ? "Add a tool from the portal, or drop a .cpgpack from this computer. Input files never leave this computer."
               : "Pick a tool on the left to run it on this computer."}
           </p>
 

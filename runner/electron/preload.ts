@@ -33,6 +33,8 @@ contextBridge.exposeInMainWorld("cpgRunner", {
     ipcRenderer.invoke("runner:tool-images"),
   portalTools: (): Promise<unknown[]> =>
     ipcRenderer.invoke("runner:portal-tools"),
+  portalSearch: (query: string): Promise<unknown[]> =>
+    ipcRenderer.invoke("runner:portal-search", query),
   portalTool: (target: { name: string; version?: string }): Promise<unknown> =>
     ipcRenderer.invoke("runner:portal-tool", target),
   addPortalTool: (target: {

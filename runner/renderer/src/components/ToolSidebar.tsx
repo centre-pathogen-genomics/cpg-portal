@@ -1,11 +1,10 @@
 import { LoaderCircle, PanelLeftClose, PanelLeftOpen, Plus } from "lucide-react"
 import { useEffect, useState } from "react"
-import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import type { PortalToolSummary } from "../contracts"
+import { AddToolDialog } from "./AddToolDialog"
 import { PortalToolDialog } from "./PortalToolDialog"
-import { ToolImage, placeholderImage, useToolImages } from "./ToolImage"
+import { ToolImage, useToolImages } from "./ToolImage"
 
 type ToolEntry = {
   id: string
@@ -25,9 +24,9 @@ function readCollapsed(): boolean {
 }
 
 /**
- * The tools this computer has, then the ones the portal offers. The former are
- * a workspace list; the latter are one click from being installed. It folds to
- * an icon bar, which is remembered for the window and across launches.
+ * The tools this computer has. Adding one — from the portal or from a pack —
+ * goes through the Add tool dialog. It folds to an icon bar, which is
+ * remembered for the window and across launches.
  */
 export function ToolSidebar({
   activeToolId,
@@ -41,27 +40,16 @@ export function ToolSidebar({
   const images = useToolImages()
   const [collapsed, setCollapsed] = useState(readCollapsed)
   const [tools, setTools] = useState<ToolEntry[]>([])
-  const [portalTools, setPortalTools] = useState<PortalToolSummary[]>([])
-  const [portalState, setPortalState] = useState<"loading" | "ready" | "offline">(
-    "loading",
-  )
+  const [addOpen, setAddOpen] = useState(false)
   const [portalTarget, setPortalTarget] = useState<{
     name: string
     version: string
   } | null>(null)
-  const [busy, setBusy] = useState(false)
   const [openingId, setOpeningId] = useState<string | null>(null)
 
   useEffect(() => {
     // The bridge is fixed for the window's lifetime.
     void window.cpgRunner?.tools().then(setTools)
-    void window.cpgRunner
-      ?.portalTools?.()
-      .then((catalogue) => {
-        setPortalTools(catalogue)
-        setPortalState("ready")
-      })
-      .catch(() => setPortalState("offline"))
   }, [])
 
   useEffect(() => {
@@ -72,6 +60,11 @@ export function ToolSidebar({
     }
   }, [collapsed])
 
+  async function refreshTools() {
+    if (!bridge) return
+    setTools(await bridge.tools())
+  }
+
   async function openTool(toolId: string) {
     if (!bridge || openingId) return
     if (beforeOpen && !(await beforeOpen(toolId))) return
@@ -81,19 +74,6 @@ export function ToolSidebar({
       await bridge.openTool(toolId)
     } finally {
       setOpeningId(null)
-    }
-  }
-
-  async function addTool() {
-    if (!bridge) return
-    setBusy(true)
-    try {
-      const added = await bridge.importPacks()
-      if (added.length > 0) setTools(await bridge.tools())
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : String(error))
-    } finally {
-      setBusy(false)
     }
   }
 
@@ -144,15 +124,17 @@ export function ToolSidebar({
           </p>
         )}
         {tools.length === 0 ? (
-          <p className="text-muted-foreground px-2 py-2 text-xs">
-            No tools yet. Add one below, or pick one from the portal.
-          </p>
+          !collapsed && (
+            <p className="text-muted-foreground px-2 py-2 text-xs">
+              No tools yet. Add one below.
+            </p>
+          )
         ) : (
           <ul className="grid grid-cols-1 gap-0.5">
             {tools.map((tool) => {
               const active = tool.id === activeToolId
               return (
-                <li key={tool.id}>
+                <li key={tool.id} className="min-w-0">
                   <button
                     type="button"
                     onClick={() => void openTool(tool.id)}
@@ -204,70 +186,6 @@ export function ToolSidebar({
             })}
           </ul>
         )}
-
-        {!collapsed && (
-          <p className="text-muted-foreground mt-4 px-2 pt-1 pb-1 text-xs font-semibold tracking-wide uppercase">
-            CPG Portal tools
-          </p>
-        )}
-        {collapsed && portalState === "ready" && portalTools.length > 0 && (
-          <div className="bg-border mx-1 my-2 h-px" />
-        )}
-        {portalState === "loading" && (
-          <p className="text-muted-foreground flex items-center gap-2 px-2 py-2 text-xs">
-            <LoaderCircle className="size-3.5 animate-spin" />
-            {!collapsed && "Reading the portal…"}
-          </p>
-        )}
-        {portalState === "offline" && (
-          <p className="text-muted-foreground px-2 py-2 text-xs">
-            {collapsed ? "—" : "The portal is not reachable right now."}
-          </p>
-        )}
-        {portalState === "ready" && (
-          <ul className="grid grid-cols-1 gap-0.5">
-            {portalTools.map((tool) => (
-              <li key={`${tool.name}-${tool.version}`}>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setPortalTarget({
-                      name: tool.name,
-                      version: tool.version,
-                    })
-                  }
-                  aria-label={collapsed ? tool.name : undefined}
-                  title={tool.description ?? tool.name}
-                  className={cn(
-                    "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-background/70",
-                    collapsed ? "justify-center" : "justify-between",
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "flex min-w-0 items-center gap-2",
-                      !collapsed && "flex-1",
-                    )}
-                  >
-                    <img
-                      src={tool.image ?? placeholderImage(tool.name)}
-                      alt={collapsed ? "" : tool.name}
-                      className="size-5 shrink-0 rounded-md border object-cover"
-                    />
-                    {!collapsed && (
-                      <span className="truncate">{tool.name}</span>
-                    )}
-                  </span>
-                  {!collapsed && tool.version && (
-                    <span className="text-muted-foreground shrink-0 text-xs">
-                      {tool.version}
-                    </span>
-                  )}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
       </nav>
 
       <div className="grid gap-1 border-t p-2">
@@ -275,20 +193,25 @@ export function ToolSidebar({
           type="button"
           variant="ghost"
           className={cn("w-full", collapsed ? "justify-center" : "justify-start")}
-          disabled={busy || openingId !== null || !bridge}
-          title={collapsed ? (busy ? "Adding tool…" : "Add tool") : undefined}
-          aria-label={collapsed ? (busy ? "Adding tool" : "Add tool") : undefined}
-          onClick={() => void addTool()}
+          disabled={openingId !== null || !bridge}
+          title={collapsed ? "Add tool" : undefined}
+          aria-label={collapsed ? "Add tool" : undefined}
+          onClick={() => setAddOpen(true)}
         >
-          {busy ? <LoaderCircle className="animate-spin" /> : <Plus />}
-          {!collapsed && (busy ? "Adding tool…" : "Add tool")}
+          <Plus />
+          {!collapsed && "Add tool"}
         </Button>
-        {busy && !collapsed && (
-          <p className="text-muted-foreground px-2 pb-1 text-xs">
-            Reading the pack and starting its runner…
-          </p>
-        )}
       </div>
+
+      <AddToolDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        onPick={(target) => {
+          setAddOpen(false)
+          setPortalTarget(target)
+        }}
+        onAdded={() => void refreshTools()}
+      />
 
       <PortalToolDialog
         target={portalTarget}
@@ -296,6 +219,7 @@ export function ToolSidebar({
         onOpenChange={(open) => {
           if (!open) setPortalTarget(null)
         }}
+        onAdded={() => void refreshTools()}
       />
     </aside>
   )

@@ -138,25 +138,42 @@ async function portalGet<T>(path: string): Promise<T> {
   return (await response.json()) as T
 }
 
+type PortalRow = {
+  name: string
+  version?: string
+  description?: string | null
+  image?: string | null
+  tags?: string[] | null
+}
+
+function portalSummary(tool: PortalRow): PortalToolSummary {
+  return {
+    name: tool.name,
+    version: tool.version ?? "",
+    description: tool.description ?? null,
+    image: tool.image ?? null,
+    tags: tool.tags ?? [],
+  }
+}
+
 // The tools the portal offers, one row per name.
 async function listPortalTools(): Promise<PortalToolSummary[]> {
-  const payload = await portalGet<{
-    data: {
-      name: string
-      version?: string
-      description?: string | null
-      image?: string | null
-      tags?: string[] | null
-    }[]
-  }>("/api/v1/tools/?limit=100")
+  const payload = await portalGet<{ data: PortalRow[] }>(
+    "/api/v1/tools/?limit=100",
+  )
   return payload.data
-    .map((tool) => ({
-      name: tool.name,
-      version: tool.version ?? "",
-      description: tool.description ?? null,
-      image: tool.image ?? null,
-      tags: tool.tags ?? [],
-    }))
+    .map(portalSummary)
+    .sort((left, right) => left.name.localeCompare(right.name))
+}
+
+// The portal's own search, so a name beyond the first page is found too.
+async function searchPortalTools(query: string): Promise<PortalToolSummary[]> {
+  const params = new URLSearchParams({ limit: "50", search: query })
+  const payload = await portalGet<{ data: PortalRow[] }>(
+    `/api/v1/tools/?${params.toString()}`,
+  )
+  return payload.data
+    .map(portalSummary)
     .sort((left, right) => left.name.localeCompare(right.name))
 }
 
@@ -832,6 +849,10 @@ function registerIpcHandlers(): void {
   )
 
   ipcMain.handle("runner:portal-tools", () => listPortalTools())
+
+  ipcMain.handle("runner:portal-search", (_event, query: string) =>
+    searchPortalTools(query),
+  )
 
   ipcMain.handle(
     "runner:portal-tool",

@@ -378,15 +378,6 @@ export function ToolPage() {
                 >
                   Reinstall environment
                 </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  className="w-full justify-start"
-                  onClick={() => window.close()}
-                >
-                  Quit
-                </Button>
               </div>
 
               <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">

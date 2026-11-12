@@ -35,10 +35,13 @@ export function PortalToolDialog({
   target,
   installed,
   onOpenChange,
+  onAdded,
 }: {
   target: Target | null
   installed: { name: string; version: string }[]
   onOpenChange: (open: boolean) => void
+  /** The tool is installed and about to open; the list can reload. */
+  onAdded?: () => void
 }) {
   const [version, setVersion] = useState("")
   const [detail, setDetail] = useState<PortalToolDetail | null>(null)
@@ -81,8 +84,11 @@ export function PortalToolDialog({
         name: detail.name,
         version: detail.version || undefined,
       })
+      onAdded?.()
+      onOpenChange(false)
     } catch (reason) {
       toast.error(String(reason).replace(/^Error: /, ""))
+    } finally {
       setAdding(false)
     }
   }
