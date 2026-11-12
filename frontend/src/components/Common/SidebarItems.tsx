@@ -22,19 +22,21 @@ interface SidebarItemsProps {
 
 const SidebarItems = ({ onClose }: SidebarItemsProps) => {
   const { logout, user: currentUser } = useAuth()
+  const canRunLocally = hasPermission(currentUser, "runner:download")
   const userItems = currentUser
     ? [
         { icon: FiHome, title: "Tools", path: "/" },
         { icon: FiCodesandbox, title: "My Runs", path: "/runs" },
         { icon: FiFile, title: "My Files", path: "/files" },
-        { icon: FiDownload, title: "Local Runner", path: "/local-runner" },
+        ...(canRunLocally
+          ? [{ icon: FiDownload, title: "Local Runner", path: "/local-runner" }]
+          : []),
         { icon: FiInfo, title: "About", path: "/about" },
         { icon: FiSettings, title: "Settings", path: "/settings" },
         { icon: IoGlasses, title: "Stream", path: "/stream", external: true },
       ]
     : [
         { icon: FiHome, title: "Tools", path: "/" },
-        { icon: FiDownload, title: "Local Runner", path: "/local-runner" },
         { icon: FiInfo, title: "About", path: "/about" },
         { icon: FiLogIn, title: "Login", path: "/login" },
         { icon: FiUsers, title: "Sign Up", path: "/signup" },

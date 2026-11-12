@@ -353,9 +353,12 @@ def download_runner_pack(
 ) -> Response:
     """Download one tool as a small pack the desktop app imports.
 
-    The app itself is `GET /runner/app/<platform>`, downloaded once and shared
-    by every tool, so a pack holds configuration only - a few kilobytes instead
-    of a 170 MB application per tool.
+    Public: the app that opens a pack has no portal session, and a pack is the
+    tool's configuration, which the tool pages show anyway. The portal still
+    hides the feature unless the account holds `runner:download`. The app
+    itself is `GET /runner/app/<platform>`, downloaded once and shared by every
+    tool, so a pack holds configuration only - a few kilobytes instead of a
+    170 MB application per tool.
     """
     if platform not in PLATFORM_IMAGE_ARCH:
         raise HTTPException(status_code=400, detail=f"Unknown platform: {platform}")

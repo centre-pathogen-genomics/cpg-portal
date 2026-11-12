@@ -34,7 +34,9 @@ def test_me_lists_default_permissions(
     # What the default role grants...
     assert "files:read" in permissions
     assert "runs:create" in permissions
-    # ...and what it deliberately does not.
+    # ...and what it deliberately does not: running tools on a visitor's own
+    # machine is granted per role or per user.
+    assert "runner:download" not in permissions
     assert "rbac:read" not in permissions
     assert "admin:pause_queue" not in permissions
 
@@ -68,6 +70,12 @@ def test_permission_catalog_lists_enforced_permissions(
     }
     assert {"rbac:read", "rbac:create", "trakka:send", "files:delete"} <= set(
         permissions
+    )
+    # The local runner is a portal-only gate: its permission belongs to no
+    # route, so it keeps a hand-written description.
+    assert (
+        permissions["runner:download"]
+        == "Use the local runner: the app and its tool packs"
     )
     # Static permissions keep their hand-written description...
     assert permissions["trakka:send"] == "Send Newick trees to Trakka"

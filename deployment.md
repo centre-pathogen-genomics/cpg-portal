@@ -316,8 +316,18 @@ The visitor downloads the app once; every later tool is a pack they double-click
 tools under its own data directory — on macOS
 `~/Library/Application Support/cpg-runner/tools/<tool id>/` — and starts one
 sidecar per tool when that tool is opened. Nothing but the two downloads ever
-leaves the machine, and neither carries credentials: the pack needs a portal
-account, the runtime image and the app are public.
+leaves the machine, and the downloads carry no credentials: the runtime image,
+the app and the pack are all public, and a pack is the tool's configuration,
+which the portal already shows.
+
+`runner:download` is the switch for the portal side of the feature: without it
+the menu's `Local Runner` entry and a tool page's `Run locally` button are
+hidden, and the page redirects to the tool list. It is not part of the default
+`researcher` role — that role is server-managed — so grant it in Access Control
+to a role or to a single user; superusers always have it. The permission is
+static (`STATIC_PERMISSIONS`), not derived from a route: `runner-pack` and the
+app archive stay public because the app has no portal session, and a pack holds
+nothing the tool pages do not show.
 
 Three endpoints serve the download, all from `RUNNER_ARTIFACTS_PATH` inside the
 backend container, which compose mounts read-only from `RUNNER_ARTIFACTS_DIR`

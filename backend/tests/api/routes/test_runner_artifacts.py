@@ -236,7 +236,10 @@ def test_pack_is_available_to_anonymous_visitors(
     db: Session,
     _artifacts: Path,
 ) -> None:
-    """The desktop app has no portal session: the pack is public like the page."""
+    """The app has no portal session: the pack is public like the app itself.
+
+    The portal only hides the feature (`runner:download`) from its own UI.
+    """
     tool = _create_tool(db=db, name=_tool_name("packauth"), conda_env=None)
 
     response = _pack(client, headers={}, name=tool.name)

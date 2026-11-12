@@ -3,6 +3,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import useAuth from "@/hooks/useAuth"
 import useCustomToast from "@/hooks/useCustomToast"
+import { hasPermission } from "@/lib/permissions"
 import { detectPlatform } from "@/lib/runner-platform"
 import type { ToolPublic } from "../../client"
 
@@ -30,7 +31,7 @@ function RunLocallyButton({ tool }: { tool: ToolPublic }) {
   const showToast = useCustomToast()
   const [isDownloadingPack, setIsDownloadingPack] = useState(false)
 
-  if (!user) return null
+  if (!hasPermission(user, "runner:download")) return null
 
   const downloadPack = async () => {
     setIsDownloadingPack(true)

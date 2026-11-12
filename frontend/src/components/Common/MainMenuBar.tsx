@@ -30,6 +30,7 @@ function MainMenuBar() {
   });
 
   const signedIn = currentUser !== undefined;
+
   const userItems = signedIn
     ? [
         { title: "Tools", path: "/" },
@@ -41,13 +42,9 @@ function MainMenuBar() {
           isNew: false,
           newTab: true,
         },
-        { title: "Local Runner", path: "/local-runner" },
         { title: "About", path: "/about" },
       ]
-    : [
-        { title: "Local Runner", path: "/local-runner" },
-        { title: "About", path: "/about" },
-      ];
+    : [{ title: "About", path: "/about" }];
 
   const items = [...userItems];
   if (currentUser?.is_superuser) {
@@ -55,6 +52,14 @@ function MainMenuBar() {
   }
   if (hasPermission(currentUser, "rbac:read")) {
     items.push({ title: "Access", path: "/rbac" });
+  }
+  if (hasPermission(currentUser, "runner:download")) {
+    items.push({
+      title: "Local Runner",
+      path: "/local-runner",
+      isNew: true,
+      newTab: false,
+    });
   }
 
   const onSubmit = ({ search }: { search?: string }) => {

@@ -116,13 +116,12 @@ export function ToolPage({ toolId }: { toolId: string }) {
     void loadAll();
   }, [loadAll]);
 
-
   // The picture is shown from its URL until the main process keeps a copy.
   useEffect(() => {
     if (tool?.image && !images[tool.id]) {
-      void window.cpgRunner?.cacheToolImage?.(tool.id, tool.image)
+      void window.cpgRunner?.cacheToolImage?.(tool.id, tool.image);
     }
-  }, [tool?.id, tool?.image, images])
+  }, [tool?.id, tool?.image, images]);
 
   // "Show more" earns its line only when the text does not fit in one.
   useEffect(() => {
@@ -472,14 +471,6 @@ export function ToolPage({ toolId }: { toolId: string }) {
                       <p className="text-muted-foreground text-sm">
                         {blockedReason}
                       </p>
-                    )}
-
-                    {tool.explanation_of_results_markdown && (
-                      <section className="border-t pt-6">
-                        <RenderMarkdown
-                          markdown={tool.explanation_of_results_markdown}
-                        />
-                      </section>
                     )}
 
                     <p className="text-muted-foreground text-xs">

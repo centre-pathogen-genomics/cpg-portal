@@ -32,6 +32,9 @@ MAX_PERMISSION_DESCRIPTION = 1000
 # Permissions that are not derived from an HTTP route.
 STATIC_PERMISSIONS: dict[str, str] = {
     "trakka:send": "Send Newick trees to Trakka",
+    # A portal-only gate: the pack endpoint stays public for the app, and the
+    # route, menu entry and download button are hidden without this.
+    "runner:download": "Use the local runner: the app and its tool packs",
 }
 
 

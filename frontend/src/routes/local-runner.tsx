@@ -1,6 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, redirect } from "@tanstack/react-router"
 import { Download, LoaderCircle } from "lucide-react"
 import { useEffect, useState } from "react"
+import { UsersService } from "@/client"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import {
@@ -10,6 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { isLoggedIn } from "@/hooks/useAuth"
+import { hasPermission } from "@/lib/permissions"
 import {
   PLATFORMS,
   type Platform,
@@ -19,6 +22,18 @@ import {
 import MainMenuBar from "../components/Common/MainMenuBar"
 
 export const Route = createFileRoute("/local-runner")({
+  beforeLoad: async () => {
+    if (!isLoggedIn()) {
+      throw redirect({
+        to: "/login",
+        search: { redirect: window.location.pathname },
+      })
+    }
+    const response = await UsersService.readUserMe({ throwOnError: true })
+    if (!hasPermission(response.data, "runner:download")) {
+      throw redirect({ to: "/" })
+    }
+  },
   component: LocalRunner,
   head: () => ({ meta: [{ title: "Local Runner | CPG Portal" }] }),
 })
