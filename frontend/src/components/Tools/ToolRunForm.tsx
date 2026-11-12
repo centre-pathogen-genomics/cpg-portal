@@ -547,11 +547,12 @@ const ToolRunForm = ({
                         }.`}
                       </li>
                     )}
-                    <li>
-                      {localCpus
-                        ? "A run starts as soon as that many CPUs are free here."
-                        : "A run starts as soon as that many CPUs are free, and waits in the queue until then."}
-                    </li>
+                    {!localCpus && (
+                      <li>
+                        A run starts as soon as that many CPUs are free, and
+                        waits in the queue until then.
+                      </li>
+                    )}
                     <li>
                       {localCpus
                         ? "More CPUs usually finish sooner, but may wait for them to free up."
