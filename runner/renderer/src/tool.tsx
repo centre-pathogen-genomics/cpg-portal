@@ -75,6 +75,8 @@ export function ToolPage({ toolId }: { toolId: string }) {
   const [rerunRun, setRerunRun] = useState<RunRecord | null>(null);
   const [rerunChecked, setRerunChecked] = useState(false);
   const [removeOpen, setRemoveOpen] = useState(false);
+  const [uninstallOpen, setUninstallOpen] = useState(false);
+  const [uninstalling, setUninstalling] = useState(false);
   const descriptionRef = useRef<HTMLParagraphElement | null>(null);
   const [descriptionOverflows, setDescriptionOverflows] = useState(false);
   const [removing, setRemoving] = useState(false);
@@ -243,7 +245,8 @@ export function ToolPage({ toolId }: { toolId: string }) {
     }
   }
 
-  async function reinstall() {
+  async function uninstall() {
+    setUninstalling(true);
     try {
       await api.delete("/install");
       setInstallDismissed(false);
@@ -251,6 +254,9 @@ export function ToolPage({ toolId }: { toolId: string }) {
       toast.success("Environment removed; install it again to run tools");
     } catch (error) {
       toast.error(errorMessage(error));
+    } finally {
+      setUninstalling(false);
+      setUninstallOpen(false);
     }
   }
 
@@ -387,13 +393,14 @@ export function ToolPage({ toolId }: { toolId: string }) {
                             <ExternalLink />
                             Open in The CPG Portal
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            disabled={!doctorReady}
-                            onSelect={() => void reinstall()}
-                          >
-                            <Wrench />
-                            Reinstall environment
-                          </DropdownMenuItem>
+                          {status.env.needed && status.env.installed && (
+                            <DropdownMenuItem
+                              onSelect={() => setUninstallOpen(true)}
+                            >
+                              <Wrench />
+                              Uninstall environment
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             variant="destructive"
@@ -594,6 +601,37 @@ export function ToolPage({ toolId }: { toolId: string }) {
         onRefreshStatus={() => void refreshStatus()}
         onDismiss={() => setInstallDismissed(true)}
       />
+      <Dialog open={uninstallOpen} onOpenChange={setUninstallOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{`Uninstall the environment for ${tool?.name ?? "this tool"}?`}</DialogTitle>
+            <DialogDescription>
+              Its installed environment is deleted from this computer, so the
+              tool cannot run until it is installed again. The tool itself, its
+              runs and the outputs already copied stay where they are.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={uninstalling}
+              onClick={() => void uninstall()}
+            >
+              {uninstalling && <LoaderCircle className="animate-spin" />}
+              Uninstall environment
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={uninstalling}
+              onClick={() => setUninstallOpen(false)}
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <Dialog open={removeOpen} onOpenChange={setRemoveOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
