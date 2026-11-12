@@ -55,6 +55,7 @@ import {
 import { openExternal, openPath, pickDirectory } from "./lib/desktop";
 import { portalToolUrl } from "./lib/portal";
 import { navigate } from "./router";
+import cpgLogo from "./assets/cpg-logo.png";
 
 const FIELD_ERROR =
   /^(?:Missing required parameter|Invalid value for parameter): (.+)$/;
@@ -480,7 +481,12 @@ export function ToolPage() {
 
             <aside className="flex min-h-0 flex-col border-l">
               <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
-                <div>Add CPG logo here</div>
+                <img
+                  src={cpgLogo}
+                  alt="CPG"
+                  className="mb-4 h-8 w-auto"
+                />
+                <h2 className="mb-4 text-sm font-semibold">Run settings</h2>
                 <div className="grid gap-6">
                   {settingsPanel}
 
