@@ -1,7 +1,8 @@
 import {
+  ChevronDown,
+  Download,
   EllipsisVertical,
   ExternalLink,
-  Download,
   FolderOpen,
   LoaderCircle,
   Trash2,
@@ -72,6 +73,8 @@ export function ToolPage() {
   const [rerunRun, setRerunRun] = useState<RunRecord | null>(null);
   const [rerunChecked, setRerunChecked] = useState(false);
   const [removeOpen, setRemoveOpen] = useState(false);
+  const descriptionRef = useRef<HTMLParagraphElement | null>(null);
+  const [descriptionOverflows, setDescriptionOverflows] = useState(false);
   const [removing, setRemoving] = useState(false);
   // Answers for a tool the window has left must not overwrite the new one's.
   const loadSeq = useRef(0);
@@ -115,10 +118,24 @@ export function ToolPage() {
     () =>
       onApiBaseChange(() => {
         setInstallDismissed(false);
+        setDescriptionOpen(false);
         void loadAll();
       }),
     [loadAll],
   );
+
+  // "Show more" earns its line only when the text does not fit in one.
+  useEffect(() => {
+    const element = descriptionRef.current;
+    if (!element || descriptionOpen) return;
+    const measure = () => {
+      setDescriptionOverflows(element.scrollHeight - element.clientHeight > 1);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [descriptionOpen, tool?.description]);
 
   // A rerun arrives as ?rerun=<run id>: its values prefill the form.
   useEffect(() => {
@@ -385,32 +402,32 @@ export function ToolPage() {
                   </ToolHeading>
                   {tool.description && (
                     <div className="mt-2">
-                      {descriptionOpen ? (
-                        <>
-                          <p className="text-sm">{tool.description}</p>
-                          <button
-                            type="button"
-                            className="hover:text-primary mt-1 text-xs font-medium"
-                            onClick={() => setDescriptionOpen(false)}
-                          >
-                            Show less
-                          </button>
-                        </>
-                      ) : (
-                        // One line: the text truncates and the way to expand
-                        // it sits at its end instead of taking a line.
-                        <div className="flex min-w-0 items-baseline gap-1">
-                          <p className="min-w-0 truncate text-sm">
-                            {tool.description}
-                          </p>
-                          <button
-                            type="button"
-                            className="hover:text-primary shrink-0 text-xs font-medium"
-                            onClick={() => setDescriptionOpen(true)}
-                          >
-                            Show more…
-                          </button>
-                        </div>
+                      <p
+                        ref={descriptionRef}
+                        className={cn(
+                          "text-sm",
+                          !descriptionOpen && "line-clamp-1",
+                        )}
+                      >
+                        {tool.description}
+                      </p>
+                      {descriptionOverflows && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-muted-foreground hover:text-foreground mt-1 h-6 gap-1 px-1.5 text-xs"
+                          aria-expanded={descriptionOpen}
+                          onClick={() => setDescriptionOpen((open) => !open)}
+                        >
+                          {descriptionOpen ? "Show less" : "Show more"}
+                          <ChevronDown
+                            className={cn(
+                              "size-3.5 transition-transform",
+                              descriptionOpen && "rotate-180",
+                            )}
+                          />
+                        </Button>
                       )}
                     </div>
                   )}
@@ -450,7 +467,7 @@ export function ToolPage() {
 
             <aside className="flex min-h-0 flex-col border-l">
               <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
-                <h2 className="mb-4 text-sm font-semibold">Run settings</h2>
+                <div>Add CPG logo here</div>
                 <div className="grid gap-6">
                   {settingsPanel}
 
