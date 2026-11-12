@@ -1,36 +1,36 @@
-import { FileUp, LoaderCircle } from "lucide-react"
-import { useEffect, useState } from "react"
-import { toast } from "sonner"
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
-import cpgLogo from "./assets/cpg-logo.png"
-import { PortalToolDialog } from "./components/PortalToolDialog"
-import { PortalToolSearch } from "./components/PortalToolSearch"
-import { ToolSidebar } from "./components/ToolSidebar"
-import { filePathOf, openExternal } from "./lib/desktop"
-import { portalUrl } from "./lib/portal"
+import { FileUp, LoaderCircle } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import cpgLogo from "./assets/cpg-logo.png";
+import { PortalToolDialog } from "./components/PortalToolDialog";
+import { PortalToolSearch } from "./components/PortalToolSearch";
+import { ToolSidebar } from "./components/ToolSidebar";
+import { filePathOf, openExternal } from "./lib/desktop";
+import { portalUrl } from "./lib/portal";
 
 type ToolEntry = {
-  id: string
-  name: string
-  version: string
-  description: string | null
-}
+  id: string;
+  name: string;
+  version: string;
+  description: string | null;
+};
 
-const PACK_EXTENSION = ".cpgpack"
+const PACK_EXTENSION = ".cpgpack";
 
 function packPaths(files: FileList | File[]): string[] {
   return Array.from(files)
     .filter((file) => file.name.toLowerCase().endsWith(PACK_EXTENSION))
     .map(filePathOf)
-    .filter((target) => target.length > 0)
+    .filter((target) => target.length > 0);
 }
 
 const STEPS = [
   "Add a tool from the portal, or open a .cpgpack you were given.",
   "Install its environment once; later runs start straight away.",
   "Choose input files and run. Outputs are copied to your output folder.",
-]
+];
 
 /**
  * What the window shows before a tool is open: on a first run, the way to get
@@ -38,47 +38,47 @@ const STEPS = [
  * tool afterwards happens in the sidebar.
  */
 export function ToolsPage() {
-  const bridge = window.cpgRunner
-  const [tools, setTools] = useState<ToolEntry[]>([])
-  const [busy, setBusy] = useState(false)
-  const [dragging, setDragging] = useState(false)
+  const bridge = window.cpgRunner;
+  const [tools, setTools] = useState<ToolEntry[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const [portalTarget, setPortalTarget] = useState<{
-    name: string
-    version: string
-  } | null>(null)
-  const firstRun = tools.length === 0
-  const portal = portalUrl()
+    name: string;
+    version: string;
+  } | null>(null);
+  const firstRun = tools.length === 0;
+  const portal = portalUrl();
 
   const refresh = async () => {
-    if (bridge) setTools(await bridge.tools())
-  }
+    if (bridge) setTools(await bridge.tools());
+  };
 
   useEffect(() => {
     // The bridge is fixed for the window's lifetime.
-    void window.cpgRunner?.tools().then(setTools)
-  }, [])
+    void window.cpgRunner?.tools().then(setTools);
+  }, []);
 
   const importPacks = async (load: () => Promise<ToolEntry[]>) => {
-    if (!bridge) return
-    setBusy(true)
+    if (!bridge) return;
+    setBusy(true);
     try {
-      const added = await load()
-      if (added.length > 0) await refresh()
+      const added = await load();
+      if (added.length > 0) await refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : String(error))
+      toast.error(error instanceof Error ? error.message : String(error));
     } finally {
-      setBusy(false)
+      setBusy(false);
     }
-  }
+  };
 
   const importDropped = (files: FileList) => {
-    const paths = packPaths(files)
+    const paths = packPaths(files);
     if (paths.length === 0) {
-      toast.error("Drop a .cpgpack file exported from a tool page")
-      return
+      toast.error("Drop a .cpgpack file exported from a tool page");
+      return;
     }
-    if (bridge) void importPacks(() => bridge.importPackPaths(paths))
-  }
+    if (bridge) void importPacks(() => bridge.importPackPaths(paths));
+  };
 
   return (
     <div className="flex h-full">
@@ -86,7 +86,7 @@ export function ToolsPage() {
 
       <main className="min-h-0 min-w-0 flex-1 overflow-y-auto px-8 py-10">
         <div className="mx-auto max-w-2xl">
-          <img src={cpgLogo} alt="CPG" className="mb-6 h-10 w-auto" />
+          <img src={cpgLogo} alt="CPG" className="mb-6 h-16 w-auto" />
 
           <h1 className="text-3xl font-bold">
             {firstRun ? "Add your first tool to get started" : "Choose a tool"}
@@ -114,14 +114,14 @@ export function ToolsPage() {
                     dragging && "border-primary bg-muted",
                   )}
                   onDragOver={(event) => {
-                    event.preventDefault()
-                    setDragging(true)
+                    event.preventDefault();
+                    setDragging(true);
                   }}
                   onDragLeave={() => setDragging(false)}
                   onDrop={(event) => {
-                    event.preventDefault()
-                    setDragging(false)
-                    importDropped(event.dataTransfer.files)
+                    event.preventDefault();
+                    setDragging(false);
+                    importDropped(event.dataTransfer.files);
                   }}
                 >
                   <Button
@@ -180,11 +180,11 @@ export function ToolsPage() {
           target={portalTarget}
           installed={tools}
           onOpenChange={(open) => {
-            if (!open) setPortalTarget(null)
+            if (!open) setPortalTarget(null);
           }}
           onAdded={() => void refresh()}
         />
       </main>
     </div>
-  )
+  );
 }

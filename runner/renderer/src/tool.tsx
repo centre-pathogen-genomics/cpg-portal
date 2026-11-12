@@ -481,12 +481,7 @@ export function ToolPage() {
 
             <aside className="flex min-h-0 flex-col border-l">
               <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
-                <img
-                  src={cpgLogo}
-                  alt="CPG"
-                  className="mb-4 h-8 w-auto"
-                />
-                <h2 className="mb-4 text-sm font-semibold">Run settings</h2>
+                <img src={cpgLogo} alt="CPG" className="mb-6 w-auto" />
                 <div className="grid gap-6">
                   {settingsPanel}
 
