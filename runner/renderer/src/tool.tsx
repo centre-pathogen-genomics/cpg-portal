@@ -129,7 +129,7 @@ export function ToolPage() {
     const element = descriptionRef.current;
     if (!element || descriptionOpen) return;
     const measure = () => {
-      setDescriptionOverflows(element.scrollHeight - element.clientHeight > 1);
+      setDescriptionOverflows(element.scrollWidth - element.clientWidth > 1);
     };
     measure();
     const observer = new ResizeObserver(measure);
@@ -402,32 +402,45 @@ export function ToolPage() {
                   </ToolHeading>
                   {tool.description && (
                     <div className="mt-2">
-                      <p
-                        ref={descriptionRef}
-                        className={cn(
-                          "text-sm",
-                          !descriptionOpen && "line-clamp-1",
-                        )}
-                      >
-                        {tool.description}
-                      </p>
-                      {descriptionOverflows && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="text-muted-foreground hover:text-foreground mt-1 h-6 gap-1 px-1.5 text-xs"
-                          aria-expanded={descriptionOpen}
-                          onClick={() => setDescriptionOpen((open) => !open)}
-                        >
-                          {descriptionOpen ? "Show less" : "Show more"}
-                          <ChevronDown
-                            className={cn(
-                              "size-3.5 transition-transform",
-                              descriptionOpen && "rotate-180",
-                            )}
-                          />
-                        </Button>
+                      {descriptionOpen ? (
+                        <p className="text-sm">
+                          {tool.description}
+                          {descriptionOverflows && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="text-muted-foreground hover:text-foreground ml-1 h-5 gap-0.5 px-1 align-baseline text-xs"
+                              aria-expanded={true}
+                              onClick={() => setDescriptionOpen(false)}
+                            >
+                              Show less
+                              <ChevronDown className="size-3.5 rotate-180" />
+                            </Button>
+                          )}
+                        </p>
+                      ) : (
+                        <div className="flex min-w-0 items-center gap-1">
+                          <p
+                            ref={descriptionRef}
+                            className="min-w-0 flex-1 truncate text-sm"
+                          >
+                            {tool.description}
+                          </p>
+                          {descriptionOverflows && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="text-muted-foreground hover:text-foreground h-5 shrink-0 gap-0.5 px-1 text-xs"
+                              aria-expanded={false}
+                              onClick={() => setDescriptionOpen(true)}
+                            >
+                              Show more
+                              <ChevronDown className="size-3.5" />
+                            </Button>
+                          )}
+                        </div>
                       )}
                     </div>
                   )}
