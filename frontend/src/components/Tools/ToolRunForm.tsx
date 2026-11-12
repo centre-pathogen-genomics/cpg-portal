@@ -93,6 +93,11 @@ export interface ToolRunFormProps {
   /** Widen the run button across the row, e.g. a full-width footer. */
   fillSubmit?: boolean
   /**
+   * The CPUs are this computer's own, not a shared pool: the help text says so
+   * instead of describing reservations and a queue.
+   */
+  localCpus?: boolean
+  /**
    * Values from an earlier run, to prefill the form with (e.g. a rerun):
    * `{...run.params, ...run.param_files}`. Anything that no longer fits is left
    * at its default.
@@ -178,6 +183,7 @@ const ToolRunForm = ({
   extras,
   submitExtras,
   fillSubmit = false,
+  localCpus = false,
   initialValues,
   initialValuesReady = true,
   initialThreads,
@@ -514,17 +520,25 @@ const ToolRunForm = ({
                   <PopoverHeader>
                     <PopoverTitle>CPUs</PopoverTitle>
                     <PopoverDescription>
-                      The CPUs reserved for this run.
+                      {localCpus
+                        ? "The CPUs this run may use on this computer."
+                        : "The CPUs reserved for this run."}
                     </PopoverDescription>
                   </PopoverHeader>
                   <ul className="text-muted-foreground mt-2 list-disc space-y-1 pl-4 text-sm">
                     <li>
                       {maxCpus == null
-                        ? `This tool needs at least ${minThreads} CPUs.`
+                        ? `This tool needs at least ${minThreads} ${
+                            minThreads === 1 ? "CPU" : "CPUs"
+                          }.`
                         : `This tool allows ${minThreads}-${maxCpus} CPUs.`}
                     </li>
                     {cappedByUser && (
-                      <li>{`Your own limit is ${userMaxCpus} CPUs per run.`}</li>
+                      <li>
+                        {localCpus
+                          ? `This computer has ${userMaxCpus} CPUs.`
+                          : `Your own limit is ${userMaxCpus} CPUs per run.`}
+                      </li>
                     )}
                     {scalesWithFiles && (
                       <li>
@@ -534,12 +548,14 @@ const ToolRunForm = ({
                       </li>
                     )}
                     <li>
-                      A run starts as soon as that many CPUs are free, and waits
-                      in the queue until then.
+                      {localCpus
+                        ? "A run starts as soon as that many CPUs are free here."
+                        : "A run starts as soon as that many CPUs are free, and waits in the queue until then."}
                     </li>
                     <li>
-                      More CPUs usually finish sooner, but may wait longer to
-                      start.
+                      {localCpus
+                        ? "More CPUs usually finish sooner, but may wait for them to free up."
+                        : "More CPUs usually finish sooner, but may wait longer to start."}
                     </li>
                   </ul>
                 </PopoverContent>

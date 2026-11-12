@@ -1,7 +1,7 @@
-import { RotateCcw } from "lucide-react"
+import { RotateCcw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { ConfirmationDialog } from "@/components/Common/ConfirmationDialog"
+import { ConfirmationDialog } from "@/components/Common/ConfirmationDialog";
 import OutputAccordion from "@/components/Runs/OutputAccordion";
 import RunTime from "@/components/Runs/RunTime";
 import StatusBadge from "@/components/Runs/StatusBadge";
@@ -25,10 +25,10 @@ export function RunPage({ id }: { id: string }) {
   const [record, setRecord] = useState<RunRecord | null>(null);
   const [tool, setTool] = useState<ToolConfig | null>(null);
   const [environment, setEnvironment] = useState<string | null>(null);
-  const [logs, setLogs] = useState<string[]>([])
+  const [logs, setLogs] = useState<string[]>([]);
   const [leaveAction, setLeaveAction] = useState<{
-    go: () => void | Promise<void>
-  } | null>(null)
+    go: () => void | Promise<void>;
+  } | null>(null);
   const [leaving, setLeaving] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -93,23 +93,23 @@ export function RunPage({ id }: { id: string }) {
   // Leaving while the run is still going ends it, so both the sidebar and the
   // way back to the tool ask first.
   async function confirmLeave() {
-    if (!leaveAction) return
-    setLeaving(true)
+    if (!leaveAction) return;
+    setLeaving(true);
     try {
-      await api.post(`/runs/${id}/cancel`).catch(() => {})
-      await leaveAction.go()
+      await api.post(`/runs/${id}/cancel`).catch(() => {});
+      await leaveAction.go();
     } finally {
-      setLeaving(false)
-      setLeaveAction(null)
+      setLeaving(false);
+      setLeaveAction(null);
     }
   }
 
   function goBack() {
     if (inProgress) {
-      setLeaveAction({ go: () => navigate("/tool") })
-      return
+      setLeaveAction({ go: () => navigate("/tool") });
+      return;
     }
-    navigate("/tool")
+    navigate("/tool");
   }
 
   async function cancel() {
@@ -131,9 +131,9 @@ export function RunPage({ id }: { id: string }) {
       <ToolSidebar
         activeToolId={tool?.id ?? null}
         beforeOpen={(toolId) => {
-          if (!inProgress || toolId === tool?.id) return true
-          setLeaveAction({ go: () => window.cpgRunner?.openTool(toolId) })
-          return false
+          if (!inProgress || toolId === tool?.id) return true;
+          setLeaveAction({ go: () => window.cpgRunner?.openTool(toolId) });
+          return false;
         }}
       />
 
@@ -242,7 +242,23 @@ export function RunPage({ id }: { id: string }) {
             )}
 
             {(record?.output_dir || record?.work_dir) && (
-              <footer className="text-muted-foreground grid gap-1 border-t pt-4 text-xs">
+              <footer className="text-muted-foreground grid gap-1 pt-4 text-xs">
+                {record?.output_dir && (
+                  <div className="flex flex-wrap items-baseline gap-x-2">
+                    <span>Output folder</span>
+                    <span className="font-mono break-all">
+                      {record.output_dir}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="h-auto p-0 text-xs"
+                      onClick={() => openPath(record.output_dir as string)}
+                    >
+                      Open
+                    </Button>
+                  </div>
+                )}
                 {record?.work_dir && (
                   <div className="flex flex-wrap items-baseline gap-x-2">
                     <span>Work folder</span>
@@ -268,7 +284,7 @@ export function RunPage({ id }: { id: string }) {
       <ConfirmationDialog
         open={leaveAction !== null}
         onOpenChange={(open) => {
-          if (!open) setLeaveAction(null)
+          if (!open) setLeaveAction(null);
         }}
         title="Cancel this run?"
         description="This run is still going. Leaving this page ends it."
@@ -277,5 +293,5 @@ export function RunPage({ id }: { id: string }) {
         onConfirm={() => void confirmLeave()}
       />
     </div>
-  )
+  );
 }
