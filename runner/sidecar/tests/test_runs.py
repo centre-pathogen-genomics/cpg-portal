@@ -233,8 +233,11 @@ def test_outputs_come_with_their_provenance(tmp_path):
 
     output = Path(record.output_dir)
     readme = (output / "README.md").read_text()
-    assert readme.startswith("# my tool")
-    assert f"Run `{record.name}`" in readme
+    assert readme.startswith(f"# {record.name}")
+    assert "**Method** — `my tool` 1.2" in readme
+    assert "**Run** — " in readme
+    assert "1 CPU" in readme
+    assert "network access on" in readme
     assert "One row per gene." in readme
     assert "`results/out.txt`" in readme
     assert (output / "log.txt").read_text() == record.stdout
@@ -295,10 +298,11 @@ def test_a_failed_run_still_reports_itself(tmp_path):
     assert not (output / ".cpg_work").exists()
 
 
-def test_the_readme_carries_the_tools_image_and_badges(tmp_path):
+def test_the_readme_names_the_method_without_the_tools_marketing(tmp_path):
     tool = make_tool(
         image="https://example.org/ngmaster.png",
         url="https://github.com/MDU-PHL/ngmaster",
+        docs_url="https://example.org/docs",
         paper_doi="10.1099/mgen.0.000076",
         license="GPL-3.0",
         github_repo="MDU-PHL/ngmaster",
@@ -312,11 +316,33 @@ def test_the_readme_carries_the_tools_image_and_badges(tmp_path):
     wait_for(lambda: manager.get(record.id).status in TERMINAL_STATUSES)
 
     readme = (Path(manager.get(record.id).output_dir) / "README.md").read_text()
-    assert "![my tool](https://example.org/ngmaster.png)" in readme
-    assert "[Home](https://github.com/MDU-PHL/ngmaster)" in readme
+    # The analysis is the subject; the software's picture and badges are not.
+    assert "example.org/ngmaster.png" not in readme
+    assert "img.shields.io" not in readme
+    assert "#AMR detection" not in readme
+    assert "#cpg" not in readme
+    # The method is named, with its version and where to read more.
+    assert "**Method** — `my tool` 1.2 · [docs](https://example.org/docs)" in readme
+    assert "[source](https://github.com/MDU-PHL/ngmaster)" in readme
     assert "[DOI](https://doi.org/10.1099/mgen.0.000076)" in readme
-    assert "License GPL-3.0" in readme
-    assert "[GitHub](https://github.com/MDU-PHL/ngmaster)" in readme
-    assert "[badge](https://x.test)" in readme
-    assert "#AMR detection" in readme
-    assert "#cpg" in readme
+    assert "GPL-3.0" in readme
+
+
+def test_the_readme_records_the_inputs_the_analysis_ran_on(tmp_path):
+    tool = make_tool(
+        params=[
+            {"name": "sample", "param_type": "file", "required": True},
+            {"name": "min_length", "param_type": "int", "default": 50},
+        ],
+    )
+    sample = tmp_path / "sample.fastq"
+    sample.write_text("@read\nACGT\n")
+    manager = _manager(tmp_path, tool, WritingDocker())
+    record = manager.start({"sample": [str(sample)], "min_length": 80}, 1)
+    wait_for(lambda: manager.get(record.id).status in TERMINAL_STATUSES)
+
+    readme = (Path(manager.get(record.id).output_dir) / "README.md").read_text()
+    assert "## Inputs" in readme
+    assert "| Parameter | Value |" in readme
+    assert f"| `sample` | `{sample}` |" in readme
+    assert "| `min_length` | `80` |" in readme

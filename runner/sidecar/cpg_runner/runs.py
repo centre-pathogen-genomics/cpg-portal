@@ -464,23 +464,20 @@ class RunManager:
         ]
         return "\n".join(lines) + "\n"
 
-    def _readme_badges(self) -> str:
-        """The tool's links and badges, as one markdown line."""
-        parts: list[str] = []
-        if self.tool.url:
-            parts.append(f"[Home]({self.tool.url})")
+    def _method_line(self) -> str:
+        """The method in one line: the tool, and where to read more about it."""
+        name = f"`{self.tool.name}`"
+        parts = [f"{name} {self.tool.version}".strip()]
         if self.tool.docs_url:
-            parts.append(f"[Docs]({self.tool.docs_url})")
+            parts.append(f"[docs]({self.tool.docs_url})")
+        if self.tool.github_repo:
+            parts.append(f"[source](https://github.com/{self.tool.github_repo})")
+        elif self.tool.url:
+            parts.append(f"[home]({self.tool.url})")
         if self.tool.paper_doi:
             parts.append(f"[DOI](https://doi.org/{self.tool.paper_doi})")
         if self.tool.license:
-            parts.append(f"License {self.tool.license}")
-        if self.tool.github_repo:
-            parts.append(f"[GitHub](https://github.com/{self.tool.github_repo})")
-        for badge in self.tool.badges:
-            url = badge.get("url")
-            parts.append(f"[badge]({url})" if url else "badge")
-        parts += [f"#{tag}" for tag in self.tool.tags]
+            parts.append(self.tool.license)
         return " · ".join(parts)
 
     def _install_script(self) -> str:
@@ -511,26 +508,54 @@ class RunManager:
             lines += ["", self.tool.post_install.strip()]
         return "\n".join(lines) + "\n"
 
+    def _readme_inputs(self, record: RunRecord) -> list[str]:
+        """The analysis as it was set up: every parameter and its value."""
+        rows: list[str] = []
+        for param in self.tool.params:
+            name = str(param["name"])
+            if name not in record.params:
+                continue
+            if str(param["param_type"]) == "file":
+                files = record.param_files.get(name) or []
+                value = ", ".join(f"`{path}`" for path in files) if files else "—"
+            else:
+                text = str(record.params[name]).replace("|", "\\|")
+                value = f"`{text}`" if text else "—"
+            rows.append(f"| `{name}` | {value} |")
+        return rows
+
     def _readme(
         self, record: RunRecord, output_dir: Path, *, status: str, network: bool
     ) -> str:
-        version = f" {self.tool.version}" if self.tool.version else ""
-        lines = [f"# {self.tool.name}{version}", ""]
-        if self.tool.image and str(self.tool.image).startswith(("http://", "https://")):
-            lines += [f"![{self.tool.name}]({self.tool.image})", ""]
-        badges = self._readme_badges()
-        if badges:
-            lines += [badges, ""]
-        lines += [
-            (
-                f"Run `{record.name}` finished on "
-                f"{datetime.now().astimezone():%Y-%m-%d %H:%M} with "
-                f"{record.cpus} {'CPU' if record.cpus == 1 else 'CPUs'}"
-                f"{', network access on.' if network else ', offline.'}"
-            ),
+        """The run as an analysis: what went in, how, and what came out.
+
+        The tool is the method here, named with its version and sources; its
+        picture, badges and blurb describe the software, not this analysis, so
+        they stay on the portal.
+        """
+        title = record.name.strip() or self.tool.name
+        facts = (
+            f"{datetime.now().astimezone():%Y-%m-%d %H:%M} · "
+            f"{record.cpus} {'CPU' if record.cpus == 1 else 'CPUs'} · "
+            f"{'network access on' if network else 'offline'}"
+        )
+        lines = [
+            f"# {title}",
+            "",
+            f"**Method** — {self._method_line()}",
+            "",
+            f"**Run** — {facts}",
         ]
-        if self.tool.description:
-            lines += ["", self.tool.description.strip()]
+        inputs = self._readme_inputs(record)
+        if inputs:
+            lines += [
+                "",
+                "## Inputs",
+                "",
+                "| Parameter | Value |",
+                "| --- | --- |",
+                *inputs,
+            ]
         explanation = (self.tool.explanation_of_results_markdown or "").strip()
         if status == "completed":
             lines += [
