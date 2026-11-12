@@ -291,6 +291,7 @@ export function ToolPage() {
         defaultCpus={settings.cpus}
         isDisabled={!canRun}
         submitLabel="Run locally"
+        fillSubmit
         onSubmit={submitLocally}
         mapError={fieldError}
         initialValues={rerunValues}

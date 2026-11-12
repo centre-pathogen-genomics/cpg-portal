@@ -90,6 +90,8 @@ export interface ToolRunFormProps {
   extras?: ReactNode
   /** Portal-only buttons shown next to submit, e.g. email on completion. */
   submitExtras?: ReactNode
+  /** Widen the run button across the row, e.g. a full-width footer. */
+  fillSubmit?: boolean
   /**
    * Values from an earlier run, to prefill the form with (e.g. a rerun):
    * `{...run.params, ...run.param_files}`. Anything that no longer fits is left
@@ -175,6 +177,7 @@ const ToolRunForm = ({
   renderShell,
   extras,
   submitExtras,
+  fillSubmit = false,
   initialValues,
   initialValuesReady = true,
   initialThreads,
@@ -584,7 +587,11 @@ const ToolRunForm = ({
 
   const submitRow = (
     <div className="my-4 flex items-center gap-2">
-      <Button type="submit" disabled={isDisabled || isLoading}>
+      <Button
+        type="submit"
+        className={cn(fillSubmit && "flex-1")}
+        disabled={isDisabled || isLoading}
+      >
         {isLoading && <LoaderCircle className="animate-spin" />}
         {submitLabel}
       </Button>
