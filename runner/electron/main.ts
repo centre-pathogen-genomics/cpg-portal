@@ -1,6 +1,13 @@
 import { type ChildProcess, spawn } from "node:child_process"
 import { randomUUID } from "node:crypto"
 import fs from "node:fs"
+import {
+  createServer,
+  type IncomingMessage,
+  request as httpRequest,
+  type ServerResponse,
+} from "node:http"
+import { connect as netConnect, type Socket } from "node:net"
 import path from "node:path"
 import {
   app,
@@ -77,8 +84,10 @@ type PortalToolDetail = PortalToolSummary & {
   versions: string[]
 }
 
-// Development: a separate UI origin (vite, with hot reload) and a data
-// directory of its own, so a dev session never touches real installs.
+// Development: the window loads the renderer from vite, with hot reload, and a
+// data directory of its own, so a dev session never touches real installs. The
+// window still goes through the app server for the API (see `startAppServer`),
+// which is why `appUrl` passes its origin along.
 if (process.env.CPG_RUNNER_DATA_DIR) {
   app.setPath("userData", path.resolve(process.env.CPG_RUNNER_DATA_DIR))
 }
@@ -109,11 +118,10 @@ let mainWindow: BrowserWindow | null = null
 let splashWindow: BrowserWindow | null = null
 let shuttingDown = false
 let lastToolId: string | null = null
-// Which origin the window runs on: "none" until a page with an API is loaded,
-// then the origin that stays while tools are switched.
-let appOrigin: "none" | "dev" | "sidecar" = "none"
-// The tool whose sidecar served the page the window shows.
-let windowToolId: string | null = null
+// The window is served by the app itself and never changed: tools are routes
+// on that one origin, and their API calls go through its proxy.
+let windowLoaded = false
+let uiServerPort = 0
 const sidecars = new Map<string, Sidecar>()
 // Sidecars this app stopped on purpose: their exit is not a crash.
 const stoppingSidecars = new Set<string>()
@@ -401,14 +409,8 @@ function importPack(file: string): ToolEntry {
     fs.rmSync(path.join(directory, "environment.yml"), { force: true })
   }
   // The running runner service read the old pack files at startup, so it has
-  // to go: the next visit starts one that reads the new ones. If it served the
-  // page on screen, that page's origin goes with it, so the next open must
-  // load a page again instead of switching in place.
+  // to go: the next visit starts one that reads the new ones.
   stopSidecar(id)
-  if (id === windowToolId) {
-    appOrigin = "none"
-    windowToolId = null
-  }
   const entry = entryFor(id)
   if (!entry) throw new Error("The pack could not be read back.")
   return entry
@@ -608,39 +610,29 @@ function createWindow(): BrowserWindow {
   })
   window.on("closed", () => {
     mainWindow = null
-    // The next window has no page yet, so its first tool has to load one.
-    appOrigin = "none"
-    windowToolId = null
+    windowLoaded = false
   })
   mainWindow = window
   return window
 }
 
-function toolUrl(port: number, view: string): string {
+// The one address the window loads: vite in development (hot reload), the
+// app's own server otherwise. Both reach the tools through the proxy below.
+function appUrl(view: string): string {
   const query = new URLSearchParams({ token })
-  if (uiOrigin) {
-    // The renderer is served by vite; the API stays on the sidecar, so the
-    // window is told where it is.
-    query.set("api", `http://127.0.0.1:${port}`)
-    return `${uiOrigin}${view}?${query}`
-  }
-  return `http://127.0.0.1:${port}${view}?${query}`
+  if (uiOrigin) query.set("api", `http://127.0.0.1:${uiServerPort}`)
+  const base = uiOrigin || `http://127.0.0.1:${uiServerPort}`
+  return `${base}${view}?${query.toString()}`
 }
 
-// The tool list and the empty state come from the packaged renderer. A tool's
-// page comes from that tool's sidecar, which is the origin its API lives on.
+// The renderer serves the tool list and the empty state as well as a tool's
+// page: every page is a route on the app's one origin, never a sidecar's.
 async function showHome(): Promise<void> {
   const window = createWindow()
   const tools = listTools()
   if (tools.length === 0) {
-    if (uiOrigin) {
-      await window.loadURL(`${uiOrigin}/?${new URLSearchParams({ token })}`)
-      appOrigin = "dev"
-    } else {
-      // No API behind a file:// page: the first tool has to load its own.
-      await window.loadFile(path.join(uiDir, "index.html"))
-      appOrigin = "none"
-    }
+    await window.loadURL(appUrl("/"))
+    windowLoaded = true
     closeSplash()
     if (!window.isVisible()) window.show()
     return
@@ -649,47 +641,37 @@ async function showHome(): Promise<void> {
     lastToolId && tools.some((tool) => tool.id === lastToolId)
       ? lastToolId
       : tools[0].id
-  const port = await ensureSidecarWithRetry(toolId)
-  await window.loadURL(toolUrl(port, "/"))
-  appOrigin = uiOrigin ? "dev" : "sidecar"
-  windowToolId = toolId
+  await window.loadURL(appUrl(`/t/${toolId}/tool`))
+  lastToolId = toolId
+  windowLoaded = true
   if (!window.isVisible()) window.show()
 }
 
 // Deleting a tool takes its pack and runner data; outputs already copied to
-// the output folder stay. The window leaves the tool's page before its server
-// stops, then shows a tool that is left, or the tool list.
+// the output folder stay. The tool's server stops first, then the window is
+// told to leave that tool's route, so no poll is left answering 502s.
 async function removeTool(toolId: string): Promise<void> {
-  const remaining = listTools().filter((tool) => tool.id !== toolId)
-  const showing = toolId === windowToolId
-  if (showing) {
-    appOrigin = "none"
-    windowToolId = null
-    if (remaining.length > 0) await showTool(remaining[0].id)
-  }
   stopSidecar(toolId)
   fs.rmSync(path.join(toolsRoot(), toolId), { recursive: true, force: true })
   if (lastToolId === toolId) lastToolId = null
+  // The page decides where to go when the tool it shows is the one that went.
+  mainWindow?.webContents.send("runner:tool-removed", { toolId })
   mainWindow?.webContents.send("runner:tools-changed")
-  if (showing && remaining.length === 0) await showHome()
 }
 
 async function showTool(toolId: string): Promise<void> {
   const window = createWindow()
   try {
-    const port = await ensureSidecarWithRetry(toolId)
+    await ensureSidecarWithRetry(toolId)
     lastToolId = toolId
-    if (appOrigin === "none") {
-      // The page has no API behind it yet (a first run's file:// page), so it
-      // has to come from the tool's sidecar.
-      await window.loadURL(toolUrl(port, "/tool"))
-      appOrigin = uiOrigin ? "dev" : "sidecar"
+    if (windowLoaded) {
+      // One page, many tools: the window moves to the tool's route, so the
+      // sidebar and the settings panel keep their state.
+      window.webContents.send("runner:show-tool", { toolId })
     } else {
-      // Another tool's runner: the page stays, so the sidebar's lists and the
-      // run settings keep their state instead of flashing through a reload.
-      window.webContents.send("runner:show-tool", { toolId, port })
+      await window.loadURL(appUrl(`/t/${toolId}/tool`))
+      windowLoaded = true
     }
-    windowToolId = toolId
   } catch (error) {
     console.error(`Could not open ${toolId}: ${String(error)}`)
     throw error
@@ -713,6 +695,175 @@ async function ensureSidecarWithRetry(toolId: string): Promise<number> {
     await delay(5_000)
     return ensureSidecar(toolId)
   }
+}
+
+// -- the app's own server ------------------------------------------------
+
+// `/t/<tool>/api/...` is the tool's API; anything else is a page of the app.
+const API_PATH = /^\/t\/([^/]+)(\/api\/.*)$/
+
+const CONTENT_TYPES: Record<string, string> = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".json": "application/json",
+  ".svg": "image/svg+xml",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+  ".woff2": "font/woff2",
+  ".ico": "image/x-icon",
+}
+
+/**
+ * One origin for the window: the renderer's files, and under `/t/<tool>/` a
+ * pass-through to that tool's sidecar. The page therefore never changes origin
+ * when it opens another tool, and its API calls are same-origin in the app.
+ * Development keeps vite for the files and uses this only for the proxy, which
+ * is why the proxy answers CORS.
+ */
+function startAppServer(): Promise<number> {
+  const { promise, resolve, reject } = Promise.withResolvers<number>()
+  const server = createServer((request, response) => {
+    void handleAppRequest(request, response)
+  })
+  server.on("upgrade", (request, socket, head) => {
+    void handleAppUpgrade(request, socket as Socket, head)
+  })
+  server.on("error", reject)
+  server.listen(0, "127.0.0.1", () => {
+    const address = server.address()
+    uiServerPort = typeof address === "object" && address ? address.port : 0
+    resolve(uiServerPort)
+  })
+  return promise
+}
+
+function allowCors(request: IncomingMessage, response: ServerResponse): void {
+  const origin = request.headers.origin
+  response.setHeader("Access-Control-Allow-Origin", origin ?? "*")
+  response.setHeader("Vary", "Origin")
+  response.setHeader("Access-Control-Allow-Headers", "*")
+  response.setHeader("Access-Control-Allow-Methods", "*")
+}
+
+async function handleAppRequest(
+  request: IncomingMessage,
+  response: ServerResponse,
+): Promise<void> {
+  allowCors(request, response)
+  if (request.method === "OPTIONS") {
+    response.writeHead(204)
+    response.end()
+    return
+  }
+  const url = new URL(request.url ?? "/", "http://127.0.0.1")
+  const match = API_PATH.exec(url.pathname)
+  if (match) {
+    await proxyRequest(
+      request,
+      response,
+      decodeURIComponent(match[1]),
+      `${match[2]}${url.search}`,
+    )
+    return
+  }
+  serveRenderer(url.pathname, response)
+}
+
+async function proxyRequest(
+  request: IncomingMessage,
+  response: ServerResponse,
+  toolId: string,
+  pathAndQuery: string,
+): Promise<void> {
+  let port: number
+  try {
+    port = await ensureSidecar(toolId)
+  } catch (error) {
+    response.writeHead(502, { "Content-Type": "text/plain; charset=utf-8" })
+    response.end(`Could not open ${toolId}: ${String(error)}`)
+    return
+  }
+  const upstream = httpRequest(
+    {
+      host: "127.0.0.1",
+      port,
+      path: pathAndQuery,
+      method: request.method,
+      headers: { ...request.headers, host: `127.0.0.1:${port}` },
+    },
+    (upstreamResponse) => {
+      response.writeHead(
+        upstreamResponse.statusCode ?? 502,
+        upstreamResponse.headers,
+      )
+      upstreamResponse.pipe(response)
+    },
+  )
+  upstream.on("error", () => {
+    if (!response.headersSent) response.writeHead(502)
+    response.end()
+  })
+  request.pipe(upstream)
+}
+
+async function handleAppUpgrade(
+  request: IncomingMessage,
+  socket: Socket,
+  head: Buffer,
+): Promise<void> {
+  const url = new URL(request.url ?? "/", "http://127.0.0.1")
+  const match = API_PATH.exec(url.pathname)
+  if (!match) {
+    socket.destroy()
+    return
+  }
+  const toolId = decodeURIComponent(match[1])
+  let port: number
+  try {
+    port = await ensureSidecar(toolId)
+  } catch {
+    socket.destroy()
+    return
+  }
+  const upstream = netConnect(port, "127.0.0.1", () => {
+    const headers = Object.entries(request.headers).filter(
+      ([key]) => key.toLowerCase() !== "host",
+    )
+    const lines = [
+      `${request.method} ${match[2]}${url.search} HTTP/1.1`,
+      `Host: 127.0.0.1:${port}`,
+      ...headers.map(
+        ([key, value]) =>
+          `${key}: ${Array.isArray(value) ? value.join(", ") : value}`,
+      ),
+    ]
+    upstream.write(`${lines.join("\r\n")}\r\n\r\n`)
+    if (head.length > 0) upstream.write(head)
+    socket.pipe(upstream).pipe(socket)
+  })
+  upstream.on("error", () => socket.destroy())
+  socket.on("error", () => upstream.destroy())
+}
+
+function serveRenderer(pathname: string, response: ServerResponse): void {
+  const root = path.resolve(uiDir)
+  let file = path.resolve(root, `.${pathname}`)
+  if (!file.startsWith(root + path.sep) || !fs.existsSync(file) || !fs.statSync(file).isFile()) {
+    file = path.join(root, "index.html")
+  }
+  if (!fs.existsSync(file)) {
+    response.writeHead(404)
+    response.end()
+    return
+  }
+  response.writeHead(200, {
+    "Content-Type": CONTENT_TYPES[path.extname(file).toLowerCase()] ?? "application/octet-stream",
+    "Cache-Control": "no-cache",
+  })
+  fs.createReadStream(file).pipe(response)
 }
 
 async function ensureSidecar(toolId: string): Promise<number> {
@@ -771,8 +922,6 @@ function startSidecar(toolId: string): Promise<number> {
         app.getPath("documents"),
         "--resources-dir",
         resources,
-        "--ui-dir",
-        uiDir,
       ],
       {
         env: {
@@ -874,15 +1023,6 @@ function registerIpcHandlers(): void {
   })
 
   ipcMain.handle("runner:tools", (): ToolEntry[] => listTools())
-  // A reloaded page comes from the origin it was first loaded with, but it
-  // must keep showing the tool on screen, so the renderer asks which one it is.
-  ipcMain.handle("runner:current-tool", () => {
-    const toolId = lastToolId
-    if (!toolId) return null
-    const running = sidecars.get(toolId)
-    return running ? { toolId, port: running.port } : null
-  })
-
   ipcMain.handle(
     "runner:tool-images",
     (): Record<string, string> => toolImages(),
@@ -1077,6 +1217,7 @@ function start(): void {
         }
       }
       registerIpcHandlers()
+      await startAppServer()
       // The splash covers the first paint only: opening a tool later shows the
       // tool page's own loading state instead.
       const splashTimer = setTimeout(() => showSplash(), 200)

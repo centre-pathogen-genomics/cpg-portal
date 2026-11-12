@@ -37,7 +37,6 @@ def _client(tmp_path, *, installer=None):
         installer=installer,
         runs=FakeRunManager(),
         store=store,
-        ui_dir=None,
     )
     return TestClient(app), doctor
 

@@ -25,7 +25,6 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--data-dir", required=True)
     parser.add_argument("--documents-dir", required=True)
     parser.add_argument("--resources-dir", required=True)
-    parser.add_argument("--ui-dir", default=None)
     return parser
 
 
@@ -72,7 +71,6 @@ def main(argv: list[str] | None = None) -> int:
             if resources.environment_yml is not None
             else None
         ),
-        ui_dir=Path(args.ui_dir) if args.ui_dir else None,
     )
 
     config = uvicorn.Config(app, host="127.0.0.1", port=args.port, log_level="info")

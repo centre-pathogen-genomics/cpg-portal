@@ -19,9 +19,16 @@ import {
   toRunPublic,
 } from "./contracts";
 import { openPath } from "./lib/desktop";
-import { navigate } from "./router";
+import { useNavigate } from "@tanstack/react-router";
 
-export function RunPage({ id }: { id: string }) {
+export function RunPage({
+  toolId,
+  runId,
+}: {
+  toolId: string;
+  runId: string;
+}) {
+  const navigate = useNavigate();
   const [record, setRecord] = useState<RunRecord | null>(null);
   const [tool, setTool] = useState<ToolConfig | null>(null);
   const [environment, setEnvironment] = useState<string | null>(null);
@@ -33,10 +40,10 @@ export function RunPage({ id }: { id: string }) {
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    const next = await api.get<RunRecord>(`/runs/${id}`);
+    const next = await api.get<RunRecord>(`/runs/${runId}`);
     setRecord(next);
     return next;
-  }, [id]);
+  }, [runId]);
 
   useEffect(() => {
     void refresh().catch((error) => setLoadError(errorMessage(error)));
@@ -62,7 +69,7 @@ export function RunPage({ id }: { id: string }) {
   }, [inProgress, refresh]);
 
   useEffect(() => {
-    const socket = new WebSocket(api.wsUrl(`/runs/${id}/logs`));
+    const socket = new WebSocket(api.wsUrl(`/runs/${runId}/logs`));
     socket.onmessage = (event) => {
       let message: RunLogMessage;
       try {
@@ -88,7 +95,7 @@ export function RunPage({ id }: { id: string }) {
       }
     };
     return () => socket.close();
-  }, [id, refresh]);
+  }, [runId, refresh]);
 
   // Leaving while the run is still going ends it, so both the sidebar and the
   // way back to the tool ask first.
@@ -96,7 +103,7 @@ export function RunPage({ id }: { id: string }) {
     if (!leaveAction) return;
     setLeaving(true);
     try {
-      await api.post(`/runs/${id}/cancel`).catch(() => {});
+      await api.post(`/runs/${runId}/cancel`).catch(() => {});
       await leaveAction.go();
     } finally {
       setLeaving(false);
@@ -106,15 +113,17 @@ export function RunPage({ id }: { id: string }) {
 
   function goBack() {
     if (inProgress) {
-      setLeaveAction({ go: () => navigate("/tool") });
+      setLeaveAction({
+        go: () => navigate({ to: "/t/$toolId/tool", params: { toolId } }),
+      });
       return;
     }
-    navigate("/tool");
+    void navigate({ to: "/t/$toolId/tool", params: { toolId } });
   }
 
   async function cancel() {
     try {
-      await api.post(`/runs/${id}/cancel`);
+      await api.post(`/runs/${runId}/cancel`);
       await refresh();
     } catch (error) {
       toast.error(errorMessage(error));
@@ -160,7 +169,7 @@ export function RunPage({ id }: { id: string }) {
               )}
               <h1 className="text-xl font-semibold">
                 {record?.name ||
-                  `Run ${record?.id ? record.id.slice(0, 8) : id.slice(0, 8)}`}
+                  `Run ${record?.id ? record.id.slice(0, 8) : runId.slice(0, 8)}`}
               </h1>
               {record && <StatusBadge status={record.status} />}
               {record && (
@@ -180,7 +189,13 @@ export function RunPage({ id }: { id: string }) {
                   size="sm"
                   variant="outline"
                   aria-label="Rerun this run"
-                  onClick={() => navigate(`/tool?rerun=${record.id}`)}
+                  onClick={() =>
+                    void navigate({
+                      to: "/t/$toolId/tool",
+                      params: { toolId },
+                      search: { rerun: record.id },
+                    })
+                  }
                 >
                   <RotateCcw />
                   Rerun
@@ -230,7 +245,7 @@ export function RunPage({ id }: { id: string }) {
                       : undefined
                   }
                 />
-                <RunResults runId={id} files={record.files ?? []} />
+                <RunResults runId={runId} files={record.files ?? []} />
               </>
             )}
 

@@ -27,8 +27,6 @@ contextBridge.exposeInMainWorld("cpgRunner", {
   token,
   portalUrl,
   tools: (): Promise<ToolEntry[]> => ipcRenderer.invoke("runner:tools"),
-  currentTool: (): Promise<{ toolId: string; port: number } | null> =>
-    ipcRenderer.invoke("runner:current-tool"),
   toolImages: (): Promise<Record<string, string>> =>
     ipcRenderer.invoke("runner:tool-images"),
   cacheToolImage: (toolId: string, url: string): Promise<void> =>
@@ -59,14 +57,21 @@ contextBridge.exposeInMainWorld("cpgRunner", {
       ipcRenderer.removeListener("runner:tools-changed", listener)
     }
   },
+  /** The tool the page shows is gone: its route has to change. */
+  onToolRemoved: (handler: (target: { toolId: string }) => void): (() => void) => {
+    const listener = (_event: unknown, target: { toolId: string }) =>
+      handler(target)
+    ipcRenderer.on("runner:tool-removed", listener)
+    return () => {
+      ipcRenderer.removeListener("runner:tool-removed", listener)
+    }
+  },
   /** The window is pointed at another tool's runner; the page stays mounted. */
   onShowTool: (
-    handler: (target: { toolId: string; port: number }) => void,
+    handler: (target: { toolId: string }) => void,
   ): (() => void) => {
-    const listener = (
-      _event: unknown,
-      target: { toolId: string; port: number },
-    ) => handler(target)
+    const listener = (_event: unknown, target: { toolId: string }) =>
+      handler(target)
     ipcRenderer.on("runner:show-tool", listener)
     return () => {
       ipcRenderer.removeListener("runner:show-tool", listener)

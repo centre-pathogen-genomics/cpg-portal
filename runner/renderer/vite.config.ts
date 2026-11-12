@@ -5,9 +5,9 @@ import { defineConfig } from "vite"
 
 export default defineConfig({
   root: fileURLToPath(new URL(".", import.meta.url)),
-  // Relative asset URLs: the packaged renderer is also opened from file:// when
-  // no tool has been imported yet.
-  base: "./",
+  // The app serves the renderer from its own origin at `/`, so assets load
+  // from there whatever route the window is on.
+  base: "/",
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {

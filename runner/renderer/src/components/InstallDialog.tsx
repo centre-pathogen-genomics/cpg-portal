@@ -1,7 +1,7 @@
-import { Check, LoaderCircle, X } from "lucide-react"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { toast } from "sonner"
-import { Button } from "@/components/ui/button"
+import { Check, LoaderCircle, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,19 +9,19 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { api, errorMessage } from "../api"
-import type { InstallMessage, ToolConfig } from "../contracts"
-import { LogPanel } from "./LogPanel"
+} from "@/components/ui/dialog";
+import { api, errorMessage } from "../api";
+import type { InstallMessage, ToolConfig } from "../contracts";
+import { LogPanel } from "./LogPanel";
 
 /** The installer's steps, in order. A step exists only once it is mentioned. */
 const PHASES = [
   { id: "image", title: "Runtime image" },
   { id: "environment", title: "Tool environment" },
   { id: "post-install", title: "Post-install" },
-] as const
+] as const;
 
-type PhaseState = "done" | "active" | "failed" | "pending"
+type PhaseState = "done" | "active" | "failed" | "pending";
 
 const DONE_LINES = [
   "Runtime image is already installed.",
@@ -29,7 +29,7 @@ const DONE_LINES = [
   "Tool environment is already installed.",
   "Tool environment installed.",
   "Post-install finished.",
-]
+];
 
 function phaseOf(line: string): string | null {
   if (
@@ -37,20 +37,20 @@ function phaseOf(line: string): string | null {
     line.startsWith("Runtime image") ||
     line.startsWith("Loading runtime image")
   )
-    return "image"
+    return "image";
   if (
     line.startsWith("Installing tool environment") ||
     line.startsWith("Tool environment") ||
     line.startsWith("Still installing the environment")
   )
-    return "environment"
+    return "environment";
   if (
     line.startsWith("Running post-install") ||
     line.startsWith("Post-install") ||
     line.startsWith("Still running post-install")
   )
-    return "post-install"
-  return null
+    return "post-install";
+  return null;
 }
 
 /**
@@ -63,33 +63,33 @@ function buildTimeline(
   finished: boolean,
   failed: boolean,
 ): { id: string; title: string; state: PhaseState; detail: string }[] {
-  const states: Record<string, PhaseState> = {}
-  const details: Record<string, string> = {}
-  for (const phase of PHASES) states[phase.id] = "pending"
+  const states: Record<string, PhaseState> = {};
+  const details: Record<string, string> = {};
+  for (const phase of PHASES) states[phase.id] = "pending";
   for (const line of lines) {
-    const id = phaseOf(line)
-    if (!id) continue
+    const id = phaseOf(line);
+    if (!id) continue;
     if (DONE_LINES.includes(line)) {
-      states[id] = "done"
-      details[id] = ""
+      states[id] = "done";
+      details[id] = "";
     } else {
-      states[id] = "active"
-      details[id] = line.replace(/…$/, "")
+      states[id] = "active";
+      details[id] = line.replace(/…$/, "");
     }
     for (const phase of PHASES) {
-      if (phase.id === id) break
-      if (states[phase.id] === "active") states[phase.id] = "done"
+      if (phase.id === id) break;
+      if (states[phase.id] === "active") states[phase.id] = "done";
     }
   }
   if (finished || failed) {
     // The installer's own error is a line that belongs to no step.
     const error = failed
       ? ([...lines].reverse().find((line) => phaseOf(line) === null) ?? "")
-      : ""
+      : "";
     for (const phase of PHASES) {
       if (states[phase.id] === "active") {
-        states[phase.id] = failed ? "failed" : "done"
-        if (failed && error) details[phase.id] = error
+        states[phase.id] = failed ? "failed" : "done";
+        if (failed && error) details[phase.id] = error;
       }
     }
   }
@@ -99,7 +99,7 @@ function buildTimeline(
       state: states[phase.id],
       detail: details[phase.id] ?? "",
     }),
-  )
+  );
 }
 
 export function InstallDialog({
@@ -109,87 +109,89 @@ export function InstallDialog({
   onRefreshStatus,
   onDismiss,
 }: {
-  open: boolean
-  tool: ToolConfig | null
-  installing: boolean
-  onRefreshStatus: () => void
-  onDismiss: () => void
+  open: boolean;
+  tool: ToolConfig | null;
+  installing: boolean;
+  onRefreshStatus: () => void;
+  onDismiss: () => void;
 }) {
-  const [lines, setLines] = useState<string[]>([])
-  const [working, setWorking] = useState(false)
-  const [failure, setFailure] = useState<string | null>(null)
-  const [finished, setFinished] = useState(false)
-  const socketRef = useRef<WebSocket | null>(null)
+  const [lines, setLines] = useState<string[]>([]);
+  const [working, setWorking] = useState(false);
+  const [failure, setFailure] = useState<string | null>(null);
+  const [finished, setFinished] = useState(false);
+  const socketRef = useRef<WebSocket | null>(null);
 
   const closeSocket = useCallback(() => {
-    socketRef.current?.close()
-    socketRef.current = null
-  }, [])
+    socketRef.current?.close();
+    socketRef.current = null;
+  }, []);
 
   const subscribe = useCallback(() => {
-    closeSocket()
-    const socket = new WebSocket(api.wsUrl("/install/logs"))
-    socketRef.current = socket
+    closeSocket();
+    const socket = new WebSocket(api.wsUrl("/install/logs"));
+    socketRef.current = socket;
     socket.onmessage = (event) => {
-      let message: InstallMessage
+      let message: InstallMessage;
       try {
-        message = JSON.parse(String(event.data)) as InstallMessage
+        message = JSON.parse(String(event.data)) as InstallMessage;
       } catch {
-        return
+        return;
       }
       if (message.type === "log") {
-        setLines((previous) => [...previous, message.line].slice(-500))
+        setLines((previous) => [...previous, message.line].slice(-500));
       } else if (message.type === "state") {
         if (message.state === "installed") {
-          closeSocket()
-          setWorking(false)
-          setFinished(true)
-          setFailure(null)
-          onRefreshStatus()
+          closeSocket();
+          setWorking(false);
+          setFinished(true);
+          setFailure(null);
+          onRefreshStatus();
         } else if (message.state === "failed") {
-          closeSocket()
-          setWorking(false)
-          setFinished(true)
-          setFailure("Installation failed")
+          closeSocket();
+          setWorking(false);
+          setFinished(true);
+          setFailure("Installation failed");
         }
       }
-    }
+    };
     socket.onerror = () => {
-      closeSocket()
-      setWorking(false)
-      setFailure((previous) => previous ?? "The installation log connection was lost")
-    }
-  }, [closeSocket, onRefreshStatus])
+      closeSocket();
+      setWorking(false);
+      setFailure(
+        (previous) => previous ?? "The installation log connection was lost",
+      );
+    };
+  }, [closeSocket, onRefreshStatus]);
 
-  useEffect(() => closeSocket, [closeSocket])
+  useEffect(() => closeSocket, [closeSocket]);
 
   useEffect(() => {
-    if (!open || !installing || socketRef.current) return
-    subscribe()
-  }, [open, installing, subscribe])
+    if (!open || !installing || socketRef.current) return;
+    subscribe();
+  }, [open, installing, subscribe]);
 
   async function startInstall() {
-    if (working) return
-    setWorking(true)
-    setFailure(null)
-    setFinished(false)
-    setLines([])
+    if (working) return;
+    setWorking(true);
+    setFailure(null);
+    setFinished(false);
+    setLines([]);
     try {
-      await api.post("/install")
+      await api.post("/install");
     } catch (error) {
-      toast.error(errorMessage(error))
-      setWorking(false)
-      onRefreshStatus()
-      return
+      toast.error(errorMessage(error));
+      setWorking(false);
+      onRefreshStatus();
+      return;
     }
-    subscribe()
+    subscribe();
   }
 
   const timeline = useMemo(
     () => buildTimeline(lines, finished && !failure, Boolean(failure)),
     [lines, finished, failure],
-  )
-  const busy = working || installing
+  );
+  const busy = working || installing;
 
   return (
     <Dialog open={open}>
@@ -209,7 +211,7 @@ export function InstallDialog({
 
         <div className="max-h-[55vh] overflow-auto pr-1">
           {timeline.length > 0 ? (
-            <ol className="relative space-y-4 border-l pl-5">
+            <ol className="relative space-y-4 border-l pl-6">
               {timeline.map((phase) => (
                 <li key={phase.id} className="relative">
                   <span className="bg-background absolute top-0.5 -left-[26px] flex size-4 items-center justify-center rounded-full">
@@ -273,5 +275,5 @@ export function InstallDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

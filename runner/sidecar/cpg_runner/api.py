@@ -18,7 +18,6 @@ from fastapi import (
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
-from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from app.core.file_types import FileTypes
@@ -62,7 +61,6 @@ def create_app(
     runs: RunManager,
     store: StateStore,
     environment_yml: str | None = None,
-    ui_dir: Path | None = None,
     file_types: FileTypes | None = None,
 ) -> FastAPI:
     app = FastAPI(title="CPG Runner", docs_url=None, redoc_url=None, openapi_url=None)
@@ -379,30 +377,5 @@ def create_app(
         if not path.is_file():
             raise HTTPException(status_code=404, detail="File not found")
         return FileResponse(path, filename=entry.name)
-
-    # -- static UI ---------------------------------------------------------
-
-    if ui_dir is not None:
-        ui_root = Path(ui_dir)
-        assets = ui_root / "assets"
-        if assets.is_dir():
-            app.mount(
-                "/assets",
-                StaticFiles(directory=str(assets)),
-                name="assets",
-            )
-        index = ui_root / "index.html"
-
-        @app.get("/{full_path:path}", include_in_schema=False)
-        def spa(full_path: str) -> FileResponse:
-            if full_path == "api" or full_path.startswith("api/"):
-                raise HTTPException(status_code=404, detail="Not Found")
-            if full_path:
-                candidate = (ui_root / full_path).resolve()
-                if candidate.is_relative_to(ui_root.resolve()) and candidate.is_file():
-                    return FileResponse(candidate)
-            if index.is_file():
-                return FileResponse(index)
-            raise HTTPException(status_code=404, detail="Not Found")
 
     return app

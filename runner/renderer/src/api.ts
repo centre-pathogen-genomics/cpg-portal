@@ -1,24 +1,21 @@
 let sessionToken = ""
-// Development serves the UI from vite while the API stays on the sidecar, so
-// the window is told where the API is. Same origin otherwise.
+// Development serves the UI from vite while the API comes from the app's own
+// server, so the window is told that origin. Same origin otherwise.
+let apiOrigin = ""
+// The tool whose API this page talks to: `/t/<id>` on that origin.
 let apiBase = ""
-const baseListeners = new Set<() => void>()
 
-/** Notified when the window is pointed at another tool's runner. */
-export function onApiBaseChange(listener: () => void): () => void {
-  baseListeners.add(listener)
-  return () => {
-    baseListeners.delete(listener)
-  }
+export function setApiOrigin(value: string | null): void {
+  apiOrigin = (value ?? "").replace(/\/+$/, "")
 }
 
 export function setApiBase(value: string | null): void {
   apiBase = (value ?? "").replace(/\/+$/, "")
-  for (const listener of baseListeners) listener()
 }
 
-function apiRoot(): string {
-  return apiBase || window.location.origin
+/** Where a tool's API lives: its prefix on the app's one origin. */
+export function toolApiBase(toolId: string): string {
+  return `${apiOrigin}/t/${encodeURIComponent(toolId)}`
 }
 
 export function setSessionToken(value: string | null): void {
@@ -86,7 +83,7 @@ async function request<T>(
 }
 
 function socketUrl(path: string): string {
-  const url = new URL(`/api${path}`, `${apiRoot()}/`)
+  const url = new URL(`${apiBase}/api${path}`, window.location.origin)
   url.protocol = url.protocol === "https:" ? "wss:" : "ws:"
   url.searchParams.set("token", getToken())
   return url.toString()

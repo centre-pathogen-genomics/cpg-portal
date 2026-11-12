@@ -19,15 +19,19 @@ That starts three processes:
 | Electron | the window, pointed at vite |
 | the sidecar | launched by Electron itself, on its own port, serving the API |
 
-The window is loaded from vite but talks to the sidecar, which is why the app
-passes the API origin to the renderer in development (`?api=`); the sidecar
-allows `http://localhost:*` and `http://127.0.0.1:*` origins for that. In a
-packaged app the first page also comes from a sidecar.
+There is one origin for the UI: main's app server serves the built renderer
+itself (in development the window loads vite, which is the same origin only for
+the page). Every tool's API is proxied by that server under `/t/<tool id>/api/**`
+to the tool's own sidecar, so the sidecars are API-only — no page, no assets.
 
-Switching tools does not load a page: the window keeps the origin it started
-with and is only pointed at the other tool's sidecar (`runner:show-tool`), so
-the sidebar and the run settings panel keep their state. A reload asks the main
-process which tool is on screen (`runner:current-tool`) to find its API again.
+A tool is therefore a route (`/t/<tool id>/tool`, `/t/<tool id>/run/<run id>`),
+not an origin. Switching tools does not load a page: main sends
+`runner:show-tool` and the router navigates, so the sidebar and the run settings
+panel keep their state. A reload needs no lookup either — the tool id is in the
+path, and the router's `beforeLoad` sets the API prefix before the page loads.
+In development main passes its proxy origin as `?api=` so that prefix is
+absolute (vite's page origin is not the API's); the renderer keeps it in session
+storage, so a reload still reaches the API after `?api=` leaves the address bar.
 
 State lives in `runner/.dev/userdata`, so a dev session never sees or touches the
 tools installed in the real app (`~/Library/Application Support/cpg-runner`).

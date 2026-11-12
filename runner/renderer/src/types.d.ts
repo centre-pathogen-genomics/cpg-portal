@@ -20,8 +20,6 @@ declare global {
       /** Origin of the portal this build belongs to; empty when unknown. */
       portalUrl: string
       tools(): Promise<ToolEntry[]>
-      /** The tool the window shows, also after a reload. */
-      currentTool(): Promise<{ toolId: string; port: number } | null>
       /** Cached tool pictures, by tool id, as data URLs. */
       toolImages(): Promise<Record<string, string>>
       /** Keeps a picture the window saw first, so it works offline later. */
@@ -47,9 +45,9 @@ declare global {
       /** A tool was added or removed elsewhere; reload the lists. */
       onToolsChanged(handler: () => void): () => void
       /** Called instead of a page load when the window shows another tool. */
-      onShowTool(
-        handler: (target: { toolId: string; port: number }) => void,
-      ): () => void
+      onShowTool(handler: (target: { toolId: string }) => void): () => void
+      /** The tool on screen was removed; the window should leave its route. */
+      onToolRemoved(handler: (target: { toolId: string }) => void): () => void
       home(): Promise<void>
       ready(): void
       pickFiles(options: {

@@ -1,16 +1,27 @@
+import { RouterProvider } from "@tanstack/react-router"
 import ReactDOM from "react-dom/client"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
-import { App } from "./App"
-import { navigate } from "./router"
-import { setApiBase, setSessionToken } from "./api"
+import { setApiOrigin, setSessionToken } from "./api"
+import { router } from "./router"
 import "./index.css"
+
+// Development only: the app server's origin, which is not the page's. Kept in
+// session storage so a reload — which no longer carries `?api=` in the address
+// bar — still reaches the API through the proxy.
+const API_ORIGIN_KEY = "cpg-runner:api-origin"
 
 const params = new URLSearchParams(window.location.search)
 const token = params.get("token")
 const api = params.get("api")
 if (token) setSessionToken(token)
-if (api) setApiBase(api)
+if (api) {
+  setApiOrigin(api)
+  window.sessionStorage.setItem(API_ORIGIN_KEY, api)
+} else {
+  const saved = window.sessionStorage.getItem(API_ORIGIN_KEY)
+  if (saved) setApiOrigin(saved)
+}
 if (token || api) {
   // Drop the token and the API origin from the address bar but keep the route:
   // `/run?id=...` must survive, or a reload would lose which run it shows.
@@ -25,25 +36,29 @@ if (token || api) {
   )
 }
 
-// The main process keeps one window and points it at another tool's runner
-// instead of reloading the page, so the sidebar and the settings panel keep
-// their lists and state across tools.
+// One page, many tools: opening another one is a route, not a reload, so the
+// sidebar and the settings panel keep their lists and state across tools.
 window.cpgRunner?.onShowTool?.((target) => {
-  setApiBase(`http://127.0.0.1:${target.port}`)
-  navigate("/tool")
+  void router.navigate({
+    to: "/t/$toolId/tool",
+    params: { toolId: target.toolId },
+  })
 })
 
-async function start(): Promise<void> {
-  // A reload serves the page from the origin it first came from: read which
-  // tool is on screen so its runner, not that origin's, answers.
-  const current = await window.cpgRunner?.currentTool?.()
-  if (current) setApiBase(`http://127.0.0.1:${current.port}`)
+// The tool the page shows was removed: go back to the list of what is left.
+window.cpgRunner?.onToolRemoved?.((target) => {
+  const shown = router.state.matches.at(-1)?.params as
+    | { toolId?: string }
+    | undefined
+  if (shown?.toolId === target.toolId) void router.navigate({ to: "/" })
+})
 
+function start(): void {
   const container = document.getElementById("root")
   if (!container) return
   ReactDOM.createRoot(container).render(
     <ThemeProvider>
-      <App />
+      <RouterProvider router={router} />
       <Toaster />
     </ThemeProvider>,
   )
@@ -51,4 +66,4 @@ async function start(): Promise<void> {
   window.cpgRunner?.ready()
 }
 
-void start()
+start()

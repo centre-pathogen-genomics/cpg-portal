@@ -33,7 +33,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ApiError, api, errorMessage, onApiBaseChange } from "./api";
+import { ApiError, api, errorMessage } from "./api";
 import { DockerSetupDialog } from "./components/DockerSetupDialog";
 import { InstallDialog } from "./components/InstallDialog";
 import { LocalFilePicker } from "./components/LocalFilePicker";
@@ -54,13 +54,14 @@ import {
 } from "./contracts";
 import { openExternal, openPath, pickDirectory } from "./lib/desktop";
 import { portalToolUrl } from "./lib/portal";
-import { navigate } from "./router";
+import { useNavigate } from "@tanstack/react-router";
 import cpgLogo from "./assets/cpg-logo.png";
 
 const FIELD_ERROR =
   /^(?:Missing required parameter|Invalid value for parameter): (.+)$/;
 
-export function ToolPage() {
+export function ToolPage({ toolId }: { toolId: string }) {
+  const navigate = useNavigate();
   const [tool, setTool] = useState<ToolConfig | null>(null);
   const [status, setStatus] = useState<StatusPayload | null>(null);
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -113,17 +114,6 @@ export function ToolPage() {
     void loadAll();
   }, [loadAll]);
 
-  // Another tool's runner: reload its data, keeping the old one on screen
-  // until the new one answers instead of blanking the page.
-  useEffect(
-    () =>
-      onApiBaseChange(() => {
-        setInstallDismissed(false);
-        setDescriptionOpen(false);
-        void loadAll();
-      }),
-    [loadAll],
-  );
 
   // The picture is shown from its URL until the main process keeps a copy.
   useEffect(() => {
@@ -215,7 +205,10 @@ export function ToolPage() {
         cpus,
         name: runName.trim() || undefined,
       });
-      navigate(`/run?id=${record.id}`);
+      void navigate({
+        to: "/t/$toolId/run/$runId",
+        params: { toolId, runId: record.id },
+      });
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
         const doctor = (error.payload as { doctor?: DoctorReport } | null)
