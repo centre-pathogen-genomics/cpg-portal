@@ -9,6 +9,7 @@ type ToolEntry = {
   name: string
   version: string
   description: string | null
+  image: string | null
 }
 
 
@@ -23,6 +24,8 @@ declare global {
       currentTool(): Promise<{ toolId: string; port: number } | null>
       /** Cached tool pictures, by tool id, as data URLs. */
       toolImages(): Promise<Record<string, string>>
+      /** Keeps a picture the window saw first, so it works offline later. */
+      cacheToolImage(toolId: string, url: string): Promise<void>
       /** The portal's catalogue, one row per tool name. */
       portalTools(): Promise<PortalToolSummary[]>
       /** The portal's search, across every tool it hosts. */

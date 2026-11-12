@@ -32,6 +32,8 @@ export type ToolEntry = {
   name: string
   version: string
   description: string | null
+  /** The portal's picture URL, so a window without a cached copy still shows it. */
+  image: string | null
 }
 
 type ToolRecord = {
@@ -308,6 +310,7 @@ function entryFor(toolId: string): ToolEntry | null {
       name: tool.name,
       version: tool.version ?? "",
       description: tool.description ?? null,
+      image: tool.image ?? null,
     }
   } catch (error) {
     console.error(`Could not read tool ${toolId}: ${String(error)}`)
@@ -316,16 +319,12 @@ function entryFor(toolId: string): ToolEntry | null {
 }
 
 // The tool's picture, downloaded once so the window shows it offline too.
-async function ensureToolImage(toolId: string): Promise<void> {
+async function downloadToolImage(toolId: string, url: string): Promise<void> {
+  if (!/^https?:\/\//i.test(url)) return
   const directory = dataDir(toolId)
   const imagePath = path.join(directory, "tool-image")
   if (fs.existsSync(imagePath)) return
   try {
-    const payload = JSON.parse(
-      fs.readFileSync(path.join(packDir(toolId), "tool.json"), "utf-8"),
-    ) as ToolFile
-    const url = payload.tool?.image
-    if (typeof url !== "string" || !/^https?:\/\//i.test(url)) return
     const response = await fetch(url)
     if (!response.ok) return
     const bytes = Buffer.from(await response.arrayBuffer())
@@ -337,6 +336,19 @@ async function ensureToolImage(toolId: string): Promise<void> {
     mainWindow?.webContents.send("runner:tools-changed")
   } catch (error) {
     console.error(`Could not cache the picture of ${toolId}: ${String(error)}`)
+  }
+}
+
+async function ensureToolImage(toolId: string): Promise<void> {
+  try {
+    const payload = JSON.parse(
+      fs.readFileSync(path.join(packDir(toolId), "tool.json"), "utf-8"),
+    ) as ToolFile
+    const url = payload.tool?.image
+    if (typeof url !== "string") return
+    await downloadToolImage(toolId, url)
+  } catch (error) {
+    console.error(`Could not read the picture of ${toolId}: ${String(error)}`)
   }
 }
 
@@ -874,6 +886,17 @@ function registerIpcHandlers(): void {
   ipcMain.handle(
     "runner:tool-images",
     (): Record<string, string> => toolImages(),
+  )
+
+  // A picture the window saw first (e.g. the tool's own URL) is kept here.
+  ipcMain.handle(
+    "runner:cache-tool-image",
+    (_event, target: { toolId?: unknown; url?: unknown }) => {
+      const toolId = target?.toolId
+      const url = target?.url
+      if (typeof toolId !== "string" || typeof url !== "string") return
+      return downloadToolImage(toolId, url)
+    },
   )
 
   ipcMain.handle("runner:portal-tools", () => listPortalTools())

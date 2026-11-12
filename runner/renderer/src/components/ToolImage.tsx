@@ -20,16 +20,19 @@ export function ToolImage({
   id,
   name,
   images,
+  src,
   className,
 }: {
   id: string
   name: string
   images: Record<string, string>
+  /** The tool's own picture URL, when it is not cached yet. */
+  src?: string | null
   className?: string
 }) {
   return (
     <img
-      src={images[id] ?? placeholderImage(name)}
+      src={images[id] ?? src ?? placeholderImage(name)}
       alt={name}
       className={cn("shrink-0 rounded-md border object-cover", className)}
     />

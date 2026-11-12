@@ -125,6 +125,13 @@ export function ToolPage() {
     [loadAll],
   );
 
+  // The picture is shown from its URL until the main process keeps a copy.
+  useEffect(() => {
+    if (tool?.image && !images[tool.id]) {
+      void window.cpgRunner?.cacheToolImage?.(tool.id, tool.image)
+    }
+  }, [tool?.id, tool?.image, images])
+
   // "Show more" earns its line only when the text does not fit in one.
   useEffect(() => {
     const element = descriptionRef.current;
@@ -346,7 +353,11 @@ export function ToolPage() {
               <header className="shrink-0 px-8 py-4">
                 <div className="mx-auto max-w-6xl">
                   <ToolHeading
-                    image={images[tool.id] ?? placeholderImage(tool.name)}
+                    image={
+                      images[tool.id] ??
+                      tool.image ??
+                      placeholderImage(tool.name)
+                    }
                     name={tool.name}
                     version={tool.version}
                     badges={<ToolBadges tool={tool} />}

@@ -11,6 +11,7 @@ type ToolEntry = {
   name: string
   version: string
   description: string | null
+  image: string | null
 }
 
 const COLLAPSED_KEY = "cpg-runner.sidebar"
@@ -66,6 +67,15 @@ export function ToolSidebar({
       void window.cpgRunner?.tools().then(setTools)
     })
   }, [])
+
+  useEffect(() => {
+    // A tool added before its picture was kept still has its URL: save it now.
+    for (const tool of tools) {
+      if (tool.image && !images[tool.id]) {
+        void window.cpgRunner?.cacheToolImage?.(tool.id, tool.image)
+      }
+    }
+  }, [tools, images])
 
   async function refreshTools() {
     if (!bridge) return
@@ -170,6 +180,7 @@ export function ToolSidebar({
                           id={tool.id}
                           name={tool.name}
                           images={images}
+                          src={tool.image}
                           className="size-5"
                         />
                       )}
