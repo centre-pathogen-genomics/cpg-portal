@@ -1,7 +1,7 @@
-import { LoaderCircle } from "lucide-react"
-import { useEffect, useState } from "react"
-import { toast } from "sonner"
-import { Button } from "@/components/ui/button"
+import { LoaderCircle } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,23 +9,23 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import type { PortalToolDetail, ToolConfig } from "../contracts"
-import { openExternal } from "../lib/desktop"
-import { portalToolUrl } from "../lib/portal"
-import { ToolBadges } from "./ToolBadges"
-import { ToolHeading } from "./ToolHeading"
-import { placeholderImage } from "./ToolImage"
+} from "@/components/ui/select";
+import type { PortalToolDetail, ToolConfig } from "../contracts";
+import { openExternal } from "../lib/desktop";
+import { portalToolUrl } from "../lib/portal";
+import { ToolBadges } from "./ToolBadges";
+import { ToolHeading } from "./ToolHeading";
+import { placeholderImage } from "./ToolImage";
 
-type Target = { name: string; version: string }
+type Target = { name: string; version: string };
 
 /**
  * One tool from the portal: its picture, versions and what it does, with the
@@ -37,59 +37,59 @@ export function PortalToolDialog({
   onOpenChange,
   onAdded,
 }: {
-  target: Target | null
-  installed: { name: string; version: string }[]
-  onOpenChange: (open: boolean) => void
+  target: Target | null;
+  installed: { name: string; version: string }[];
+  onOpenChange: (open: boolean) => void;
   /** The tool is installed and about to open; the list can reload. */
-  onAdded?: () => void
+  onAdded?: () => void;
 }) {
-  const [version, setVersion] = useState("")
-  const [detail, setDetail] = useState<PortalToolDetail | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [adding, setAdding] = useState(false)
+  const [version, setVersion] = useState("");
+  const [detail, setDetail] = useState<PortalToolDetail | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
 
   useEffect(() => {
-    setDetail(null)
-    setError(null)
-    setVersion(target?.version ?? "")
-  }, [target])
+    setDetail(null);
+    setError(null);
+    setVersion(target?.version ?? "");
+  }, [target]);
 
   useEffect(() => {
-    if (!target) return
-    let cancelled = false
+    if (!target) return;
+    let cancelled = false;
     void window.cpgRunner
       ?.portalTool?.({ name: target.name, version: version || undefined })
       .then((loaded) => {
-        if (!cancelled) setDetail(loaded)
+        if (!cancelled) setDetail(loaded);
       })
       .catch((reason) => {
-        if (!cancelled) setError(String(reason).replace(/^Error: /, ""))
-      })
+        if (!cancelled) setError(String(reason).replace(/^Error: /, ""));
+      });
     return () => {
-      cancelled = true
-    }
-  }, [target, version])
+      cancelled = true;
+    };
+  }, [target, version]);
 
   const replaces =
     !!detail &&
     installed.some(
       (tool) => tool.name === detail.name && tool.version === detail.version,
-    )
+    );
 
   async function add() {
-    if (!detail) return
-    setAdding(true)
+    if (!detail) return;
+    setAdding(true);
     try {
       await window.cpgRunner?.addPortalTool?.({
         name: detail.name,
         version: detail.version || undefined,
-      })
-      onAdded?.()
-      onOpenChange(false)
+      });
+      onAdded?.();
+      onOpenChange(false);
     } catch (reason) {
-      toast.error(String(reason).replace(/^Error: /, ""))
+      toast.error(String(reason).replace(/^Error: /, ""));
     } finally {
-      setAdding(false)
+      setAdding(false);
     }
   }
 
@@ -102,7 +102,7 @@ export function PortalToolDialog({
         params: [],
         targets: [],
       } as unknown as ToolConfig)
-    : null
+    : null;
 
   return (
     <Dialog open={target !== null} onOpenChange={onOpenChange}>
@@ -119,11 +119,6 @@ export function PortalToolDialog({
             badges={tool ? <ToolBadges tool={tool} /> : undefined}
           />
         </DialogHeader>
-        <DialogDescription className="mt-2">
-          This tool lives on the portal. Install it here to run it on this
-          computer.
-        </DialogDescription>
-
         {error && <p className="text-destructive text-sm">{error}</p>}
         {!error && !detail && (
           <p className="text-muted-foreground flex items-center gap-2 text-sm">
@@ -134,7 +129,6 @@ export function PortalToolDialog({
 
         {detail && (
           <div className="grid gap-3">
-
             {detail.versions.length > 1 && (
               <div className="grid gap-2">
                 <Label htmlFor="portal-version">Version</Label>
@@ -199,5 +193,5 @@ export function PortalToolDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

@@ -1,8 +1,8 @@
-import { LoaderCircle, Search } from "lucide-react"
-import { useEffect, useRef, useState } from "react"
-import { Input } from "@/components/ui/input"
-import type { PortalToolSummary } from "../contracts"
-import { placeholderImage } from "./ToolImage"
+import { LoaderCircle, Search } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Input } from "@/components/ui/input";
+import type { PortalToolSummary } from "../contracts";
+import { placeholderImage } from "./ToolImage";
 
 /**
  * The portal's catalogue, searched through the portal's own search so a tool
@@ -13,62 +13,64 @@ export function PortalToolSearch({
   onPick,
   className,
 }: {
-  onPick: (target: { name: string; version: string }) => void
-  className?: string
+  onPick: (target: { name: string; version: string }) => void;
+  className?: string;
 }) {
-  const [catalogue, setCatalogue] = useState<PortalToolSummary[]>([])
+  const [catalogue, setCatalogue] = useState<PortalToolSummary[]>([]);
   // Null until the first search answers: the catalogue is shown meanwhile.
-  const [results, setResults] = useState<PortalToolSummary[] | null>(null)
-  const [state, setState] = useState<"loading" | "ready" | "offline">("loading")
-  const [searching, setSearching] = useState(false)
-  const [query, setQuery] = useState("")
-  const searchSeq = useRef(0)
+  const [results, setResults] = useState<PortalToolSummary[] | null>(null);
+  const [state, setState] = useState<"loading" | "ready" | "offline">(
+    "loading",
+  );
+  const [searching, setSearching] = useState(false);
+  const [query, setQuery] = useState("");
+  const searchSeq = useRef(0);
 
   useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
     void window.cpgRunner
       ?.portalTools?.()
       .then((tools) => {
-        if (cancelled) return
-        setCatalogue(tools)
-        setState("ready")
+        if (cancelled) return;
+        setCatalogue(tools);
+        setState("ready");
       })
       .catch(() => {
-        if (!cancelled) setState("offline")
-      })
+        if (!cancelled) setState("offline");
+      });
     return () => {
-      cancelled = true
-    }
-  }, [])
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
-    const needle = query.trim()
-    const seq = ++searchSeq.current
+    const needle = query.trim();
+    const seq = ++searchSeq.current;
     if (!needle) {
-      setResults(null)
-      setSearching(false)
-      return
+      setResults(null);
+      setSearching(false);
+      return;
     }
-    setSearching(true)
+    setSearching(true);
     const timer = setTimeout(() => {
       void window.cpgRunner
         ?.portalSearch?.(needle)
         .then((found) => {
-          if (seq !== searchSeq.current) return
-          setResults(found)
-          setState("ready")
+          if (seq !== searchSeq.current) return;
+          setResults(found);
+          setState("ready");
         })
         .catch(() => {
-          if (seq === searchSeq.current) setState("offline")
+          if (seq === searchSeq.current) setState("offline");
         })
         .finally(() => {
-          if (seq === searchSeq.current) setSearching(false)
-        })
-    }, 250)
-    return () => clearTimeout(timer)
-  }, [query])
+          if (seq === searchSeq.current) setSearching(false);
+        });
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [query]);
 
-  const shown = results ?? catalogue
+  const shown = results ?? catalogue;
 
   return (
     <div className={className}>
@@ -86,7 +88,7 @@ export function PortalToolSearch({
         />
       </div>
 
-      <div className="mt-2 max-h-72 min-h-24 overflow-y-auto">
+      <div className="mt-2 max-h-56 min-h-24 overflow-y-auto">
         {state === "loading" && (
           <p className="text-muted-foreground flex items-center gap-2 px-2 py-3 text-sm">
             <LoaderCircle className="animate-spin" />
@@ -146,5 +148,5 @@ export function PortalToolSearch({
         )}
       </div>
     </div>
-  )
+  );
 }

@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import cpgLogo from "./assets/cpg-logo.png";
 import { PortalToolDialog } from "./components/PortalToolDialog";
 import { PortalToolSearch } from "./components/PortalToolSearch";
 import { ToolSidebar } from "./components/ToolSidebar";
@@ -86,8 +85,6 @@ export function ToolsPage() {
 
       <main className="min-h-0 min-w-0 flex-1 overflow-y-auto px-8 py-10">
         <div className="mx-auto max-w-2xl">
-          <img src={cpgLogo} alt="CPG" className="mb-6 h-16 w-auto" />
-
           <h1 className="text-3xl font-bold">
             {firstRun ? "Add your first tool to get started" : "Choose a tool"}
           </h1>
