@@ -333,6 +333,8 @@ async function ensureToolImage(toolId: string): Promise<void> {
     fs.mkdirSync(directory, { recursive: true })
     fs.writeFileSync(imagePath, bytes)
     fs.writeFileSync(`${imagePath}.type`, type)
+    // The window may have asked for its pictures before this one arrived.
+    mainWindow?.webContents.send("runner:tools-changed")
   } catch (error) {
     console.error(`Could not cache the picture of ${toolId}: ${String(error)}`)
   }

@@ -40,10 +40,15 @@ export function ToolImage({
 export function useToolImages(): Record<string, string> {
   const [images, setImages] = useState<Record<string, string>>({})
   useEffect(() => {
-    void window.cpgRunner
-      ?.toolImages?.()
-      .then(setImages)
-      .catch(() => {})
+    const load = () => {
+      void window.cpgRunner
+        ?.toolImages?.()
+        .then(setImages)
+        .catch(() => {})
+    }
+    load()
+    // A tool added just now gets its picture a moment later.
+    return window.cpgRunner?.onToolsChanged?.(load)
   }, [])
   return images
 }
