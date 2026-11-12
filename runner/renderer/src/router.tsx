@@ -34,11 +34,11 @@ const runRoute = createRoute({
   component: RunRoute,
 })
 
-// A page's state belongs to one tool (or one run): key it so switching tools
-// mounts a fresh page instead of showing the previous tool's loaded data.
+// The tool page stays mounted across a switch and reloads only what belongs to
+// the tool, so its sidebar and run settings never fall back to an empty page.
 function ToolRoute() {
   const { toolId } = toolRoute.useParams()
-  return <ToolPage key={toolId} toolId={toolId} />
+  return <ToolPage toolId={toolId} />
 }
 
 function RunRoute() {

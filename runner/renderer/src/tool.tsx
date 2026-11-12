@@ -68,6 +68,10 @@ export function ToolPage({ toolId }: { toolId: string }) {
   const [fileTypes, setFileTypes] = useState<FileTypesMap>({});
   const [forcedDoctor, setForcedDoctor] = useState<DoctorReport | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // A tool switch keeps the page on screen: only the params are shown as
+  // loading while the new tool's data arrives.
+  const [loadingTool, setLoadingTool] = useState(false);
+  const pendingTool = useRef(toolId);
   const [installDismissed, setInstallDismissed] = useState(false);
   const [runName, setRunName] = useState("");
   const [descriptionOpen, setDescriptionOpen] = useState(false);
@@ -84,7 +88,11 @@ export function ToolPage({ toolId }: { toolId: string }) {
   const loadSeq = useRef(0);
 
   const refreshStatus = useCallback(async () => {
+    const seq = loadSeq.current;
     const next = await api.get<StatusPayload>("/status");
+    // A tool switch bumps the sequence: this answer describes a tool the page
+    // has left, so it must not overwrite the new tool's status.
+    if (seq !== loadSeq.current) return next;
     setStatus(next);
     setForcedDoctor(null);
     return next;
@@ -112,9 +120,23 @@ export function ToolPage({ toolId }: { toolId: string }) {
     }
   }, []);
 
+  // Switching tools keeps this page mounted: the sidebar and the run settings
+  // stay where they are and only the tool's own parts reload, so the window
+  // never falls back to its empty state.
   useEffect(() => {
-    void loadAll();
-  }, [loadAll]);
+    pendingTool.current = toolId;
+    setLoadingTool(true);
+    setRunName("");
+    setInstallDismissed(false);
+    setRerunRun(null);
+    setRerunChecked(true);
+    setForcedDoctor(null);
+    setDescriptionOpen(false);
+    setLoadError(null);
+    void loadAll().finally(() => {
+      if (pendingTool.current === toolId) setLoadingTool(false);
+    });
+  }, [toolId, loadAll]);
 
   // The picture is shown from its URL until the main process keeps a copy.
   useEffect(() => {
@@ -302,17 +324,29 @@ export function ToolPage({ toolId }: { toolId: string }) {
       }
     : undefined;
 
+  // A tool's max_cpus bounds the portal's scheduler, so a local run may use
+  // every CPU this computer has. When it equals min_cpus the tool wants exactly
+  // that many, though: spare CPUs change nothing, so the control goes away.
+  const fixedCpus =
+    tool.max_cpus !== null && tool.max_cpus === tool.min_cpus
+      ? tool.max_cpus
+      : null;
+
   return (
     <div className="flex h-full">
-      <ToolSidebar activeToolId={tool.id} />
+      <ToolSidebar activeToolId={toolId} />
 
+      {/* A new tool starts with its own params and a fresh form: its values,
+          the rerun prefill and the picked CPUs all belong to one tool. */}
       <ToolRunForm
+        key={tool.id}
         formKey={tool.id}
         params={tool.params}
         minCpus={tool.min_cpus}
+        maxCpus={fixedCpus}
         userMaxCpus={status.cpus_available}
         defaultCpus={settings.cpus}
-        isDisabled={!canRun}
+        isDisabled={!canRun || loadingTool}
         submitLabel="Run locally"
         fillSubmit
         localCpus
@@ -465,7 +499,19 @@ export function ToolPage({ toolId }: { toolId: string }) {
                     Configure Tool
                   </h2>
                   <div className="grid gap-6">
-                    <div>{params}</div>
+                    <div>
+                      {loadingTool ? (
+                        <p
+                          className="text-muted-foreground flex items-center gap-2 text-sm"
+                          role="status"
+                        >
+                          <LoaderCircle className="size-4 animate-spin" />
+                          Loading {tool.name}…
+                        </p>
+                      ) : (
+                        params
+                      )}
+                    </div>
 
                     {blockedReason && (
                       <p className="text-muted-foreground text-sm">
