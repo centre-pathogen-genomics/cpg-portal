@@ -113,6 +113,8 @@ let appOrigin: "none" | "dev" | "sidecar" = "none"
 // The tool whose sidecar served the page the window shows.
 let windowToolId: string | null = null
 const sidecars = new Map<string, Sidecar>()
+// Sidecars this app stopped on purpose: their exit is not a crash.
+const stoppingSidecars = new Set<string>()
 const starting = new Map<string, Promise<number>>()
 const sidecarStderr = new Map<string, string[]>()
 
@@ -441,6 +443,7 @@ function stopSidecar(toolId: string): void {
   if (!sidecar) return
   const { child } = sidecar
   if (child.exitCode !== null) return
+  stoppingSidecars.add(toolId)
   child.kill("SIGTERM")
   const timer = setTimeout(() => {
     child.kill("SIGKILL")
@@ -457,6 +460,7 @@ function stopAllSidecars(): void {
 
 function fail(title: string, detail: string): void {
   if (shuttingDown) return
+  console.error(`[fail] ${title}: ${detail}`)
   closeSplash()
   dialog.showErrorBox(title, detail)
 }
@@ -635,6 +639,24 @@ async function showHome(): Promise<void> {
   if (!window.isVisible()) window.show()
 }
 
+// Deleting a tool takes its pack and runner data; outputs already copied to
+// the output folder stay. The window leaves the tool's page before its server
+// stops, then shows a tool that is left, or the tool list.
+async function removeTool(toolId: string): Promise<void> {
+  const remaining = listTools().filter((tool) => tool.id !== toolId)
+  const showing = toolId === windowToolId
+  if (showing) {
+    appOrigin = "none"
+    windowToolId = null
+    if (remaining.length > 0) await showTool(remaining[0].id)
+  }
+  stopSidecar(toolId)
+  fs.rmSync(path.join(toolsRoot(), toolId), { recursive: true, force: true })
+  if (lastToolId === toolId) lastToolId = null
+  mainWindow?.webContents.send("runner:tools-changed")
+  if (showing && remaining.length === 0) await showHome()
+}
+
 async function showTool(toolId: string): Promise<void> {
   const window = createWindow()
   try {
@@ -793,6 +815,7 @@ function startSidecar(toolId: string): Promise<number> {
   child.on("exit", (code, signal) => {
     clearTimeout(timeout)
     sidecars.delete(toolId)
+    if (stoppingSidecars.delete(toolId)) return
     if (shuttingDown) return
     if (!ready) {
       reject(
@@ -898,6 +921,10 @@ function registerIpcHandlers(): void {
 
   ipcMain.handle("runner:open-tool", async (_event, toolId: string) => {
     await showTool(toolId)
+  })
+
+  ipcMain.handle("runner:remove-tool", async (_event, toolId: string) => {
+    await removeTool(toolId)
   })
 
   ipcMain.handle("runner:home", async () => {

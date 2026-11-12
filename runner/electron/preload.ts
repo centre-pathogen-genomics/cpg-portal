@@ -47,6 +47,16 @@ contextBridge.exposeInMainWorld("cpgRunner", {
     ipcRenderer.invoke("runner:import-paths", files),
   openTool: (toolId: string): Promise<void> =>
     ipcRenderer.invoke("runner:open-tool", toolId),
+  removeTool: (toolId: string): Promise<void> =>
+    ipcRenderer.invoke("runner:remove-tool", toolId),
+  /** A tool was added or removed: the lists should reload. */
+  onToolsChanged: (handler: () => void): (() => void) => {
+    const listener = () => handler()
+    ipcRenderer.on("runner:tools-changed", listener)
+    return () => {
+      ipcRenderer.removeListener("runner:tools-changed", listener)
+    }
+  },
   /** The window is pointed at another tool's runner; the page stays mounted. */
   onShowTool: (
     handler: (target: { toolId: string; port: number }) => void,

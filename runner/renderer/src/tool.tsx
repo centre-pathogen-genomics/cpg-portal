@@ -1,4 +1,12 @@
-import { ExternalLink, FolderOpen } from "lucide-react";
+import {
+  EllipsisVertical,
+  ExternalLink,
+  Download,
+  FolderOpen,
+  LoaderCircle,
+  Trash2,
+  Wrench,
+} from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import RenderMarkdown from "@/components/Common/Markdown";
@@ -9,6 +17,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ApiError, api, errorMessage, onApiBaseChange } from "./api";
 import { DockerSetupDialog } from "./components/DockerSetupDialog";
 import { InstallDialog } from "./components/InstallDialog";
@@ -48,6 +71,8 @@ export function ToolPage() {
   const images = useToolImages();
   const [rerunRun, setRerunRun] = useState<RunRecord | null>(null);
   const [rerunChecked, setRerunChecked] = useState(false);
+  const [removeOpen, setRemoveOpen] = useState(false);
+  const [removing, setRemoving] = useState(false);
   // Answers for a tool the window has left must not overwrite the new one's.
   const loadSeq = useRef(0);
 
@@ -128,6 +153,7 @@ export function ToolPage() {
   }, [shouldPoll, refreshStatus]);
 
   const canRun = !!settings && doctorReady && installState === "installed";
+  const needsInstall = !!status && doctorReady && installState !== "installed";
 
   const blockedReason = !doctorReady
     ? "Docker is not ready."
@@ -183,6 +209,20 @@ export function ToolPage() {
     const message = errorMessage(error);
     const field = FIELD_ERROR.exec(message);
     return field ? { [field[1]]: message } : null;
+  }
+
+  async function removeCurrent() {
+    if (!tool) return;
+    setRemoving(true);
+    try {
+      // The main process opens another tool, or the tool list.
+      await window.cpgRunner?.removeTool?.(tool.id);
+    } catch (error) {
+      toast.error(errorMessage(error));
+    } finally {
+      setRemoving(false);
+      setRemoveOpen(false);
+    }
   }
 
   async function reinstall() {
@@ -290,7 +330,58 @@ export function ToolPage() {
                     name={tool.name}
                     version={tool.version}
                     badges={<ToolBadges tool={tool} />}
-                  />
+                  >
+                    <div className="flex shrink-0 items-center gap-2">
+                      {needsInstall && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => setInstallDismissed(false)}
+                        >
+                          <Download />
+                          Install
+                        </Button>
+                      )}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="text-muted-foreground shrink-0"
+                            aria-label="Tool actions"
+                          >
+                            <EllipsisVertical />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56">
+                          <DropdownMenuItem
+                            onSelect={() =>
+                              openExternal(portalToolUrl(tool.name))
+                            }
+                          >
+                            <ExternalLink />
+                            Open in The CPG Portal
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            disabled={!doctorReady}
+                            onSelect={() => void reinstall()}
+                          >
+                            <Wrench />
+                            Reinstall environment
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onSelect={() => setRemoveOpen(true)}
+                          >
+                            <Trash2 />
+                            Remove tool
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </ToolHeading>
                   {tool.description && (
                     <div className="mt-2">
                       {descriptionOpen ? (
@@ -357,29 +448,6 @@ export function ToolPage() {
             </div>
 
             <aside className="flex min-h-0 flex-col border-l">
-              <div className="grid shrink-0 gap-2 border-b px-6 py-4">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => openExternal(portalToolUrl(tool.name))}
-                >
-                  <ExternalLink />
-                  Open in The CPG Portal
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="w-full justify-start"
-                  disabled={!doctorReady}
-                  onClick={() => void reinstall()}
-                >
-                  Reinstall environment
-                </Button>
-              </div>
-
               <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
                 <h2 className="mb-4 text-sm font-semibold">Run settings</h2>
                 <div className="grid gap-6">
@@ -489,6 +557,36 @@ export function ToolPage() {
         onRefreshStatus={() => void refreshStatus()}
         onDismiss={() => setInstallDismissed(true)}
       />
+      <Dialog open={removeOpen} onOpenChange={setRemoveOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{`Remove ${tool?.name ?? "this tool"}?`}</DialogTitle>
+            <DialogDescription>
+              Its pack and installed environment are deleted from this computer.
+              Runs and the outputs already copied stay where they are.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={removing}
+              onClick={() => void removeCurrent()}
+            >
+              {removing && <LoaderCircle className="animate-spin" />}
+              Remove tool
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={removing}
+              onClick={() => setRemoveOpen(false)}
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -60,6 +60,13 @@ export function ToolSidebar({
     }
   }, [collapsed])
 
+  useEffect(() => {
+    // A tool removed elsewhere must leave this list too.
+    return window.cpgRunner?.onToolsChanged?.(() => {
+      void window.cpgRunner?.tools().then(setTools)
+    })
+  }, [])
+
   async function refreshTools() {
     if (!bridge) return
     setTools(await bridge.tools())

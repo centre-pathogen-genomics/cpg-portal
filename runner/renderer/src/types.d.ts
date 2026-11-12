@@ -39,6 +39,10 @@ declare global {
       importPacks(): Promise<ToolEntry[]>
       importPackPaths(files: string[]): Promise<ToolEntry[]>
       openTool(toolId: string): Promise<void>
+      /** Deletes the tool and opens another one; outputs stay on disk. */
+      removeTool(toolId: string): Promise<void>
+      /** A tool was added or removed elsewhere; reload the lists. */
+      onToolsChanged(handler: () => void): () => void
       /** Called instead of a page load when the window shows another tool. */
       onShowTool(
         handler: (target: { toolId: string; port: number }) => void,
