@@ -12,7 +12,7 @@ extraResources:
   # A folder build: the executable and its libraries, copied together.
   - { from: sidecar/dist/cpg-runner, to: sidecar/cpg-runner }
   # The portal's mark, shown by the splash window while the runner starts.
-  - { from: ../frontend/public/assets/images/cpg-logo.png, to: logo.png }
+  - { from: renderer/src/assets/cpg-logo.png, to: logo.png }
   # The same icon the bundle uses, for the window and the dock.
   - { from: build/icon.png, to: icon.png }
   - { from: renderer/dist, to: renderer }

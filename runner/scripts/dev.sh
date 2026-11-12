@@ -87,6 +87,6 @@ CPG_RUNNER_UI_URL="${UI_URL}" \
   CPG_RUNNER_DATA_DIR="${DEV_DIR}/userdata" \
   CPG_RUNNER_SIDECAR="${SIDECAR_BIN}" \
   CPG_RUNNER_UI_DIR="${RUNNER_DIR}/renderer/dist" \
-  CPG_RUNNER_LOGO="${REPO_DIR}/frontend/public/assets/images/cpg-logo.png" \
+  CPG_RUNNER_LOGO="${RUNNER_DIR}/renderer/src/assets/cpg-logo.png" \
   CPG_RUNNER_PORTAL_URL="${PORTAL_URL}" \
   bunx electron "${RUNNER_DIR}/dist/electron/main.js" ${PACK:+"${PACK}"} "$@"

@@ -473,11 +473,14 @@ function logoFile(): string {
   if (app.isPackaged) {
     return path.join(process.resourcesPath, "logo.png")
   }
-  // From source, `dist/electron/main.js` sits three levels below the repository.
-  return path.resolve(
-    path.dirname(process.argv[1] ?? ""),
-    "../../../frontend/public/assets/images/cpg-logo.png",
-  )
+  // From source, the bundled main sits either two or three levels below the
+  // runner, depending on how it was built; the renderer keeps the same file.
+  const here = path.dirname(process.argv[1] ?? "")
+  const candidates = [
+    path.resolve(here, "../../renderer/src/assets/cpg-logo.png"),
+    path.resolve(here, "../../../renderer/src/assets/cpg-logo.png"),
+  ]
+  return candidates.find((file) => fs.existsSync(file)) ?? candidates[0]
 }
 
 // The app icon: the round CPG mark. Packaged, electron-builder embeds it in
