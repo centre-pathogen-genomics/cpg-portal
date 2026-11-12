@@ -14,6 +14,7 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RecoverPasswordRouteImport } from './routes/recover-password'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as LocalRunnerRouteImport } from './routes/local-runner'
 import { Route as ActivateAccountRouteImport } from './routes/activate-account'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as LayoutRouteImport } from './routes/_layout'
@@ -52,6 +53,11 @@ const RecoverPasswordRoute = RecoverPasswordRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LocalRunnerRoute = LocalRunnerRouteImport.update({
+  id: '/local-runner',
+  path: '/local-runner',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ActivateAccountRoute = ActivateAccountRouteImport.update({
@@ -128,6 +134,7 @@ export interface FileRoutesByFullPath {
   '/': typeof LayoutIndexRoute
   '/about': typeof AboutRoute
   '/activate-account': typeof ActivateAccountRoute
+  '/local-runner': typeof LocalRunnerRoute
   '/login': typeof LoginRoute
   '/recover-password': typeof RecoverPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -147,6 +154,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/activate-account': typeof ActivateAccountRoute
+  '/local-runner': typeof LocalRunnerRoute
   '/login': typeof LoginRoute
   '/recover-password': typeof RecoverPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -169,6 +177,7 @@ export interface FileRoutesById {
   '/_layout': typeof LayoutRouteWithChildren
   '/about': typeof AboutRoute
   '/activate-account': typeof ActivateAccountRoute
+  '/local-runner': typeof LocalRunnerRoute
   '/login': typeof LoginRoute
   '/recover-password': typeof RecoverPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -192,6 +201,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/activate-account'
+    | '/local-runner'
     | '/login'
     | '/recover-password'
     | '/reset-password'
@@ -211,6 +221,7 @@ export interface FileRouteTypes {
   to:
     | '/about'
     | '/activate-account'
+    | '/local-runner'
     | '/login'
     | '/recover-password'
     | '/reset-password'
@@ -232,6 +243,7 @@ export interface FileRouteTypes {
     | '/_layout'
     | '/about'
     | '/activate-account'
+    | '/local-runner'
     | '/login'
     | '/recover-password'
     | '/reset-password'
@@ -254,6 +266,7 @@ export interface RootRouteChildren {
   LayoutRoute: typeof LayoutRouteWithChildren
   AboutRoute: typeof AboutRoute
   ActivateAccountRoute: typeof ActivateAccountRoute
+  LocalRunnerRoute: typeof LocalRunnerRoute
   LoginRoute: typeof LoginRoute
   RecoverPasswordRoute: typeof RecoverPasswordRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -296,6 +309,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/local-runner': {
+      id: '/local-runner'
+      path: '/local-runner'
+      fullPath: '/local-runner'
+      preLoaderRoute: typeof LocalRunnerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/activate-account': {
@@ -434,6 +454,7 @@ const rootRouteChildren: RootRouteChildren = {
   LayoutRoute: LayoutRouteWithChildren,
   AboutRoute: AboutRoute,
   ActivateAccountRoute: ActivateAccountRoute,
+  LocalRunnerRoute: LocalRunnerRoute,
   LoginRoute: LoginRoute,
   RecoverPasswordRoute: RecoverPasswordRoute,
   ResetPasswordRoute: ResetPasswordRoute,

@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router"
 import {
   FiCodesandbox,
+  FiDownload,
   FiFile,
   FiHome,
   FiInfo,
@@ -26,12 +27,14 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
         { icon: FiHome, title: "Tools", path: "/" },
         { icon: FiCodesandbox, title: "My Runs", path: "/runs" },
         { icon: FiFile, title: "My Files", path: "/files" },
+        { icon: FiDownload, title: "Local Runner", path: "/local-runner" },
         { icon: FiInfo, title: "About", path: "/about" },
         { icon: FiSettings, title: "Settings", path: "/settings" },
         { icon: IoGlasses, title: "Stream", path: "/stream", external: true },
       ]
     : [
         { icon: FiHome, title: "Tools", path: "/" },
+        { icon: FiDownload, title: "Local Runner", path: "/local-runner" },
         { icon: FiInfo, title: "About", path: "/about" },
         { icon: FiLogIn, title: "Login", path: "/login" },
         { icon: FiUsers, title: "Sign Up", path: "/signup" },

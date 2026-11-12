@@ -297,9 +297,11 @@ their conda environment fail at runtime; add them to
 
 ## Local Runner (desktop app)
 
-Every tool page offers `Run locally`, which runs that tool inside Docker on the
-visitor's own machine instead of on the worker. The download is split in two so
-that the application is paid for once and shared by every tool:
+`Run locally` on a tool page downloads that tool's pack, which runs the tool in
+Docker on the visitor's own machine instead of on the worker. The download is
+split in two so that the application is paid for once and shared by every tool;
+the app itself comes from `Local Runner` in the menu, next to `About`, a page
+that explains the flow and offers every platform:
 
 * the **app**, one per host platform (macOS Apple silicon and Intel, Windows and
   Linux), roughly 140 MB, containing Electron, the renderer and the Python
@@ -357,9 +359,11 @@ URL. Leave it empty when the backend sees the proxy's `X-Forwarded-Proto` and
 something like `https://portal.example.org` when a proxy strips them, otherwise
 app installs fail with a download error.
 
-Until the artifacts exist, `Run locally` still appears but the download fails
-with `Runner artifacts are not configured` (503) or `Local runner is not
-available for <platform>` (404). Build them once per release:
+Until the artifacts exist, the pack download fails with
+`Runner artifacts are not configured` (503), since it reads the runtime image's
+checksum; an app archive that was never built makes the `Local Runner` page say
+that platform's build is not published, because `GET /runner/app/<platform>`
+answers 404 `App not available for <platform>`. Build them once per release:
 
 ```
 bash runner/runtime/build.sh                     # runtime/linux-{arm64,amd64}.tar

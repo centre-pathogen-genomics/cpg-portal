@@ -1,35 +1,35 @@
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router"
-import { Menu, Search } from "lucide-react"
-import { useState } from "react"
-import { useForm } from "react-hook-form"
-import { Appearance } from "@/components/Common/Appearance"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Menu, Search } from "lucide-react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { Appearance } from "@/components/Common/Appearance";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet"
-import { hasPermission } from "@/lib/permissions"
-import { cn } from "@/lib/utils"
-import Logo from "/assets/images/cpg-logo.png"
-import Icon from "/assets/images/cpg-logo-icon.png"
-import useAuth from "../../hooks/useAuth"
-import SidebarItems from "./SidebarItems"
-import UserMenu from "./UserMenu"
+} from "@/components/ui/sheet";
+import { hasPermission } from "@/lib/permissions";
+import { cn } from "@/lib/utils";
+import Logo from "/assets/images/cpg-logo.png";
+import Icon from "/assets/images/cpg-logo-icon.png";
+import useAuth from "../../hooks/useAuth";
+import SidebarItems from "./SidebarItems";
+import UserMenu from "./UserMenu";
 
 function MainMenuBar() {
-  const [mobileOpen, setMobileOpen] = useState(false)
-  const { user: currentUser } = useAuth()
-  const navigate = useNavigate()
-  const pathname = useRouterState().location.pathname
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const { user: currentUser } = useAuth();
+  const navigate = useNavigate();
+  const pathname = useRouterState().location.pathname;
   const { register, handleSubmit } = useForm<{ search?: string }>({
     defaultValues: { search: "" },
-  })
+  });
 
-  const signedIn = currentUser !== undefined
+  const signedIn = currentUser !== undefined;
   const userItems = signedIn
     ? [
         { title: "Tools", path: "/" },
@@ -38,29 +38,33 @@ function MainMenuBar() {
         {
           title: "SAE",
           path: "/wasm/jupyterlite/index.html",
-          isNew: true,
+          isNew: false,
           newTab: true,
         },
+        { title: "Local Runner", path: "/local-runner" },
         { title: "About", path: "/about" },
       ]
-    : [{ title: "About", path: "/about" }]
+    : [
+        { title: "Local Runner", path: "/local-runner" },
+        { title: "About", path: "/about" },
+      ];
 
-  const items = [...userItems]
+  const items = [...userItems];
   if (currentUser?.is_superuser) {
-    items.push({ title: "Admin", path: "/admin" })
+    items.push({ title: "Admin", path: "/admin" });
   }
   if (hasPermission(currentUser, "rbac:read")) {
-    items.push({ title: "Access", path: "/rbac" })
+    items.push({ title: "Access", path: "/rbac" });
   }
 
   const onSubmit = ({ search }: { search?: string }) => {
-    const query = search?.trim()
+    const query = search?.trim();
     if (!query) {
-      navigate({ to: "/", resetScroll: true })
-      return
+      navigate({ to: "/", resetScroll: true });
+      return;
     }
-    navigate({ to: "/search/$query", params: { query } })
-  }
+    navigate({ to: "/search/$query", params: { query } });
+  };
 
   return (
     <header className="sticky top-0 z-40 flex w-full items-center justify-between bg-background py-2 pr-6 pl-4 text-foreground">
@@ -95,11 +99,11 @@ function MainMenuBar() {
             const active =
               title === "Tools"
                 ? pathname === "/" || pathname.startsWith("/tools")
-                : pathname.startsWith(path)
+                : pathname.startsWith(path);
             const className = cn(
               "flex items-center whitespace-nowrap font-semibold text-foreground hover:text-primary",
               active && !newTab && "underline",
-            )
+            );
             return newTab ? (
               <a
                 href={path}
@@ -116,7 +120,7 @@ function MainMenuBar() {
                 {title}
                 {isNew && <Badge className="ml-1">New</Badge>}
               </Link>
-            )
+            );
           })}
         </nav>
       </div>
@@ -158,7 +162,7 @@ function MainMenuBar() {
         </SheetContent>
       </Sheet>
     </header>
-  )
+  );
 }
 
-export default MainMenuBar
+export default MainMenuBar;
