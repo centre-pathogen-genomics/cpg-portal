@@ -12,6 +12,8 @@ import DownloadAllFilesButton from "../../../components/Files/DownloadAllFilesBu
 import FileRenderer, {
   canRenderFile,
 } from "../../../components/Render/FileRenderer";
+import { portalRenderable } from "../../../components/Render/portalFileLoader";
+import SendNewickToTrakkaButton from "../../../components/Render/SendNewickToTrakkaButton";
 import CancelRunButton from "../../../components/Runs/CancelRunButton";
 import DeleteRunButton from "../../../components/Runs/DeleteRunButton";
 import EditRunName from "../../../components/Runs/EditableRunName";
@@ -161,9 +163,12 @@ function RunDetailContent({ run }: { run: RunPublic }) {
                       fallback={<Skeleton className="h-[240px] w-full" />}
                     >
                       <FileRenderer
-                        file={file}
+                        file={portalRenderable(file)}
                         showUnsupportedMessage={false}
                         showTooLargeMessage
+                        newickActions={(newick) => (
+                          <SendNewickToTrakkaButton newick={newick} />
+                        )}
                       />
                     </Suspense>
                   </TabsContent>

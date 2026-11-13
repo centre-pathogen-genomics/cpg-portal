@@ -7,6 +7,8 @@ import {
 
 import UploadProgress from "@/components/Common/GlobalUploadProgressBar"
 import MainMenuBar from "@/components/Common/MainMenuBar"
+import { FileLoaderProvider } from "@/components/Render/fileSource"
+import { portalFileLoader } from "@/components/Render/portalFileLoader"
 import { isLoggedIn } from "@/hooks/useAuth"
 
 export const Route = createFileRoute("/_layout")({
@@ -30,13 +32,15 @@ export const Route = createFileRoute("/_layout")({
 
 function Layout() {
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background">
-      <ScrollRestoration />
-      <MainMenuBar />
-      <main className="min-h-0 flex-1 overflow-auto">
-        <Outlet />
-      </main>
-      <UploadProgress />
-    </div>
+    <FileLoaderProvider loader={portalFileLoader}>
+      <div className="flex h-screen flex-col overflow-hidden bg-background">
+        <ScrollRestoration />
+        <MainMenuBar />
+        <main className="min-h-0 flex-1 overflow-auto">
+          <Outlet />
+        </main>
+        <UploadProgress />
+      </div>
+    </FileLoaderProvider>
   )
 }

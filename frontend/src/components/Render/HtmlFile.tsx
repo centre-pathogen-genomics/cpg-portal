@@ -1,21 +1,12 @@
-import { useSuspenseQuery } from "@tanstack/react-query"
-import { downloadFileOptions } from "../../client/@tanstack/react-query.gen"
+import { type RenderableFile, useFileText } from "./fileSource"
 
 interface HtmlFileProps {
-  fileId: string
+  file: RenderableFile
   height?: string | number
 }
 
-const HtmlFile = ({ fileId, height = 500 }: HtmlFileProps) => {
-  const { data: htmlContent } = useSuspenseQuery({
-    ...downloadFileOptions({ path: { id: fileId } }),
-  })
-
-  // Ensure string (server might return ArrayBuffer/Uint8Array)
-  const html =
-    typeof htmlContent === "string"
-      ? htmlContent
-      : new TextDecoder().decode(htmlContent as ArrayBuffer)
+const HtmlFile = ({ file, height = 500 }: HtmlFileProps) => {
+  const html = useFileText(file)
 
   return (
     <iframe

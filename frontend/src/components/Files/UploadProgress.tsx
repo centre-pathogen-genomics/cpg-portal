@@ -5,7 +5,7 @@ import type React from "react"
 import { FiAlertCircle, FiX } from "react-icons/fi"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { humanReadableFileSize } from "../../utils"
+import { humanReadableFileSize } from "@/lib/format"
 
 interface UploadProgressProps {
   file: File

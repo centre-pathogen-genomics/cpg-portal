@@ -1,6 +1,6 @@
 import { HiOutlineDocument } from "react-icons/hi2"
 import type { FilePublic } from "../../client"
-import { humanReadableFileSize } from "../../utils"
+import { humanReadableFileSize } from "@/lib/format"
 import CopyFileButton from "../Files/CopyFileButton"
 import DownloadFileButton from "../Files/DownloadFileButton"
 import SaveFileButton from "../Files/SaveFileButton"

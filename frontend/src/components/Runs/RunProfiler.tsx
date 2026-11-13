@@ -8,7 +8,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import type { RunPublic } from "../../client"
-import { humanReadableFileSize } from "../../utils"
+import { humanReadableFileSize } from "@/lib/format"
 
 /** One profiler reading the worker took while the run worked. */
 interface Sample {

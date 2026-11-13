@@ -1,24 +1,20 @@
-import { useSuspenseQuery } from "@tanstack/react-query"
 import { useEffect, useRef, useState } from "react"
 import { VegaEmbed, type VegaEmbedProps } from "react-vega"
 import { useTheme } from "@/components/theme-provider"
-import { downloadFileOptions } from "../../client/@tanstack/react-query.gen"
+import { type RenderableFile, useFileText } from "./fileSource"
 
 interface VegaFileProps {
-  fileId: string
+  file: RenderableFile
   height?: number
   leftNegativeMargin?: number
 }
 
 const VegaFile = ({
-  fileId,
+  file,
   height = 500,
   leftNegativeMargin = 65,
 }: VegaFileProps) => {
-  // Fetch the text file content
-  const { data: vega } = useSuspenseQuery({
-    ...downloadFileOptions({ path: { id: fileId } }),
-  })
+  const vega = useFileText(file)
 
   const { resolvedTheme } = useTheme()
   const defaultTheme = resolvedTheme === "dark" ? "dark" : undefined
@@ -43,6 +39,15 @@ const VegaFile = ({
       resizeObserver.disconnect()
     }
   }, [])
+
+  let spec: object
+  try {
+    spec = JSON.parse(vega)
+  } catch {
+    return (
+      <p className="italic text-gray-500">Could not parse Vega specification</p>
+    )
+  }
 
   const themes = [
     { value: undefined, label: "Vega" },
@@ -75,7 +80,7 @@ const VegaFile = ({
       </select>
       <div ref={containerRef} className="w-full">
         <VegaEmbed
-          spec={vega as object}
+          spec={spec}
           options={{
             actions: true,
             padding: 10,

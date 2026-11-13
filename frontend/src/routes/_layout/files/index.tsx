@@ -46,6 +46,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { humanReadableFileSize } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { FilePublic, FileTypeEnum } from "../../../client"
 import { FilesService } from "../../../client"
@@ -63,7 +64,7 @@ import useCustomToast from "../../../hooks/useCustomToast"
 import { useDownloadAllFiles } from "../../../hooks/useDownloadAllFiles"
 import useViewMode, { type ViewMode } from "../../../hooks/useViewMode"
 import { useVisibleIds } from "../../../hooks/useVisibleIds"
-import { humanReadableDate, humanReadableFileSize } from "../../../utils"
+import { humanReadableDate } from "../../../utils"
 
 export const Route = createFileRoute("/_layout/files/")({
   component: Files,

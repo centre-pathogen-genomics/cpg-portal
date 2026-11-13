@@ -1,17 +1,16 @@
-import { useSuspenseQuery } from "@tanstack/react-query"
-import { Component, type ReactNode, useState } from "react"
+import { Component, type ReactNode, useMemo, useState } from "react"
 import { parseFile, type Seq } from "seqparse"
 import { SeqViz } from "seqviz"
 import { useTheme } from "@/components/theme-provider"
-import { downloadFileOptions } from "../../client/@tanstack/react-query.gen"
+import { type RenderableFile, useFileText } from "./fileSource"
 
 interface GenbankFileProps {
-  fileId: string
+  file: RenderableFile
   viewer?: "linear" | "circular" | "both"
   height?: number
 }
 
-// Error Boundary to catch parsing errors
+// Error Boundary to catch viewing errors
 class GenbankErrorBoundary extends Component<
   { children: ReactNode },
   { hasError: boolean }
@@ -34,32 +33,27 @@ class GenbankErrorBoundary extends Component<
 }
 
 const GenbankFileContent = ({
-  fileId,
+  file,
   height = 500,
   viewer = "both",
 }: GenbankFileProps) => {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const { resolvedTheme: colorMode } = useTheme()
 
-  // Fetch the GenBank file content
-  const { data: genbankContent } = useSuspenseQuery({
-    ...downloadFileOptions({ path: { id: fileId } }),
-  })
-
-  const genbank =
-    typeof genbankContent === "string"
-      ? genbankContent
-      : new TextDecoder().decode(genbankContent as ArrayBuffer)
+  const genbank = useFileText(file)
 
   // Parse GenBank file - seqparse handles GenBank format directly
-  const { data: parsed } = useSuspenseQuery<Seq[]>({
-    queryKey: ["genbank-parse", fileId],
-    queryFn: () => parseFile(genbank, { fileName: "file.gb" }),
-    retry: false,
-  })
+  const parsed = useMemo<Seq[] | null>(() => {
+    try {
+      return parseFile(genbank, { fileName: "file.gb" })
+    } catch (e) {
+      console.error("Genbank parsing failed:", e)
+      return null
+    }
+  }, [genbank])
 
   if (!parsed) {
-    return <p className="text-gray-500">No sequences found in GenBank file</p>
+    return <p className="text-gray-500">Could not parse GenBank file</p>
   }
 
   const sequences = parsed

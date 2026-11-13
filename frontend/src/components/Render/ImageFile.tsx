@@ -1,31 +1,23 @@
-import { useSuspenseQuery } from "@tanstack/react-query"
-import { useMemo } from "react"
-import { downloadFileOptions } from "../../client/@tanstack/react-query.gen"
+import { useEffect, useMemo } from "react"
+import { type RenderableFile, useFileBlob } from "./fileSource"
 
-interface ImageFileProps {
-  fileId: string
-}
+const ImageFile = ({ file }: { file: RenderableFile }) => {
+  const blob = useFileBlob(file)
 
-const ImageFile = ({ fileId }: ImageFileProps) => {
-  // Fetch binary image data as Blob
-  const { data: blob } = useSuspenseQuery({
-    ...downloadFileOptions({ path: { id: fileId }, responseType: "blob" }),
-  })
+  // One URL per blob, released when the image is swapped out or unmounted.
+  const imageUrl = useMemo(() => URL.createObjectURL(blob), [blob])
+  useEffect(() => {
+    return () => {
+      URL.revokeObjectURL(imageUrl)
+    }
+  }, [imageUrl])
 
-  // Convert blob to URL (memoized)
-  const imageUrl = useMemo(() => {
-    if (!blob) return ""
-    return URL.createObjectURL(blob as Blob)
-  }, [blob])
-
-  return imageUrl ? (
+  return (
     <img
       src={imageUrl}
       alt="Rendered file"
       className="max-h-[500px] object-contain"
     />
-  ) : (
-    <div className="h-[200px] animate-pulse bg-muted" />
   )
 }
 

@@ -31,14 +31,6 @@ export const namePattern = {
   message: "Invalid name",
 }
 
-export const humanReadableFileSize = (bytes: number) => {
-  if (bytes === 0) {
-    return "0 B"
-  }
-  const i = Math.floor(Math.log(bytes) / Math.log(1024))
-  return `${(bytes / 1024 ** i).toFixed(0)} ${["B", "kB", "MB", "GB", "TB"][i]}`
-}
-
 export const humanReadableDate = (date: string) => {
   // 7 Sept 2021
   return new Date(date).toLocaleDateString("en-GB", {

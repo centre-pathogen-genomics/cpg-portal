@@ -1,4 +1,3 @@
-import { useSuspenseQuery } from "@tanstack/react-query"
 import Papa from "papaparse" // CSV parsing library
 import { useState } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -10,26 +9,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { downloadFileOptions } from "../../client/@tanstack/react-query.gen"
 import { PaginationFooter } from "../../components/Common/PaginationFooter"
+import { type RenderableFile, useFileText } from "./fileSource"
 
 interface CsvFileToTableProps {
-  fileId: string
+  file: RenderableFile
   tsv?: boolean
 }
 
-const CsvFileToTable = ({ fileId, tsv = false }: CsvFileToTableProps) => {
+const CsvFileToTable = ({ file, tsv = false }: CsvFileToTableProps) => {
   const [currentPage, setCurrentPage] = useState(1)
-
-  // Use useSuspenseQuery to fetch the file
-  const { data: csvText } = useSuspenseQuery({
-    ...downloadFileOptions({ path: { id: fileId } }),
-  })
+  const csvText = useFileText(file)
 
   // Parse CSV data
   let parsedData = { data: [] }
   try {
-    parsedData = Papa.parse(csvText as string, {
+    parsedData = Papa.parse(csvText, {
       header: true,
       delimiter: tsv ? "\t" : ",",
     })

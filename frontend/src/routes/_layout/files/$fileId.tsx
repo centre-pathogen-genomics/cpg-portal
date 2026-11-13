@@ -1,33 +1,36 @@
-import { useQuery } from "@tanstack/react-query"
-import { createFileRoute, Link } from "@tanstack/react-router"
-import { Suspense } from "react"
-import { ErrorBoundary } from "react-error-boundary"
-import { BsFileEarmarkText } from "react-icons/bs"
-import { HiOutlineDocument, HiOutlineFolder } from "react-icons/hi"
-import { HiCalendarDays, HiOutlineTag } from "react-icons/hi2"
-import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
-import type { FilePublic } from "../../../client"
-import { readFileOptions } from "../../../client/@tanstack/react-query.gen"
-import DeleteFileButton from "../../../components/Files/DeleteFileButton"
-import DownloadAllFilesButton from "../../../components/Files/DownloadAllFilesButton"
-import DownloadFileButton from "../../../components/Files/DownloadFileButton"
-import EditableFileName from "../../../components/Files/EditableFileName"
-import FileRenderer from "../../../components/Render/FileRenderer"
-import { humanReadableDate, humanReadableFileSize } from "../../../utils"
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Suspense } from "react";
+import { ErrorBoundary } from "react-error-boundary";
+import { BsFileEarmarkText } from "react-icons/bs";
+import { HiOutlineDocument, HiOutlineFolder } from "react-icons/hi";
+import { HiCalendarDays, HiOutlineTag } from "react-icons/hi2";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { humanReadableFileSize } from "@/lib/format";
+import type { FilePublic } from "../../../client";
+import { readFileOptions } from "../../../client/@tanstack/react-query.gen";
+import DeleteFileButton from "../../../components/Files/DeleteFileButton";
+import DownloadAllFilesButton from "../../../components/Files/DownloadAllFilesButton";
+import DownloadFileButton from "../../../components/Files/DownloadFileButton";
+import EditableFileName from "../../../components/Files/EditableFileName";
+import FileRenderer from "../../../components/Render/FileRenderer";
+import { portalRenderable } from "../../../components/Render/portalFileLoader";
+import SendNewickToTrakkaButton from "../../../components/Render/SendNewickToTrakkaButton";
+import { humanReadableDate } from "../../../utils";
 
 export const Route = createFileRoute("/_layout/files/$fileId")({
   component: FileDetail,
   validateSearch: (search: Record<string, unknown>) => ({
     groupId: (search.groupId as string) || undefined,
   }),
-})
+});
 
 function FileMetadata({ file }: { file: FilePublic }) {
   const items: Array<{
-    icon: React.ReactNode
-    title: string
-    value: React.ReactNode
+    icon: React.ReactNode;
+    title: string;
+    value: React.ReactNode;
   }> = [
     {
       icon: file.is_group ? <HiOutlineFolder /> : <HiOutlineDocument />,
@@ -101,7 +104,7 @@ function FileMetadata({ file }: { file: FilePublic }) {
           },
         ]
       : []),
-  ]
+  ];
   return (
     <div className="flex flex-col">
       {items.map(({ icon, title, value }) => (
@@ -116,7 +119,7 @@ function FileMetadata({ file }: { file: FilePublic }) {
         </div>
       ))}
     </div>
-  )
+  );
 }
 
 function FileDetailSkeleton() {
@@ -126,7 +129,7 @@ function FileDetailSkeleton() {
       <Skeleton className="h-10 w-full" />
       <Skeleton className="h-[200px] w-full" />
     </div>
-  )
+  );
 }
 
 function PreviewSkeleton() {
@@ -134,19 +137,19 @@ function PreviewSkeleton() {
     <div className="flex h-[240px] w-full items-center justify-center rounded-md border bg-muted/30">
       <p className="text-muted-foreground text-sm">Loading preview…</p>
     </div>
-  )
+  );
 }
 
 function FileDetailContent() {
-  const { fileId } = Route.useParams()
-  const { groupId } = Route.useSearch()
+  const { fileId } = Route.useParams();
+  const { groupId } = Route.useSearch();
   const { data: file, isPending } = useQuery({
     ...readFileOptions({ path: { id: fileId } }),
     throwOnError: true,
-  })
+  });
 
   if (isPending || !file) {
-    return <FileDetailSkeleton />
+    return <FileDetailSkeleton />;
   }
 
   return (
@@ -185,7 +188,12 @@ function FileDetailContent() {
         <div className="mb-2">
           <h2 className="mb-4 text-lg font-semibold">Preview</h2>
           <Suspense fallback={<PreviewSkeleton />}>
-            <FileRenderer file={file} />
+            <FileRenderer
+              file={portalRenderable(file)}
+              newickActions={(newick) => (
+                <SendNewickToTrakkaButton newick={newick} />
+              )}
+            />
           </Suspense>
         </div>
       )}
@@ -198,7 +206,7 @@ function FileDetailContent() {
         </>
       )}
     </div>
-  )
+  );
 }
 
 function FileDetail() {
@@ -214,7 +222,7 @@ function FileDetail() {
         <FileDetailContent />
       </ErrorBoundary>
     </div>
-  )
+  );
 }
 
-export default FileDetail
+export default FileDetail;

@@ -1,13 +1,16 @@
 import { PhylocanvasGL, TreeTypes } from "@phylocanvas/phylocanvas.gl"
-import { useSuspenseQuery } from "@tanstack/react-query"
-import { useEffect, useRef, useState } from "react"
+import { type ReactNode, useEffect, useRef, useState } from "react"
 import { useTheme } from "@/components/theme-provider"
-import { downloadFileOptions } from "../../client/@tanstack/react-query.gen"
-import SendNewickToTrakkaButton from "./SendNewickToTrakkaButton"
+import { type RenderableFile, useFileText } from "./fileSource"
 
 interface NewickFileProps {
-  fileId: string
+  file: RenderableFile
   height?: number
+  /**
+   * Extra controls for the tree toolbar, given the tree's Newick text (only
+   * this component holds it) — e.g. the portal's "send to Trakka".
+   */
+  actions?: (newick: string) => ReactNode
 }
 
 const TREE_TYPES = [
@@ -20,7 +23,7 @@ const TREE_TYPES = [
 
 const colourFromShade = (shade: number) => [shade, shade, shade, 255]
 
-const NewickFile = ({ fileId, height = 500 }: NewickFileProps) => {
+const NewickFile = ({ file, height = 500, actions }: NewickFileProps) => {
   const { resolvedTheme } = useTheme()
   const containerRef = useRef<HTMLDivElement>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
@@ -28,16 +31,7 @@ const NewickFile = ({ fileId, height = 500 }: NewickFileProps) => {
   const [treeType, setTreeType] = useState<string>(TreeTypes.Rectangular)
   const [error, setError] = useState<string | null>(null)
 
-  // Fetch the text file content
-  const { data: content } = useSuspenseQuery({
-    ...downloadFileOptions({ path: { id: fileId } }),
-  })
-
-  const newick = (
-    typeof content === "string"
-      ? content
-      : new TextDecoder().decode(content as ArrayBuffer)
-  ).trim()
+  const newick = useFileText(file).trim()
 
   const shade = resolvedTheme === "dark" ? 224 : 42
 
@@ -124,7 +118,7 @@ const NewickFile = ({ fileId, height = 500 }: NewickFileProps) => {
             </option>
           ))}
         </select>
-        <SendNewickToTrakkaButton newick={newick} />
+        {actions?.(newick)}
       </div>
       <div
         ref={wrapperRef}

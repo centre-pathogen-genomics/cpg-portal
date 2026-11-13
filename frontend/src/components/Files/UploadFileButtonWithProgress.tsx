@@ -10,7 +10,7 @@ import type { FilePublic } from "../../client"
 import { createPairMutation } from "../../client/@tanstack/react-query.gen"
 import { useUpload } from "../../context/UploadContext"
 import useCustomToast from "../../hooks/useCustomToast"
-import { humanReadableFileSize } from "../../utils"
+import { humanReadableFileSize } from "@/lib/format"
 import UploadProgress from "./UploadProgress" // Import the reusable component
 import { groupPairEndReadFiles } from "./utils"
 

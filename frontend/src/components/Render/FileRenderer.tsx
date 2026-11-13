@@ -1,27 +1,28 @@
-import { LoaderCircle } from "lucide-react"
-import { lazy, Suspense } from "react"
-import type { FilePublic } from "../../client"
-import { humanReadableFileSize } from "../../utils"
-import CsvFileToTable from "./CsvFileToTable"
-import FastaFile from "./FastaFile"
-import GenbankFile from "./GenbankFile"
-import HtmlFile from "./HtmlFile"
-import ImageFile from "./ImageFile"
-import JsonFile from "./JsonFile"
-import MarkdownFile from "./MarkdownFile"
-import NewickFile from "./NewickFile"
-import TextFile from "./TextFile"
-import VegaFile from "./VegaFile"
+import { LoaderCircle } from "lucide-react";
+import { lazy, type ReactNode, lazy, Suspense } from "react";
+import { humanReadableFileSize } from "@/lib/format";
+import type { RenderableFile } from "./fileSource";
 
-// BandageJS brings its own layout engine and wasm, so load it only when a GFA
-// file is actually opened.
-const GfaFile = lazy(() => import("./GfaFile"))
+// One chunk per renderer, so a viewer costs nothing until its file is drawn.
+const CsvFileToTable = lazy(() => import("./CsvFileToTable"));
+const FastaFile = lazy(() => import("./FastaFile"));
+const GenbankFile = lazy(() => import("./GenbankFile"));
+const HtmlFile = lazy(() => import("./HtmlFile"));
+const ImageFile = lazy(() => import("./ImageFile"));
+const JsonFile = lazy(() => import("./JsonFile"));
+const MarkdownFile = lazy(() => import("./MarkdownFile"));
+const NewickFile = lazy(() => import("./NewickFile"));
+const TextFile = lazy(() => import("./TextFile"));
+const VegaFile = lazy(() => import("./VegaFile"));
+const GfaFile = lazy(() => import("./GfaFile"));
 
 interface FileRendererProps {
-  file: FilePublic
-  showUnsupportedMessage?: boolean
-  showTooLargeMessage?: boolean
-  fileSizeLimit?: number
+  file: RenderableFile;
+  showUnsupportedMessage?: boolean;
+  showTooLargeMessage?: boolean;
+  fileSizeLimit?: number;
+  /** Extra tree controls for a Newick file, which owns that file's text. */
+  newickActions?: (newick: string) => ReactNode;
 }
 
 // The file types FileRenderer knows how to draw, so a caller can offer exactly
@@ -44,14 +45,16 @@ export const RENDERABLE_FILE_TYPES = [
   "png",
   "jpeg",
   "svg",
-] as const
+] as const;
 
-export const canRenderFile = (file: FilePublic) =>
+export const canRenderFile = (
+  file: Pick<RenderableFile, "file_type" | "is_group">,
+) =>
   !file.is_group &&
   !!file.file_type &&
   RENDERABLE_FILE_TYPES.includes(
     file.file_type as (typeof RENDERABLE_FILE_TYPES)[number],
-  )
+  );
 
 const TooLargeToPreview = ({ limit }: { limit: number }) => (
   <div className="flex flex-col items-start gap-4">
@@ -59,17 +62,18 @@ const TooLargeToPreview = ({ limit }: { limit: number }) => (
       File is too large to preview ({`>${humanReadableFileSize(limit)}`})
     </p>
   </div>
-)
+);
 
 const FileRenderer = ({
   file,
   showUnsupportedMessage = true,
   showTooLargeMessage = true,
   fileSizeLimit = 10 * 1024 * 1024, // 10 MB default limit
+  newickActions,
 }: FileRendererProps) => {
   // Don't attempt to render group files
   if (file.is_group) {
-    return null
+    return null;
   }
 
   if (file.size && file.size < fileSizeLimit) {
@@ -88,33 +92,33 @@ const FileRenderer = ({
           switch (file.file_type) {
             case "json":
               if (file.size > 1000000) {
-                return TooLargeToPreview({ limit: 1000000 })
+                return TooLargeToPreview({ limit: 1000000 });
               }
               if (file.size > 100000) {
                 // For larger JSON files, use TextFile to avoid performance issues
-                return <TextFile fileId={file.id} />
+                return <TextFile file={file} />;
               }
-              return <JsonFile fileId={file.id} />
+              return <JsonFile file={file} />;
             case "text":
               if (file.size > 1000000) {
-                return TooLargeToPreview({ limit: 1000000 })
+                return TooLargeToPreview({ limit: 1000000 });
               }
-              return <TextFile fileId={file.id} />
+              return <TextFile file={file} />;
             case "md":
               if (file.size > 1000000) {
-                return TooLargeToPreview({ limit: 1000000 })
+                return TooLargeToPreview({ limit: 1000000 });
               }
-              return <MarkdownFile fileId={file.id} />
+              return <MarkdownFile file={file} />;
             case "fasta":
               // Fasta files can be large; handled within FastaFile component
-              return <FastaFile fileId={file.id} />
+              return <FastaFile file={file} />;
             case "genbank":
               return (
                 <GenbankFile
-                  fileId={file.id}
+                  file={file}
                   viewer={file.size > 2000000 ? "circular" : "both"}
                 />
-              )
+              );
             case "gfa":
             case "gfa.gz":
               return (
@@ -123,45 +127,42 @@ const FileRenderer = ({
                   fileName={file.name}
                   compressed={file.file_type === "gfa.gz"}
                 />
-              )
+              );
             case "newick":
               if (file.size > 1000000) {
-                return TooLargeToPreview({ limit: 1000000 })
+                return TooLargeToPreview({ limit: 1000000 });
               }
-              return <NewickFile fileId={file.id} />
+              return <NewickFile file={file} actions={newickActions} />;
             case "vega":
-              return <VegaFile fileId={file.id} />
+              return <VegaFile file={file} />;
             case "vega-lite":
-              return <VegaFile fileId={file.id} leftNegativeMargin={110} />
+              return <VegaFile file={file} leftNegativeMargin={110} />;
             case "csv":
             case "tsv":
               return (
-                <CsvFileToTable
-                  tsv={file.file_type === "tsv"}
-                  fileId={file.id}
-                />
-              )
+                <CsvFileToTable file={file} tsv={file.file_type === "tsv"} />
+              );
             case "html":
-              return <HtmlFile fileId={file.id} />
+              return <HtmlFile file={file} />;
             case "png":
             case "jpeg":
             case "svg":
-              return <ImageFile fileId={file.id} />
+              return <ImageFile file={file} />;
 
             default:
               return showUnsupportedMessage ? (
                 <p className="italic text-gray-500">
                   Preview not available for this file type
                 </p>
-              ) : null
+              ) : null;
           }
         })()}
       </Suspense>
-    )
+    );
   }
   return showTooLargeMessage ? (
     <TooLargeToPreview limit={fileSizeLimit} />
-  ) : null
-}
+  ) : null;
+};
 
-export default FileRenderer
+export default FileRenderer;

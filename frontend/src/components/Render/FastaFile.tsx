@@ -1,43 +1,35 @@
-import { useSuspenseQuery } from "@tanstack/react-query"
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { parseFile, type Seq } from "seqparse"
 import { SeqViz } from "seqviz"
 import { useTheme } from "@/components/theme-provider"
-import { downloadFileOptions } from "../../client/@tanstack/react-query.gen"
+import { type RenderableFile, useFileText } from "./fileSource"
 
 interface FastaFileProps {
-  fileId: string
+  file: RenderableFile
   height?: number
 }
 
-const FastaFile = ({ fileId, height = 500 }: FastaFileProps) => {
+const FastaFile = ({ file, height = 500 }: FastaFileProps) => {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const { resolvedTheme: colorMode } = useTheme()
 
-  // Fetch the text file content
-  const { data: fastaContent } = useSuspenseQuery({
-    ...downloadFileOptions({ path: { id: fileId } }),
-  })
-
-  const fasta =
-    typeof fastaContent === "string"
-      ? fastaContent
-      : new TextDecoder().decode(fastaContent as ArrayBuffer)
+  const fasta = useFileText(file)
 
   // Parse each FASTA entry
-  const { data: parsed } = useSuspenseQuery<Seq[]>({
-    queryKey: ["fasta-parse", fileId, fasta],
-    queryFn: () => {
-      try {
-        return parseFile(fasta, { fileName: "preview.fasta" })
-      } catch (e) {
-        console.error("Fasta parsing failed:", e)
-        throw e
-      }
-    },
-  })
+  const parsed = useMemo<Seq[] | null>(() => {
+    try {
+      return parseFile(fasta, { fileName: "preview.fasta" })
+    } catch (e) {
+      console.error("Fasta parsing failed:", e)
+      return null
+    }
+  }, [fasta])
 
-  if (!parsed || parsed.length === 0) {
+  if (!parsed) {
+    return <p className="text-gray-500">Could not parse FASTA file</p>
+  }
+
+  if (parsed.length === 0) {
     return <p className="text-gray-500">No sequences found in FASTA file</p>
   }
 

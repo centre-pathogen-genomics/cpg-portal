@@ -1,20 +1,18 @@
-import { useSuspenseQuery } from "@tanstack/react-query"
-import { downloadFileOptions } from "../../client/@tanstack/react-query.gen"
 import CodeBlock from "../Common/CodeBlock"
+import { type RenderableFile, useFileText } from "./fileSource"
 
-interface JsonFileProps {
-  fileId: string
-}
+const JsonFile = ({ file }: { file: RenderableFile }) => {
+  const text = useFileText(file)
 
-const JsonFile = ({ fileId }: JsonFileProps) => {
-  // Use useSuspenseQuery to fetch the file
-  const { data: jsonText } = useSuspenseQuery({
-    ...downloadFileOptions({ path: { id: fileId } }),
-  })
-  // strinfy the json data
-  const json = JSON.stringify(jsonText, null, 2)
+  // Malformed JSON is shown as it is, rather than failing the whole preview.
+  let pretty = text
+  try {
+    pretty = JSON.stringify(JSON.parse(text), null, 2)
+  } catch {
+    pretty = text
+  }
 
-  return <CodeBlock code={json as string} language="json" maxHeight="500px" />
+  return <CodeBlock code={pretty} language="json" maxHeight="500px" />
 }
 
 export default JsonFile

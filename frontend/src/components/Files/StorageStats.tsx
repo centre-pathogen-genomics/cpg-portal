@@ -5,7 +5,7 @@ import {
   getFilesStatsOptions,
   readUserMeQueryKey,
 } from "../../client/@tanstack/react-query.gen"
-import { humanReadableFileSize } from "../../utils"
+import { humanReadableFileSize } from "@/lib/format"
 
 interface StorageStatsProps {
   size?: string
