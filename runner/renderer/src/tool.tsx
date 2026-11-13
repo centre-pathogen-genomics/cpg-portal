@@ -11,6 +11,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import RenderMarkdown from "@/components/Common/Markdown";
+import { ConfirmationDialog } from "@/components/Common/ConfirmationDialog";
 import ToolRunForm from "@/components/Tools/ToolRunForm";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -53,7 +54,7 @@ import {
   unwrapTool,
 } from "./contracts";
 import { openExternal, openPath, pickDirectory } from "./lib/desktop";
-import { portalToolUrl } from "./lib/portal";
+import { portalToolUrl, portalUrl } from "./lib/portal";
 import { useNavigate } from "@tanstack/react-router";
 import cpgLogo from "./assets/cpg-logo.png";
 
@@ -68,6 +69,9 @@ export function ToolPage({ toolId }: { toolId: string }) {
   const [fileTypes, setFileTypes] = useState<FileTypesMap>({});
   const [forcedDoctor, setForcedDoctor] = useState<DoctorReport | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // Why this tool's files cannot be read, when the app could not parse them.
+  const [problem, setProblem] = useState<string | null>(null);
+  const [removeUnreadableOpen, setRemoveUnreadableOpen] = useState(false);
   // A tool switch keeps the page on screen: only the params are shown as
   // loading while the new tool's data arrives.
   const [loadingTool, setLoadingTool] = useState(false);
@@ -133,6 +137,17 @@ export function ToolPage({ toolId }: { toolId: string }) {
     setForcedDoctor(null);
     setDescriptionOpen(false);
     setLoadError(null);
+    // A tool whose files no longer parse still has a page: the reason comes
+    // from the app, which is the only place that knows why.
+    void window.cpgRunner
+      ?.tools?.()
+      .then((entries) => {
+        if (pendingTool.current !== toolId) return;
+        setProblem(
+          entries.find((entry) => entry.id === toolId)?.problem ?? null,
+        );
+      })
+      .catch(() => {});
     void loadAll().finally(() => {
       if (pendingTool.current === toolId) setLoadingTool(false);
     });
@@ -270,6 +285,21 @@ export function ToolPage({ toolId }: { toolId: string }) {
     }
   }
 
+  // A tool whose files cannot be read has no other way out: the walk-away
+  // route is removing it, or importing its pack again from the portal.
+  async function removeUnreadable() {
+    setRemoving(true);
+    try {
+      // The main process opens another tool, or the tool list.
+      await window.cpgRunner?.removeTool?.(toolId);
+    } catch (error) {
+      toast.error(errorMessage(error));
+    } finally {
+      setRemoving(false);
+      setRemoveUnreadableOpen(false);
+    }
+  }
+
   async function uninstall() {
     setUninstalling(true);
     try {
@@ -293,8 +323,47 @@ export function ToolPage({ toolId }: { toolId: string }) {
         <ToolSidebar activeToolId={null} />
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 p-8">
           <p className="text-destructive text-sm">{loadError}</p>
-          <Button onClick={() => void loadAll()}>Retry</Button>
+          {problem && (
+            <>
+              <p className="text-muted-foreground max-w-md text-center text-sm">
+                {problem}
+              </p>
+              <p className="text-muted-foreground max-w-md text-center text-xs">
+                Importing the tool's pack again, or installing the build that
+                created it, gets it working.
+              </p>
+            </>
+          )}
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <Button onClick={() => void loadAll()}>Retry</Button>
+            {problem && (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => void openExternal(portalUrl())}
+                >
+                  Open the portal
+                </Button>
+                <Button
+                  variant="destructive"
+                  disabled={removing}
+                  onClick={() => setRemoveUnreadableOpen(true)}
+                >
+                  Remove tool
+                </Button>
+              </>
+            )}
+          </div>
         </div>
+        <ConfirmationDialog
+          open={removeUnreadableOpen}
+          onOpenChange={setRemoveUnreadableOpen}
+          title="Remove this tool?"
+          description="Its files could not be read, and its runs are removed with it."
+          confirmLabel="Remove tool"
+          pending={removing}
+          onConfirm={() => void removeUnreadable()}
+        />
       </div>
     );
   }

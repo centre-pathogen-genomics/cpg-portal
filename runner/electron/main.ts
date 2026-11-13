@@ -26,6 +26,10 @@ const SIDECAR_READY = /^CPG_RUNNER_READY (\{.*\})$/
 const SIDECAR_START_TIMEOUT_MS = 120_000
 const SIDECAR_KILL_GRACE_MS = 3_000
 const PACK_EXTENSION = ".cpgpack"
+// Format of the app's own data under <userData>, and how often it looks for a
+// newer build of itself.
+const DATA_SCHEMA_VERSION = 1
+const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000
 
 // Only the Docker documentation/download hosts may be opened in the browser.
 const EXTERNAL_HOSTS: Record<string, true> = {
@@ -41,6 +45,8 @@ export type ToolEntry = {
   description: string | null
   /** The portal's picture URL, so a window without a cached copy still shows it. */
   image: string | null
+  /** Why this tool cannot be read, when its files no longer parse. */
+  problem: string | null
 }
 
 type ToolRecord = {
@@ -140,6 +146,26 @@ function sidecarBinaryPath(): string {
 
 function portalBase(): string {
   return portalUrl.replace(/\/+$/, "")
+}
+
+// The app's own version. Packaged, electron-builder stamps package.json into
+// the bundle and Electron reports it; launched from a script, Electron reports
+// its own version instead, so the package.json above the bundled main is read.
+function appVersion(): string {
+  if (app.isPackaged) return app.getVersion()
+  const main = path.dirname(process.argv[1] ?? "")
+  for (const directory of [path.resolve(main, "..", ".."), main]) {
+    const file = path.join(directory, "package.json")
+    try {
+      const version = (JSON.parse(fs.readFileSync(file, "utf-8")) as {
+        version?: unknown
+      }).version
+      if (typeof version === "string" && version !== "") return version
+    } catch {
+      // No package.json here: the next candidate, or Electron's own version.
+    }
+  }
+  return app.getVersion()
 }
 
 async function portalGet<T>(path: string): Promise<T> {
@@ -286,6 +312,10 @@ function dataDir(toolId: string): string {
 
 function readPack(file: string): { id: string; files: Record<string, string> } {
   const document = JSON.parse(fs.readFileSync(file, "utf-8")) as PackDocument
+  // A pack from a newer app is refused by name rather than half-read.
+  if (typeof document.schema_version === "number" && document.schema_version > 1) {
+    throw new Error("This pack was made by a newer CPG Runner; update the app.")
+  }
   const id = document.tool?.tool?.id
   if (typeof id !== "string" || id.length === 0) {
     throw new Error("The pack does not name a tool.")
@@ -319,10 +349,24 @@ function entryFor(toolId: string): ToolEntry | null {
       version: tool.version ?? "",
       description: tool.description ?? null,
       image: tool.image ?? null,
+      problem: null,
     }
   } catch (error) {
     console.error(`Could not read tool ${toolId}: ${String(error)}`)
     return null
+  }
+}
+
+// A tool whose files no longer parse keeps its place in the sidebar: the user
+// has to see it to remove it, and hiding it would look like data loss.
+function unreadableEntry(toolId: string): ToolEntry {
+  return {
+    id: toolId,
+    name: `Unreadable tool ${toolId.slice(0, 8)}`,
+    version: "",
+    description: null,
+    image: null,
+    problem: "CPG Runner could not read this tool's files.",
   }
 }
 
@@ -390,8 +434,7 @@ function listTools(): ToolEntry[] {
     return []
   }
   return ids
-    .map(entryFor)
-    .filter((entry): entry is ToolEntry => entry !== null)
+    .map((id) => entryFor(id) ?? unreadableEntry(id))
     .sort((left, right) => left.name.localeCompare(right.name))
 }
 
@@ -588,6 +631,7 @@ function createWindow(): BrowserWindow {
       sandbox: false,
       additionalArguments: [
         `--cpg-token=${token}`,
+        `--cpg-version=${appVersion()}`,
         ...(portalUrl ? [`--cpg-portal=${portalUrl}`] : []),
       ],
     },
@@ -674,7 +718,13 @@ async function showTool(toolId: string): Promise<void> {
     }
   } catch (error) {
     console.error(`Could not open ${toolId}: ${String(error)}`)
-    throw error
+    lastToolId = toolId
+    if (windowLoaded) {
+      window.webContents.send("runner:show-tool", { toolId })
+    } else {
+      await window.loadURL(appUrl(`/t/${toolId}/tool`))
+      windowLoaded = true
+    }
   }
   if (!window.isVisible()) window.show()
 }
@@ -984,11 +1034,13 @@ function startSidecar(toolId: string): Promise<number> {
     if (stoppingSidecars.delete(toolId)) return
     if (shuttingDown) return
     if (!ready) {
+      // What the service said is the only clue to why it refused to start, so
+      // it travels with the error to the page.
       reject(
         new Error(
           `The runner service stopped before it was ready (exit ${
             code ?? `signal ${signal}`
-          }).`,
+          }).\n\n${chunks.join("").trim()}`,
         ),
       )
       return
@@ -1023,6 +1075,7 @@ function registerIpcHandlers(): void {
   })
 
   ipcMain.handle("runner:tools", (): ToolEntry[] => listTools())
+  ipcMain.handle("runner:update", () => pendingUpdate)
   ipcMain.handle(
     "runner:tool-images",
     (): Record<string, string> => toolImages(),
@@ -1166,6 +1219,116 @@ function registerIpcHandlers(): void {
 // held here and imported once the window can show the result.
 const openedBeforeReady: string[] = []
 
+// -- updates --------------------------------------------------------------
+
+type AppUpdate = { version: string; url: string }
+
+// The build the portal announced, kept so a window that loads later still
+// learns about it.
+let pendingUpdate: AppUpdate | null = null
+
+// The name a platform's app is published under in the portal's artifacts.
+function runnerPlatform(): string | null {
+  if (process.platform === "darwin") {
+    return process.arch === "arm64" ? "mac-arm64" : "mac-x64"
+  }
+  if (process.platform === "win32") return "win-x64"
+  if (process.platform === "linux") return "linux-x64"
+  return null
+}
+
+// Numeric comparison, part by part: 1.10.0 is newer than 1.9.0, and a suffix
+// (1.0.0-beta) counts as 0 so a prerelease never outranks its release.
+function isNewerVersion(candidate: string, current: string): boolean {
+  const split = (version: string) =>
+    version.split(/[.\-+]/).map((part) => Number.parseInt(part, 10) || 0)
+  const left = split(candidate)
+  const right = split(current)
+  for (let index = 0; index < Math.max(left.length, right.length); index += 1) {
+    const candidatePart = left[index] ?? 0
+    const currentPart = right[index] ?? 0
+    if (candidatePart !== currentPart) return candidatePart > currentPart
+  }
+  return false
+}
+
+// The download stays on the portal: this app never replaces itself.
+async function checkForAppUpdate(): Promise<void> {
+  if (portalUrl === "") return
+  const platform = runnerPlatform()
+  if (platform === null) return
+  try {
+    const response = await fetch(
+      `${portalBase()}/api/v1/runner/app/${platform}/latest`,
+      { signal: AbortSignal.timeout(15_000) },
+    )
+    if (!response.ok) return
+    const payload = (await response.json()) as {
+      version?: string
+      url?: string
+    }
+    const version = payload.version ?? ""
+    const url = payload.url ?? ""
+    if (version === "" || url === "") return
+    if (!isNewerVersion(version, appVersion())) return
+    pendingUpdate = { version, url }
+    mainWindow?.webContents.send("runner:update-available", pendingUpdate)
+  } catch (error) {
+    console.error(`Could not check for an app update: ${String(error)}`)
+  }
+}
+
+// -- the app's own data ---------------------------------------------------
+
+// One entry per change of the data format: the step that turns version n-1
+// into n. Empty while the first format is still the only one.
+const DATA_MIGRATIONS: Record<number, () => void> = {}
+
+type DataSchema = { schema_version?: number; last_app_version?: string }
+
+// Tools, runs and settings outlive app updates, so their format is recorded:
+// a build that finds a newer format refuses to open tools instead of
+// misreading them, and an older one migrates forward before it does.
+function ensureDataSchema(): boolean {
+  const file = path.join(app.getPath("userData"), "schema.json")
+  let stored: DataSchema = {}
+  try {
+    stored = JSON.parse(fs.readFileSync(file, "utf-8")) as DataSchema
+  } catch {
+    // No record yet, or one that cannot be read: this build defines the format.
+  }
+  const storedVersion =
+    typeof stored.schema_version === "number" ? stored.schema_version : 0
+  if (storedVersion > DATA_SCHEMA_VERSION) {
+    fail(
+      "CPG Runner is out of date",
+      "These tools were created by a newer version of CPG Runner. Download the latest build to use them.",
+    )
+    app.quit()
+    return false
+  }
+  for (let next = storedVersion + 1; next <= DATA_SCHEMA_VERSION; next += 1) {
+    DATA_MIGRATIONS[next]?.()
+  }
+  try {
+    fs.mkdirSync(path.dirname(file), { recursive: true })
+    fs.writeFileSync(
+      file,
+      `${JSON.stringify(
+        {
+          schema_version: DATA_SCHEMA_VERSION,
+          last_app_version: appVersion(),
+        },
+        null,
+        2,
+      )}\n`,
+    )
+  } catch (error) {
+    console.error(`Could not record the data format: ${String(error)}`)
+  }
+  return true
+}
+
 function start(): void {
   app.on("open-file", (event, filePath) => {
     event.preventDefault()
@@ -1216,6 +1379,7 @@ function start(): void {
           console.error(`Could not set the dock icon: ${String(error)}`)
         }
       }
+      if (!ensureDataSchema()) return
       registerIpcHandlers()
       await startAppServer()
       // The splash covers the first paint only: opening a tool later shows the
@@ -1236,6 +1400,11 @@ function start(): void {
       } finally {
         clearTimeout(splashTimer)
         closeSplash()
+        void checkForAppUpdate()
+        setInterval(
+          () => void checkForAppUpdate(),
+          UPDATE_CHECK_INTERVAL_MS,
+        ).unref()
       }
     })
     .catch((error) => {

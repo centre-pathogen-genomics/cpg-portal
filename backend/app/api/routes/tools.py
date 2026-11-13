@@ -13,6 +13,7 @@ from app.api.permission_router import PermissionAPIRouter
 from app.api.routes.runner import PLATFORM_IMAGE_ARCH
 from app.conda import CondaEnvManger
 from app.core.config import settings
+from app.core.urls import public_base_url
 from app.models import (
     Message,
     Tool,
@@ -274,18 +275,6 @@ Tools that read the portal reference database (/DB) are not supported.
 """
 
 
-def _pack_base_url(request: Request) -> str:
-    """Public origin of this backend, for the image URL inside a pack."""
-    configured = settings.RUNNER_PUBLIC_BASE_URL.rstrip("/")
-    if configured:
-        return configured
-    scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
-    host = request.headers.get(
-        "x-forwarded-host", request.headers.get("host", request.url.netloc)
-    )
-    return f"{scheme}://{host}"
-
-
 def _pack_tool_config(tool: ToolPublic) -> dict[str, Any]:
     """What the app needs to know about the tool, as `tool.json`."""
     return {
@@ -387,7 +376,7 @@ def download_runner_pack(
             "docker_arch": docker_arch,
             "runtime_image": {
                 "tag": settings.RUNNER_RUNTIME_TAG,
-                "url": f"{_pack_base_url(request)}"
+                "url": f"{public_base_url(request)}"
                 f"/api/v1/runner/runtime-image/{docker_arch}",
                 "sha256": runtime_sha.read_text().strip(),
             },

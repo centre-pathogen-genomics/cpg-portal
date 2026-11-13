@@ -1,4 +1,10 @@
-import { LoaderCircle, PanelLeftClose, PanelLeftOpen, Plus } from "lucide-react"
+import {
+  LoaderCircle,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Plus,
+  TriangleAlert,
+} from "lucide-react"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -12,6 +18,7 @@ type ToolEntry = {
   version: string
   description: string | null
   image: string | null
+  problem: string | null
 }
 
 const COLLAPSED_KEY = "cpg-runner.sidebar"
@@ -113,7 +120,9 @@ export function ToolSidebar({
               CPG Runner
             </p>
             <p className="text-muted-foreground truncate text-xs">
-              Runs on this computer
+              {bridge?.appVersion
+                ? `Runs on this computer · v${bridge.appVersion}`
+                : "Runs on this computer"}
             </p>
           </div>
         )}
@@ -158,7 +167,7 @@ export function ToolSidebar({
                     aria-current={active ? "page" : undefined}
                     aria-label={collapsed ? tool.name : undefined}
                     disabled={openingId !== null}
-                    title={tool.description ?? tool.name}
+                    title={tool.problem ?? tool.description ?? tool.name}
                     className={cn(
                       "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm",
                       collapsed ? "justify-center" : "justify-between",
@@ -175,6 +184,11 @@ export function ToolSidebar({
                     >
                       {collapsed && openingId === tool.id ? (
                         <LoaderCircle className="text-muted-foreground size-4 shrink-0 animate-spin" />
+                      ) : tool.problem ? (
+                        <TriangleAlert
+                          className="size-5 shrink-0 text-amber-600"
+                          aria-hidden="true"
+                        />
                       ) : (
                         <ToolImage
                           id={tool.id}

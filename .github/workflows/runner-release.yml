@@ -113,7 +113,7 @@ jobs:
           TAG_NAME: ${{ github.event.release.tag_name }}
         run: |
           set -euo pipefail
-          mapfile -t files < <(find release-artifacts -type f \( -name '*.zip' -o -name '*.tar' -o -name '*.sha256' \) | sort)
+          mapfile -t files < <(find release-artifacts -type f \( -name '*.zip' -o -name '*.tar' -o -name '*.sha256' -o -name '*.json' \) | sort)
           if [ "${#files[@]}" -eq 0 ]; then
             echo "No release artifacts were downloaded" >&2
             exit 1

@@ -47,11 +47,16 @@ export function errorMessage(error: unknown): string {
 }
 
 async function toApiError(response: Response): Promise<ApiError> {
+  // A refused tool answers in plain text with the runner's own message, which
+  // is the only explanation the page can show.
+  const body = await response.text().catch(() => "")
   let payload: unknown = null
-  try {
-    payload = await response.json()
-  } catch {
-    payload = null
+  if (body !== "") {
+    try {
+      payload = JSON.parse(body)
+    } catch {
+      payload = null
+    }
   }
   const detailValue = (payload as { detail?: unknown } | null)?.detail
   const detail =
@@ -59,7 +64,9 @@ async function toApiError(response: Response): Promise<ApiError> {
       ? detailValue
       : detailValue
         ? JSON.stringify(detailValue)
-        : `${response.status} ${response.statusText}`
+        : body.trim() !== ""
+          ? body.trim()
+          : `${response.status} ${response.statusText}`
   return new ApiError(response.status, detail, payload)
 }
 

@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test"
+import { expect, type Page, test } from "@playwright/test"
 import { firstSuperuser, firstSuperuserPassword } from "./config"
 
 const apiUrl = process.env.VITE_API_URL ?? "http://localhost:8000"
@@ -48,6 +48,32 @@ async function deleteTool(token: string, toolId: string) {
 }
 
 const tinyZip = new Uint8Array([80, 75, 5, 6, 0, 0, 0, 0])
+
+const APP_PATTERN = /\/api\/v1\/runner\/app\//
+
+/** The portal's app build manifest, plus the archive the link downloads. */
+async function stubApp(page: Page, manifest: Record<string, unknown>) {
+  await page.route(APP_PATTERN, async (route) => {
+    if (route.request().url().endsWith("/latest")) {
+      // Cross-origin, so the synthetic answer has to allow the origin.
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        headers: { "access-control-allow-origin": "*" },
+        body: JSON.stringify(manifest),
+      })
+      return
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: "application/zip",
+      headers: {
+        "Content-Disposition": 'attachment; filename="cpg-runner-linux-x64.zip"',
+      },
+      body: Buffer.from(tinyZip),
+    })
+  })
+}
 
 test("Run locally downloads that tool's pack", async ({ page }) => {
   const token = await adminToken()
@@ -123,37 +149,21 @@ test("Run locally downloads that tool's pack", async ({ page }) => {
 test("The Local Runner page downloads the app for a chosen platform", async ({
   page,
 }) => {
-  // Registered before the page asks for the build with HEAD.
-  await page.route(/\/api\/v1\/runner\/app\//, async (route) => {
-    if (route.request().method() === "HEAD") {
-      // Cross-origin, so the synthetic answer needs CORS for both the
-      // request and the ETag the page reads back.
-      await route.fulfill({
-        status: 200,
-        headers: {
-          etag: '"build1234"',
-          "access-control-allow-origin": "*",
-          "access-control-expose-headers": "ETag",
-        },
-      })
-      return
-    }
-    await route.fulfill({
-      status: 200,
-      contentType: "application/zip",
-      headers: {
-        "Content-Disposition": 'attachment; filename="cpg-runner-linux-x64.zip"',
-      },
-      body: Buffer.from(tinyZip),
-    })
+  // Registered before the page asks for the build it should link to.
+  await stubApp(page, {
+    version: "1.0.0",
+    build: "build1234",
+    url: "http://localhost:8000/api/v1/runner/app/linux-x64?v=build1234",
+    previous: null,
   })
 
   await page.goto("/local-runner")
   await expect(
     page.getByRole("heading", { name: "Run tools on your own computer" }),
   ).toBeVisible()
+  // The nav link carries a "New" badge, so the name is matched by prefix.
   await expect(
-    page.getByRole("link", { name: "Local Runner", exact: true }),
+    page.getByRole("link", { name: /^Local Runner/ }),
   ).toBeVisible()
 
   await page.getByRole("combobox", { name: "Platform" }).click()
@@ -161,18 +171,49 @@ test("The Local Runner page downloads the app for a chosen platform", async ({
   await page.getByRole("option", { name: "Linux (x64)" }).click()
 
   const appLink = page.getByRole("link", { name: "Download CPG Runner" })
-  // The link is pinned to the build the server reports, so a cached older
-  // build can never be handed out again.
+  // The link is the one the server pins to the current build, so a cached
+  // older build can never be handed out again.
   await expect(appLink).toHaveAttribute(
     "href",
-    /\/api\/v1\/runner\/app\/linux-x64\?v=build1234$/,
+    "http://localhost:8000/api/v1/runner/app/linux-x64?v=build1234",
   )
   await expect(page.getByText("build build1234")).toBeVisible()
+  await expect(page.getByRole("link", { name: /^Previous build/ })).toHaveCount(
+    0,
+  )
 
   const appDownloadPromise = page.waitForEvent("download")
   await appLink.click()
   const appDownload = await appDownloadPromise
   expect(appDownload.suggestedFilename()).toContain("linux-x64")
 
-  await page.unroute(/\/api\/v1\/runner\/app\//)
+  await page.unroute(APP_PATTERN)
+})
+
+test("The Local Runner page offers the build the current one replaced", async ({
+  page,
+}) => {
+  await stubApp(page, {
+    version: "1.0.0",
+    build: "build1234",
+    url: "http://localhost:8000/api/v1/runner/app/linux-x64?v=build1234",
+    previous: {
+      version: "0.9.0",
+      url: "http://localhost:8000/api/v1/runner/app/linux-x64/previous",
+    },
+  })
+
+  await page.goto("/local-runner")
+  await page.getByRole("combobox", { name: "Platform" }).click()
+  await page.getByRole("option", { name: "Linux (x64)" }).click()
+
+  // A user whose tools stopped working after an update needs the way back.
+  await expect(
+    page.getByRole("link", { name: "Previous build: v0.9.0" }),
+  ).toHaveAttribute(
+    "href",
+    "http://localhost:8000/api/v1/runner/app/linux-x64/previous",
+  )
+
+  await page.unroute(APP_PATTERN)
 })

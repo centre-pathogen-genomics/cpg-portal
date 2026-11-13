@@ -7,6 +7,8 @@ type ToolEntry = {
   name: string
   version: string
   description: string | null
+  /** Set when the tool's files could not be read; the sidebar marks it. */
+  problem: string | null
 }
 
 const TOKEN_ARGUMENT = "--cpg-token="
@@ -23,9 +25,32 @@ const portalUrl = portalArgument
   ? portalArgument.slice(PORTAL_ARGUMENT.length)
   : ""
 
+const VERSION_ARGUMENT = "--cpg-version="
+const versionArgument = process.argv.find((argument) =>
+  argument.startsWith(VERSION_ARGUMENT),
+)
+const appVersion = versionArgument
+  ? versionArgument.slice(VERSION_ARGUMENT.length)
+  : ""
+
 contextBridge.exposeInMainWorld("cpgRunner", {
   token,
   portalUrl,
+  appVersion,
+  /** The build the portal announced, if one is newer than this app. */
+  update: (): Promise<{ version: string; url: string } | null> =>
+    ipcRenderer.invoke("runner:update"),
+  /** A newer build was found after the window loaded. */
+  onUpdateAvailable: (
+    handler: (update: { version: string; url: string }) => void,
+  ): (() => void) => {
+    const listener = (_event: unknown, update: { version: string; url: string }) =>
+      handler(update)
+    ipcRenderer.on("runner:update-available", listener)
+    return () => {
+      ipcRenderer.removeListener("runner:update-available", listener)
+    }
+  },
   tools: (): Promise<ToolEntry[]> => ipcRenderer.invoke("runner:tools"),
   toolImages: (): Promise<Record<string, string>> =>
     ipcRenderer.invoke("runner:tool-images"),

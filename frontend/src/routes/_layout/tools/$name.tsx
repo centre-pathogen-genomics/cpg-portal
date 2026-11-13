@@ -574,6 +574,15 @@ export function Tool() {
       </div>
     )
   const anonymous = !currentUser
+  const defaultVersion = versions?.find(
+    (candidate) => candidate.is_default && candidate.enabled !== false,
+  )?.version
+  // A non-default version answers on a `?version=` link only, so the page says
+  // so and offers the way back to what the portal serves by default.
+  const otherVersion =
+    tool.version && defaultVersion && defaultVersion !== tool.version
+      ? defaultVersion
+      : null
   return (
     <div className="flex justify-center">
       <div className="w-full max-w-5xl px-4 pt-6 pb-8">
@@ -621,6 +630,23 @@ export function Tool() {
             </div>
           )}
         </div>
+        {otherVersion && (
+          <div className="mb-4 flex flex-wrap items-center gap-3 rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">
+            <p className="min-w-0 flex-1">
+              You are viewing v{tool.version}, which is not the default version
+              of {tool.name}. The portal serves v{otherVersion} by default.
+            </p>
+            <Button variant="outline" size="sm" asChild>
+              <RouterLink
+                to="/tools/$name"
+                params={{ name: tool.name }}
+                onClick={() => forgetVersion(tool.name)}
+              >
+                View v{otherVersion}
+              </RouterLink>
+            </Button>
+          </div>
+        )}
         <div className="mb-2 flex flex-wrap items-center gap-1.5">
           {tool.url && (
             <Badge url={tool.url} value={tool.url} label="Home" color="blue" />

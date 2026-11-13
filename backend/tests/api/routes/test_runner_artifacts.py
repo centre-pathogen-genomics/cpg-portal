@@ -24,6 +24,7 @@ def _artifacts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     apps = tmp_path / "apps"
     apps.mkdir()
     (apps / "mac-arm64.zip").write_bytes(APP_BYTES)
+    (apps / "mac-arm64.json").write_text('{"version": "1.0.0"}')
     runtime = tmp_path / "runtime"
     runtime.mkdir()
     (runtime / f"{ARCH}.tar").write_bytes(b"image")
@@ -115,6 +116,80 @@ def test_app_without_a_build_is_404(client: TestClient, _artifacts: Path) -> Non
 
     assert response.status_code == 404
     assert response.json()["detail"] == "App not available for win-x64"
+
+
+def test_app_latest_reports_version_and_build(
+    client: TestClient, _artifacts: Path
+) -> None:
+    """An installed app learns from one call whether a newer build exists."""
+    response = client.get("/api/v1/runner/app/mac-arm64/latest")
+
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == "public, no-cache"
+    body = response.json()
+    assert body["version"] == "1.0.0"
+    build = client.head("/api/v1/runner/app/mac-arm64").headers["etag"].strip('"')
+    assert body["build"] == build
+    assert body["url"] == (
+        f"http://testserver/api/v1/runner/app/mac-arm64?v={build}"
+    )
+    assert body["previous"] is None
+
+
+def test_app_latest_without_a_manifest_has_no_version(
+    client: TestClient, _artifacts: Path
+) -> None:
+    """A deployment that ships archives only still answers, without a version."""
+    (_artifacts / "apps" / "mac-arm64.json").unlink()
+
+    response = client.get("/api/v1/runner/app/mac-arm64/latest")
+
+    assert response.status_code == 200
+    assert response.json()["version"] == ""
+
+
+def test_app_latest_reports_the_previous_build(
+    client: TestClient, _artifacts: Path
+) -> None:
+    previous = _artifacts / "apps" / "previous"
+    previous.mkdir()
+    (previous / "mac-arm64.zip").write_bytes(b"old build")
+    (previous / "mac-arm64.json").write_text('{"version": "0.9.0"}')
+
+    body = client.get("/api/v1/runner/app/mac-arm64/latest").json()
+
+    assert body["previous"]["version"] == "0.9.0"
+    assert body["previous"]["url"].endswith("/api/v1/runner/app/mac-arm64/previous")
+
+
+def test_previous_app_is_served(client: TestClient, _artifacts: Path) -> None:
+    previous = _artifacts / "apps" / "previous"
+    previous.mkdir()
+    (previous / "mac-arm64.zip").write_bytes(APP_BYTES)
+
+    response = client.get("/api/v1/runner/app/mac-arm64/previous")
+
+    assert response.status_code == 200
+    assert response.content == APP_BYTES
+    assert "cpg-runner-mac-arm64-previous.zip" in response.headers["content-disposition"]
+
+
+def test_app_latest_unknown_platform_is_404(
+    client: TestClient, _artifacts: Path
+) -> None:
+    response = client.get("/api/v1/runner/app/nope/latest")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "App not available for nope"
+
+
+def test_previous_app_without_a_build_is_404(
+    client: TestClient, _artifacts: Path
+) -> None:
+    response = client.get("/api/v1/runner/app/mac-arm64/previous")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "No previous build for mac-arm64"
 
 
 def test_pack_holds_configuration_only(

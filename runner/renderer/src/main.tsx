@@ -2,6 +2,7 @@ import { RouterProvider } from "@tanstack/react-router"
 import ReactDOM from "react-dom/client"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
+import { UpdateBanner } from "./components/UpdateBanner"
 import { setApiOrigin, setSessionToken } from "./api"
 import { router } from "./router"
 import "./index.css"
@@ -60,6 +61,7 @@ function start(): void {
     <ThemeProvider>
       <RouterProvider router={router} />
       <Toaster closeButton />
+      <UpdateBanner />
     </ThemeProvider>,
   )
   // Tell the main process the window is drawn, so the splash can close.

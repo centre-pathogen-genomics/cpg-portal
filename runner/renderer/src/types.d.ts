@@ -10,8 +10,12 @@ type ToolEntry = {
   version: string
   description: string | null
   image: string | null
+  /** Why the tool cannot be read, when its files no longer parse. */
+  problem: string | null
 }
 
+/** A newer build of the app, as the portal advertises it. */
+type AppUpdatePayload = { version: string; url: string }
 
 declare global {
   interface Window {
@@ -19,6 +23,12 @@ declare global {
       token: string
       /** Origin of the portal this build belongs to; empty when unknown. */
       portalUrl: string
+      /** This build's version, e.g. "1.0.0"; empty when unknown. */
+      appVersion: string
+      /** A newer build the portal already announced, if there is one. */
+      update(): Promise<AppUpdatePayload | null>
+      /** A newer build was announced after the window loaded. */
+      onUpdateAvailable(handler: (update: AppUpdatePayload) => void): () => void
       tools(): Promise<ToolEntry[]>
       /** Cached tool pictures, by tool id, as data URLs. */
       toolImages(): Promise<Record<string, string>>

@@ -148,6 +148,28 @@ find_mac_app() {
   return 1
 }
 
+# Keep exactly the build this one replaces, so a user who updated can still go
+# back to the app they had.
+rotate_previous_app() {
+  local platform="$1"
+  mkdir -p "${APPS_DIR}/previous"
+  if [ -f "${APPS_DIR}/${platform}.zip" ]; then
+    mv -f "${APPS_DIR}/${platform}.zip" "${APPS_DIR}/previous/${platform}.zip"
+  fi
+  if [ -f "${APPS_DIR}/${platform}.json" ]; then
+    mv -f "${APPS_DIR}/${platform}.json" "${APPS_DIR}/previous/${platform}.json"
+  fi
+}
+
+# The version an installed app compares itself against. Bumping `version` in
+# package.json is what makes a release announce itself.
+write_app_manifest() {
+  local platform="$1" version
+  version="$(cd "${RUNNER_DIR}" && bun -e 'console.log(JSON.parse(await Bun.file("package.json").text()).version)')"
+  printf '{"version": "%s"}\n' "${version}" >"${APPS_DIR}/${platform}.json"
+  artifacts+=("${APPS_DIR}/${platform}.json")
+}
+
 package_mac() {
   local platform="$1" arch="$2" app zip notarize_zip
   if [ "$(uname -s)" != "Darwin" ]; then
@@ -156,6 +178,7 @@ package_mac() {
   for tool in codesign ditto xcrun spctl; do need "${tool}"; done
 
   log "Packaging ${platform}"
+  rotate_previous_app "${platform}"
   run_electron_builder --mac "--${arch}" --dir
   app="$(find_mac_app "${arch}")" || die "electron-builder did not produce an .app bundle for ${platform}"
   zip="${APPS_DIR}/${platform}.zip"
@@ -182,6 +205,7 @@ package_mac() {
   fi
 
   artifacts+=("${zip}")
+  write_app_manifest "${platform}"
 }
 
 package_zip() {
@@ -189,6 +213,7 @@ package_zip() {
   shift
 
   log "Packaging ${platform}"
+  rotate_previous_app "${platform}"
   # electron-builder writes the platform archives to dist/; drop stale ones so the
   # artifact picked below is the one we just built.
   rm -f "${RUNNER_DIR}/dist/"*.zip
@@ -200,6 +225,7 @@ package_zip() {
   fi
   mv -f "${produced}" "${APPS_DIR}/${platform}.zip"
   artifacts+=("${APPS_DIR}/${platform}.zip")
+  write_app_manifest "${platform}"
 }
 
 build_inputs

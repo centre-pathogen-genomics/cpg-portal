@@ -21,6 +21,15 @@ import {
 } from "@/lib/runner-platform"
 import MainMenuBar from "../components/Common/MainMenuBar"
 
+/** What the portal publishes about one platform's build. */
+type AppManifest = {
+  version: string
+  build: string
+  url: string
+  /** The build the current one replaced, for a rollback. */
+  previous: { version: string; url: string } | null
+}
+
 export const Route = createFileRoute("/local-runner")({
   beforeLoad: async () => {
     if (!isLoggedIn()) {
@@ -40,38 +49,43 @@ export const Route = createFileRoute("/local-runner")({
 
 function LocalRunner() {
   const [platform, setPlatform] = useState<Platform>(detectPlatform)
-  // Identity of the build behind the app URL. Pinning the link to it makes a
-  // download always the current build, even when an older one was cached.
-  // `null` while the platform's build is being checked; `""` when the server
-  // does not name one; a 404 means that platform is not published yet.
-  const [appBuild, setAppBuild] = useState<string | null>(null)
+  // The build the server publishes for the chosen platform: its version, the
+  // archive pinned to it, and the build it replaced. `null` while it is being
+  // read; a 404 means that platform is not published yet.
+  const [app, setApp] = useState<AppManifest | null>(null)
   const [appMissing, setAppMissing] = useState(false)
   const appUrl = runnerAppUrl(platform)
 
   useEffect(() => {
     let cancelled = false
-    setAppBuild(null)
+    setApp(null)
     setAppMissing(false)
-    fetch(appUrl, { method: "HEAD" })
-      .then((response) => {
-        const etag = response.headers.get("etag") ?? ""
-        if (!cancelled && !response.ok && !etag) setAppMissing(true)
-        return etag
+    fetch(`${appUrl}/latest`)
+      .then(async (response) => {
+        if (response.status === 404) {
+          if (!cancelled) setAppMissing(true)
+          return null
+        }
+        if (!response.ok) {
+          throw new Error(`The portal answered ${response.status}`)
+        }
+        return (await response.json()) as AppManifest
       })
-      .then((etag) => {
-        if (!cancelled) setAppBuild(etag.replace(/"/g, ""))
+      .then((manifest) => {
+        if (cancelled || manifest === null) return
+        setApp(manifest)
       })
       .catch(() => {
-        // Without the build, a fresh URL per attempt still beats a cache hit on
-        // an older release: the server revalidates it and answers 304.
-        if (!cancelled) setAppBuild(`t${Date.now()}`)
+        // The download still works without the manifest: the archive is
+        // revalidated, so the plain URL is always the current build.
+        if (!cancelled) {
+          setApp({ version: "", build: "", url: appUrl, previous: null })
+        }
       })
     return () => {
       cancelled = true
     }
   }, [appUrl])
-
-  const appHref = appBuild ? `${appUrl}?v=${appBuild}` : appUrl
 
   return (
     <div className="flex h-screen w-full flex-col overflow-hidden bg-background">
@@ -147,8 +161,8 @@ function LocalRunner() {
               </p>
             ) : (
               <Button variant="outline" asChild>
-                <a href={appHref} download>
-                  {appBuild === null ? (
+                <a href={app?.url ?? appUrl} download>
+                  {app === null ? (
                     <LoaderCircle className="animate-spin" />
                   ) : (
                     <Download />
@@ -157,10 +171,19 @@ function LocalRunner() {
                 </a>
               </Button>
             )}
-            {appBuild && (
+            {app?.build && (
               <span className="text-muted-foreground font-mono text-xs">
-                build {appBuild}
+                build {app.build}
               </span>
+            )}
+            {app?.previous && (
+              <a
+                href={app.previous.url}
+                download
+                className="text-muted-foreground hover:text-foreground text-xs underline"
+              >
+                Previous build: v{app.previous.version}
+              </a>
             )}
           </section>
 
