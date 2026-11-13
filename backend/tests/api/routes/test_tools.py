@@ -42,7 +42,6 @@ def test_install_tool_sets_install_queued(monkeypatch, db: Session) -> None:
         tools_routes.install_tool(
             session=db,
             tool_id=tool.id,
-            current_user=SimpleNamespace(),
         )
     )
 
@@ -67,7 +66,6 @@ def test_install_tool_rejects_install_in_progress(
             tools_routes.install_tool(
                 session=db,
                 tool_id=tool.id,
-                current_user=SimpleNamespace(),
             )
         )
 
@@ -94,7 +92,6 @@ def test_update_tool_sets_update_queued_and_queues_the_task(
         tools_routes.update_tool_post_install(
             session=db,
             tool_id=tool.id,
-            current_user=SimpleNamespace(),
         )
     )
 
@@ -116,7 +113,6 @@ def test_update_tool_rejects_an_update_in_progress(db: Session) -> None:
             tools_routes.update_tool_post_install(
                 session=db,
                 tool_id=tool.id,
-                current_user=SimpleNamespace(),
             )
         )
 
@@ -135,7 +131,6 @@ def test_update_tool_rejects_a_tool_that_is_not_installed(db: Session) -> None:
             tools_routes.update_tool_post_install(
                 session=db,
                 tool_id=tool.id,
-                current_user=SimpleNamespace(),
             )
         )
 
@@ -151,7 +146,6 @@ def test_update_tool_rejects_a_tool_without_a_post_install(db: Session) -> None:
             tools_routes.update_tool_post_install(
                 session=db,
                 tool_id=tool.id,
-                current_user=SimpleNamespace(),
             )
         )
 
@@ -175,7 +169,6 @@ def test_enabled_tools_stay_visible_while_they_are_installed(db: Session) -> Non
 def test_create_tool_keeps_the_threads_range(db: Session) -> None:
     tool = tools_routes.create_tool(
         session=db,
-        current_user=create_random_user(db),
         tool_in=ToolCreate(
             name=f"tool-{random_lower_string()}",
             command="echo hello",
@@ -192,7 +185,6 @@ def test_create_tool_rejects_an_unusable_threads_range(db: Session) -> None:
     with pytest.raises(HTTPException) as exc_info:
         tools_routes.create_tool(
             session=db,
-            current_user=create_random_user(db),
             tool_in=ToolCreate(
                 name=f"tool-{random_lower_string()}",
                 command="echo hello",
@@ -209,7 +201,6 @@ def test_create_tool_rejects_a_minimum_above_the_default(db: Session) -> None:
     with pytest.raises(HTTPException) as exc_info:
         tools_routes.create_tool(
             session=db,
-            current_user=create_random_user(db),
             tool_in=ToolCreate(
                 name=f"tool-{random_lower_string()}",
                 command="echo hello",

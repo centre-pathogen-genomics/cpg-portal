@@ -4,12 +4,13 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import HTTPException, Query, status
 from jinja2 import Environment as JinjaEnvironment
 from sqlalchemy import and_, desc
 from sqlmodel import Session, func, select
 
 from app.api.deps import CurrentUser, SessionDep
+from app.api.permission_router import PermissionAPIRouter
 from app.core.file_types import FileTypeEnum
 from app.models import (
     File,
@@ -29,7 +30,7 @@ from app.scheduling import dispatch_pending_runs
 from app.utils import escape, flatten, input_file_name, validate_param_value
 from app.wsmanager import manager
 
-router = APIRouter()
+router = PermissionAPIRouter(resource="runs")
 
 RUN_SORT_COLUMNS = {
     "created_at": Run.created_at,
@@ -638,7 +639,7 @@ async def create_run(
     return run
 
 
-@router.patch("/cancel", response_model=Message)
+@router.patch("/cancel", action="cancel", response_model=Message)
 def cancel_runs(session: SessionDep, current_user: CurrentUser) -> Any:
     """
     Cancel all active runs with status pending or running.
@@ -768,7 +769,7 @@ def read_run(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> A
     return run_data
 
 
-@router.patch("/{id}/cancel", response_model=RunPublic)
+@router.patch("/{id}/cancel", action="cancel", response_model=RunPublic)
 def cancel_run(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
     """
     Cancel run.
@@ -863,7 +864,7 @@ def delete_run(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) ->
     return Message(message=f"Deleted run {id} and {deleted_files_count} files")
 
 
-@router.patch("/{id}/share", response_model=RunPublic)
+@router.patch("/{id}/share", action="share", response_model=RunPublic)
 def toggle_run_sharing(
     session: SessionDep, current_user: CurrentUser, id: uuid.UUID, shared: bool
 ) -> Any:

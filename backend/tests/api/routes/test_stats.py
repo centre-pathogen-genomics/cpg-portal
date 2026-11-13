@@ -81,7 +81,6 @@ def test_system_stats_date_filter_applies_to_runs(db: Session) -> None:
 
     stats = get_system_stats(
         session=db,
-        _current_user=user,
         start=now - timedelta(microseconds=1),
         end=now + timedelta(microseconds=1),
     )
@@ -152,14 +151,12 @@ def test_user_and_tool_drilldowns_return_filtered_stats(
 
     user_data = get_user_detail_stats(
         session=db,
-        _current_user=user,
         user_id=user.id,
         start=now - timedelta(days=1),
         end=now,
     )
     tool_data = get_tool_detail_stats(
         session=db,
-        _current_user=user,
         tool_id=tool.id,
         start=now - timedelta(days=1),
         end=now,

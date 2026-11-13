@@ -6,7 +6,7 @@ from typing import Any
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import jwt
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, status
+from fastapi import HTTPException, Query, UploadFile, status
 from fastapi.responses import FileResponse
 from jwt.exceptions import InvalidTokenError
 from sqlalchemy import and_, desc
@@ -14,7 +14,8 @@ from sqlalchemy.orm import selectinload
 from sqlmodel import func, select
 from starlette.background import BackgroundTask
 
-from app.api.deps import CurrentUser, FileDep, SessionDep, get_current_user
+from app.api.deps import CurrentUser, FileDep, SessionDep
+from app.api.permission_router import PermissionAPIRouter
 from app.core import security
 from app.core.config import settings
 from app.core.file_types import FileTypeEnum, FileTypeMetadata, file_types
@@ -38,7 +39,7 @@ from app.models import (
 )
 from app.utils import sanitise_shell_input
 
-router = APIRouter()
+router = PermissionAPIRouter(resource="files")
 
 BULK_DOWNLOAD_TOKEN_PREFIX = "files-download-all:"
 BULK_DOWNLOAD_NAME_PREFIX = "|name:"
@@ -135,11 +136,7 @@ def read_files(
     return FilesPublic(data=files, count=count)
 
 
-@router.get(
-    "/types",
-    response_model=dict[str, FileTypeMetadata],
-    dependencies=[Depends(get_current_user)],
-)
+@router.get("/types", response_model=dict[str, FileTypeMetadata])
 def get_files_allowed_types() -> Any:
     """
     Get allowed file types.
@@ -362,7 +359,7 @@ def create_group(
     return group_metadata
 
 
-@router.post("/{id}/ungroup", response_model=Message)
+@router.post("/{id}/ungroup", action="update", response_model=Message)
 def ungroup_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
     """
     Ungroup a file group, making all child files individual files again.
@@ -408,7 +405,7 @@ def read_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> 
     return file_metadata
 
 
-@router.post("{id}/save", response_model=FilePublic)
+@router.post("{id}/save", action="update", response_model=FilePublic)
 def save_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
     """
     Save file to My Files.
@@ -426,7 +423,7 @@ def save_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> 
 
 
 # Support both path styles to be resilient to client generation quirks
-@router.post("/{id}/copy", response_model=FilePublic)
+@router.post("/{id}/copy", action="create", response_model=FilePublic)
 def copy_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
     """
     Copy a file (or pair) the user has access to into their own saved files.
@@ -738,7 +735,7 @@ def _decode_bulk_download_token(token: str) -> tuple[list[uuid.UUID], str | None
         ) from exc
 
 
-@router.get("/downloads/all/{token}")
+@router.get("/downloads/all/{token}", public=True)
 def download_all_files_with_token(session: SessionDep, token: str) -> Any:
     """
     Download multiple files as a single ZIP archive by token.
@@ -795,7 +792,7 @@ def download_all_files_with_token(session: SessionDep, token: str) -> Any:
     )
 
 
-@router.patch("/{id}/rename", response_model=FilePublic)
+@router.patch("/{id}/rename", action="update", response_model=FilePublic)
 def rename_file(
     session: SessionDep,
     current_user: CurrentUser,
@@ -821,7 +818,7 @@ def rename_file(
     return file_metadata
 
 
-@router.get("/download/{token}")
+@router.get("/download/{token}", public=True)
 def download_file_with_token(file_metadata: FileDep) -> Any:
     """
     Download file by token.

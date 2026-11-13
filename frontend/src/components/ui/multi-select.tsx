@@ -23,6 +23,8 @@ export interface MultiSelectOption {
   value: string
   /** Files this option stands for, e.g. a group of two. Defaults to one. */
   unitCount?: number
+  /** Extra detail shown under the label, e.g. what a permission grants. */
+  description?: string
 }
 
 interface MultiSelectProps {
@@ -35,6 +37,8 @@ interface MultiSelectProps {
   emptyMessage?: string
   disabled?: boolean
   loading?: boolean
+  /** What one option is called in summaries, e.g. "file", "role". */
+  unitLabel?: string
   /**
    * Pick exactly one option: choosing replaces the current choice and closes
    * the list, so a single-value field looks like the multi-select one.
@@ -53,6 +57,7 @@ function MultiSelect({
   emptyMessage = "No options found.",
   disabled = false,
   loading = false,
+  unitLabel = "file",
   single = false,
   "aria-label": ariaLabel,
 }: MultiSelectProps) {
@@ -108,7 +113,7 @@ function MultiSelect({
                   ? placeholder
                   : single
                     ? (selectedOptions[0]?.label ?? placeholder)
-                    : `${selectedUnits} ${selectedUnits === 1 ? "file" : "files"} selected`}
+                    : `${selectedUnits} ${unitLabel}${selectedUnits === 1 ? "" : "s"} selected`}
             </span>
             <ChevronsUpDown className="text-muted-foreground opacity-60" />
           </Button>
@@ -128,7 +133,10 @@ function MultiSelect({
                     <CommandItem
                       key={option.value}
                       value={option.value}
-                      keywords={[option.label]}
+                      keywords={[
+                        option.label,
+                        ...(option.description ? [option.description] : []),
+                      ]}
                       aria-checked={selected}
                       onSelect={() => toggleValue(option.value)}
                     >
@@ -138,7 +146,17 @@ function MultiSelect({
                           selected ? "opacity-100" : "opacity-0",
                         )}
                       />
-                      <span className="truncate">{option.label}</span>
+                      <span className="flex min-w-0 flex-col">
+                        <span className="truncate">{option.label}</span>
+                        {option.description && (
+                          <span
+                            className="truncate text-xs text-muted-foreground"
+                            title={option.description}
+                          >
+                            {option.description}
+                          </span>
+                        )}
+                      </span>
                     </CommandItem>
                   )
                 })}
@@ -147,7 +165,8 @@ function MultiSelect({
             {value.length > 0 && (
               <div className="flex items-center justify-between border-t px-2 py-1.5">
                 <span className="text-xs text-muted-foreground">
-                  {selectedUnits} selected
+                  {selectedUnits} {unitLabel}
+                  {selectedUnits === 1 ? "" : "s"} selected
                 </span>
                 <Button
                   type="button"
@@ -167,7 +186,10 @@ function MultiSelect({
       {/* A single choice is already named on the trigger; repeating it in a
           chip would only duplicate it. */}
       {!single && selectedOptions.length > 0 && (
-        <div className="flex flex-wrap gap-1.5" aria-label="Selected files">
+        <div
+          className="flex flex-wrap gap-1.5"
+          aria-label={`Selected ${unitLabel}s`}
+        >
           {selectedOptions.map((option) => (
             <Badge
               key={option.value}

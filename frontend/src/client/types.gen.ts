@@ -423,6 +423,20 @@ export type ParamType = 'str' | 'int' | 'float' | 'bool' | 'enum' | 'file';
 export type ParamVisibilityOperator = 'equals' | 'not_equals' | 'in' | 'not_in' | 'greater_than' | 'greater_than_or_equal' | 'less_than' | 'less_than_or_equal' | 'truthy' | 'falsy' | 'is_set' | 'is_empty';
 
 /**
+ * PermissionPublic
+ */
+export type PermissionPublic = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Description
+     */
+    description: string;
+};
+
+/**
  * QueuePauseRequest
  */
 export type QueuePauseRequest = {
@@ -481,6 +495,38 @@ export type QueueStatus = {
 };
 
 /**
+ * RbacUserPublic
+ */
+export type RbacUserPublic = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Email
+     */
+    email: string;
+    /**
+     * Full Name
+     */
+    full_name: string | null;
+};
+
+/**
+ * RbacUsersPublic
+ */
+export type RbacUsersPublic = {
+    /**
+     * Data
+     */
+    data: Array<RbacUserPublic>;
+    /**
+     * Count
+     */
+    count: number;
+};
+
+/**
  * RecentRun
  */
 export type RecentRun = {
@@ -513,6 +559,82 @@ export type RecentRun = {
      * Finished At
      */
     finished_at?: string | null;
+};
+
+/**
+ * RoleCreate
+ */
+export type RoleCreate = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Description
+     */
+    description?: string | null;
+    /**
+     * Permissions
+     */
+    permissions?: Array<string>;
+};
+
+/**
+ * RolePublic
+ */
+export type RolePublic = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Description
+     */
+    description?: string | null;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Is Default
+     */
+    is_default: boolean;
+    /**
+     * Permissions
+     */
+    permissions: Array<string>;
+};
+
+/**
+ * RoleUpdate
+ */
+export type RoleUpdate = {
+    /**
+     * Name
+     */
+    name?: string | null;
+    /**
+     * Description
+     */
+    description?: string | null;
+    /**
+     * Permissions
+     */
+    permissions?: Array<string> | null;
+};
+
+/**
+ * RolesPublic
+ */
+export type RolesPublic = {
+    /**
+     * Data
+     */
+    data: Array<RolePublic>;
+    /**
+     * Count
+     */
+    count: number;
 };
 
 /**
@@ -1367,6 +1489,42 @@ export type UpdatePassword = {
 };
 
 /**
+ * UserAccessPublic
+ */
+export type UserAccessPublic = {
+    /**
+     * User Id
+     */
+    user_id: string;
+    /**
+     * Role Ids
+     */
+    role_ids: Array<string>;
+    /**
+     * Permissions
+     */
+    permissions: Array<string>;
+    /**
+     * Effective Permissions
+     */
+    effective_permissions: Array<string>;
+};
+
+/**
+ * UserAccessUpdate
+ */
+export type UserAccessUpdate = {
+    /**
+     * Role Ids
+     */
+    role_ids: Array<string>;
+    /**
+     * Permissions
+     */
+    permissions: Array<string>;
+};
+
+/**
  * UserCreate
  */
 export type UserCreate = {
@@ -1423,6 +1581,56 @@ export type UserDetailStats = {
      * Recent Runs
      */
     recent_runs: Array<RecentRun>;
+};
+
+/**
+ * UserMe
+ */
+export type UserMe = {
+    /**
+     * Email
+     */
+    email: string;
+    /**
+     * Is Active
+     */
+    is_active?: boolean;
+    /**
+     * Is Superuser
+     */
+    is_superuser?: boolean;
+    /**
+     * Full Name
+     */
+    full_name?: string | null;
+    /**
+     * Max Runs
+     */
+    max_runs?: number;
+    /**
+     * Max Cpus
+     */
+    max_cpus?: number;
+    /**
+     * Max Storage
+     */
+    max_storage?: number;
+    /**
+     * Max Storage Files
+     */
+    max_storage_files?: number;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Permissions
+     */
+    permissions?: Array<string>;
 };
 
 /**
@@ -1731,36 +1939,6 @@ export type LoginResetPasswordResponses = {
 
 export type LoginResetPasswordResponse = LoginResetPasswordResponses[keyof LoginResetPasswordResponses];
 
-export type LoginRecoverPasswordHtmlContentData = {
-    body?: never;
-    path: {
-        /**
-         * Email
-         */
-        email: string;
-    };
-    query?: never;
-    url: '/api/v1/password-recovery-html-content/{email}';
-};
-
-export type LoginRecoverPasswordHtmlContentErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type LoginRecoverPasswordHtmlContentError = LoginRecoverPasswordHtmlContentErrors[keyof LoginRecoverPasswordHtmlContentErrors];
-
-export type LoginRecoverPasswordHtmlContentResponses = {
-    /**
-     * Successful Response
-     */
-    200: string;
-};
-
-export type LoginRecoverPasswordHtmlContentResponse = LoginRecoverPasswordHtmlContentResponses[keyof LoginRecoverPasswordHtmlContentResponses];
-
 export type UsersReadUsersData = {
     body?: never;
     path?: never;
@@ -1847,7 +2025,7 @@ export type UsersReadUserMeResponses = {
     /**
      * Successful Response
      */
-    200: UserPublic;
+    200: UserMe;
 };
 
 export type UsersReadUserMeResponse = UsersReadUserMeResponses[keyof UsersReadUserMeResponses];
@@ -3857,6 +4035,218 @@ export type AdminResumeQueueResponses = {
 };
 
 export type AdminResumeQueueResponse = AdminResumeQueueResponses[keyof AdminResumeQueueResponses];
+
+export type RbacReadPermissionsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/rbac/permissions';
+};
+
+export type RbacReadPermissionsResponses = {
+    /**
+     * Response Rbac-Read Permissions
+     * Successful Response
+     */
+    200: Array<PermissionPublic>;
+};
+
+export type RbacReadPermissionsResponse = RbacReadPermissionsResponses[keyof RbacReadPermissionsResponses];
+
+export type RbacReadRolesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/rbac/roles';
+};
+
+export type RbacReadRolesResponses = {
+    /**
+     * Successful Response
+     */
+    200: RolesPublic;
+};
+
+export type RbacReadRolesResponse = RbacReadRolesResponses[keyof RbacReadRolesResponses];
+
+export type RbacCreateRoleData = {
+    body: RoleCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/rbac/roles';
+};
+
+export type RbacCreateRoleErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RbacCreateRoleError = RbacCreateRoleErrors[keyof RbacCreateRoleErrors];
+
+export type RbacCreateRoleResponses = {
+    /**
+     * Successful Response
+     */
+    200: RolePublic;
+};
+
+export type RbacCreateRoleResponse = RbacCreateRoleResponses[keyof RbacCreateRoleResponses];
+
+export type RbacDeleteRoleData = {
+    body?: never;
+    path: {
+        /**
+         * Role Id
+         */
+        role_id: string;
+    };
+    query?: never;
+    url: '/api/v1/rbac/roles/{role_id}';
+};
+
+export type RbacDeleteRoleErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RbacDeleteRoleError = RbacDeleteRoleErrors[keyof RbacDeleteRoleErrors];
+
+export type RbacDeleteRoleResponses = {
+    /**
+     * Successful Response
+     */
+    200: Message;
+};
+
+export type RbacDeleteRoleResponse = RbacDeleteRoleResponses[keyof RbacDeleteRoleResponses];
+
+export type RbacUpdateRoleData = {
+    body: RoleUpdate;
+    path: {
+        /**
+         * Role Id
+         */
+        role_id: string;
+    };
+    query?: never;
+    url: '/api/v1/rbac/roles/{role_id}';
+};
+
+export type RbacUpdateRoleErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RbacUpdateRoleError = RbacUpdateRoleErrors[keyof RbacUpdateRoleErrors];
+
+export type RbacUpdateRoleResponses = {
+    /**
+     * Successful Response
+     */
+    200: RolePublic;
+};
+
+export type RbacUpdateRoleResponse = RbacUpdateRoleResponses[keyof RbacUpdateRoleResponses];
+
+export type RbacReadRbacUsersData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Skip
+         */
+        skip?: number;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v1/rbac/users';
+};
+
+export type RbacReadRbacUsersErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RbacReadRbacUsersError = RbacReadRbacUsersErrors[keyof RbacReadRbacUsersErrors];
+
+export type RbacReadRbacUsersResponses = {
+    /**
+     * Successful Response
+     */
+    200: RbacUsersPublic;
+};
+
+export type RbacReadRbacUsersResponse = RbacReadRbacUsersResponses[keyof RbacReadRbacUsersResponses];
+
+export type RbacReadUserAccessData = {
+    body?: never;
+    path: {
+        /**
+         * User Id
+         */
+        user_id: string;
+    };
+    query?: never;
+    url: '/api/v1/rbac/users/{user_id}/access';
+};
+
+export type RbacReadUserAccessErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RbacReadUserAccessError = RbacReadUserAccessErrors[keyof RbacReadUserAccessErrors];
+
+export type RbacReadUserAccessResponses = {
+    /**
+     * Successful Response
+     */
+    200: UserAccessPublic;
+};
+
+export type RbacReadUserAccessResponse = RbacReadUserAccessResponses[keyof RbacReadUserAccessResponses];
+
+export type RbacUpdateUserAccessData = {
+    body: UserAccessUpdate;
+    path: {
+        /**
+         * User Id
+         */
+        user_id: string;
+    };
+    query?: never;
+    url: '/api/v1/rbac/users/{user_id}/access';
+};
+
+export type RbacUpdateUserAccessErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RbacUpdateUserAccessError = RbacUpdateUserAccessErrors[keyof RbacUpdateUserAccessErrors];
+
+export type RbacUpdateUserAccessResponses = {
+    /**
+     * Successful Response
+     */
+    200: UserAccessPublic;
+};
+
+export type RbacUpdateUserAccessResponse = RbacUpdateUserAccessResponses[keyof RbacUpdateUserAccessResponses];
 
 export type ClientOptions = {
     baseURL: `${string}://${string}` | (string & {});

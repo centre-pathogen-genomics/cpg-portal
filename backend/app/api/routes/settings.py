@@ -1,11 +1,11 @@
-from fastapi import APIRouter
 from sqlmodel import SQLModel
 
-from app.api.deps import CurrentUser, SessionDep, SuperUser
+from app.api.deps import CurrentUser, SessionDep
+from app.api.permission_router import PermissionAPIRouter
 from app.core.app_settings import get_or_create_app_settings
 from app.models import AppSettingPublic, AppSettingUpdate
 
-router = APIRouter()
+router = PermissionAPIRouter(resource="settings")
 
 
 class QueuePublicStatus(SQLModel):
@@ -13,7 +13,7 @@ class QueuePublicStatus(SQLModel):
     queue_pause_reason: str | None = None
 
 
-@router.get("/queue", response_model=QueuePublicStatus)
+@router.get("/queue", action="read_queue", response_model=QueuePublicStatus)
 def read_queue_drain_status(
     session: SessionDep,
     _current_user: CurrentUser,
@@ -32,7 +32,7 @@ def read_queue_drain_status(
 
 
 @router.get("/", response_model=AppSettingPublic)
-def read_app_settings(session: SessionDep, _current_user: SuperUser) -> AppSettingPublic:
+def read_app_settings(session: SessionDep) -> AppSettingPublic:
     """
     Retrieve application settings.
     """
@@ -42,7 +42,6 @@ def read_app_settings(session: SessionDep, _current_user: SuperUser) -> AppSetti
 @router.patch("/", response_model=AppSettingPublic)
 def update_app_settings(
     session: SessionDep,
-    _current_user: SuperUser,
     settings_in: AppSettingUpdate,
 ) -> AppSettingPublic:
     """
