@@ -1,9 +1,8 @@
 import { FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { humanReadableFileSize } from "@/utils";
+import { fileName, humanReadableFileSize } from "@/lib/format";
 import type { RunFile } from "../contracts";
 import { openPath, revealPath } from "../lib/desktop";
-import { fileName } from "../lib/format";
 
 /**
  * What the run produced, one row per file, like the portal's Files section.

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import type { FileTypesMap } from "../contracts"
 import { filePathOf, pickFiles } from "../lib/desktop"
-import { fileName } from "../lib/format"
+import { fileName } from "@/lib/format"
 
 function extensionsFor(param: Param, fileTypes: FileTypesMap): string[] {
   return (param.allowed_file_types ?? []).flatMap(

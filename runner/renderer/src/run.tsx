@@ -12,6 +12,7 @@ import { RunResults } from "./components/RunResults";
 import { ToolImage, useToolImages } from "./components/ToolImage";
 import { ToolSidebar } from "./components/ToolSidebar";
 import {
+  type FileTypesMap,
   isRunActive,
   type RunLogMessage,
   type RunRecord,
@@ -32,6 +33,7 @@ export function RunPage({
   const [record, setRecord] = useState<RunRecord | null>(null);
   const [tool, setTool] = useState<ToolConfig | null>(null);
   const [environment, setEnvironment] = useState<string | null>(null);
+  const [fileTypes, setFileTypes] = useState<FileTypesMap>({});
   const [logs, setLogs] = useState<string[]>([]);
   const [leaveAction, setLeaveAction] = useState<{
     go: () => void | Promise<void>;
@@ -54,6 +56,11 @@ export function RunPage({
     void api
       .get<{ yml: string | null }>("/environment")
       .then((payload) => setEnvironment(payload.yml))
+      .catch(() => {});
+    // The backend's own extension table decides what each output is.
+    void api
+      .get<FileTypesMap>("/file-types")
+      .then(setFileTypes)
       .catch(() => {});
   }, [refresh]);
 
@@ -245,7 +252,11 @@ export function RunPage({
                       : undefined
                   }
                 />
-                <RunResults runId={runId} files={record.files ?? []} />
+                <RunResults
+                  runId={runId}
+                  files={record.files ?? []}
+                  fileTypes={fileTypes}
+                />
               </>
             )}
 

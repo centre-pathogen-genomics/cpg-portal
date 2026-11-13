@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { RouterProvider } from "@tanstack/react-router"
 import ReactDOM from "react-dom/client"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -57,11 +58,18 @@ window.cpgRunner?.onToolRemoved?.((target) => {
 function start(): void {
   const container = document.getElementById("root")
   if (!container) return
+  // The portal's file renderers read their bytes through react-query, so the
+  // runner needs a cache of its own; a failed read is shown, never retried.
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  })
   ReactDOM.createRoot(container).render(
     <ThemeProvider>
-      <RouterProvider router={router} />
-      <Toaster closeButton />
-      <UpdateBanner />
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+        <Toaster closeButton />
+        <UpdateBanner />
+      </QueryClientProvider>
     </ThemeProvider>,
   )
   // Tell the main process the window is drawn, so the splash can close.
