@@ -21,6 +21,9 @@ class Settings(BaseModel):
     # inputs and leftovers, so removing it once the outputs are copied is the
     # useful default.
     clean_work_dir: bool = True
+    # A run writes into <output_dir>/<run name>. When that folder is already
+    # there, the run is refused unless this says to replace it.
+    overwrite_output: bool = False
 
 
 class StateStore:

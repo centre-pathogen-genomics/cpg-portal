@@ -82,6 +82,7 @@ export type Settings = {
   output_dir: string
   network: boolean
   clean_work_dir: boolean
+  overwrite_output: boolean
 }
 
 export type DoctorAction = {

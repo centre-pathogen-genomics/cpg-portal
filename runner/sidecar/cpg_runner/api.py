@@ -30,6 +30,7 @@ from .installer import InstallBlocked, InstallAlreadyRunning, Installer
 from .runs import (
     MAX_CPUS,
     RunConflict,
+    RunFolderExists,
     RunManager,
     RunNotFound,
     TERMINAL_STATUSES,
@@ -42,6 +43,7 @@ class SettingsUpdate(BaseModel):
     output_dir: str
     network: bool = True
     clean_work_dir: bool = True
+    overwrite_output: bool = False
 
 
 class RunRequest(BaseModel):
@@ -284,6 +286,7 @@ def create_app(
             output_dir=payload.output_dir,
             network=payload.network,
             clean_work_dir=payload.clean_work_dir,
+            overwrite_output=payload.overwrite_output,
         )
         store.save_settings(settings)
         return settings.model_dump()
@@ -308,6 +311,8 @@ def create_app(
             )
         try:
             record = runs.start(payload.params, payload.cpus, name=payload.name or "")
+        except RunFolderExists as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         return record.model_dump()

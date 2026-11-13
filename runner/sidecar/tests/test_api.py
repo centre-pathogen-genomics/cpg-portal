@@ -126,6 +126,12 @@ def test_run_creation_validation_and_creation(tmp_path):
     assert response.status_code == 400
     assert response.json()["detail"] == "Missing required parameter: x"
 
+    response = client.post(
+        "/api/runs", headers=HEADERS, json={"params": {"conflict": True}, "cpus": 1}
+    )
+    assert response.status_code == 409
+    assert "already exists" in response.json()["detail"]
+
     installer.state = "image_missing"
     response = client.post("/api/runs", headers=HEADERS, json={"params": {}, "cpus": 1})
     assert response.status_code == 409
@@ -154,11 +160,18 @@ def test_settings_are_validated_and_saved(tmp_path):
     response = client.put(
         "/api/settings",
         headers=HEADERS,
-        json={"cpus": 2, "output_dir": "/tmp/out", "network": False},
+        json={
+            "cpus": 2,
+            "output_dir": "/tmp/out",
+            "network": False,
+            "overwrite_output": True,
+        },
     )
     assert response.status_code == 200
     assert response.json()["cpus"] == 2
-    assert client.get("/api/settings", headers=HEADERS).json()["network"] is False
+    saved = client.get("/api/settings", headers=HEADERS).json()
+    assert saved["network"] is False
+    assert saved["overwrite_output"] is True
 
 
 def test_tool_and_file_types(tmp_path):

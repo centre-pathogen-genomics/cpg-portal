@@ -59,7 +59,7 @@ function start(): void {
   ReactDOM.createRoot(container).render(
     <ThemeProvider>
       <RouterProvider router={router} />
-      <Toaster />
+      <Toaster closeButton />
     </ThemeProvider>,
   )
   // Tell the main process the window is drawn, so the splash can close.

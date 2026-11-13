@@ -2,8 +2,9 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 
-from cpg_runner import runs as runs_module
-from cpg_runner.runs import RunManager, TERMINAL_STATUSES
+import pytest
+
+from cpg_runner.runs import RunFolderExists, RunManager, TERMINAL_STATUSES
 from cpg_runner.state import StateStore
 from support import BlockingDocker, WritingDocker, make_runner, make_tool, wait_for
 
@@ -54,7 +55,7 @@ def test_completed_run_copies_outputs_and_streams_status(tmp_path):
     assert "line one" in record.stdout
     assert record.command == "printf hi > out.txt"
     output = Path(record.output_dir)
-    assert output.name.startswith("my_tool-")
+    assert output.name == record.name
     assert (output / "results" / "out.txt").read_text() == "hi"
     assert record.files[0].name == "out.txt"
     assert record.files[0].size == 2
@@ -90,15 +91,51 @@ def test_cancel_removes_container_and_marks_cancelled(tmp_path):
     assert f"cpg-runner-run-{record.id}" in docker.removed
 
 
-def test_output_folder_is_deduplicated(tmp_path, monkeypatch):
-    monkeypatch.setattr(runs_module, "_timestamp", lambda: "20260101-000000")
+def test_output_folder_is_named_after_the_run(tmp_path):
     docker = WritingDocker()
     manager = _manager(tmp_path, make_tool(), docker)
-    first = manager.start({}, 1)
+    record = manager.start({}, 1, name="first pass")
+    wait_for(lambda: manager.get(record.id).status in TERMINAL_STATUSES)
+    output = Path(manager.get(record.id).output_dir)
+    assert output.name == "first pass"
+    assert output.parent == Path(manager.store.load_settings().output_dir)
+
+
+def test_a_run_name_is_made_safe_for_a_folder(tmp_path):
+    docker = WritingDocker()
+    manager = _manager(tmp_path, make_tool(), docker)
+    record = manager.start({}, 1, name="run:1/2")
+    wait_for(lambda: manager.get(record.id).status in TERMINAL_STATUSES)
+    assert Path(manager.get(record.id).output_dir).name == "run_1_2"
+
+
+def test_a_duplicate_run_name_is_refused(tmp_path):
+    docker = WritingDocker()
+    manager = _manager(tmp_path, make_tool(), docker)
+    first = manager.start({}, 1, name="same")
     wait_for(lambda: manager.get(first.id).status in TERMINAL_STATUSES)
-    second = manager.start({}, 1)
+
+    with pytest.raises(RunFolderExists):
+        manager.start({}, 1, name="same")
+
+
+def test_overwrite_output_replaces_the_folder(tmp_path):
+    docker = WritingDocker()
+    manager = _manager(tmp_path, make_tool(), docker)
+    first = manager.start({}, 1, name="same")
+    wait_for(lambda: manager.get(first.id).status in TERMINAL_STATUSES)
+    leftover = Path(first.output_dir) / "leftover.txt"
+    leftover.write_text("old")
+    manager.store.save_settings(
+        manager.store.load_settings().model_copy(update={"overwrite_output": True})
+    )
+
+    second = manager.start({}, 1, name="same")
     wait_for(lambda: manager.get(second.id).status in TERMINAL_STATUSES)
-    assert Path(manager.get(second.id).output_dir).name == ("my_tool-20260101-000000-2")
+    assert manager.get(second.id).status == "completed"
+    assert Path(second.output_dir) == Path(first.output_dir)
+    assert not leftover.exists()
+    assert (Path(second.output_dir) / "results" / "out.txt").is_file()
 
 
 def test_input_files_are_mounted_into_work(tmp_path):

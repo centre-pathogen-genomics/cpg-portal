@@ -9,7 +9,13 @@ from pathlib import Path
 from cpg_runner.config import RunnerConfig, ToolConfig
 from cpg_runner.events import EventChannel
 from cpg_runner.installer import InstallBlocked, InstallAlreadyRunning
-from cpg_runner.runs import RunConflict, RunNotFound, RunRecord, TERMINAL_STATUSES
+from cpg_runner.runs import (
+    RunConflict,
+    RunFolderExists,
+    RunNotFound,
+    RunRecord,
+    TERMINAL_STATUSES,
+)
 
 
 def make_tool(**overrides) -> ToolConfig:
@@ -220,6 +226,10 @@ class FakeRunManager:
     def start(self, params: dict, cpus: int, *, name: str = "") -> RunRecord:
         if params.get("fail"):
             raise ValueError("Missing required parameter: x")
+        if params.get("conflict"):
+            raise RunFolderExists(
+                'A folder named "my run" already exists in /tmp/runs'
+            )
         record = RunRecord(
             id=str(uuid.uuid4()),
             name=name or "unnamed-run",

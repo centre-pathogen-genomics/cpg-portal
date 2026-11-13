@@ -236,8 +236,12 @@ export function ToolPage({ toolId }: { toolId: string }) {
       if (error instanceof ApiError && error.status === 409) {
         const doctor = (error.payload as { doctor?: DoctorReport } | null)
           ?.doctor;
-        if (doctor) setForcedDoctor(doctor);
-        setInstallDismissed(false);
+        // Only an install blocker reopens the install dialog; a folder that
+        // already exists is just reported in a toast.
+        if (doctor) {
+          setForcedDoctor(doctor);
+          setInstallDismissed(false);
+        }
         void refreshStatus().catch(() => {});
       }
       const message = errorMessage(error);
@@ -506,7 +510,7 @@ export function ToolPage({ toolId }: { toolId: string }) {
                           role="status"
                         >
                           <LoaderCircle className="size-4 animate-spin" />
-                          Loading {tool.name}…
+                          Loading…
                         </p>
                       ) : (
                         params
@@ -612,6 +616,29 @@ export function ToolPage({ toolId }: { toolId: string }) {
                       onCheckedChange={(checked) =>
                         void updateSettings({
                           clean_work_dir: checked === true,
+                        })
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <Label htmlFor="runner-overwrite-output">
+                        Overwrite existing folder
+                      </Label>
+                      <p className="text-muted-foreground text-xs">
+                        Replace the output folder if it already exists. Only
+                        applies to named runs; unnamed runs always create a new
+                        folder.
+                      </p>
+                    </div>
+                    <Switch
+                      id="runner-overwrite-output"
+                      checked={settings.overwrite_output}
+                      disabled={!doctorReady}
+                      onCheckedChange={(checked) =>
+                        void updateSettings({
+                          overwrite_output: checked === true,
                         })
                       }
                     />

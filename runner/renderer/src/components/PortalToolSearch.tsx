@@ -85,6 +85,7 @@ export function PortalToolSearch({
           placeholder="Search the portal"
           aria-label="Search the portal tools"
           className="pl-8"
+          disabled={state === "offline"}
         />
       </div>
 

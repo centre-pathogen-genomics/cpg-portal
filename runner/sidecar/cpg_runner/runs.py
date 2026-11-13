@@ -13,7 +13,6 @@ from app.run_spec import (
     render_command,
     render_target_path,
     render_template,
-    sanitise_shell_input,
 )
 from app.sandbox import conda_activation
 from pydantic import BaseModel, Field
@@ -67,12 +66,25 @@ class RunConflict(Exception):
     pass
 
 
+class RunFolderExists(Exception):
+    """The run's output folder is already there and may not be replaced."""
+
+
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _timestamp() -> str:
-    return datetime.now().strftime("%Y%m%d-%H%M%S")
+# Characters that cannot appear in a folder name on macOS, Windows or Linux.
+_UNSAFE_FOLDER_CHARS = frozenset('/\\:*?"<>|')
+
+
+def folder_name(name: str) -> str:
+    """A run name as a folder name: no separators, no control characters."""
+    cleaned = "".join(
+        "_" if char in _UNSAFE_FOLDER_CHARS or ord(char) < 32 else char
+        for char in name
+    ).strip()
+    return cleaned.strip(".") or "run"
 
 
 def default_name(tool: ToolConfig, records: dict[str, RunRecord]) -> str:
@@ -173,9 +185,11 @@ class RunManager:
         actual_cpus = resolve_cpus(self.tool, resolved, cpus)
 
         run_id = str(uuid.uuid4())
+        record_name = name.strip()[:255] or default_name(self.tool, self._records)
+        self._check_output_dir(record_name)
         record = RunRecord(
             id=run_id,
-            name=name.strip()[:255] or default_name(self.tool, self._records),
+            name=record_name,
             status="pending",
             params=resolved,
             param_files={name: list(paths) for name, paths in file_paths.items()},
@@ -233,7 +247,7 @@ class RunManager:
         if run_id in self._cancelled:
             return
         try:
-            output_dir = self._new_output_dir()
+            output_dir = self._new_output_dir(record)
             record.output_dir = str(output_dir)
             dirs = self._prepare_dirs(record, output_dir)
             input_files = self._input_files(record)
@@ -283,18 +297,40 @@ class RunManager:
 
         self._finish(record, "completed", exit_code=exit_code)
 
-    def _new_output_dir(self) -> Path:
-        """The folder this run owns: its outputs, report and work folder."""
+    def _check_output_dir(self, name: str) -> None:
+        """Refuse a run whose folder is already there, before it starts."""
         settings = self.store.load_settings()
-        base = (
-            Path(settings.output_dir)
-            / f"{sanitise_shell_input(self.tool.name)}-{_timestamp()}"
-        )
-        output_dir = base
-        index = 2
-        while output_dir.exists():
-            output_dir = base.with_name(f"{base.name}-{index}")
-            index += 1
+        folder = Path(settings.output_dir) / folder_name(name)
+        if folder.exists() and not settings.overwrite_output:
+            raise RunFolderExists(
+                f'A folder named "{folder.name}" already exists in '
+                f"{folder.parent} — rename the run, or turn on "
+                '"Overwrite existing folder"'
+            )
+
+    def _new_output_dir(self, record: RunRecord) -> Path:
+        """The folder this run owns: its outputs, report and work folder.
+
+        It carries the run's name, so a second run of that name either replaces
+        what is already there or does not start at all.
+        """
+        settings = self.store.load_settings()
+        output_dir = Path(settings.output_dir) / folder_name(record.name)
+        if output_dir.exists():
+            if not settings.overwrite_output:
+                raise RuntimeError(
+                    f'A folder named "{output_dir.name}" already exists in '
+                    f"{output_dir.parent}"
+                )
+            try:
+                if output_dir.is_symlink() or not output_dir.is_dir():
+                    output_dir.unlink()
+                else:
+                    shutil.rmtree(output_dir)
+            except OSError as exc:
+                raise RuntimeError(
+                    f"Could not replace the folder: {output_dir}"
+                ) from exc
         try:
             output_dir.mkdir(parents=True, exist_ok=True)
         except OSError as exc:
