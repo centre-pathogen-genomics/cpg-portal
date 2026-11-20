@@ -1,9 +1,10 @@
-import { useSuspenseQuery } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import { Suspense, useState } from "react"
 import { ErrorBoundary } from "react-error-boundary"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import type { RunPublic } from "../../../client"
 import { readRunOptions } from "../../../client/@tanstack/react-query.gen"
 import AISummaryButton from "../../../components/AI/AISummary"
 import ReactMarkdown from "../../../components/Common/Markdown"
@@ -25,18 +26,38 @@ export const Route = createFileRoute("/_layout/runs/$runid")({
   component: Run,
 })
 
+function RunDetailSkeleton() {
+  return (
+    <div className="w-full max-w-5xl space-y-4 justify-self-center px-2">
+      <Skeleton className="h-5 w-40" />
+      <Skeleton className="h-10 w-full" />
+      <Skeleton className="h-[200px] w-full" />
+    </div>
+  )
+}
+
 function RunDetail() {
   const { runid } = Route.useParams()
-  const navigate = useNavigate({ from: Route.fullPath })
-  const { user } = useAuth()
-  const { data: run } = useSuspenseQuery({
+  const { data: run, isPending } = useQuery({
     ...readRunOptions({ path: { id: runid } }),
     refetchInterval: (query) =>
       ["running", "pending"].includes(query.state.data?.status || "")
         ? 3000
         : false,
     refetchIntervalInBackground: true,
+    throwOnError: true,
   })
+
+  if (isPending || !run) {
+    return <RunDetailSkeleton />
+  }
+
+  return <RunDetailContent run={run} />
+}
+
+function RunDetailContent({ run }: { run: RunPublic }) {
+  const navigate = useNavigate({ from: Route.fullPath })
+  const { user } = useAuth()
   const [llmSummary, setLlmSummary] = useState<string | null>(
     run.llm_summary || null,
   )
@@ -126,11 +147,15 @@ function RunDetail() {
                 )}
                 {fileTabs.map((file) => (
                   <TabsContent value={file.id} key={file.id} className="p-4">
-                    <FileRenderer
-                      file={file}
-                      showUnsupportedMessage={false}
-                      showTooLargeMessage
-                    />
+                    <Suspense
+                      fallback={<Skeleton className="h-[240px] w-full" />}
+                    >
+                      <FileRenderer
+                        file={file}
+                        showUnsupportedMessage={false}
+                        showTooLargeMessage
+                      />
+                    </Suspense>
                   </TabsContent>
                 ))}
               </Tabs>
@@ -146,17 +171,15 @@ function RunDetail() {
 function Run() {
   return (
     <div className="w-full">
-      <Suspense fallback={<Skeleton className="h-5" />}>
-        <ErrorBoundary
-          fallbackRender={({ error }) => (
-            <div>
-              Error: {error instanceof Error ? error.message : String(error)}
-            </div>
-          )}
-        >
-          <RunDetail />
-        </ErrorBoundary>
-      </Suspense>
+      <ErrorBoundary
+        fallbackRender={({ error }) => (
+          <div>
+            Error: {error instanceof Error ? error.message : String(error)}
+          </div>
+        )}
+      >
+        <RunDetail />
+      </ErrorBoundary>
     </div>
   )
 }

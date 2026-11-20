@@ -401,6 +401,33 @@ export const FilePublicChildSchema = {
     title: 'FilePublicChild'
 } as const;
 
+export const FileRendererSchema = {
+    properties: {
+        name: {
+            type: 'string',
+            title: 'Name'
+        },
+        url: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Url'
+        }
+    },
+    type: 'object',
+    required: ['name'],
+    title: 'FileRenderer',
+    description: `A viewer that can draw a file type.
+
+The name is the identifier shared with the frontend renderer registry.
+External renderers record the project that implements them.`
+} as const;
+
 export const FileStatsSchema = {
     properties: {
         total: {
@@ -454,7 +481,7 @@ export const FileStatsSchema = {
 
 export const FileTypeEnumSchema = {
     type: 'string',
-    enum: ['bam', 'beast', 'bed', 'csv', 'docx', 'fasta', 'fasta.gz', 'fastq', 'fastq.gz', 'geojson', 'gff', 'genbank', 'graphml', 'gzip', 'hdf5', 'hs', 'html', 'iqtree', 'jpeg', 'json', 'jsonl', 'log', 'md', 'newick', 'nexus', 'pdb', 'pdf', 'phy', 'text', 'png', 'rmd', 'sam', 'svg', 'tiff', 'toml', 'tsv', 'vega', 'vega-lite', 'vcf', 'vcf.gz', 'xlsx', 'xml', 'yaml', 'zip', 'pair', 'unknown'],
+    enum: ['bam', 'beast', 'bed', 'csv', 'docx', 'fasta', 'fasta.gz', 'fastq', 'fastq.gz', 'geojson', 'gff', 'genbank', 'gfa', 'gfa.gz', 'graphml', 'gzip', 'hdf5', 'hs', 'html', 'iqtree', 'jpeg', 'json', 'jsonl', 'log', 'md', 'newick', 'nexus', 'pdb', 'pdf', 'phy', 'text', 'png', 'rmd', 'sam', 'svg', 'tiff', 'toml', 'tsv', 'vega', 'vega-lite', 'vcf', 'vcf.gz', 'xlsx', 'xml', 'yaml', 'zip', 'pair', 'unknown'],
     title: 'FileTypeEnum'
 } as const;
 
@@ -477,6 +504,24 @@ export const FileTypeMetadataSchema = {
             },
             type: 'array',
             title: 'Mime Types'
+        },
+        parent: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Parent'
+        },
+        renderers: {
+            items: {
+                '$ref': '#/components/schemas/FileRenderer'
+            },
+            type: 'array',
+            title: 'Renderers'
         }
     },
     type: 'object',

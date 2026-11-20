@@ -1,4 +1,4 @@
-import { useSuspenseQuery } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { Suspense } from "react"
 import { ErrorBoundary } from "react-error-boundary"
@@ -119,12 +119,36 @@ function FileMetadata({ file }: { file: FilePublic }) {
   )
 }
 
+function FileDetailSkeleton() {
+  return (
+    <div className="w-full max-w-5xl space-y-4 justify-self-center px-2">
+      <Skeleton className="h-5 w-40" />
+      <Skeleton className="h-10 w-full" />
+      <Skeleton className="h-[200px] w-full" />
+    </div>
+  )
+}
+
+function PreviewSkeleton() {
+  return (
+    <div className="flex h-[240px] w-full items-center justify-center rounded-md border bg-muted/30">
+      <p className="text-muted-foreground text-sm">Loading preview…</p>
+    </div>
+  )
+}
+
 function FileDetailContent() {
   const { fileId } = Route.useParams()
   const { groupId } = Route.useSearch()
-  const { data: file } = useSuspenseQuery({
+  const { data: file, isPending } = useQuery({
     ...readFileOptions({ path: { id: fileId } }),
+    throwOnError: true,
   })
+
+  if (isPending || !file) {
+    return <FileDetailSkeleton />
+  }
+
   return (
     <div className="w-full max-w-5xl justify-self-center overflow-x-hidden px-2">
       <div className="flex items-center justify-between gap-2">
@@ -160,7 +184,9 @@ function FileDetailContent() {
       {!file.is_group && (
         <div className="mb-2">
           <h2 className="mb-4 text-lg font-semibold">Preview</h2>
-          <FileRenderer file={file} />
+          <Suspense fallback={<PreviewSkeleton />}>
+            <FileRenderer file={file} />
+          </Suspense>
         </div>
       )}
       {file.is_group && (
@@ -178,25 +204,15 @@ function FileDetailContent() {
 function FileDetail() {
   return (
     <div className="w-full">
-      <Suspense
-        fallback={
-          <div className="space-y-4">
-            <Skeleton className="h-5" />
-            <Skeleton className="h-10" />
-            <Skeleton className="h-[200px]" />
+      <ErrorBoundary
+        fallbackRender={({ error }) => (
+          <div className="text-destructive">
+            Error: {error instanceof Error ? error.message : String(error)}
           </div>
-        }
+        )}
       >
-        <ErrorBoundary
-          fallbackRender={({ error }) => (
-            <div className="text-destructive">
-              Error: {error instanceof Error ? error.message : String(error)}
-            </div>
-          )}
-        >
-          <FileDetailContent />
-        </ErrorBoundary>
-      </Suspense>
+        <FileDetailContent />
+      </ErrorBoundary>
     </div>
   )
 }

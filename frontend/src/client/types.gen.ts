@@ -232,6 +232,24 @@ export type FilePublicChild = {
 };
 
 /**
+ * FileRenderer
+ * A viewer that can draw a file type.
+ *
+ * The name is the identifier shared with the frontend renderer registry.
+ * External renderers record the project that implements them.
+ */
+export type FileRenderer = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Url
+     */
+    url?: string | null;
+};
+
+/**
  * FileStats
  */
 export type FileStats = {
@@ -282,7 +300,7 @@ export type FileStats = {
 /**
  * FileTypeEnum
  */
-export type FileTypeEnum = 'bam' | 'beast' | 'bed' | 'csv' | 'docx' | 'fasta' | 'fasta.gz' | 'fastq' | 'fastq.gz' | 'geojson' | 'gff' | 'genbank' | 'graphml' | 'gzip' | 'hdf5' | 'hs' | 'html' | 'iqtree' | 'jpeg' | 'json' | 'jsonl' | 'log' | 'md' | 'newick' | 'nexus' | 'pdb' | 'pdf' | 'phy' | 'text' | 'png' | 'rmd' | 'sam' | 'svg' | 'tiff' | 'toml' | 'tsv' | 'vega' | 'vega-lite' | 'vcf' | 'vcf.gz' | 'xlsx' | 'xml' | 'yaml' | 'zip' | 'pair' | 'unknown';
+export type FileTypeEnum = 'bam' | 'beast' | 'bed' | 'csv' | 'docx' | 'fasta' | 'fasta.gz' | 'fastq' | 'fastq.gz' | 'geojson' | 'gff' | 'genbank' | 'gfa' | 'gfa.gz' | 'graphml' | 'gzip' | 'hdf5' | 'hs' | 'html' | 'iqtree' | 'jpeg' | 'json' | 'jsonl' | 'log' | 'md' | 'newick' | 'nexus' | 'pdb' | 'pdf' | 'phy' | 'text' | 'png' | 'rmd' | 'sam' | 'svg' | 'tiff' | 'toml' | 'tsv' | 'vega' | 'vega-lite' | 'vcf' | 'vcf.gz' | 'xlsx' | 'xml' | 'yaml' | 'zip' | 'pair' | 'unknown';
 
 /**
  * FileTypeMetadata
@@ -300,6 +318,14 @@ export type FileTypeMetadata = {
      * Mime Types
      */
     mime_types: Array<string>;
+    /**
+     * Parent
+     */
+    parent?: string | null;
+    /**
+     * Renderers
+     */
+    renderers?: Array<FileRenderer>;
 };
 
 /**

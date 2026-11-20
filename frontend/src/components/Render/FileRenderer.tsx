@@ -1,5 +1,5 @@
 import { LoaderCircle } from "lucide-react"
-import { Suspense } from "react"
+import { lazy, Suspense } from "react"
 import type { FilePublic } from "../../client"
 import { humanReadableFileSize } from "../../utils"
 import CsvFileToTable from "./CsvFileToTable"
@@ -12,6 +12,10 @@ import MarkdownFile from "./MarkdownFile"
 import NewickFile from "./NewickFile"
 import TextFile from "./TextFile"
 import VegaFile from "./VegaFile"
+
+// BandageJS brings its own layout engine and wasm, so load it only when a GFA
+// file is actually opened.
+const GfaFile = lazy(() => import("./GfaFile"))
 
 interface FileRendererProps {
   file: FilePublic
@@ -29,6 +33,8 @@ export const RENDERABLE_FILE_TYPES = [
   "md",
   "fasta",
   "genbank",
+  "gfa",
+  "gfa.gz",
   "newick",
   "vega",
   "vega-lite",
@@ -68,7 +74,16 @@ const FileRenderer = ({
 
   if (file.size && file.size < fileSizeLimit) {
     return (
-      <Suspense fallback={<LoaderCircle className="size-5 animate-spin" />}>
+      <Suspense
+        fallback={
+          <div className="flex h-[240px] w-full items-center justify-center rounded-md border bg-muted/30">
+            <LoaderCircle className="mr-2 size-5 animate-spin" />
+            <span className="text-muted-foreground text-sm">
+              Loading preview…
+            </span>
+          </div>
+        }
+      >
         {(() => {
           switch (file.file_type) {
             case "json":
@@ -98,6 +113,15 @@ const FileRenderer = ({
                 <GenbankFile
                   fileId={file.id}
                   viewer={file.size > 2000000 ? "circular" : "both"}
+                />
+              )
+            case "gfa":
+            case "gfa.gz":
+              return (
+                <GfaFile
+                  fileId={file.id}
+                  fileName={file.name}
+                  compressed={file.file_type === "gfa.gz"}
                 />
               )
             case "newick":
