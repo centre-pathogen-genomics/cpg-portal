@@ -1604,6 +1604,23 @@ export const TargetSchema = {
     title: 'Target'
 } as const;
 
+export const TimelineStepSchema = {
+    properties: {
+        name: {
+            type: 'string',
+            title: 'Name'
+        },
+        pattern: {
+            type: 'string',
+            title: 'Pattern'
+        }
+    },
+    type: 'object',
+    required: ['name', 'pattern'],
+    title: 'TimelineStep',
+    description: "A named step detected by matching a pattern in a run's logs."
+} as const;
+
 export const TokenSchema = {
     properties: {
         access_token: {
@@ -1855,6 +1872,20 @@ export const ToolCreateSchema = {
             ],
             title: 'Targets'
         },
+        timeline: {
+            anyOf: [
+                {
+                    items: {
+                        '$ref': '#/components/schemas/TimelineStep'
+                    },
+                    type: 'array'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Timeline'
+        },
         llm_summary_enabled: {
             type: 'boolean',
             title: 'Llm Summary Enabled',
@@ -2029,6 +2060,20 @@ export const ToolMinimalPublicSchema = {
         version: {
             type: 'string',
             title: 'Version'
+        },
+        timeline: {
+            anyOf: [
+                {
+                    items: {
+                        '$ref': '#/components/schemas/TimelineStep'
+                    },
+                    type: 'array'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Timeline'
         },
         llm_summary_enabled: {
             type: 'boolean',
@@ -2282,6 +2327,20 @@ export const ToolPublicSchema = {
                 }
             ],
             title: 'Targets'
+        },
+        timeline: {
+            anyOf: [
+                {
+                    items: {
+                        '$ref': '#/components/schemas/TimelineStep'
+                    },
+                    type: 'array'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Timeline'
         },
         llm_summary_enabled: {
             type: 'boolean',
@@ -2658,6 +2717,20 @@ export const ToolUpdateSchema = {
                 }
             ],
             title: 'Targets'
+        },
+        timeline: {
+            anyOf: [
+                {
+                    items: {
+                        '$ref': '#/components/schemas/TimelineStep'
+                    },
+                    type: 'array'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Timeline'
         },
         llm_summary_enabled: {
             type: 'boolean',

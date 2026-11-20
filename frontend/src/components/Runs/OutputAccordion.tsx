@@ -1,5 +1,4 @@
 import { LoaderCircle } from "lucide-react"
-import { useEffect, useState } from "react"
 import { HiOutlineDocumentText, HiQuestionMarkCircle } from "react-icons/hi"
 import { HiOutlineCommandLine } from "react-icons/hi2"
 import { SiAnaconda } from "react-icons/si"
@@ -9,77 +8,26 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import type { RunPublic } from "../../client"
-import useWebSocket from "../../hooks/useWebsocket"
+import type { RunPublic, RunStatus } from "../../client"
 import CodeBlock from "../Common/CodeBlock"
 import Markdown from "../Common/Markdown"
 import RunProfiler from "./RunProfiler"
 
 interface OutputAccordionItemProps {
   title: string
-  status: string
+  status: RunStatus
   content: string | null
-  runId: string
-}
-
-const normalizeLogSnapshot = (value: string | null | undefined) =>
-  value ? value.replace(/\n+$/g, "") : null
-
-const appendLogLine = (
-  previous: string | null,
-  line: string,
-): string | null => {
-  const normalizedPrevious = normalizeLogSnapshot(previous)
-  if (!normalizedPrevious) return line
-  return `${normalizedPrevious}\n${line}`
 }
 
 const OutputAccordionItem = ({
   title,
   content,
   status,
-  runId,
 }: OutputAccordionItemProps) => {
-  const [output, setOutput] = useState<string | null>(
-    normalizeLogSnapshot(content),
-  )
-  const [currentStatus, setCurrentStatus] = useState(status)
+  const output = content
   const lineCount = output?.trim().split("\n").length || 0
-  const queued = currentStatus === "pending"
-  const active = currentStatus === "running" || queued
-
-  useEffect(() => {
-    setOutput((previous) => {
-      const normalizedContent = normalizeLogSnapshot(content)
-      if (!normalizedContent) return previous || null
-      if (!active) return normalizedContent
-      if (!previous) return normalizedContent
-      return normalizedContent.length >= previous.length
-        ? normalizedContent
-        : previous
-    })
-  }, [active, content])
-
-  useEffect(() => {
-    setCurrentStatus(status)
-  }, [status])
-
-  useWebSocket(`logs/${runId}`, {
-    onMessage: (event) => {
-      try {
-        const data = JSON.parse(event.data)
-        if (typeof data.status === "string") setCurrentStatus(data.status)
-        if (typeof data.stdout === "string") {
-          setOutput(normalizeLogSnapshot(data.stdout))
-          return
-        }
-        if (typeof data.log === "string")
-          setOutput((previous) => appendLogLine(previous, data.log))
-      } catch (error) {
-        console.error("Error parsing WebSocket message:", error)
-      }
-    },
-  })
+  const queued = status === "pending"
+  const active = status === "running" || queued
 
   return (
     <AccordionItem value="logs">
@@ -111,7 +59,15 @@ const OutputAccordionItem = ({
   )
 }
 
-const OutputAccordion = ({ run }: { run: RunPublic }) => (
+const OutputAccordion = ({
+  run,
+  logs,
+  status,
+}: {
+  run: RunPublic
+  logs: string
+  status: RunStatus
+}) => (
   <Accordion type="multiple" className="mb-4 break-all">
     {run.tool.explanation_of_results_markdown && (
       <AccordionItem value="explanation">
@@ -128,9 +84,8 @@ const OutputAccordion = ({ run }: { run: RunPublic }) => (
     )}
     <OutputAccordionItem
       title="Tool Logs"
-      content={run.stdout || null}
-      status={run.status}
-      runId={run.id}
+      content={logs || null}
+      status={status}
     />
     <AccordionItem value="command">
       <AccordionTrigger>

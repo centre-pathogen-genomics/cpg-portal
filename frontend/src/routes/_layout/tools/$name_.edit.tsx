@@ -35,6 +35,7 @@ import {
   type ParamVisibilityOperator,
   type SetupFile,
   type Target,
+  type TimelineStep,
   type ToolBadge,
   type ToolPublic,
   type ToolStatus,
@@ -132,6 +133,11 @@ const setupFileSchema = z.object({
   content: z.string(),
 })
 
+const timelineStepSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  pattern: z.string().min(1, "Pattern is required"),
+})
+
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
   version: optionalString,
@@ -158,6 +164,7 @@ const formSchema = z.object({
   setup_files: z.array(setupFileSchema),
   params: z.array(paramSchema),
   targets: z.array(targetSchema),
+  timeline: z.array(timelineStepSchema),
   min_cpus: z.number().int().min(1),
   max_cpus: z.number().int().min(1).nullable().optional(),
   default_cpus: z.number().int().min(1).nullable().optional(),
@@ -279,6 +286,10 @@ function defaultValues(tool: ToolPublic): ToolFormData {
       target_type: target.target_type,
       required: target.required ?? true,
     })),
+    timeline: (tool.timeline ?? []).map((step) => ({
+      name: step.name,
+      pattern: step.pattern,
+    })),
     llm_summary_enabled: tool.llm_summary_enabled ?? false,
     favourited_count: tool.favourited_count ?? 0,
     run_count: tool.run_count ?? 0,
@@ -382,6 +393,10 @@ function buildToolUpdate(data: ToolFormData): ToolUpdate {
       path: target.path.trim(),
       target_type: target.target_type.trim(),
       required: target.required,
+    })),
+    timeline: data.timeline.map<TimelineStep>((step) => ({
+      name: step.name.trim(),
+      pattern: step.pattern.trim(),
     })),
     llm_summary_enabled: data.llm_summary_enabled,
     favourited_count: data.favourited_count,
@@ -1058,6 +1073,7 @@ function ParamVisibilityFields({
 function InputsTab({ control }: { control: Control<ToolFormData> }) {
   const params = useFieldArray({ control, name: "params" })
   const setupFiles = useFieldArray({ control, name: "setup_files" })
+  const timeline = useFieldArray({ control, name: "timeline" })
   const watchedParams = useWatch({ control, name: "params" }) ?? []
   const commandParams = useMemo(
     () => [
@@ -1331,6 +1347,50 @@ function InputsTab({ control }: { control: Control<ToolFormData> }) {
                 name={`setup_files.${index}.content`}
                 label="Content"
                 multiline
+              />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+      <Card className="rounded-md">
+        <CardHeader className="flex-row items-center justify-between">
+          <CardTitle>Timeline</CardTitle>
+          <ArrayActions
+            label="Add step"
+            onAdd={() => timeline.append({ name: "", pattern: "" })}
+          />
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Steps run in order. A step is active until its pattern appears in
+            the run's logs, or until the run finishes. Patterns are matched
+            case-insensitively as regular expressions.
+          </p>
+          {timeline.fields.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              No timeline steps configured.
+            </p>
+          )}
+          {timeline.fields.map((field, index) => (
+            <div
+              key={field.id}
+              className="grid gap-4 rounded-md border p-4 md:grid-cols-[1fr_1.5fr_auto]"
+            >
+              <TextField
+                control={control}
+                name={`timeline.${index}.name`}
+                label="Name"
+              />
+              <TextField
+                control={control}
+                name={`timeline.${index}.pattern`}
+                label="Log pattern"
+              />
+              <RowActions
+                index={index}
+                count={timeline.fields.length}
+                onMove={timeline.move}
+                onRemove={() => timeline.remove(index)}
               />
             </div>
           ))}

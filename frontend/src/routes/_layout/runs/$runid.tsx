@@ -19,8 +19,10 @@ import OutputAccordion from "../../../components/Runs/OutputAccordion"
 import OutputFile from "../../../components/Runs/OutputFile"
 import RerunRunButton from "../../../components/Runs/RerunRunButton"
 import RunMetadata from "../../../components/Runs/RunMetadata"
+import RunTimeline from "../../../components/Runs/RunTimeline"
 import ShareRunButton from "../../../components/Runs/ShareRunButton"
 import useAuth from "../../../hooks/useAuth"
+import useRunLogs from "../../../hooks/useRunLogs"
 
 export const Route = createFileRoute("/_layout/runs/$runid")({
   component: Run,
@@ -61,6 +63,7 @@ function RunDetailContent({ run }: { run: RunPublic }) {
   const [llmSummary, setLlmSummary] = useState<string | null>(
     run.llm_summary || null,
   )
+  const { logs, status } = useRunLogs(run)
   // Sharing a run lets others read it, so ownership decides what is shown.
   const isOwner = run.owner_id === user?.id
   // Every output the renderer can draw gets a tab; the renderer decides what
@@ -98,6 +101,11 @@ function RunDetailContent({ run }: { run: RunPublic }) {
       <div className="my-4">
         <RunMetadata run={run} />
       </div>
+      <RunTimeline
+        steps={run.tool.timeline ?? []}
+        logs={logs}
+        status={status}
+      />
       {run.files.length > 0 && (
         <>
           <div className="mb-4 flex items-center justify-between gap-2">
@@ -163,7 +171,7 @@ function RunDetailContent({ run }: { run: RunPublic }) {
           )}
         </>
       )}
-      <OutputAccordion run={run} />
+      <OutputAccordion run={run} logs={logs} status={status} />
     </div>
   )
 }

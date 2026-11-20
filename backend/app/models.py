@@ -407,6 +407,13 @@ class ToolBadge(SQLModel):
     url: str | None = None
 
 
+class TimelineStep(SQLModel):
+    """A named step detected by matching a pattern in a run's logs."""
+
+    name: str
+    pattern: str
+
+
 # Shared properties
 class ToolBase(SQLModel):
     name: str
@@ -432,6 +439,9 @@ class ToolBase(SQLModel):
     setup_files: list[SetupFile] | None = None
     params: list[Param] | None = None
     targets: list[Target] | None = None
+    # Ordered steps shown as a timeline while a run runs. Each step's pattern
+    # is matched against the run's log until it appears or the run ends.
+    timeline: list[TimelineStep] | None = None
     llm_summary_enabled: bool = False
     # CPUs (threads) a run of this tool may reserve: users pick
     # min_cpus..max_cpus, capped further by their own max_cpus, defaulting to
@@ -503,6 +513,9 @@ class Tool(ToolBase, table=True):
     )
     params: list[Param] | None = Field(default_factory=list, sa_column=Column(JSON))
     targets: list[Target] | None = Field(default_factory=list, sa_column=Column(JSON))
+    timeline: list[TimelineStep] | None = Field(
+        default_factory=list, sa_column=Column(JSON)
+    )
     runs: list[Run] = Relationship(
         back_populates="tool",
         sa_relationship=RelationshipProperty(
@@ -552,6 +565,7 @@ class ToolMinimalPublic(SQLModel):
     status: ToolStatus
     # A run page names the version it ran, and a rerun goes back to it.
     version: str
+    timeline: list[TimelineStep] | None = None
     llm_summary_enabled: bool = False
     explanation_of_results_markdown: str | None = None
     # The run form needs the threads a tool allows, and it is opened from the

@@ -971,6 +971,21 @@ export type Target = {
 };
 
 /**
+ * TimelineStep
+ * A named step detected by matching a pattern in a run's logs.
+ */
+export type TimelineStep = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Pattern
+     */
+    pattern: string;
+};
+
+/**
  * Token
  */
 export type Token = {
@@ -1076,6 +1091,10 @@ export type ToolCreate = {
      */
     targets?: Array<Target> | null;
     /**
+     * Timeline
+     */
+    timeline?: Array<TimelineStep> | null;
+    /**
      * Llm Summary Enabled
      */
     llm_summary_enabled?: boolean;
@@ -1170,6 +1189,10 @@ export type ToolMinimalPublic = {
      * Version
      */
     version: string;
+    /**
+     * Timeline
+     */
+    timeline?: Array<TimelineStep> | null;
     /**
      * Llm Summary Enabled
      */
@@ -1269,6 +1292,10 @@ export type ToolPublic = {
      * Targets
      */
     targets?: Array<Target> | null;
+    /**
+     * Timeline
+     */
+    timeline?: Array<TimelineStep> | null;
     /**
      * Llm Summary Enabled
      */
@@ -1438,6 +1465,10 @@ export type ToolUpdate = {
      * Targets
      */
     targets?: Array<Target> | null;
+    /**
+     * Timeline
+     */
+    timeline?: Array<TimelineStep> | null;
     /**
      * Llm Summary Enabled
      */
