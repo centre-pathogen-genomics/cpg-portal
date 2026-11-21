@@ -1,5 +1,5 @@
 import { LoaderCircle } from "lucide-react";
-import { lazy, type ReactNode, lazy, Suspense } from "react";
+import { lazy, type ReactNode, Suspense } from "react";
 import { humanReadableFileSize } from "@/lib/format";
 import type { RenderableFile } from "./fileSource";
 
@@ -121,13 +121,7 @@ const FileRenderer = ({
               );
             case "gfa":
             case "gfa.gz":
-              return (
-                <GfaFile
-                  fileId={file.id}
-                  fileName={file.name}
-                  compressed={file.file_type === "gfa.gz"}
-                />
-              );
+              return <GfaFile file={file} />;
             case "newick":
               if (file.size > 1000000) {
                 return TooLargeToPreview({ limit: 1000000 });

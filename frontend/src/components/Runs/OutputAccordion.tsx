@@ -10,15 +10,17 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import type { RunPublic, RunStatus } from "../../client";
+import useWebSocket from "../../hooks/useWebsocket";
 import CodeBlock from "../Common/CodeBlock";
 import Markdown from "../Common/Markdown";
-import RunProfiler from "./RunProfiler";
 
 interface OutputAccordionItemProps {
   title: string;
   status: RunStatus;
   content: string | null;
   runId: string;
+  /** Live logs from the page's single log stream. */
+  logs?: string;
   /** Lines from a caller that runs its own stream, e.g. the desktop app. */
   logStream?: RunLogStream;
 }
@@ -49,6 +51,7 @@ const OutputAccordionItem = ({
   content,
   status,
   runId,
+  logs,
   logStream,
 }: OutputAccordionItemProps) => {
   const [output, setOutput] = useState<string | null>(
@@ -56,11 +59,14 @@ const OutputAccordionItem = ({
   );
   const [currentStatus, setCurrentStatus] = useState(status);
   const streamed = logStream ? logStream.lines.join("\n") : null;
-  const shown = logStream ? streamed : output;
+  const shown =
+    logStream !== undefined ? streamed : (logs ?? output);
+  const shownStatus = (logStream?.status ??
+    (logs !== undefined ? status : currentStatus)) as RunStatus;
   // An empty capture is no output, not a single blank line.
   const lineCount = shown && shown.trim() ? shown.trim().split("\n").length : 0;
-  const queued = (logStream?.status ?? currentStatus) === "pending";
-  const active = (logStream?.status ?? currentStatus) === "running" || queued;
+  const queued = shownStatus === "pending";
+  const active = shownStatus === "running" || queued;
 
   useEffect(() => {
     setOutput((previous) => {
@@ -79,11 +85,13 @@ const OutputAccordionItem = ({
   }, [status]);
 
   useWebSocket(`logs/${runId}`, {
-    enabled: !logStream,
+    // The page hands over its own stream; only the fallback caller opens this.
+    enabled: logStream === undefined && logs === undefined,
     onMessage: (event) => {
       try {
         const data = JSON.parse(event.data);
-        if (typeof data.status === "string") setCurrentStatus(data.status);
+        if (typeof data.status === "string")
+          setCurrentStatus(data.status as RunStatus);
         if (typeof data.stdout === "string") {
           setOutput(normalizeLogSnapshot(data.stdout));
           return;
@@ -108,7 +116,7 @@ const OutputAccordionItem = ({
       <AccordionContent>
         {lineCount > 0 ? (
           <CodeBlock
-            code={(logStream ? streamed : output) || ""}
+            code={shown || ""}
             language="text"
             lineNumbers
             follow
@@ -128,10 +136,16 @@ const OutputAccordionItem = ({
 
 const OutputAccordion = ({
   run,
+  logs,
+  status,
   logStream,
   resources,
 }: {
   run: RunPublic;
+  /** Live logs from the page's single log stream. */
+  logs?: string;
+  /** Live run status alongside `logs`. */
+  status?: RunStatus;
   /** Lines the caller streams itself; without it the portal's socket is used. */
   logStream?: RunLogStream;
   /** Extra accordion content, e.g. the resource charts. */
@@ -154,8 +168,9 @@ const OutputAccordion = ({
     <OutputAccordionItem
       title="Tool Logs"
       content={run.stdout || null}
-      status={run.status}
+      status={status ?? run.status}
       runId={run.id}
+      logs={logs}
       logStream={logStream}
     />
     <AccordionItem value="command">

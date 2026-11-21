@@ -10,9 +10,7 @@ import { useEffect, useState } from "react";
 import { type RenderableFile, useFileBlob } from "./fileSource";
 
 interface GfaFileProps {
-  fileId: string;
-  fileName?: string;
-  compressed?: boolean;
+  file: RenderableFile;
 }
 
 type GfaFigure =
@@ -43,10 +41,10 @@ const GfaFile = ({ file }: GfaFileProps) => {
   const blob = useFileBlob(file);
 
   const { data: figure } = useSuspenseQuery<GfaFigure>({
-    queryKey: ["gfa-figure", fileId, compressed],
+    queryKey: ["gfa-figure", file.key, compressed],
     queryFn: async () => {
       try {
-        const gfa = await decodeBlob(blob as Blob, compressed);
+        const gfa = await decodeBlob(blob, compressed);
         const graph = loadGraph(gfa, fileName, { maxNodes: MAX_NODES });
         const { result } = await forceLayout(
           graph,

@@ -21,6 +21,7 @@ import OutputAccordion from "../../../components/Runs/OutputAccordion";
 import OutputFile from "../../../components/Runs/OutputFile";
 import RerunRunButton from "../../../components/Runs/RerunRunButton";
 import RunMetadata from "../../../components/Runs/RunMetadata";
+import RunProfiler from "../../../components/Runs/RunProfiler";
 import RunTimeline from "../../../components/Runs/RunTimeline";
 import ShareRunButton from "../../../components/Runs/ShareRunButton";
 import useAuth from "../../../hooks/useAuth";
@@ -178,8 +179,12 @@ function RunDetailContent({ run }: { run: RunPublic }) {
           )}
         </>
       )}
-      <OutputAccordion run={run} resources={<RunProfiler run={run} />} />
-      <OutputAccordion run={run} logs={logs} status={status} />
+      <OutputAccordion
+        run={run}
+        logs={logs}
+        status={status}
+        resources={<RunProfiler run={run} />}
+      />
     </div>
   );
 }
