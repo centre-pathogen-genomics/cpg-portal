@@ -46,6 +46,7 @@ def _create_tool(*, db: Session, name: str, conda_env: dict | None) -> Tool:
             {"name": "threads", "param_type": "int", "default": 1},
         ],
         targets=[{"path": "out.txt", "target_type": "text", "required": True}],
+        timeline=[{"name": "Writing output", "pattern": "out.txt"}],
         enabled=True,
         status=ToolStatus.installed,
     )
@@ -227,6 +228,7 @@ def test_pack_holds_configuration_only(
     assert tool_config["tool"]["version"] == "1.2"
     assert tool_config["tool"]["command"] == "printf 'hi\\n' > out.txt"
     assert tool_config["tool"]["targets"][0]["path"] == "out.txt"
+    assert tool_config["tool"]["timeline"][0]["name"] == "Writing output"
     assert tool_config["tool"]["setup_files"] == []
     assert tool_config["tool"]["post_install"] is None
     assert tool_config["tool"]["min_cpus"] == 1

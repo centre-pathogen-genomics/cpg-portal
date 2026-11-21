@@ -290,6 +290,7 @@ def _pack_tool_config(tool: ToolPublic) -> dict[str, Any]:
             "targets": [
                 target.model_dump(mode="json") for target in tool.targets or []
             ],
+            "timeline": [step.model_dump(mode="json") for step in tool.timeline or []],
             "setup_files": [
                 setup_file.model_dump(mode="json")
                 for setup_file in tool.setup_files or []

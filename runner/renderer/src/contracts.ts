@@ -1,4 +1,4 @@
-import type { Param, RunPublic } from "@/client"
+import type { Param, RunPublic, TimelineStep } from "@/client"
 
 export type FileTypeMeta = {
   extensions: string[]
@@ -59,6 +59,7 @@ export type ToolConfig = {
   command: string
   params: Param[]
   targets: ToolTarget[]
+  timeline?: TimelineStep[]
   setup_files: SetupFile[]
   post_install: string | null
   min_cpus: number
@@ -204,6 +205,7 @@ export function toRunPublic(
       version: tool.version,
       description: tool.description,
       params: tool.params,
+      timeline: tool.timeline ?? [],
       status: "installed",
       explanation_of_results_markdown: tool.explanation_of_results_markdown,
       min_cpus: tool.min_cpus,

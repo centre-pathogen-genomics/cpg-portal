@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { ConfirmationDialog } from "@/components/Common/ConfirmationDialog";
 import OutputAccordion from "@/components/Runs/OutputAccordion";
 import RunTime from "@/components/Runs/RunTime";
+import RunTimeline from "@/components/Runs/RunTimeline";
 import StatusBadge from "@/components/Runs/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { api, errorMessage } from "./api";
@@ -22,13 +23,7 @@ import {
 import { openPath } from "./lib/desktop";
 import { useNavigate } from "@tanstack/react-router";
 
-export function RunPage({
-  toolId,
-  runId,
-}: {
-  toolId: string;
-  runId: string;
-}) {
+export function RunPage({ toolId, runId }: { toolId: string; runId: string }) {
   const navigate = useNavigate();
   const [record, setRecord] = useState<RunRecord | null>(null);
   const [tool, setTool] = useState<ToolConfig | null>(null);
@@ -140,6 +135,11 @@ export function RunPage({
   const stdoutTail = record?.stdout
     ? record.stdout.trimEnd().split("\n").slice(-30).join("\n")
     : "";
+  // The record carries the history; the socket carries lines since the page
+  // opened. The timeline only needs to see each pattern once.
+  const timelineLogs = [record?.stdout ?? "", ...logs]
+    .filter(Boolean)
+    .join("\n");
   const run = record && tool ? toRunPublic(record, tool, environment) : null;
 
   return (
@@ -240,6 +240,15 @@ export function RunPage({
                   </pre>
                 )}
               </section>
+            )}
+
+            {record && tool && (
+              <RunTimeline
+                steps={tool.timeline ?? []}
+                logs={timelineLogs}
+                status={record.status}
+                border={false}
+              />
             )}
 
             {record && !isRunActive(record.status) && (

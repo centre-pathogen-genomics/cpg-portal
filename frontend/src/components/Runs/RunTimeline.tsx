@@ -1,26 +1,26 @@
-import { Check, Circle, History, LoaderCircle, Minus } from "lucide-react"
-import { useMemo } from "react"
+import { Check, Circle, History, LoaderCircle, Minus } from "lucide-react";
+import { useMemo } from "react";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
-import { cn } from "@/lib/utils"
-import type { RunStatus, TimelineStep } from "../../client"
+} from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
+import type { RunStatus, TimelineStep } from "../../client";
 
-type StepState = "completed" | "active" | "next" | "pending" | "skipped"
+type StepState = "completed" | "active" | "next" | "pending" | "skipped";
 
-const terminalStatuses = new Set(["completed", "failed", "cancelled"])
-const ANSI_ESCAPE = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, "g")
+const terminalStatuses = new Set(["completed", "failed", "cancelled"]);
+const ANSI_ESCAPE = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, "g");
 
 const matches = (logs: string, pattern: string) => {
   try {
-    return new RegExp(pattern, "i").test(logs)
+    return new RegExp(pattern, "i").test(logs);
   } catch {
     // A pattern that is not valid regex is still useful as plain text.
-    return logs.toLowerCase().includes(pattern.toLowerCase())
+    return logs.toLowerCase().includes(pattern.toLowerCase());
   }
-}
+};
 
 const stateLabel: Record<StepState, string> = {
   completed: "Done",
@@ -28,7 +28,7 @@ const stateLabel: Record<StepState, string> = {
   next: "Up next",
   pending: "Waiting",
   skipped: "Missed",
-}
+};
 
 const stateStyles: Record<StepState, string> = {
   completed:
@@ -38,51 +38,57 @@ const stateStyles: Record<StepState, string> = {
   next: "border-amber-500 bg-amber-400 text-amber-950 shadow-sm",
   pending: "border-border bg-muted text-muted-foreground",
   skipped: "border-dashed border-border bg-background text-muted-foreground",
-}
+};
 
 const StepIcon = ({ state }: { state: StepState }) => {
-  if (state === "completed") return <Check className="size-3.5" />
+  if (state === "completed") return <Check className="size-3.5" />;
   if (state === "active")
-    return <LoaderCircle className="size-3.5 animate-spin" />
-  if (state === "skipped") return <Minus className="size-3.5" />
-  if (state === "next") return <Circle className="size-2.5 fill-current" />
-  return <Circle className="size-2.5 fill-current opacity-40" />
-}
+    return <LoaderCircle className="size-3.5 animate-spin" />;
+  if (state === "skipped") return <Minus className="size-3.5" />;
+  if (state === "next") return <Circle className="size-2.5 fill-current" />;
+  return <Circle className="size-2.5 fill-current opacity-40" />;
+};
 
 interface RunTimelineProps {
-  steps: TimelineStep[]
-  logs: string
-  status: RunStatus
+  steps: TimelineStep[];
+  logs: string;
+  status: RunStatus;
+  border?: boolean;
 }
 
-function RunTimeline({ steps, logs, status }: RunTimelineProps) {
-  const cleanLogs = useMemo(() => logs.replace(ANSI_ESCAPE, ""), [logs])
-  const finished = terminalStatuses.has(status)
-  const running = status === "running"
+function RunTimeline({ steps, logs, status, border }: RunTimelineProps) {
+  const cleanLogs = useMemo(() => logs.replace(ANSI_ESCAPE, ""), [logs]);
+  const finished = terminalStatuses.has(status);
+  const running = status === "running";
   const states = useMemo(() => {
-    let activeIndex = -1
+    let activeIndex = -1;
     return steps.map<StepState>((step, index) => {
       if (activeIndex !== -1) {
-        if (!finished && running && index === activeIndex + 1) return "next"
-        return finished ? "skipped" : "pending"
+        if (!finished && running && index === activeIndex + 1) return "next";
+        return finished ? "skipped" : "pending";
       }
-      if (matches(cleanLogs, step.pattern)) return "completed"
-      activeIndex = index
-      return finished ? "skipped" : "active"
-    })
-  }, [cleanLogs, finished, running, steps])
+      if (matches(cleanLogs, step.pattern)) return "completed";
+      activeIndex = index;
+      return finished ? "skipped" : "active";
+    });
+  }, [cleanLogs, finished, running, steps]);
 
   // A completed run's timeline is just a row of ticks; the logs and results
   // are the useful part. Keep it for active runs, and for failed or cancelled
   // runs where it shows where the run stopped.
   if (steps.length === 0 || status === "completed") {
-    return null
+    return null;
   }
 
-  const completed = states.filter((state) => state === "completed").length
+  const completed = states.filter((state) => state === "completed").length;
 
   return (
-    <section className="mb-6 rounded-xl border bg-card p-4 shadow-sm">
+    <section
+      className={cn(
+        "mb-6 rounded-xl bg-card p-4 shadow-sm",
+        border && "border",
+      )}
+    >
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <History className="size-4 text-muted-foreground" />
@@ -94,8 +100,8 @@ function RunTimeline({ steps, logs, status }: RunTimelineProps) {
       </div>
       <ol>
         {steps.map((step, index) => {
-          const state = states[index]
-          const future = state === "pending" || state === "next"
+          const state = states[index];
+          const future = state === "pending" || state === "next";
           return (
             <li
               key={`${step.name}-${index}`}
@@ -161,11 +167,11 @@ function RunTimeline({ steps, logs, status }: RunTimelineProps) {
                 </span>
               </div>
             </li>
-          )
+          );
         })}
       </ol>
     </section>
-  )
+  );
 }
 
-export default RunTimeline
+export default RunTimeline;

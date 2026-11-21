@@ -1,7 +1,8 @@
-import { Check, LoaderCircle, X } from "lucide-react";
+import { Check, Circle, History, LoaderCircle, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +23,33 @@ const PHASES = [
 ] as const;
 
 type PhaseState = "done" | "active" | "failed" | "pending";
+
+const stateLabel: Record<PhaseState, string> = {
+  done: "Done",
+  active: "Installing",
+  failed: "Failed",
+  pending: "Waiting",
+};
+
+// The same rail and node language as the portal's RunTimeline, so an install
+// reads like a run: a filled node per finished step, a spinner on the current
+// one, and a grey node for what has not started.
+const stateStyles: Record<PhaseState, string> = {
+  done: "border-emerald-500 bg-emerald-500 text-white shadow-sm shadow-emerald-500/30",
+  active:
+    "border-primary bg-primary text-primary-foreground shadow-[0_0_0_4px] shadow-primary/15",
+  failed:
+    "border-destructive bg-destructive text-white shadow-sm shadow-destructive/30",
+  pending: "border-border bg-muted text-muted-foreground",
+};
+
+const PhaseIcon = ({ state }: { state: PhaseState }) => {
+  if (state === "done") return <Check className="size-3.5" />;
+  if (state === "failed") return <X className="size-3.5" />;
+  if (state === "active")
+    return <LoaderCircle className="size-3.5 animate-spin" />;
+  return <Circle className="size-2.5 fill-current" />;
+};
 
 const DONE_LINES = [
   "Runtime image is already installed.",
@@ -192,6 +220,7 @@ export function InstallDialog({
     [lines, finished, failure],
   );
   const busy = working || installing;
+  const completed = timeline.filter((phase) => phase.state === "done").length;
 
   return (
     <Dialog open={open}>
@@ -211,41 +240,96 @@ export function InstallDialog({
 
         <div className="max-h-[55vh] overflow-auto pr-1">
           {timeline.length > 0 ? (
-            <ol className="relative space-y-4 border-l pl-6">
-              {timeline.map((phase) => (
-                <li key={phase.id} className="relative">
-                  <span className="bg-background absolute top-0.5 -left-[26px] flex size-4 items-center justify-center rounded-full">
-                    {phase.state === "done" ? (
-                      <Check className="text-primary size-3.5" />
-                    ) : phase.state === "failed" ? (
-                      <X className="text-destructive size-3.5" />
-                    ) : (
-                      <LoaderCircle className="text-primary size-3.5 animate-spin" />
-                    )}
-                  </span>
-                  <p
-                    className={
-                      phase.state === "failed"
-                        ? "text-destructive text-sm font-medium"
-                        : "text-sm font-medium"
+            <section className="rounded-xl border bg-card p-4 shadow-sm">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <History className="text-muted-foreground size-4" />
+                  <h2 className="text-sm font-semibold">Install timeline</h2>
+                </div>
+                <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs tabular-nums">
+                  {completed}/{timeline.length}
+                </span>
+              </div>
+              <ol>
+                {timeline.map((phase, index) => (
+                  <li
+                    key={phase.id}
+                    className="relative flex gap-3 pb-5 last:pb-0"
+                    aria-current={
+                      phase.state === "active" ? "step" : undefined
                     }
                   >
-                    {phase.title}
-                  </p>
-                  <p className="text-muted-foreground text-xs">
-                    {phase.state === "done"
-                      ? "Done"
-                      : phase.state === "failed"
-                        ? phase.detail || "Failed"
-                        : phase.detail || "Starting…"}
-                  </p>
-                </li>
-              ))}
-            </ol>
+                    {index < timeline.length - 1 && (
+                      <span
+                        className={cn(
+                          "absolute top-7 left-3 h-[calc(100%-1.25rem)] w-0.5 rounded-full",
+                          phase.state === "done"
+                            ? "bg-emerald-400"
+                            : "bg-border",
+                        )}
+                      />
+                    )}
+                    <span
+                      className={cn(
+                        "relative z-10 mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full border transition-colors",
+                        stateStyles[phase.state],
+                      )}
+                    >
+                      <PhaseIcon state={phase.state} />
+                    </span>
+                    <div className="flex min-w-0 flex-1 items-start justify-between gap-3 pt-0.5">
+                      <div className="min-w-0">
+                        <p
+                          className={cn(
+                            "text-sm",
+                            phase.state === "active" &&
+                              "font-semibold text-foreground",
+                            phase.state === "done" && "text-foreground",
+                            phase.state === "failed" &&
+                              "font-medium text-destructive",
+                            phase.state === "pending" &&
+                              "text-muted-foreground",
+                          )}
+                        >
+                          {phase.title}
+                        </p>
+                        {phase.state === "active" && (
+                          <p className="text-muted-foreground mt-1 text-xs">
+                            {phase.detail || "Starting…"}
+                          </p>
+                        )}
+                        {phase.state === "failed" && (
+                          <p className="text-destructive mt-1 text-xs">
+                            {phase.detail || "Failed"}
+                          </p>
+                        )}
+                      </div>
+                      <span
+                        className={cn(
+                          "shrink-0 pt-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                          phase.state === "done" &&
+                            "text-emerald-600 dark:text-emerald-400",
+                          phase.state === "active" && "text-primary",
+                          phase.state === "failed" && "text-destructive",
+                          phase.state === "pending" &&
+                            "text-muted-foreground/60",
+                        )}
+                      >
+                        {stateLabel[phase.state]}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </section>
           ) : (
             <p className="text-muted-foreground text-sm">
               Nothing has been installed yet.
             </p>
+          )}
+
+          {failure && (
+            <p className="text-destructive mt-3 text-sm">{failure}</p>
           )}
 
           {lines.length > 0 && (
@@ -255,9 +339,6 @@ export function InstallDialog({
               </summary>
               <LogPanel lines={lines} className="mt-2 h-40" />
             </details>
-          )}
-          {failure && (
-            <p className="text-destructive mt-3 text-sm">{failure}</p>
           )}
         </div>
 

@@ -24,6 +24,7 @@ class ToolConfig(BaseModel):
     command: str
     params: list[dict] = Field(default_factory=list)
     targets: list[dict] = Field(default_factory=list)
+    timeline: list[dict] = Field(default_factory=list)
     setup_files: list[dict] = Field(default_factory=list)
     post_install: str | None = None
     min_cpus: int = 1
