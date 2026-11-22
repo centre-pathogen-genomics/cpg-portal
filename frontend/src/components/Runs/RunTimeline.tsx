@@ -119,20 +119,42 @@ function RunTimeline({
   }, [cleanLogs, finished, running, steps])
 
   const deduced = phases === undefined
-  // A completed run's timeline is just a row of ticks; the logs and results
-  // are the useful part. Keep it for active runs, and for failed or cancelled
-  // runs where it shows where the run stopped. Explicit phases (installs) stay
-  // visible even when finished.
-  if (deduced && (steps.length === 0 || status === "completed")) return null
+  // A run timeline is kept even when the run is finished: its steps show what
+  // was reached and the trailing Finish state marks the run as complete,
+  // failed or cancelled. Only a run with no steps is hidden. Explicit phases
+  // (installs) stay visible too.
+  if (deduced && steps.length === 0) return null
+
+  // The trailing Finish state: complete only when the run completes; failed or
+  // cancelled runs stop short of it.
+  const finishState: StepState =
+    status === "completed"
+      ? "completed"
+      : status === "failed"
+        ? "failed"
+        : status === "cancelled"
+          ? "skipped"
+          : running
+            ? "next"
+            : "pending"
 
   const rows: Row[] = deduced
-    ? steps.map((step, index) => ({
-        key: `${step.name}-${index}`,
-        name: step.name,
-        state: states[index],
-        pattern: step.pattern,
-        detail: null,
-      }))
+    ? [
+        ...steps.map((step, index) => ({
+          key: `${step.name}-${index}`,
+          name: step.name,
+          state: states[index],
+          pattern: step.pattern,
+          detail: null,
+        })),
+        {
+          key: "finish",
+          name: "Finish",
+          state: finishState,
+          pattern: null,
+          detail: undefined,
+        },
+      ]
     : phases.map((phase) => ({
         key: phase.id,
         name: phase.name,

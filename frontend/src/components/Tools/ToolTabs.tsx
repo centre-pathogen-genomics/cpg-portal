@@ -312,7 +312,7 @@ export function ToolTabs({
       </TabsContent>
 
       <TabsContent value="details" className="mt-4">
-        <dl className="max-w-xl">
+        <dl className="w-full">
           <DetailRow label="Version">
             {tool.version ? (
               <Badge>{tool.version}</Badge>
