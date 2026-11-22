@@ -1,7 +1,5 @@
 import type { PortalToolDetail, PortalToolSummary } from "./contracts"
 
-export {}
-
 // An installed tool, as the main process describes it to the window. Kept in
 // step with the bridge in `electron/preload.ts`.
 type ToolEntry = {
@@ -67,6 +65,8 @@ declare global {
       pickDirectory(defaultPath?: string): Promise<string | null>
       revealPath(target: string): Promise<void>
       openPath(target: string): Promise<string>
+      /** Shows an OS notification (macOS/Windows/Linux), failure-silent. */
+      notify(payload: { title: string; body: string }): void
       openExternal(url: string): Promise<boolean>
       getPathForFile(file: File): string
     }

@@ -44,8 +44,10 @@ contextBridge.exposeInMainWorld("cpgRunner", {
   onUpdateAvailable: (
     handler: (update: { version: string; url: string }) => void,
   ): (() => void) => {
-    const listener = (_event: unknown, update: { version: string; url: string }) =>
-      handler(update)
+    const listener = (
+      _event: unknown,
+      update: { version: string; url: string },
+    ) => handler(update)
     ipcRenderer.on("runner:update-available", listener)
     return () => {
       ipcRenderer.removeListener("runner:update-available", listener)
@@ -65,7 +67,8 @@ contextBridge.exposeInMainWorld("cpgRunner", {
   addPortalTool: (target: {
     name: string
     version?: string
-  }): Promise<ToolEntry> => ipcRenderer.invoke("runner:add-portal-tool", target),
+  }): Promise<ToolEntry> =>
+    ipcRenderer.invoke("runner:add-portal-tool", target),
   importPacks: (): Promise<ToolEntry[]> =>
     ipcRenderer.invoke("runner:import-packs"),
   importPackPaths: (files: string[]): Promise<ToolEntry[]> =>
@@ -83,7 +86,9 @@ contextBridge.exposeInMainWorld("cpgRunner", {
     }
   },
   /** The tool the page shows is gone: its route has to change. */
-  onToolRemoved: (handler: (target: { toolId: string }) => void): (() => void) => {
+  onToolRemoved: (
+    handler: (target: { toolId: string }) => void,
+  ): (() => void) => {
     const listener = (_event: unknown, target: { toolId: string }) =>
       handler(target)
     ipcRenderer.on("runner:tool-removed", listener)
@@ -92,9 +97,7 @@ contextBridge.exposeInMainWorld("cpgRunner", {
     }
   },
   /** The window is pointed at another tool's runner; the page stays mounted. */
-  onShowTool: (
-    handler: (target: { toolId: string }) => void,
-  ): (() => void) => {
+  onShowTool: (handler: (target: { toolId: string }) => void): (() => void) => {
     const listener = (_event: unknown, target: { toolId: string }) =>
       handler(target)
     ipcRenderer.on("runner:show-tool", listener)
@@ -117,6 +120,9 @@ contextBridge.exposeInMainWorld("cpgRunner", {
     ipcRenderer.invoke("runner:open-path", target),
   openExternal: (url: string): Promise<boolean> =>
     ipcRenderer.invoke("runner:open-external", url),
+  /** A desktop notification for a finished run; silently ignored if unsupported. */
+  notify: (payload: { title: string; body: string }): void =>
+    ipcRenderer.send("runner:notify", payload),
   getPathForFile: (file: File): string => {
     try {
       return webUtils.getPathForFile(file)

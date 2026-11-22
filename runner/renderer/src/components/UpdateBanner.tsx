@@ -1,8 +1,8 @@
-import { Download, X } from "lucide-react"
-import { useEffect, useState } from "react"
-import { Button } from "@/components/ui/button"
+import { useCallback, useEffect, useRef } from "react"
+import { toast } from "sonner"
 
 const DISMISSED_KEY = "cpg-runner:update-dismissed"
+const TOAST_ID = "cpg-runner:update-available"
 
 type AppUpdate = { version: string; url: string }
 
@@ -15,63 +15,65 @@ function readDismissed(): string {
 }
 
 /**
- * A newer build of this app, when the portal announces one. The download stays
- * on the portal: this app never replaces itself, it only says what is there.
- * A dismissed version stays dismissed, even across launches.
+ * The download stays on the portal: this app never replaces itself, it only
+ * says what is there. Clicking "Download update" saves the newer build the
+ * same way the old banner's `<a href download>` did.
+ */
+function download(url: string): void {
+  const anchor = document.createElement("a")
+  anchor.href = url
+  anchor.download = ""
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+}
+
+/**
+ * A newer build of this app, when the portal announces one. Rendered through
+ * the shared sonner Toaster (mounted once in main.tsx) so the runner has one
+ * toast system. The toast stays open until it is dismissed or actioned; a
+ * dismissed version stays dismissed, even across launches.
  */
 export function UpdateBanner() {
-  const [update, setUpdate] = useState<AppUpdate | null>(null)
-  const [dismissed, setDismissed] = useState(readDismissed)
+  const activeRef = useRef<string | null>(null)
+  const dismissedRef = useRef(readDismissed())
+
+  const show = useCallback((next: AppUpdate) => {
+    // Already on screen, or the user dismissed this exact version before.
+    if (
+      next.version === activeRef.current ||
+      next.version === dismissedRef.current
+    ) {
+      return
+    }
+    activeRef.current = next.version
+    toast.info(`CPG Runner ${next.version} is available`, {
+      id: TOAST_ID,
+      description: "Download it, then quit and replace the app.",
+      // Stays put until the user acts, like the banner it replaces.
+      duration: Infinity,
+      action: {
+        label: "Download update",
+        onClick: () => download(next.url),
+      },
+      onDismiss: () => {
+        try {
+          localStorage.setItem(DISMISSED_KEY, next.version)
+        } catch {
+          // A window without storage shows the notice again next launch.
+        }
+        dismissedRef.current = next.version
+        activeRef.current = null
+      },
+    })
+  }, [])
 
   useEffect(() => {
     void window.cpgRunner?.update?.().then((next) => {
-      if (next) setUpdate(next)
+      if (next) show(next)
     })
-    return window.cpgRunner?.onUpdateAvailable?.((next) => setUpdate(next))
-  }, [])
+    return window.cpgRunner?.onUpdateAvailable?.((next) => show(next))
+  }, [show])
 
-  if (!update || update.version === dismissed) return null
-  const shown = update
-
-  function dismiss() {
-    try {
-      localStorage.setItem(DISMISSED_KEY, shown.version)
-    } catch {
-      // A window without storage shows the notice again next launch.
-    }
-    setDismissed(shown.version)
-    setUpdate(null)
-  }
-
-  return (
-    <div
-      role="status"
-      className="bg-popover text-popover-foreground fixed bottom-4 left-4 z-50 w-80 rounded-md border p-4 shadow-lg"
-    >
-      <p className="text-sm font-semibold">
-        CPG Runner {shown.version} is available
-      </p>
-      <p className="text-muted-foreground mt-1 text-xs">
-        Download it, then quit and replace the app.
-      </p>
-      <div className="mt-3 flex items-center justify-between gap-2">
-        <Button asChild size="sm">
-          <a href={shown.url} download>
-            <Download />
-            Download
-          </a>
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          aria-label="Dismiss the update notice"
-          title="Dismiss the update notice"
-          onClick={dismiss}
-        >
-          <X />
-        </Button>
-      </div>
-    </div>
-  )
+  return null
 }

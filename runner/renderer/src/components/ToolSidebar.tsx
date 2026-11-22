@@ -151,9 +151,9 @@ export function ToolSidebar({
         )}
         {tools.length === 0 ? (
           !collapsed && (
-            <p className="text-muted-foreground px-2 py-2 text-xs">
+            <div className="text-muted-foreground flex h-24 items-center justify-center rounded-md border px-2 text-center text-xs">
               No tools yet. Add one below.
-            </p>
+            </div>
           )
         ) : (
           <ul className="grid grid-cols-1 gap-0.5">
@@ -161,19 +161,20 @@ export function ToolSidebar({
               const active = tool.id === activeToolId
               return (
                 <li key={tool.id} className="min-w-0">
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
                     onClick={() => void openTool(tool.id)}
                     aria-current={active ? "page" : undefined}
                     aria-label={collapsed ? tool.name : undefined}
                     disabled={openingId !== null}
                     title={tool.problem ?? tool.description ?? tool.name}
                     className={cn(
-                      "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm",
+                      "h-auto w-full gap-2 rounded-md px-2 py-1.5 text-left text-sm",
                       collapsed ? "justify-center" : "justify-between",
                       active
-                        ? "bg-background font-medium shadow-sm"
-                        : "hover:bg-background/70",
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                        : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                     )}
                   >
                     <span
@@ -212,7 +213,7 @@ export function ToolSidebar({
                           </span>
                         )
                       ))}
-                  </button>
+                  </Button>
                 </li>
               )
             })}
@@ -224,7 +225,10 @@ export function ToolSidebar({
         <Button
           type="button"
           variant="ghost"
-          className={cn("w-full", collapsed ? "justify-center" : "justify-start")}
+          className={cn(
+            "w-full",
+            collapsed ? "justify-center" : "justify-start",
+          )}
           disabled={openingId !== null || !bridge}
           title={collapsed ? "Add tool" : undefined}
           aria-label={collapsed ? "Add tool" : undefined}

@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Separator } from "@/components/ui/separator"
 import { api, errorMessage } from "../api"
 import type { DoctorReport } from "../contracts"
 import { openExternal } from "../lib/desktop"
@@ -42,6 +43,17 @@ export function DockerSetupDialog({
   if (!doctor) return null
 
   const commands = fencedCommands(doctor.instructions)
+
+  // The sidecar offers at most one repair action per report, but choose a
+  // primary by id priority anyway so the hierarchy stays stable if that ever
+  // changes: starting the installed Docker Desktop is the most useful fix.
+  const primaryAction =
+    doctor.actions.find((action) => action.id === "start-docker") ??
+    doctor.actions[0] ??
+    null
+  const secondaryActions = doctor.actions.filter(
+    (action) => action !== primaryAction,
+  )
 
   async function runAction(actionId: string) {
     if (activeAction) return
@@ -116,8 +128,21 @@ export function DockerSetupDialog({
         </div>
 
         <DialogFooter className="gap-2 sm:justify-between">
-          <div className="flex flex-wrap gap-2">
-            {doctor.actions.map((action) => (
+          <div className="flex flex-wrap items-center gap-2">
+            {primaryAction && (
+              <Button
+                key={primaryAction.id}
+                type="button"
+                variant="default"
+                disabled={activeAction !== null}
+                onClick={() => void runAction(primaryAction.id)}
+              >
+                {activeAction === primaryAction.id
+                  ? "Running…"
+                  : primaryAction.label}
+              </Button>
+            )}
+            {secondaryActions.map((action) => (
               <Button
                 key={action.id}
                 type="button"
@@ -130,13 +155,13 @@ export function DockerSetupDialog({
             ))}
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               onClick={() => openExternal(doctor.download_url)}
             >
               Open Docker download page
             </Button>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <Button
               type="button"
               variant="outline"
@@ -145,6 +170,7 @@ export function DockerSetupDialog({
             >
               Retry
             </Button>
+            <Separator orientation="vertical" className="h-6" />
             <Button
               type="button"
               variant="ghost"

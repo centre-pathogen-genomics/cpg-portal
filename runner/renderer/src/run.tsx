@@ -1,17 +1,18 @@
-import { RotateCcw } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
-import { toast } from "sonner";
-import { ConfirmationDialog } from "@/components/Common/ConfirmationDialog";
-import OutputAccordion from "@/components/Runs/OutputAccordion";
-import RunTime from "@/components/Runs/RunTime";
-import RunTimeline from "@/components/Runs/RunTimeline";
-import StatusBadge from "@/components/Runs/StatusBadge";
-import { Button } from "@/components/ui/button";
-import { api, errorMessage } from "./api";
-import { RunFiles } from "./components/RunFiles";
-import { RunResults } from "./components/RunResults";
-import { ToolImage, useToolImages } from "./components/ToolImage";
-import { ToolSidebar } from "./components/ToolSidebar";
+import { useNavigate } from "@tanstack/react-router"
+import { FolderOpen, RotateCcw } from "lucide-react"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { toast } from "sonner"
+import { ConfirmationDialog } from "@/components/Common/ConfirmationDialog"
+import OutputAccordion from "@/components/Runs/OutputAccordion"
+import RunTime from "@/components/Runs/RunTime"
+import RunTimeline from "@/components/Runs/RunTimeline"
+import StatusBadge from "@/components/Runs/StatusBadge"
+import { Button } from "@/components/ui/button"
+import { api, errorMessage } from "./api"
+import { RunFiles } from "./components/RunFiles"
+import { RunResults } from "./components/RunResults"
+import { ToolImage, useToolImages } from "./components/ToolImage"
+import { ToolSidebar } from "./components/ToolSidebar"
 import {
   type FileTypesMap,
   isRunActive,
@@ -19,69 +20,68 @@ import {
   type RunRecord,
   type ToolConfig,
   toRunPublic,
-} from "./contracts";
-import { openPath } from "./lib/desktop";
-import { useNavigate } from "@tanstack/react-router";
+} from "./contracts"
+import { notifyRun, openPath } from "./lib/desktop"
 
 export function RunPage({ toolId, runId }: { toolId: string; runId: string }) {
-  const navigate = useNavigate();
-  const [record, setRecord] = useState<RunRecord | null>(null);
-  const [tool, setTool] = useState<ToolConfig | null>(null);
-  const [environment, setEnvironment] = useState<string | null>(null);
-  const [fileTypes, setFileTypes] = useState<FileTypesMap>({});
-  const [logs, setLogs] = useState<string[]>([]);
+  const navigate = useNavigate()
+  const [record, setRecord] = useState<RunRecord | null>(null)
+  const [tool, setTool] = useState<ToolConfig | null>(null)
+  const [environment, setEnvironment] = useState<string | null>(null)
+  const [fileTypes, setFileTypes] = useState<FileTypesMap>({})
+  const [logs, setLogs] = useState<string[]>([])
   const [leaveAction, setLeaveAction] = useState<{
-    go: () => void | Promise<void>;
-  } | null>(null);
-  const [leaving, setLeaving] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
+    go: () => void | Promise<void>
+  } | null>(null)
+  const [leaving, setLeaving] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   const refresh = useCallback(async () => {
-    const next = await api.get<RunRecord>(`/runs/${runId}`);
-    setRecord(next);
-    return next;
-  }, [runId]);
+    const next = await api.get<RunRecord>(`/runs/${runId}`)
+    setRecord(next)
+    return next
+  }, [runId])
 
   useEffect(() => {
-    void refresh().catch((error) => setLoadError(errorMessage(error)));
+    void refresh().catch((error) => setLoadError(errorMessage(error)))
     void api
       .get<ToolConfig>("/tool")
       .then(setTool)
-      .catch(() => {});
+      .catch(() => {})
     void api
       .get<{ yml: string | null }>("/environment")
       .then((payload) => setEnvironment(payload.yml))
-      .catch(() => {});
+      .catch(() => {})
     // The backend's own extension table decides what each output is.
     void api
       .get<FileTypesMap>("/file-types")
       .then(setFileTypes)
-      .catch(() => {});
-  }, [refresh]);
+      .catch(() => {})
+  }, [refresh])
 
-  const inProgress = isRunActive(record?.status);
-  const images = useToolImages();
+  const inProgress = isRunActive(record?.status)
+  const images = useToolImages()
 
   useEffect(() => {
-    if (!inProgress) return;
+    if (!inProgress) return
     const interval = setInterval(() => {
-      void refresh().catch(() => {});
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [inProgress, refresh]);
+      void refresh().catch(() => {})
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [inProgress, refresh])
 
   useEffect(() => {
-    const socket = new WebSocket(api.wsUrl(`/runs/${runId}/logs`));
+    const socket = new WebSocket(api.wsUrl(`/runs/${runId}/logs`))
     socket.onmessage = (event) => {
-      let message: RunLogMessage;
+      let message: RunLogMessage
       try {
-        message = JSON.parse(String(event.data)) as RunLogMessage;
+        message = JSON.parse(String(event.data)) as RunLogMessage
       } catch {
-        return;
+        return
       }
       if (message.type === "log") {
-        setLogs((previous) => [...previous, message.line].slice(-2000));
-        return;
+        setLogs((previous) => [...previous, message.line].slice(-2000))
+        return
       }
       if (message.type === "status") {
         setRecord((previous) =>
@@ -92,24 +92,24 @@ export function RunPage({ toolId, runId }: { toolId: string; runId: string }) {
                 exit_code: message.exit_code ?? previous.exit_code,
               }
             : previous,
-        );
-        if (!isRunActive(message.status)) void refresh();
+        )
+        if (!isRunActive(message.status)) void refresh()
       }
-    };
-    return () => socket.close();
-  }, [runId, refresh]);
+    }
+    return () => socket.close()
+  }, [runId, refresh])
 
   // Leaving while the run is still going ends it, so both the sidebar and the
   // way back to the tool ask first.
   async function confirmLeave() {
-    if (!leaveAction) return;
-    setLeaving(true);
+    if (!leaveAction) return
+    setLeaving(true)
     try {
-      await api.post(`/runs/${runId}/cancel`).catch(() => {});
-      await leaveAction.go();
+      await api.post(`/runs/${runId}/cancel`).catch(() => {})
+      await leaveAction.go()
     } finally {
-      setLeaving(false);
-      setLeaveAction(null);
+      setLeaving(false)
+      setLeaveAction(null)
     }
   }
 
@@ -117,39 +117,58 @@ export function RunPage({ toolId, runId }: { toolId: string; runId: string }) {
     if (inProgress) {
       setLeaveAction({
         go: () => navigate({ to: "/t/$toolId/tool", params: { toolId } }),
-      });
-      return;
+      })
+      return
     }
-    void navigate({ to: "/t/$toolId/tool", params: { toolId } });
+    void navigate({ to: "/t/$toolId/tool", params: { toolId } })
   }
 
   async function cancel() {
     try {
-      await api.post(`/runs/${runId}/cancel`);
-      await refresh();
+      await api.post(`/runs/${runId}/cancel`)
+      await refresh()
     } catch (error) {
-      toast.error(errorMessage(error));
+      toast.error(errorMessage(error))
     }
   }
 
+  // A run reaching a terminal state notifies the OS once, so a backgrounded
+  // app still tells the user. Best-effort: nothing happens without the bridge.
+  const notifiedRef = useRef(false)
+  useEffect(() => {
+    const status = record?.status
+    if (!status || isRunActive(status) || notifiedRef.current) return
+    notifiedRef.current = true
+    const outcome =
+      status === "completed"
+        ? "completed"
+        : status === "cancelled"
+          ? "cancelled"
+          : "failed"
+    notifyRun(
+      `${tool?.name ?? "Run"} ${outcome}`,
+      record?.name ?? `Run ${runId.slice(0, 8)} ${outcome}`,
+    )
+  }, [record?.status, tool?.name, runId, record?.name])
+
   const stdoutTail = record?.stdout
     ? record.stdout.trimEnd().split("\n").slice(-30).join("\n")
-    : "";
+    : ""
   // The record carries the history; the socket carries lines since the page
   // opened. The timeline only needs to see each pattern once.
   const timelineLogs = [record?.stdout ?? "", ...logs]
     .filter(Boolean)
-    .join("\n");
-  const run = record && tool ? toRunPublic(record, tool, environment) : null;
+    .join("\n")
+  const run = record && tool ? toRunPublic(record, tool, environment) : null
 
   return (
     <div className="flex h-full">
       <ToolSidebar
         activeToolId={tool?.id ?? null}
         beforeOpen={(toolId) => {
-          if (!inProgress || toolId === tool?.id) return true;
-          setLeaveAction({ go: () => window.cpgRunner?.openTool(toolId) });
-          return false;
+          if (!inProgress || toolId === tool?.id) return true
+          setLeaveAction({ go: () => window.cpgRunner?.openTool(toolId) })
+          return false
         }}
       />
 
@@ -277,40 +296,56 @@ export function RunPage({ toolId, runId }: { toolId: string; runId: string }) {
             )}
 
             {(record?.output_dir || record?.work_dir) && (
-              <footer className="text-muted-foreground grid gap-1 pt-4 text-xs">
-                {record?.output_dir && (
-                  <div className="flex flex-wrap items-baseline gap-x-2">
-                    <span>Output folder</span>
-                    <span className="font-mono break-all">
-                      {record.output_dir}
-                    </span>
-                    <Button
-                      type="button"
-                      variant="link"
-                      className="h-auto p-0 text-xs"
-                      onClick={() => openPath(record.output_dir as string)}
-                    >
-                      Open
-                    </Button>
-                  </div>
-                )}
-                {record?.work_dir && (
-                  <div className="flex flex-wrap items-baseline gap-x-2">
-                    <span>Work folder</span>
-                    <span className="font-mono break-all">
-                      {record.work_dir}
-                    </span>
-                    <Button
-                      type="button"
-                      variant="link"
-                      className="h-auto p-0 text-xs"
-                      onClick={() => openPath(record.work_dir as string)}
-                    >
-                      Open
-                    </Button>
-                  </div>
-                )}
-              </footer>
+              <section className="grid gap-2 rounded-md border p-4">
+                <div className="flex items-center gap-2">
+                  <FolderOpen className="size-4 text-muted-foreground" />
+                  <h3 className="text-sm font-semibold">Locations</h3>
+                </div>
+                <div className="grid gap-2">
+                  {record?.output_dir && (
+                    <div className="flex items-center gap-x-3">
+                      <span className="text-muted-foreground w-24 shrink-0 text-xs">
+                        Output folder
+                      </span>
+                      <span
+                        className="min-w-0 flex-1 truncate font-mono text-xs"
+                        title={record.output_dir}
+                      >
+                        {record.output_dir}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="link"
+                        className="h-auto shrink-0 p-0 text-xs"
+                        onClick={() => openPath(record.output_dir as string)}
+                      >
+                        Open
+                      </Button>
+                    </div>
+                  )}
+                  {record?.work_dir && (
+                    <div className="flex items-center gap-x-3">
+                      <span className="text-muted-foreground w-24 shrink-0 text-xs">
+                        Work folder
+                      </span>
+                      <span
+                        className="min-w-0 flex-1 truncate font-mono text-xs"
+                        title={record.work_dir}
+                      >
+                        {record.work_dir}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="link"
+                        className="h-auto shrink-0 p-0 text-xs"
+                        onClick={() => openPath(record.work_dir as string)}
+                      >
+                        Open
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </section>
             )}
           </div>
         </main>
@@ -319,7 +354,7 @@ export function RunPage({ toolId, runId }: { toolId: string; runId: string }) {
       <ConfirmationDialog
         open={leaveAction !== null}
         onOpenChange={(open) => {
-          if (!open) setLeaveAction(null);
+          if (!open) setLeaveAction(null)
         }}
         title="Cancel this run?"
         description="This run is still going. Leaving this page ends it."
@@ -328,5 +363,5 @@ export function RunPage({ toolId, runId }: { toolId: string; runId: string }) {
         onConfirm={() => void confirmLeave()}
       />
     </div>
-  );
+  )
 }

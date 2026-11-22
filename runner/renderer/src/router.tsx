@@ -5,11 +5,23 @@ import {
   Outlet,
 } from "@tanstack/react-router"
 import { setApiBase, toolApiBase } from "./api"
+import { PackDropOverlay } from "./PackDropOverlay"
 import { RunPage } from "./run"
 import { ToolPage } from "./tool"
 import { ToolsPage } from "./tools"
 
-const rootRoute = createRootRoute({ component: Outlet })
+// The overlay is a fixed full-window layer, so it sits above every route
+// without owning their content.
+function RootLayout() {
+  return (
+    <>
+      <PackDropOverlay />
+      <Outlet />
+    </>
+  )
+}
+
+const rootRoute = createRootRoute({ component: RootLayout })
 
 const toolsRoute = createRoute({
   getParentRoute: () => rootRoute,

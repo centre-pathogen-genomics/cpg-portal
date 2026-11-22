@@ -57,3 +57,11 @@ export async function pickDirectory(
 export function filePathOf(file: File): string {
   return window.cpgRunner?.getPathForFile(file) ?? ""
 }
+
+/**
+ * An OS notification. No-op when the bridge is absent (e.g. the renderer
+ * running in a plain browser tab).
+ */
+export function notifyRun(title: string, body: string): void {
+  window.cpgRunner?.notify?.({ title, body })
+}
