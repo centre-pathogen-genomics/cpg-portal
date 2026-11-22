@@ -4,6 +4,10 @@ import {
   EllipsisVertical,
   ExternalLink,
   LoaderCircle,
+  Monitor,
+  Moon,
+  Settings as SettingsIcon,
+  Sun,
   Trash2,
   Wrench,
 } from "lucide-react";
@@ -14,6 +18,7 @@ import { ConfirmationDialog } from "@/components/Common/ConfirmationDialog";
 import ToolRunForm from "@/components/Tools/ToolRunForm"
 import { ToolSettings } from "@/components/Tools/ToolSettings"
 import { ToolTabs } from "@/components/Tools/ToolTabs";
+import { useTheme } from "@/components/theme-provider";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -60,6 +65,9 @@ import cpgLogo from "./assets/cpg-logo.png";
 const FIELD_ERROR =
   /^(?:Missing required parameter|Invalid value for parameter): (.+)$/;
 
+/** Fixed for the window's lifetime; read once. */
+const appVersion = window.cpgRunner?.appVersion ?? "";
+
 /** Everything the tool page shows about one tool. */
 type ToolPageSnapshot = {
   tool: ToolConfig;
@@ -78,6 +86,7 @@ const toolPageCache = new Map<string, ToolPageSnapshot>();
 
 export function ToolPage({ toolId }: { toolId: string }) {
   const navigate = useNavigate();
+  const { setTheme } = useTheme();
   const [tool, setTool] = useState<ToolConfig | null>(null);
   const [status, setStatus] = useState<StatusPayload | null>(null);
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -650,7 +659,39 @@ export function ToolPage({ toolId }: { toolId: string }) {
 
             <aside className="flex min-h-0 flex-col border-l">
               <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
-                <img src={cpgLogo} alt="CPG" className="mb-4 h-10 w-auto shrink-0 opacity-80" />
+                <div className="mb-4 flex items-center justify-between">
+                  <img src={cpgLogo} alt="CPG" className="h-14 w-auto shrink-0 opacity-80" />
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" aria-label="Global settings">
+                        <SettingsIcon className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-44">
+                      <DropdownMenuItem onClick={() => setTheme("light")}>
+                        <Sun className="mr-2 h-4 w-4" />
+                        Light
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setTheme("dark")}>
+                        <Moon className="mr-2 h-4 w-4" />
+                        Dark
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setTheme("system")}>
+                        <Monitor className="mr-2 h-4 w-4" />
+                        System
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        disabled
+                        className="text-muted-foreground focus:bg-transparent"
+                      >
+                        {appVersion
+                          ? `CPG Runner v${appVersion}`
+                          : "CPG Runner"}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
                 <h2 className="mb-3 text-sm font-semibold">Run settings</h2>
                 <div className="grid gap-6">
                   {settingsPanel}

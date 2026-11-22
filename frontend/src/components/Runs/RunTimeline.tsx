@@ -127,7 +127,9 @@ function RunTimeline({
   if (deduced && (steps.length === 0 || status === "completed")) return null
 
   // The trailing Finish state: complete only when the run completes; failed or
-  // cancelled runs stop short of it.
+  // cancelled runs stop short of it. While running it reads 'Up next' only when
+  // the last real step is the in-progress one (its state is 'active' or, all
+  // steps done and the run is finishing, 'completed'); otherwise it's 'pending'.
   const finishState: StepState =
     status === "completed"
       ? "completed"
@@ -135,7 +137,9 @@ function RunTimeline({
         ? "failed"
         : status === "cancelled"
           ? "skipped"
-          : running
+          : running &&
+              (states[steps.length - 1] === "active" ||
+                states[steps.length - 1] === "completed")
             ? "next"
             : "pending"
 
