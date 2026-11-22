@@ -170,13 +170,19 @@ export function ToolSidebar({
                     disabled={openingId !== null}
                     title={tool.problem ?? tool.description ?? tool.name}
                     className={cn(
-                      "h-auto w-full gap-2 rounded-md px-2 py-1.5 text-left text-sm",
+                      "relative h-auto w-full gap-2 rounded-md px-2 py-1.5 text-left text-sm",
                       collapsed ? "justify-center" : "justify-between",
                       active
                         ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                         : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                     )}
                   >
+                    {active && !collapsed && (
+                      <span
+                        aria-hidden
+                        className="bg-primary-foreground absolute inset-y-1.5 left-0 w-0.5 rounded-full"
+                      />
+                    )}
                     <span
                       className={cn(
                         "flex min-w-0 items-center gap-2",

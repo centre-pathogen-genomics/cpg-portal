@@ -39,7 +39,7 @@ export function RunFiles({
           {files.map((file, index) => (
             <li
               key={`${file.path}-${index}`}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3"
+              className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3 transition-colors hover:bg-muted/40"
             >
               <p
                 className="min-w-0 truncate font-mono text-sm"

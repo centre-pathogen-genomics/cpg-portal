@@ -1,4 +1,4 @@
-import { Plus, XIcon } from "lucide-react"
+import { Plus, UploadCloud, XIcon } from "lucide-react"
 import { type DragEvent, useState } from "react"
 import { toast } from "sonner"
 import type { Param } from "@/client"
@@ -86,8 +86,8 @@ export function LocalFilePicker({
     <div className="grid gap-2">
       <div
         className={cn(
-          "rounded-md border border-dashed p-4 text-center text-sm transition-colors",
-          dragOver && "border-primary bg-accent",
+          "rounded-md border border-dashed bg-muted/30 p-4 text-center text-sm transition-colors hover:border-primary/60 hover:bg-primary/5",
+          dragOver && "border-primary bg-primary/10",
           disabled && "opacity-50",
         )}
         onDragOver={(event) => {
@@ -97,7 +97,8 @@ export function LocalFilePicker({
         onDragLeave={() => setDragOver(false)}
         onDrop={drop}
       >
-        <p className="text-muted-foreground">
+        <UploadCloud className="text-muted-foreground mx-auto mb-1 size-5" />
+        <p className="font-medium">
           {values.length === 0
             ? "Drop files here or choose from disk"
             : "Drop more files here"}
