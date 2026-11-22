@@ -13,9 +13,9 @@ export function splashHtml(logoSrc: string): string {
     />
     <style>
       :root {
-        --accent: #00c9a7;
+        --accent: #0f7c9c;
         --ink: #e6edf2;
-        --muted: #9db2c0;
+        --muted: #9db8c9;
       }
       * {
         box-sizing: border-box;
@@ -44,7 +44,7 @@ export function splashHtml(logoSrc: string): string {
           color: #e6edf2;
         }
         .caption {
-          color: #9db2c0;
+          color: #9db8c9;
         }
       }
       .logo {
