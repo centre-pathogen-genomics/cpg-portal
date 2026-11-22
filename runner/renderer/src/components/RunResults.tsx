@@ -48,10 +48,10 @@ export function RunResults({
     )
 
   return (
-    <section className="grid gap-3">
+    <section className="grid min-w-0 gap-3">
       <h2 className="text-lg font-semibold">Results</h2>
       <FileLoaderProvider loader={loader}>
-        <Tabs defaultValue={renderable[0].file.path}>
+        <Tabs defaultValue={renderable[0].file.path} className="min-w-0">
           <TabsList
             variant="line"
             className="w-full justify-start overflow-x-auto [scrollbar-width:thin]"

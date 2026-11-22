@@ -242,7 +242,7 @@ export function RunPage({ toolId, runId }: { toolId: string; runId: string }) {
         </header>
 
         <main className="min-h-0 flex-1 overflow-auto px-8 py-6">
-          <div className="mx-auto grid max-w-6xl gap-6 min-w-0">
+          <div className="mx-auto grid max-w-6xl min-w-0 gap-6 [&>*]:min-w-0">
             {loadError && (
               <p className="text-destructive text-sm">{loadError}</p>
             )}
