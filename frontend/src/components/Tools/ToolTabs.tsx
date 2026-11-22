@@ -76,9 +76,17 @@ function ExternalLinkButton({
   )
 }
 
+const SHIELD_TONES: Record<string, string> = {
+  brand: "bg-primary text-primary-foreground",
+  license: "bg-emerald-600 text-white",
+  github: "bg-slate-600 text-white",
+  doi: "bg-violet-600 text-white",
+  tag: "bg-muted text-muted-foreground",
+}
+
 /**
- * A shields.io-style badge: a muted label segment next to a brand-colored
- * value segment, optionally linking out. Rendered locally so it stays
+ * A shields.io-style badge: a muted label segment next to a coloured value
+ * segment, optionally linking out. Rendered locally so it stays
  * palette-consistent and works offline; the pack's own shield images are
  * still shown as images.
  */
@@ -87,11 +95,13 @@ function ShieldBadge({
   value,
   url,
   onOpen,
+  tone = "brand",
 }: {
   label: string
   value?: string
   url?: string | null
   onOpen?: (url: string) => void
+  tone?: keyof typeof SHIELD_TONES
 }) {
   return (
     <a
@@ -115,7 +125,9 @@ function ShieldBadge({
           {label}
         </span>
         {value && (
-          <span className="bg-primary text-primary-foreground flex h-full items-center px-1.5 font-semibold [text-transform:capitalize]">
+          <span
+            className={`flex h-full items-center px-1.5 font-semibold [text-transform:capitalize] ${SHIELD_TONES[tone]}`}
+          >
             {value}
           </span>
         )}
@@ -137,24 +149,33 @@ function ReadmeBadges({
   tool: ToolTabsTool
   onOpenExternal?: (url: string) => void
 }) {
-  const items: { label: string; value?: string; url?: string | null }[] = []
+  const items: {
+    label: string
+    value?: string
+    url?: string | null
+    tone: keyof typeof SHIELD_TONES
+  }[] = []
   const keyOf = (label: string) => `badge-${label}`
-  if (tool.license) items.push({ label: "license", value: tool.license })
-  if (tool.docs_url) items.push({ label: "docs", value: "docs", url: tool.docs_url })
+  if (tool.license)
+    items.push({ label: "license", value: tool.license, tone: "license" })
+  if (tool.docs_url)
+    items.push({ label: "docs", value: "docs", url: tool.docs_url, tone: "brand" })
   if (tool.paper_doi)
     items.push({
       label: "doi",
       value: tool.paper_doi,
       url: `https://doi.org/${tool.paper_doi}`,
+      tone: "doi",
     })
   if (tool.github_repo)
     items.push({
       label: "github",
       value: tool.github_repo.replace(/^https?:\/\//, ""),
       url: tool.github_repo,
+      tone: "github",
     })
   for (const tag of tool.tags ?? [])
-    items.push({ label: "#", value: tag })
+    items.push({ label: "#", value: tag, tone: "tag" })
 
   const hasShields = tool.badges?.some((entry) =>
     entry.badge?.startsWith("http"),
@@ -197,6 +218,7 @@ function ReadmeBadges({
           value={item.value}
           url={item.url}
           onOpen={onOpenExternal}
+          tone={item.tone}
         />
       ))}
     </div>
@@ -258,7 +280,6 @@ export function ToolTabs({
       <TabsContent value="documentation" className="mt-4">
         {hasDocumentation ? (
           <div className="grid gap-5">
-            <ReadmeBadges tool={tool} onOpenExternal={onOpenExternal} />
             {tool.docs_url && (
               <div>
                 <ExternalLinkButton
@@ -268,6 +289,7 @@ export function ToolTabs({
                 />
               </div>
             )}
+            <ReadmeBadges tool={tool} onOpenExternal={onOpenExternal} />
             {tool.explanation_of_results_markdown && (
               <div className="grid gap-3">
                 <h3 className="text-lg font-semibold">

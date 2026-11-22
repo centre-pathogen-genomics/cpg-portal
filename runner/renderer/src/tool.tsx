@@ -650,7 +650,7 @@ export function ToolPage({ toolId }: { toolId: string }) {
 
             <aside className="flex min-h-0 flex-col border-l">
               <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
-                <img src={cpgLogo} alt="CPG" className="mb-4 size-10 shrink-0 opacity-80" />
+                <img src={cpgLogo} alt="CPG" className="mb-4 h-10 w-auto shrink-0 opacity-80" />
                 <h2 className="mb-3 text-sm font-semibold">Run settings</h2>
                 <div className="grid gap-6">
                   {settingsPanel}
