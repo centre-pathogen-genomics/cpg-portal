@@ -44,7 +44,7 @@ export function ToolHeading({
           />
           <Title className="truncate text-3xl font-bold">{name}</Title>
           {version && (
-            <Badge variant="secondary" className="ml-1">
+            <Badge className="ml-1">
               v{version}
             </Badge>
           )}

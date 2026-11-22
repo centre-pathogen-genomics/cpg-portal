@@ -64,7 +64,7 @@ const ToolCard = ({
                 <Button
                   size="icon"
                   variant="secondary"
-                  className="mr-2 rounded-full text-xl hover:text-green-600"
+                  className="mr-2 rounded-full text-xl hover:text-primary"
                   aria-label="Run"
                   title="Run tool"
                   onClick={(event) => {
