@@ -1387,8 +1387,10 @@ function InputsTab({ control }: { control: Control<ToolFormData> }) {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Steps run in order. A step is active until its pattern appears in
-            the run's logs, or until the run finishes. Patterns are matched
+            Steps run in order. A step starts running when its pattern appears
+            in the run's logs — e.g. a line like "starting X analysis" begins
+            the X analysis step — and stays active until the next step's
+            pattern appears or the run ends. Patterns are matched
             case-insensitively as regular expressions.
           </p>
           {timeline.fields.length === 0 && (

@@ -106,17 +106,28 @@ function RunTimeline({
   const finished = terminalStatuses.has(status)
   const running = status === "running"
   const states = useMemo(() => {
-    let activeIndex = -1
-    return steps.map<StepState>((step, index) => {
-      if (activeIndex !== -1) {
-        if (!finished && running && index === activeIndex + 1) return "next"
-        return finished ? "skipped" : "pending"
-      }
-      if (matches(cleanLogs, step.pattern)) return "completed"
-      activeIndex = index
-      return finished ? "skipped" : "active"
+    // A step starts running when its line appears in the log — "starting X
+    // analysis" begins the X analysis step — and keeps running until the
+    // next step's line appears or the run ends. A step whose line never
+    // appears never started: before the running step it was missed, after
+    // it it is still to come.
+    const matched = steps.map((step) => matches(cleanLogs, step.pattern))
+    let lastMatched = -1
+    matched.forEach((isMatched, index) => {
+      if (isMatched) lastMatched = index
     })
-  }, [cleanLogs, finished, running, steps])
+    return steps.map<StepState>((_step, index) => {
+      if (matched[index]) {
+        if (index < lastMatched) return "completed"
+        if (!finished) return "active"
+        // The run ended while this step was running.
+        return status === "completed" ? "completed" : "skipped"
+      }
+      if (index < lastMatched) return "skipped"
+      if (!finished && running && index === lastMatched + 1) return "next"
+      return finished ? "skipped" : "pending"
+    })
+  }, [cleanLogs, finished, running, status, steps])
 
   const deduced = phases === undefined
   // A completed run's timeline is just a row of ticks; the logs and results

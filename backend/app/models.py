@@ -449,8 +449,10 @@ class ToolBase(SQLModel):
     setup_files: list[SetupFile] | None = None
     params: list[Param] | None = None
     targets: list[Target] | None = None
-    # Ordered steps shown as a timeline while a run runs. Each step's pattern
-    # is matched against the run's log until it appears or the run ends.
+    # Ordered steps shown as a timeline while a run runs. A step starts
+    # running when its pattern appears in the run's log (e.g. a line like
+    # "starting X analysis" begins the X analysis step) and keeps running
+    # until the next step's pattern appears or the run ends.
     timeline: list[TimelineStep] | None = None
     llm_summary_enabled: bool = False
     # CPUs (threads) a run of this tool may reserve: users pick
