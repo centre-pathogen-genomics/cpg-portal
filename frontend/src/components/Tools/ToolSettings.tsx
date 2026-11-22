@@ -44,7 +44,7 @@ export function ToolSettings({
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <Label htmlFor="runner-output">Output folder</Label>
-          <p className="mt-1 text-muted-foreground text-xs">
+          <p className="mt-1 text-sm text-foreground/70">
             Finished runs are copied here.
           </p>
         </div>
@@ -53,6 +53,7 @@ export function ToolSettings({
             id="runner-output"
             readOnly
             value={settings.output_dir}
+            title={settings.output_dir}
             className="h-9 w-56 font-mono text-xs"
           />
           <div className="flex gap-2">
@@ -88,7 +89,7 @@ export function ToolSettings({
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <Label htmlFor="runner-network">Allow network access</Label>
-          <p className="mt-1 text-muted-foreground text-xs">
+          <p className="mt-1 text-sm text-foreground/70">
             Turn this off for tools that must run offline.
           </p>
         </div>
@@ -123,7 +124,7 @@ export function ToolSettings({
               </TooltipContent>
             </Tooltip>
           </div>
-          <p className="mt-1 text-muted-foreground text-xs">
+          <p className="mt-1 text-sm text-foreground/70">
             Delete the run&#39;s temporary work folder.
           </p>
         </div>
@@ -160,7 +161,7 @@ export function ToolSettings({
               </TooltipContent>
             </Tooltip>
           </div>
-          <p className="mt-1 text-muted-foreground text-xs">
+          <p className="mt-1 text-sm text-foreground/70">
             Replace an existing output folder.
           </p>
         </div>

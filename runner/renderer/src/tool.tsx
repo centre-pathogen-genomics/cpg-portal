@@ -3,7 +3,6 @@ import {
   Download,
   EllipsisVertical,
   ExternalLink,
-  FolderOpen,
   LoaderCircle,
   Trash2,
   Wrench,
@@ -13,13 +12,13 @@ import { toast } from "sonner";
 import RenderMarkdown from "@/components/Common/Markdown";
 import { ConfirmationDialog } from "@/components/Common/ConfirmationDialog";
 import ToolRunForm from "@/components/Tools/ToolRunForm"
+import { ToolSettings } from "@/components/Tools/ToolSettings"
 import { ToolTabs } from "@/components/Tools/ToolTabs";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -488,7 +487,7 @@ export function ToolPage({ toolId }: { toolId: string }) {
         extras={
           <div>
             <Label htmlFor="CPG_RUNNER_RUN_NAME">Run name</Label>
-            <p className="mt-1 mb-2 text-muted-foreground text-xs">
+            <p className="mt-1 mb-2 text-sm text-foreground/70">
               Optional, named automatically if left blank
             </p>
             <Input
@@ -652,114 +651,17 @@ export function ToolPage({ toolId }: { toolId: string }) {
             <aside className="flex min-h-0 flex-col border-l">
               <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
                 <img src={cpgLogo} alt="CPG" className="mb-4 size-10 shrink-0 opacity-80" />
+                <h2 className="mb-3 text-sm font-semibold">Run settings</h2>
                 <div className="grid gap-6">
                   {settingsPanel}
 
-                  <div>
-                    <Label htmlFor="runner-output">Output folder</Label>
-                    <p className="mb-2 text-muted-foreground text-xs">
-                      Finished runs are copied here.
-                    </p>
-                    <Input
-                      id="runner-output"
-                      readOnly
-                      value={settings.output_dir}
-                      className="font-mono text-xs"
-                    />
-                    <div className="mt-2 flex gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={!doctorReady}
-                        onClick={() => {
-                          void pickDirectory(settings.output_dir).then(
-                            (chosen) => {
-                              if (chosen)
-                                void updateSettings({ output_dir: chosen });
-                            },
-                          );
-                        }}
-                      >
-                        Browse…
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={!doctorReady}
-                        onClick={() => openPath(settings.output_dir)}
-                      >
-                        <FolderOpen />
-                        Open
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <Label htmlFor="runner-network">
-                        Allow network access
-                      </Label>
-                      <p className="text-muted-foreground text-xs">
-                        Turn this off for tools that must run offline.
-                      </p>
-                    </div>
-                    <Switch
-                      id="runner-network"
-                      checked={settings.network}
-                      disabled={!doctorReady}
-                      onCheckedChange={(checked) =>
-                        void updateSettings({ network: checked === true })
-                      }
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <Label htmlFor="runner-clean-work">
-                        Clean up work folder
-                      </Label>
-                      <p className="text-muted-foreground text-xs">
-                        Delete the run&#39;s .cpg_work folder once its outputs
-                        are copied. Keep it to inspect the files a run left
-                        behind.
-                      </p>
-                    </div>
-                    <Switch
-                      id="runner-clean-work"
-                      checked={settings.clean_work_dir}
-                      disabled={!doctorReady}
-                      onCheckedChange={(checked) =>
-                        void updateSettings({
-                          clean_work_dir: checked === true,
-                        })
-                      }
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <Label htmlFor="runner-overwrite-output">
-                        Overwrite existing folder
-                      </Label>
-                      <p className="text-muted-foreground text-xs">
-                        Replace the output folder if it already exists. Only
-                        applies to named runs; unnamed runs always create a new
-                        folder.
-                      </p>
-                    </div>
-                    <Switch
-                      id="runner-overwrite-output"
-                      checked={settings.overwrite_output}
-                      disabled={!doctorReady}
-                      onCheckedChange={(checked) =>
-                        void updateSettings({
-                          overwrite_output: checked === true,
-                        })
-                      }
-                    />
-                  </div>
+                  <ToolSettings
+                    settings={settings}
+                    updateSettings={updateSettings}
+                    disabled={!doctorReady}
+                    onPickDirectory={(current) => pickDirectory(current)}
+                    onOpenPath={(path) => openPath(path)}
+                  />
                 </div>
               </div>
               <div className="bg-background shrink-0 border-t px-6 py-3">
