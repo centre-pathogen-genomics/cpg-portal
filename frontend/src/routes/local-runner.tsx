@@ -14,9 +14,9 @@ import {
 import { isLoggedIn } from "@/hooks/useAuth"
 import { hasPermission } from "@/lib/permissions"
 import {
+  detectPlatform,
   PLATFORMS,
   type Platform,
-  detectPlatform,
   runnerAppUrl,
 } from "@/lib/runner-platform"
 import MainMenuBar from "../components/Common/MainMenuBar"
@@ -153,10 +153,7 @@ function LocalRunner() {
             {appMissing ? (
               <p className="text-muted-foreground text-sm">
                 No CPG Runner build is published for{" "}
-                {
-                  PLATFORMS.find((option) => option.value === platform)
-                    ?.label
-                }{" "}
+                {PLATFORMS.find((option) => option.value === platform)?.label}{" "}
                 yet.
               </p>
             ) : (
@@ -191,10 +188,10 @@ function LocalRunner() {
           <section className="grid gap-2 rounded-md border p-4">
             <h3 className="text-lg font-semibold">2. Download a tool pack</h3>
             <p className="text-muted-foreground text-sm">
-              Open any tool in The Portal and choose <strong>Run locally</strong>
-              . That downloads the pack: a few kilobytes with the tool, its
-              version and its settings, built for the platform you downloaded
-              the app for.
+              Open any tool in The Portal and choose{" "}
+              <strong>Run locally</strong>. That downloads the pack: a few
+              kilobytes with the tool, its version and its settings, built for
+              the platform you downloaded the app for.
             </p>
           </section>
 
@@ -209,9 +206,7 @@ function LocalRunner() {
           </section>
 
           <section className="space-y-2">
-            <h3 className="text-lg font-semibold">
-              Where do the results go?
-            </h3>
+            <h3 className="text-lg font-semibold">Where do the results go?</h3>
             <p>
               Outputs are written to the folder you pick in the app, which
               defaults to <code>Documents/CPG Runs</code>. Nothing is uploaded

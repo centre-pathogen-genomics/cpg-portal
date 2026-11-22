@@ -42,11 +42,13 @@ const MIN_WINDOW_WIDTH = 640
 const MIN_WINDOW_HEIGHT = 520
 const WINDOW_BOUNDS_FILE = "window-bounds.json"
 
-// Only the Docker documentation/download hosts may be opened in the browser.
-const EXTERNAL_HOSTS: Record<string, true> = {
-  "docs.docker.com": true,
-  "www.docker.com": true,
-  "get.docker.com": true,
+// What a click may hand to the system browser: any http(s) address, because
+// every open is user-initiated (a tool's docs, a paper, the portal). Other
+// schemes are refused, so a pack cannot trigger `file:` or a custom protocol
+// handler behind the visitor's back.
+const ALLOWED_EXTERNAL_SCHEMES: Record<string, true> = {
+  "http:": true,
+  "https:": true,
 }
 
 export type ToolEntry = {
@@ -1161,12 +1163,7 @@ function startSidecar(toolId: string): Promise<number> {
 
 function isAllowedExternalUrl(rawUrl: string): boolean {
   try {
-    const url = new URL(rawUrl)
-    if (url.protocol === "https:" && EXTERNAL_HOSTS[url.hostname] === true) {
-      return true
-    }
-    // The portal this app belongs to, where tools are downloaded from.
-    return portalUrl !== "" && url.origin === new URL(portalUrl).origin
+    return ALLOWED_EXTERNAL_SCHEMES[new URL(rawUrl).protocol] === true
   } catch {
     return false
   }

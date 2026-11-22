@@ -2,7 +2,7 @@
 
 import { type Options, LoginService, UsersService, UtilsService, ToolsService, FilesService, RunsService, RunnerService, LlmService, SettingsService, StatsService, AdminService, RbacService } from '../sdk.gen';
 import { queryOptions, type UseMutationOptions, type DefaultError, infiniteQueryOptions, type InfiniteData } from '@tanstack/react-query';
-import type { LoginLoginAccessTokenData, LoginLoginAccessTokenError, LoginLoginAccessTokenResponse, LoginTestTokenData, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordError, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordError, LoginResetPasswordResponse, UsersReadUsersData, UsersCreateUserData, UsersCreateUserError, UsersCreateUserResponse, UsersDeleteUserMeData, UsersDeleteUserMeResponse, UsersReadUserMeData, UsersUpdateUserMeData, UsersUpdateUserMeError, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeError, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserError, UsersRegisterUserResponse, UsersActivateAccountData, UsersDeleteUserData, UsersDeleteUserError, UsersDeleteUserResponse, UsersReadUserByIdData, UsersUpdateUserData, UsersUpdateUserError, UsersUpdateUserResponse, UtilsTestEmailData, UtilsTestEmailError, UtilsTestEmailResponse, UtilsHealthCheckData, UtilsMaxUploadSizeData, ToolsReadToolsData, ToolsCreateToolData, ToolsCreateToolError, ToolsCreateToolResponse, ToolsReadToolByNameData, ToolsReadToolVersionsData, ToolsDownloadRunnerPackData, ToolsDeleteToolData, ToolsDeleteToolError, ToolsDeleteToolResponse, ToolsReadToolData, ToolsUpdateToolData, ToolsUpdateToolError, ToolsUpdateToolResponse, ToolsUnfavouriteToolData, ToolsUnfavouriteToolError, ToolsUnfavouriteToolResponse, ToolsFavouriteToolData, ToolsFavouriteToolError, ToolsFavouriteToolResponse, ToolsCreateToolVersionData, ToolsCreateToolVersionError, ToolsCreateToolVersionResponse, ToolsEnableToolData, ToolsEnableToolError, ToolsEnableToolResponse, ToolsDisableToolData, ToolsDisableToolError, ToolsDisableToolResponse, ToolsEnableLlmSummaryData, ToolsEnableLlmSummaryError, ToolsEnableLlmSummaryResponse, ToolsDisableLlmSummaryData, ToolsDisableLlmSummaryError, ToolsDisableLlmSummaryResponse, ToolsUpdateToolPostInstallData, ToolsUpdateToolPostInstallError, ToolsUpdateToolPostInstallResponse, ToolsInstallToolData, ToolsInstallToolError, ToolsInstallToolResponse, ToolsUninstallToolData, ToolsUninstallToolError, ToolsUninstallToolResponse, FilesDeleteFilesData, FilesDeleteFilesError, FilesReadFilesData, FilesUploadFileData, FilesUploadFileError, FilesUploadFileResponse, FilesGetFilesAllowedTypesData, FilesGetCurrentFileTypesData, FilesGetFilesStatsData, FilesCreatePairData, FilesCreatePairError, FilesCreatePairResponse, FilesCreateGroupData, FilesCreateGroupError, FilesCreateGroupResponse, FilesUngroupFileData, FilesUngroupFileError, FilesUngroupFileResponse, FilesDeleteFileData, FilesDeleteFileError, FilesReadFileData, FilesSaveFileData, FilesSaveFileError, FilesSaveFileResponse, FilesCopyFileData, FilesCopyFileError, FilesCopyFileResponse, FilesDownloadFileData, FilesGetDownloadTokenData, FilesGetBulkDownloadTokenData, FilesDownloadAllFilesWithTokenData, FilesRenameFileData, FilesRenameFileError, FilesRenameFileResponse, FilesDownloadFileWithTokenData, RunsDeleteRunsData, RunsDeleteRunsError, RunsDeleteRunsResponse, RunsReadRunsData, RunsCreateRunData, RunsCreateRunError, RunsCreateRunResponse, RunsReadRunToolNamesData, RunsCancelRunsData, RunsCancelRunsResponse, RunsReadActiveRunsData, RunsDeleteRunData, RunsDeleteRunError, RunsDeleteRunResponse, RunsReadRunData, RunsCancelRunData, RunsCancelRunError, RunsCancelRunResponse, RunsRenameRunData, RunsRenameRunError, RunsRenameRunResponse, RunsToggleRunSharingData, RunsToggleRunSharingError, RunsToggleRunSharingResponse, RunnerReadAppData, RunnerReadRuntimeImageData, LlmGenerateRunSummaryData, LlmGenerateRunSummaryError, LlmGenerateRunSummaryResponse, SettingsReadQueueDrainStatusData, SettingsReadAppSettingsData, SettingsUpdateAppSettingsData, SettingsUpdateAppSettingsError, SettingsUpdateAppSettingsResponse, StatsGetSystemStatsData, StatsGetSystemStatsError, StatsGetSystemStatsResponse, StatsGetStatsSummaryData, StatsGetUserDetailStatsData, StatsGetUserDetailStatsError, StatsGetUserDetailStatsResponse, StatsGetToolDetailStatsData, StatsGetToolDetailStatsError, StatsGetToolDetailStatsResponse, AdminReadQueueStatusData, AdminPauseQueueData, AdminPauseQueueError, AdminPauseQueueResponse, AdminResumeQueueData, AdminResumeQueueResponse, RbacReadPermissionsData, RbacReadRolesData, RbacCreateRoleData, RbacCreateRoleError, RbacCreateRoleResponse, RbacDeleteRoleData, RbacDeleteRoleError, RbacDeleteRoleResponse, RbacUpdateRoleData, RbacUpdateRoleError, RbacUpdateRoleResponse, RbacReadRbacUsersData, RbacReadUserAccessData, RbacUpdateUserAccessData, RbacUpdateUserAccessError, RbacUpdateUserAccessResponse } from '../types.gen';
+import type { LoginLoginAccessTokenData, LoginLoginAccessTokenError, LoginLoginAccessTokenResponse, LoginTestTokenData, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordError, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordError, LoginResetPasswordResponse, UsersReadUsersData, UsersCreateUserData, UsersCreateUserError, UsersCreateUserResponse, UsersDeleteUserMeData, UsersDeleteUserMeResponse, UsersReadUserMeData, UsersUpdateUserMeData, UsersUpdateUserMeError, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeError, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserError, UsersRegisterUserResponse, UsersActivateAccountData, UsersDeleteUserData, UsersDeleteUserError, UsersDeleteUserResponse, UsersReadUserByIdData, UsersUpdateUserData, UsersUpdateUserError, UsersUpdateUserResponse, UtilsTestEmailData, UtilsTestEmailError, UtilsTestEmailResponse, UtilsHealthCheckData, UtilsMaxUploadSizeData, ToolsReadToolsData, ToolsCreateToolData, ToolsCreateToolError, ToolsCreateToolResponse, ToolsReadToolByNameData, ToolsReadToolVersionsData, ToolsDownloadRunnerPackData, ToolsDeleteToolData, ToolsDeleteToolError, ToolsDeleteToolResponse, ToolsReadToolData, ToolsUpdateToolData, ToolsUpdateToolError, ToolsUpdateToolResponse, ToolsUnfavouriteToolData, ToolsUnfavouriteToolError, ToolsUnfavouriteToolResponse, ToolsFavouriteToolData, ToolsFavouriteToolError, ToolsFavouriteToolResponse, ToolsCreateToolVersionData, ToolsCreateToolVersionError, ToolsCreateToolVersionResponse, ToolsEnableToolData, ToolsEnableToolError, ToolsEnableToolResponse, ToolsDisableToolData, ToolsDisableToolError, ToolsDisableToolResponse, ToolsEnableLlmSummaryData, ToolsEnableLlmSummaryError, ToolsEnableLlmSummaryResponse, ToolsDisableLlmSummaryData, ToolsDisableLlmSummaryError, ToolsDisableLlmSummaryResponse, ToolsUpdateToolPostInstallData, ToolsUpdateToolPostInstallError, ToolsUpdateToolPostInstallResponse, ToolsInstallToolData, ToolsInstallToolError, ToolsInstallToolResponse, ToolsUninstallToolData, ToolsUninstallToolError, ToolsUninstallToolResponse, FilesDeleteFilesData, FilesDeleteFilesError, FilesReadFilesData, FilesUploadFileData, FilesUploadFileError, FilesUploadFileResponse, FilesGetFilesAllowedTypesData, FilesGetCurrentFileTypesData, FilesGetFilesStatsData, FilesCreatePairData, FilesCreatePairError, FilesCreatePairResponse, FilesCreateGroupData, FilesCreateGroupError, FilesCreateGroupResponse, FilesUngroupFileData, FilesUngroupFileError, FilesUngroupFileResponse, FilesDeleteFileData, FilesDeleteFileError, FilesReadFileData, FilesSaveFileData, FilesSaveFileError, FilesSaveFileResponse, FilesCopyFileData, FilesCopyFileError, FilesCopyFileResponse, FilesDownloadFileData, FilesGetDownloadTokenData, FilesGetBulkDownloadTokenData, FilesDownloadAllFilesWithTokenData, FilesRenameFileData, FilesRenameFileError, FilesRenameFileResponse, FilesDownloadFileWithTokenData, RunsDeleteRunsData, RunsDeleteRunsError, RunsDeleteRunsResponse, RunsReadRunsData, RunsCreateRunData, RunsCreateRunError, RunsCreateRunResponse, RunsReadRunToolNamesData, RunsCancelRunsData, RunsCancelRunsResponse, RunsReadActiveRunsData, RunsDeleteRunData, RunsDeleteRunError, RunsDeleteRunResponse, RunsReadRunData, RunsCancelRunData, RunsCancelRunError, RunsCancelRunResponse, RunsRenameRunData, RunsRenameRunError, RunsRenameRunResponse, RunsToggleRunSharingData, RunsToggleRunSharingError, RunsToggleRunSharingResponse, RunnerReadAppData, RunnerReadAppLatestData, RunnerReadPreviousAppData, RunnerReadRuntimeImageData, LlmGenerateRunSummaryData, LlmGenerateRunSummaryError, LlmGenerateRunSummaryResponse, SettingsReadQueueDrainStatusData, SettingsReadAppSettingsData, SettingsUpdateAppSettingsData, SettingsUpdateAppSettingsError, SettingsUpdateAppSettingsResponse, StatsGetSystemStatsData, StatsGetSystemStatsError, StatsGetSystemStatsResponse, StatsGetStatsSummaryData, StatsGetUserDetailStatsData, StatsGetUserDetailStatsError, StatsGetUserDetailStatsResponse, StatsGetToolDetailStatsData, StatsGetToolDetailStatsError, StatsGetToolDetailStatsResponse, AdminReadQueueStatusData, AdminPauseQueueData, AdminPauseQueueError, AdminPauseQueueResponse, AdminResumeQueueData, AdminResumeQueueResponse, RbacReadPermissionsData, RbacReadRolesData, RbacCreateRoleData, RbacCreateRoleError, RbacCreateRoleResponse, RbacDeleteRoleData, RbacDeleteRoleError, RbacDeleteRoleResponse, RbacUpdateRoleData, RbacUpdateRoleError, RbacUpdateRoleResponse, RbacReadRbacUsersData, RbacReadUserAccessData, RbacUpdateUserAccessData, RbacUpdateUserAccessError, RbacUpdateUserAccessResponse } from '../types.gen';
 import type { AxiosError } from 'axios';
 import { client as _heyApiClient } from '../client.gen';
 
@@ -662,9 +662,12 @@ export const downloadRunnerPackQueryKey = (options: Options<ToolsDownloadRunnerP
  * Download Runner Pack
  * Download one tool as a small pack the desktop app imports.
  *
- * The app itself is `GET /runner/app/<platform>`, downloaded once and shared
- * by every tool, so a pack holds configuration only - a few kilobytes instead
- * of a 170 MB application per tool.
+ * Public: the app that opens a pack has no portal session, and a pack is the
+ * tool's configuration, which the tool pages show anyway. The portal still
+ * hides the feature unless the account holds `runner:download`. The app
+ * itself is `GET /runner/app/<platform>`, downloaded once and shared by every
+ * tool, so a pack holds configuration only - a few kilobytes instead of a
+ * 170 MB application per tool.
  */
 export const downloadRunnerPackOptions = (options: Options<ToolsDownloadRunnerPackData>) => {
     return queryOptions({
@@ -1856,6 +1859,52 @@ export const readAppOptions = (options: Options<RunnerReadAppData>) => {
             return data;
         },
         queryKey: readAppQueryKey(options)
+    });
+};
+
+export const readAppLatestQueryKey = (options: Options<RunnerReadAppLatestData>) => createQueryKey('runnerReadAppLatest', options);
+
+/**
+ * Read App Latest
+ * The build of the desktop app a platform would download, and its version.
+ *
+ * An installed app compares `version` with its own to learn whether a newer
+ * build exists; `build` pins `url` to the archive it describes, so the
+ * download can be cached forever once a build is known.
+ */
+export const readAppLatestOptions = (options: Options<RunnerReadAppLatestData>) => {
+    return queryOptions({
+        queryFn: async ({ queryKey, signal }) => {
+            const { data } = await RunnerService.readAppLatest({
+                ...options,
+                ...queryKey[0],
+                signal,
+                throwOnError: true
+            });
+            return data;
+        },
+        queryKey: readAppLatestQueryKey(options)
+    });
+};
+
+export const readPreviousAppQueryKey = (options: Options<RunnerReadPreviousAppData>) => createQueryKey('runnerReadPreviousApp', options);
+
+/**
+ * Read Previous App
+ * The build this platform's current archive replaced, for a rollback.
+ */
+export const readPreviousAppOptions = (options: Options<RunnerReadPreviousAppData>) => {
+    return queryOptions({
+        queryFn: async ({ queryKey, signal }) => {
+            const { data } = await RunnerService.readPreviousApp({
+                ...options,
+                ...queryKey[0],
+                signal,
+                throwOnError: true
+            });
+            return data;
+        },
+        queryKey: readPreviousAppQueryKey(options)
     });
 };
 

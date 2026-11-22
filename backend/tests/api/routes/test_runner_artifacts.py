@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session
 
 from app.core.config import settings
-from app.models import Tool, ToolStatus
+from app.models import Tool, ToolNetwork, ToolStatus
 
 ARCH = "linux-arm64"
 SHA = "a" * 64
@@ -236,6 +236,8 @@ def test_pack_holds_configuration_only(
     assert runner_config["platform"] == "mac-arm64"
     assert runner_config["docker_arch"] == ARCH
     assert runner_config["tool_name"] == tool.name
+    # A tool that says nothing about the network is offline.
+    assert runner_config["network"] == "none"
     assert runner_config["runtime_image"]["tag"] == settings.RUNNER_RUNTIME_TAG
     assert runner_config["runtime_image"]["sha256"] == SHA
     assert runner_config["runtime_image"]["url"].endswith(
@@ -244,6 +246,32 @@ def test_pack_holds_configuration_only(
 
     assert "python=3.11" in environment
     assert "CPG Runner pack" in readme
+
+
+def test_pack_carries_the_tools_network_choice(
+    client: TestClient,
+    db: Session,
+    superuser_token_headers: dict[str, str],
+    _artifacts: Path,
+) -> None:
+    tool = Tool(
+        name=_tool_name("packnet"),
+        version="1.2",
+        is_default=True,
+        command="printf 'hi\\n' > out.txt",
+        enabled=True,
+        status=ToolStatus.installed,
+        # The app seeds its per-run network choice from the pack.
+        network=ToolNetwork.none,
+    )
+    db.add(tool)
+    db.commit()
+    db.refresh(tool)
+
+    response = _pack(client, headers=superuser_token_headers, name=tool.name)
+
+    assert response.status_code == 200, response.text
+    assert response.json()["runner"]["network"] == "none"
 
 
 def test_pack_without_a_conda_environment(

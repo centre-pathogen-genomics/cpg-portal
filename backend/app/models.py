@@ -407,6 +407,16 @@ class ToolBadge(SQLModel):
     url: str | None = None
 
 
+class ToolNetwork(StrEnum):
+    # Follows the portal's own setting; the tool neither asks for nor forbids
+    # internet access.
+    default = "default"
+    # The tool's runs may reach the internet.
+    internet = "internet"
+    # The tool's runs are confined to loopback.
+    none = "none"
+
+
 class TimelineStep(SQLModel):
     """A named step detected by matching a pattern in a run's logs."""
 
@@ -453,6 +463,11 @@ class ToolBase(SQLModel):
     min_cpus: int = 1
     max_cpus: int | None = None
     default_cpus: int | None = None
+    # What a run of this tool may reach on the network: "internet"/"none"
+    # decide, "default" follows the portal's setting (the server sandbox's
+    # mode, and the local runner's own per-run choice). Offline is the
+    # default: internet access is granted per tool, never assumed.
+    network: ToolNetwork = ToolNetwork.none
 
 
 # Properties to receive on Tool creation

@@ -382,6 +382,9 @@ def download_runner_pack(
                 "sha256": runtime_sha.read_text().strip(),
             },
             "tool_name": tool.name,
+            # What the tool's runs may reach; the app seeds its per-run
+            # network choice from this.
+            "network": str(tool.network),
         },
         "environment_yml": _pack_environment(tool),
         "readme": PACK_README_TEMPLATE.format(

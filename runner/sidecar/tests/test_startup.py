@@ -1,6 +1,66 @@
+from cpg_runner.config import load_resources
 from cpg_runner.runs import RunManager
 from cpg_runner.state import StateStore
 from support import FakeDocker, make_runner, make_tool
+
+
+def test_pack_network_seeds_the_run_setting_once(tmp_path):
+    """The tool's network policy sets the per-run default, once."""
+    store = StateStore(
+        tmp_path / "data",
+        tool_name="my tool",
+        documents_dir=tmp_path / "documents",
+        default_cpus=1,
+    )
+    store.ensure_dirs()
+    assert store.load_settings().network is True
+
+    store.apply_network_default("none")
+    assert store.load_settings().network is False
+
+    # A repack cannot flip a choice the owner has already made.
+    store.apply_network_default("internet")
+    assert store.load_settings().network is False
+
+
+def test_pack_network_default_keeps_the_apps_choice(tmp_path):
+    store = StateStore(
+        tmp_path / "data",
+        tool_name="my tool",
+        documents_dir=tmp_path / "documents",
+        default_cpus=1,
+    )
+    store.ensure_dirs()
+
+    store.apply_network_default("default")
+
+    assert store.load_settings().network is True
+
+
+def test_runner_config_parses_the_network_field(tmp_path):
+    runner = make_runner(network="internet")
+    resources_dir = tmp_path / "resources"
+    resources_dir.mkdir()
+    (resources_dir / "tool.json").write_text(make_tool().model_dump_json())
+    (resources_dir / "runner.json").write_text(runner.model_dump_json())
+
+    resources = load_resources(resources_dir)
+
+    assert resources.runner.network == "internet"
+
+
+def test_runner_config_defaults_network_for_old_packs(tmp_path):
+    # A pack from before the field existed has no "network" key.
+    resources_dir = tmp_path / "resources"
+    resources_dir.mkdir()
+    (resources_dir / "tool.json").write_text(make_tool().model_dump_json())
+    (resources_dir / "runner.json").write_text(
+        make_runner().model_dump_json(exclude={"network"})
+    )
+
+    resources = load_resources(resources_dir)
+
+    assert resources.runner.network == "default"
 
 
 def test_interrupted_runs_become_failed_and_are_removed(tmp_path):

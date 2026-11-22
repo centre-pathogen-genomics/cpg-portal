@@ -68,7 +68,8 @@ async function stubApp(page: Page, manifest: Record<string, unknown>) {
       status: 200,
       contentType: "application/zip",
       headers: {
-        "Content-Disposition": 'attachment; filename="cpg-runner-linux-x64.zip"',
+        "Content-Disposition":
+          'attachment; filename="cpg-runner-linux-x64.zip"',
       },
       body: Buffer.from(tinyZip),
     })
@@ -162,9 +163,7 @@ test("The Local Runner page downloads the app for a chosen platform", async ({
     page.getByRole("heading", { name: "Run tools on your own computer" }),
   ).toBeVisible()
   // The nav link carries a "New" badge, so the name is matched by prefix.
-  await expect(
-    page.getByRole("link", { name: /^Local Runner/ }),
-  ).toBeVisible()
+  await expect(page.getByRole("link", { name: /^Local Runner/ })).toBeVisible()
 
   await page.getByRole("combobox", { name: "Platform" }).click()
   await expect(page.getByRole("option")).toHaveCount(4)

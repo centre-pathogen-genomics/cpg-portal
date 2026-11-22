@@ -262,6 +262,13 @@ The worker applies the `internet` rules before it starts, from
 sandbox subnet only, so the worker keeps its own access to the database, redis
 and nats while a run is in progress.
 
+A tool can override the portal's mode with its own "Network access" setting
+(Admin tab of the tool config): *Portal default* follows `SANDBOX_NETWORK`,
+*Internet access* forces `internet`, *No internet access* forces `none`. New
+tools are offline by default — internet access is granted per tool, never
+assumed — and a run refuses to start when its tool asks for `internet` on a
+worker without the rules applied.
+
 Whichever mode you use, the neighbouring services are the next line of defence:
 Postgres, Redis and NATS all require credentials that are not part of a run's
 environment (see [Required Environment Variables](#required-environment-variables)).
@@ -411,9 +418,10 @@ run, with the upstream documentation link, because it needs administrator rights
 that an app should not ask for behind the visitor's back.
 
 A tool that reads the reference database (`/DB`) is not runnable locally and the
-bundle README says so. Runs have network access by default, matching
-`SANDBOX_NETWORK=internet`; the run settings switch turns it off for tools that
-must stay offline.
+bundle README says so. A tool's own "Network access" setting travels in its
+pack: *No internet access* runs the app's per-run network switch off the first
+time the tool is installed, *Internet access* runs it on, and *Portal default*
+leaves the app's own choice alone. New tools are offline by default.
 
 ## Signup Protection (Cloudflare Turnstile)
 

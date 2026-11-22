@@ -49,6 +49,10 @@ class RunnerConfig(BaseModel):
     docker_arch: str
     runtime_image: RuntimeImageConfig
     tool_name: str
+    # The tool's own network policy: "internet"/"none" decide the per-run
+    # default, "default" keeps the app's own choice. A pack from before the
+    # field existed says nothing and behaves as "default".
+    network: str = "default"
 
 
 class Resources(BaseModel):

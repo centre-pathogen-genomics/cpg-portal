@@ -24,7 +24,16 @@ from app.core.config import settings
 from app.core.db import engine
 from app.crud import save_file
 from app.metrics import read_tree
-from app.models import File, Run, RunStatus, SetupFile, Target, Tool, ToolStatus
+from app.models import (
+    File,
+    Run,
+    RunStatus,
+    SetupFile,
+    Target,
+    Tool,
+    ToolNetwork,
+    ToolStatus,
+)
 from app.run_records import is_terminal, record_run
 from app.run_spec import escape, input_file_name
 from app.scheduling import dispatch_pending_runs
@@ -342,14 +351,19 @@ def build_run_argv(
     dirs: RunDirs,
     input_files: dict[str, Path],
     cpus: int,
+    network: str,
 ) -> list[str]:
-    """Build the argv of the process that executes the command of a run."""
+    """Build the argv of the process that executes the command of a run.
+
+    ``network`` is the sandbox mode the run's tool allows: one of "none",
+    "internet" or "host", already resolved from the tool's own setting.
+    """
     shell_command = f"set -euo pipefail; {command}"
     if not settings.SANDBOX_ENABLED:
         return ["/bin/bash", "-c", shell_command]
     sandbox.check_sandbox_image(settings.SANDBOX_IMAGE)
     sandbox.check_sandbox_limits()
-    sandbox.check_sandbox_network(settings.SANDBOX_NETWORK)
+    sandbox.check_sandbox_network(network)
     return sandbox.sandbox_exec_command(
         image=settings.SANDBOX_IMAGE,
         work_dir=dirs.work,
@@ -359,7 +373,7 @@ def build_run_argv(
         conda_prefix=conda_prefix,
         data_path=sandbox_data_path(),
         cpus=cpus,
-        network=settings.SANDBOX_NETWORK,
+        network=network,
         dns=settings.SANDBOX_DNS,
         command=shell_command,
     )
@@ -494,6 +508,11 @@ async def run_tool(
                     dirs=dirs,
                     input_files=input_files,
                     cpus=run.cpus,
+                    network=(
+                        settings.SANDBOX_NETWORK
+                        if run.tool.network == ToolNetwork.default
+                        else str(run.tool.network)
+                    ),
                 )
                 returncode, stdout = await run_command_in_subprocess(
                     session, run_id, argv, dirs.work

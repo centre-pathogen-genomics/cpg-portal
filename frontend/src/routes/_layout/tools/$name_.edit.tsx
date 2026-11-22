@@ -37,6 +37,7 @@ import {
   type Target,
   type TimelineStep,
   type ToolBadge,
+  type ToolNetwork,
   type ToolPublic,
   type ToolStatus,
   type ToolUpdate,
@@ -52,6 +53,7 @@ import {
   FileTypeEnumSchema,
   ParamTypeSchema,
   ParamVisibilityOperatorSchema,
+  ToolNetworkSchema,
   ToolStatusSchema,
 } from "@/client/schemas.gen"
 import { Button } from "@/components/ui/button"
@@ -95,6 +97,26 @@ const paramVisibilityOperators =
   ParamVisibilityOperatorSchema.enum as unknown as ParamVisibilityOperator[]
 const fileTypes = FileTypeEnumSchema.enum as unknown as FileTypeEnum[]
 const toolStatuses = ToolStatusSchema.enum as unknown as ToolStatus[]
+const toolNetworks = ToolNetworkSchema.enum as unknown as ToolNetwork[]
+
+/** What a run of the tool may reach, with the label the form shows. */
+const NETWORK_OPTIONS: { value: ToolNetwork; label: string; hint: string }[] = [
+  {
+    value: "default",
+    label: "Portal default",
+    hint: "Follows the portal's own network setting.",
+  },
+  {
+    value: "internet",
+    label: "Internet access",
+    hint: "Runs may download from the internet.",
+  },
+  {
+    value: "none",
+    label: "No internet access",
+    hint: "Runs are confined to the machine, loopback only.",
+  },
+]
 
 const optionalString = z.string().nullable().optional()
 
@@ -168,6 +190,7 @@ const formSchema = z.object({
   min_cpus: z.number().int().min(1),
   max_cpus: z.number().int().min(1).nullable().optional(),
   default_cpus: z.number().int().min(1).nullable().optional(),
+  network: z.enum(toolNetworks),
   llm_summary_enabled: z.boolean(),
   favourited_count: z.number().int().min(0),
   run_count: z.number().int().min(0),
@@ -299,6 +322,7 @@ function defaultValues(tool: ToolPublic): ToolFormData {
     min_cpus: tool.min_cpus ?? 1,
     max_cpus: tool.max_cpus ?? null,
     default_cpus: tool.default_cpus ?? null,
+    network: tool.network ?? "none",
   }
 }
 
@@ -382,6 +406,7 @@ function buildToolUpdate(data: ToolFormData): ToolUpdate {
     min_cpus: data.min_cpus,
     max_cpus: data.max_cpus ?? null,
     default_cpus: data.default_cpus ?? null,
+    network: data.network,
     conda_env: condaEnv,
     post_install: nullIfBlank(data.post_install),
     setup_files: data.setup_files.map<SetupFile>((file) => ({
@@ -1507,6 +1532,37 @@ function AdminTab({ control }: { control: Control<ToolFormData> }) {
             control={control}
             name="llm_summary_enabled"
             label="AI summary enabled"
+          />
+          <FormField
+            control={control}
+            name="network"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Network access</FormLabel>
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <FormControl>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {NETWORK_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-muted-foreground text-xs">
+                  {
+                    NETWORK_OPTIONS.find(
+                      (option) => option.value === field.value,
+                    )?.hint
+                  }
+                </p>
+                <FormMessage />
+              </FormItem>
+            )}
           />
           <FormField
             control={control}

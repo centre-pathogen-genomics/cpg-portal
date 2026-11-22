@@ -1918,6 +1918,10 @@ export const ToolCreateSchema = {
             ],
             title: 'Default Cpus'
         },
+        network: {
+            '$ref': '#/components/schemas/ToolNetwork',
+            default: 'default'
+        },
         version_sort: {
             anyOf: [
                 {
@@ -2122,6 +2126,12 @@ export const ToolMinimalPublicSchema = {
     type: 'object',
     required: ['id', 'name', 'status', 'version'],
     title: 'ToolMinimalPublic'
+} as const;
+
+export const ToolNetworkSchema = {
+    type: 'string',
+    enum: ['default', 'internet', 'none'],
+    title: 'ToolNetwork'
 } as const;
 
 export const ToolPublicSchema = {
@@ -2373,6 +2383,10 @@ export const ToolPublicSchema = {
                 }
             ],
             title: 'Default Cpus'
+        },
+        network: {
+            '$ref': '#/components/schemas/ToolNetwork',
+            default: 'default'
         },
         favourited: {
             type: 'boolean',
@@ -2763,6 +2777,10 @@ export const ToolUpdateSchema = {
                 }
             ],
             title: 'Default Cpus'
+        },
+        network: {
+            '$ref': '#/components/schemas/ToolNetwork',
+            default: 'default'
         },
         favourited_count: {
             type: 'integer',

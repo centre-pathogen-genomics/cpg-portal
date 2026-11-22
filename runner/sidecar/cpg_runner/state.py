@@ -71,6 +71,20 @@ class StateStore:
     def save_settings(self, settings: Settings) -> None:
         self._write_json(self.settings_path, settings.model_dump())
 
+    def apply_network_default(self, network: str) -> None:
+        """Seed the per-run network choice from the pack, only the first time.
+
+        ``network`` is the tool's own policy ("internet" or "none"); "default"
+        leaves the app's choice alone. Once the owner has a saved setting it
+        is never overwritten, so a repacked tool cannot change it behind their
+        back.
+        """
+        if network not in {"internet", "none"} or self.settings_path.exists():
+            return
+        settings = self.load_settings()
+        settings.network = network == "internet"
+        self.save_settings(settings)
+
     def run_path(self, run_id: str) -> Path:
         return self.runs_dir / f"{run_id}.json"
 

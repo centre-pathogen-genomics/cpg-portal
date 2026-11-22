@@ -1110,6 +1110,7 @@ export type ToolCreate = {
      * Default Cpus
      */
     default_cpus?: number | null;
+    network?: ToolNetwork;
     /**
      * Version Sort
      */
@@ -1216,6 +1217,11 @@ export type ToolMinimalPublic = {
 };
 
 /**
+ * ToolNetwork
+ */
+export type ToolNetwork = 'default' | 'internet' | 'none';
+
+/**
  * ToolPublic
  */
 export type ToolPublic = {
@@ -1312,6 +1318,7 @@ export type ToolPublic = {
      * Default Cpus
      */
     default_cpus?: number | null;
+    network?: ToolNetwork;
     /**
      * Favourited
      */
@@ -1485,6 +1492,7 @@ export type ToolUpdate = {
      * Default Cpus
      */
     default_cpus?: number | null;
+    network?: ToolNetwork;
     /**
      * Favourited Count
      */
@@ -3879,6 +3887,90 @@ export type RunnerReadAppErrors = {
 export type RunnerReadAppError = RunnerReadAppErrors[keyof RunnerReadAppErrors];
 
 export type RunnerReadAppResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
+export type RunnerReadApp2Data = {
+    body?: never;
+    path: {
+        /**
+         * Platform
+         */
+        platform: string;
+    };
+    query?: never;
+    url: '/api/v1/runner/app/{platform}';
+};
+
+export type RunnerReadApp2Errors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RunnerReadApp2Error = RunnerReadApp2Errors[keyof RunnerReadApp2Errors];
+
+export type RunnerReadApp2Responses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
+export type RunnerReadAppLatestData = {
+    body?: never;
+    path: {
+        /**
+         * Platform
+         */
+        platform: string;
+    };
+    query?: never;
+    url: '/api/v1/runner/app/{platform}/latest';
+};
+
+export type RunnerReadAppLatestErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RunnerReadAppLatestError = RunnerReadAppLatestErrors[keyof RunnerReadAppLatestErrors];
+
+export type RunnerReadAppLatestResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
+export type RunnerReadPreviousAppData = {
+    body?: never;
+    path: {
+        /**
+         * Platform
+         */
+        platform: string;
+    };
+    query?: never;
+    url: '/api/v1/runner/app/{platform}/previous';
+};
+
+export type RunnerReadPreviousAppErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RunnerReadPreviousAppError = RunnerReadPreviousAppErrors[keyof RunnerReadPreviousAppErrors];
+
+export type RunnerReadPreviousAppResponses = {
     /**
      * Successful Response
      */

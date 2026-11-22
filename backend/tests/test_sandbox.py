@@ -263,6 +263,7 @@ def test_build_run_argv_uses_a_sandbox(monkeypatch, tmp_path: Path) -> None:
         dirs=dirs,
         input_files={},
         cpus=1,
+        network="none",
     )
 
     assert argv[0] == "apptainer"
@@ -292,10 +293,43 @@ def test_build_run_argv_with_sandbox_network(monkeypatch, tmp_path: Path) -> Non
         dirs=dirs,
         input_files={},
         cpus=1,
+        network="internet",
     )
 
     assert argv[argv.index("--net") + 1] == f"--network={sandbox.INTERNET_NETWORK}"
     assert argv[argv.index("--dns") + 1] == "9.9.9.9"
+
+
+def test_build_run_argv_per_tool_network_overrides_the_portal(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """A tool's own setting beats the portal's, in both directions."""
+    dirs = _dirs(tmp_path)
+    image = tmp_path / "runtime.sif"
+    image.touch()
+    monkeypatch.setattr(sandbox.shutil, "which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setattr(settings, "SANDBOX_ENABLED", True)
+    monkeypatch.setattr(settings, "SANDBOX_IMAGE", str(image))
+    monkeypatch.setattr(settings, "SANDBOX_NETWORK", "internet")
+    monkeypatch.setattr(settings, "SANDBOX_DNS", "9.9.9.9")
+    ready = tmp_path / "ready"
+    ready.touch()
+    monkeypatch.setattr(sandbox, "NETWORK_READY_FILE", str(ready))
+    cgroups_ready = tmp_path / "cgroups-ready"
+    cgroups_ready.touch()
+    monkeypatch.setattr(sandbox, "CGROUPS_READY_FILE", str(cgroups_ready))
+
+    argv = build_run_argv(
+        command="echo hello",
+        conda_prefix=None,
+        dirs=dirs,
+        input_files={},
+        cpus=1,
+        # The tool says offline even though the portal allows internet.
+        network="none",
+    )
+
+    assert argv[argv.index("--net") + 1] == f"--network={sandbox.LOOPBACK_NETWORK}"
 
 
 def test_build_run_argv_without_sandbox(monkeypatch, tmp_path: Path) -> None:
@@ -308,6 +342,7 @@ def test_build_run_argv_without_sandbox(monkeypatch, tmp_path: Path) -> None:
         dirs=dirs,
         input_files={},
         cpus=1,
+        network="none",
     )
 
     assert argv == ["/bin/bash", "-c", "set -euo pipefail; echo hello"]

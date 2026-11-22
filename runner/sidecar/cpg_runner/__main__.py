@@ -45,6 +45,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     store.ensure_dirs()
 
+    # The pack says whether the tool's runs may reach the internet; seed the
+    # per-run network choice from it the first time, so a tool configured
+    # offline stays offline until its owner changes the setting.
+    store.apply_network_default(resources.runner.network)
+
     docker = Docker()
     doctor = Doctor()
     installer = Installer(
