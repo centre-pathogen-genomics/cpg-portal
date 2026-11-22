@@ -87,6 +87,14 @@ export DOMAIN=fastapi-project.example.com
 export EMAIL=admin@example.com
 ```
 
+Create an environment variable with the address of the reverse proxy directly
+in front of Traefik (usually Apache). Traefik only accepts `X-Forwarded-*`
+headers from this peer, so the real client IP reaches the access log:
+
+```bash
+export APACHE_TRUSTED_IP=10.0.0.5
+```
+
 **Note**: you need to set a different email, an email `@example.com` won't work.
 
 ### Start the Traefik Docker Compose
@@ -207,6 +215,11 @@ You can set several other environment variables:
 * `RUNNER_ARTIFACTS_DIR`, `RUNNER_ARTIFACTS_PATH`, `RUNNER_RUNTIME_TAG`, `RUNNER_PUBLIC_BASE_URL`: See the local runner section.
 * `TOTAL_CPUS`: CPUs the worker hands out to runs, `0` detects them. See the CPUs section.
 * `SENTRY_DSN`: The DSN for Sentry, if you are using it.
+* `TRUSTED_PROXIES`: Comma-separated IPs/CIDRs of the reverse proxies that may
+  set `X-Forwarded-For` (Traefik's address/subnet). The backend resolves the
+  real client address from these; see the Observability section.
+* `GRAFANA_ADMIN_PASSWORD`: Admin password for the Grafana in the observability
+  stack; see the Observability section.
 
 ## GitHub Actions Environment Variables
 
@@ -701,3 +714,44 @@ Backend API docs: `https://api.staging.fastapi-project.example.com/docs`
 Backend API base URL: `https://api.staging.fastapi-project.example.com`
 
 Adminer: `https://adminer.staging.fastapi-project.example.com`
+
+## Observability (Loki + Grafana)
+
+The production chain is **Apache -> Traefik -> FastAPI**, and the three layers
+are complementary observation points (Apache captures scans Traefik never
+receives; the backend captures auth, permissions, uploads and job submissions).
+
+Set up the trusted proxy chain first, so client IPs are correct:
+
+1. **Apache** (`observability/apache-cpg-vhost.conf.example`): strip
+   client-supplied forwarding headers, proxy to Traefik, log the real client
+   (`%a`). If something else sits ahead of Apache, configure `mod_remoteip`
+   with only the trusted upstream.
+2. **Traefik**: it already accepts `X-Forwarded-*` only from
+   `APACHE_TRUSTED_IP`, and logs JSON with raw paths, query strings and headers
+   dropped.
+3. **Backend**: set `TRUSTED_PROXIES` (Traefik's address/subnet) so
+   `ProxyHeaderMiddleware` resolves the real client into `request.client`.
+
+The backend writes two JSON streams to stdout -- `cpg.access` (one line per
+request, sanitised path, request id echoed in `X-Request-ID`) and
+`cpg.security` (structured events: `login.failed`/`login.success`,
+`auth.token_rejected`, `auth.permission_denied`, `access.file_denied`,
+`access.run_denied`, `file.upload`, `run.submit`). Container logs are bounded
+(`max-size`/`max-file`).
+
+To run the dashboard stack (opt-in):
+
+```bash
+export GRAFANA_ADMIN_PASSWORD=<generate>
+docker compose -f observability/compose.obs.yml up -d
+```
+
+Promtail ships every container's JSON log to Loki; Grafana is provisioned at
+`http://<server>:3000` with the "CPG Portal — Security & Observability"
+dashboard. See `observability/README.md`.
+
+**Verify first** that a controlled request shows the *same* real client IP in
+the Apache access log, Traefik's `ClientHost`, and the `client_ip` field in the
+backend access/audit logs before acting on any dashboard or alert. Never enable
+Traefik `forwardedheaders.insecure=true`.

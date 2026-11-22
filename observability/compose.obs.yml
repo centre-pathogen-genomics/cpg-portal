@@ -1,0 +1,67 @@
+# Opt-in observability stack: Loki (log store), Promtail (log shipper) and
+# Grafana (dashboards).
+#
+# Run from the repository root, after the main stack is up:
+#
+#   GRAFANA_ADMIN_PASSWORD=changethis \
+#   docker compose -f observability/compose.obs.yml up -d
+#
+# Promtail reads every container's JSON logs on this Docker engine (including
+# the CPG Portal stack) and ships them to Loki as they are, with JSON fields
+# parsed into labels. See observability/README.md for the dashboards and the
+# Apache-side trusted-proxy setup that makes client IPs trustworthy.
+services:
+  loki:
+    image: grafana/loki:3.3.2
+    restart: always
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/config.yml
+    volumes:
+      - loki-data:/loki
+      - ./observability/loki-config.yml:/etc/loki/config.yml:ro
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  promtail:
+    image: grafana/promtail:3.3.2
+    restart: always
+    # Reads container logs straight off the Docker engine.
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./observability/promtail-config.yml:/etc/promtail/config.yml:ro
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:?Variable not set}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - loki
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+volumes:
+  loki-data:
