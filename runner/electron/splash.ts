@@ -13,9 +13,9 @@ export function splashHtml(logoSrc: string): string {
     />
     <style>
       :root {
-        --accent: #2a9d8f;
-        --ink: #0f172a;
-        --muted: #64748b;
+        --accent: #00c9a7;
+        --ink: #e6edf2;
+        --muted: #9db2c0;
       }
       * {
         box-sizing: border-box;
@@ -31,7 +31,7 @@ export function splashHtml(logoSrc: string): string {
         align-items: center;
         justify-content: center;
         gap: 22px;
-        background: #ffffff;
+        background: #0d1b26;
         color: var(--ink);
         font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
           Helvetica, Arial, sans-serif;
@@ -40,11 +40,11 @@ export function splashHtml(logoSrc: string): string {
       }
       @media (prefers-color-scheme: dark) {
         body {
-          background: #0b1220;
-          color: #e2e8f0;
+          background: #0d1b26;
+          color: #e6edf2;
         }
         .caption {
-          color: #94a3b8;
+          color: #9db2c0;
         }
       }
       .logo {

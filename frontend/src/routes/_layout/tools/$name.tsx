@@ -448,7 +448,11 @@ function VersionSelect({
 
   // A single version needs no choice.
   if (versions.length < 2) {
-    return <UiBadge className="ml-1 bg-green-500">v{current}</UiBadge>
+    return (
+      <UiBadge className="ml-1 bg-primary text-primary-foreground">
+        v{current}
+      </UiBadge>
+    )
   }
 
   return (
@@ -457,7 +461,7 @@ function VersionSelect({
         <button
           type="button"
           aria-label="Select the tool version"
-          className="ml-1 inline-flex shrink-0 items-center gap-1 rounded-md bg-green-500 px-2 py-0.5 text-xs font-semibold text-white"
+          className="ml-1 inline-flex shrink-0 items-center gap-1 rounded-md bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground"
         >
           v{current}
           <ChevronDown className="size-3" />
