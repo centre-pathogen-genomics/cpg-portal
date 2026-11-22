@@ -3,8 +3,8 @@ import { randomUUID } from "node:crypto"
 import fs from "node:fs"
 import {
   createServer,
-  type IncomingMessage,
   request as httpRequest,
+  type IncomingMessage,
   type ServerResponse,
 } from "node:http"
 import { connect as netConnect, type Socket } from "node:net"
@@ -14,7 +14,11 @@ import {
   BrowserWindow,
   dialog,
   ipcMain,
+  Menu,
+  type MenuItemConstructorOptions,
+  Notification,
   type OpenDialogOptions,
+  screen,
   shell,
 } from "electron"
 
@@ -30,6 +34,12 @@ const PACK_EXTENSION = ".cpgpack"
 // newer build of itself.
 const DATA_SCHEMA_VERSION = 1
 const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000
+
+// The main window's remembered (and smallest acceptable) size. Bounds are
+// saved under userData on close and reused on the next launch.
+const MIN_WINDOW_WIDTH = 640
+const MIN_WINDOW_HEIGHT = 520
+const WINDOW_BOUNDS_FILE = "window-bounds.json"
 
 // Only the Docker documentation/download hosts may be opened in the browser.
 const EXTERNAL_HOSTS: Record<string, true> = {
@@ -157,9 +167,11 @@ function appVersion(): string {
   for (const directory of [path.resolve(main, "..", ".."), main]) {
     const file = path.join(directory, "package.json")
     try {
-      const version = (JSON.parse(fs.readFileSync(file, "utf-8")) as {
-        version?: unknown
-      }).version
+      const version = (
+        JSON.parse(fs.readFileSync(file, "utf-8")) as {
+          version?: unknown
+        }
+      ).version
       if (typeof version === "string" && version !== "") return version
     } catch {
       // No package.json here: the next candidate, or Electron's own version.
@@ -313,7 +325,10 @@ function dataDir(toolId: string): string {
 function readPack(file: string): { id: string; files: Record<string, string> } {
   const document = JSON.parse(fs.readFileSync(file, "utf-8")) as PackDocument
   // A pack from a newer app is refused by name rather than half-read.
-  if (typeof document.schema_version === "number" && document.schema_version > 1) {
+  if (
+    typeof document.schema_version === "number" &&
+    document.schema_version > 1
+  ) {
     throw new Error("This pack was made by a newer CPG Runner; update the app.")
   }
   const id = document.tool?.tool?.id
@@ -621,6 +636,11 @@ function createWindow(): BrowserWindow {
   const window = new BrowserWindow({
     width: 1100,
     height: 800,
+    // The last run's size and place, when it still fits on a screen; the
+    // defaults above apply otherwise.
+    ...storedWindowBounds(),
+    minWidth: MIN_WINDOW_WIDTH,
+    minHeight: MIN_WINDOW_HEIGHT,
     icon: iconFile(),
     // Shown once the first page has painted, so the splash stays until then.
     show: false,
@@ -636,6 +656,9 @@ function createWindow(): BrowserWindow {
       ],
     },
   })
+  // Remember the size and place for the next launch (macOS keeps the app alive
+  // with the window closed, so saving on close covers Cmd+Q too).
+  window.on("close", () => saveWindowBounds(window))
   window.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith("https://")) {
       void shell.openExternal(url)
@@ -705,26 +728,24 @@ async function removeTool(toolId: string): Promise<void> {
 
 async function showTool(toolId: string): Promise<void> {
   const window = createWindow()
+  lastToolId = toolId
+  // Move the window onto the tool's route at once and start the runner
+  // service in parallel: the page paints (or shows its loading state) while
+  // the sidecar boots, and the proxy waits for the sidecar to report ready
+  // before forwarding the page's first API calls. A switch therefore never
+  // freezes on the tool the user is leaving.
+  if (windowLoaded) {
+    window.webContents.send("runner:show-tool", { toolId })
+  } else {
+    await window.loadURL(appUrl(`/t/${toolId}/tool`))
+    windowLoaded = true
+  }
   try {
     await ensureSidecarWithRetry(toolId)
-    lastToolId = toolId
-    if (windowLoaded) {
-      // One page, many tools: the window moves to the tool's route, so the
-      // sidebar and the settings panel keep their state.
-      window.webContents.send("runner:show-tool", { toolId })
-    } else {
-      await window.loadURL(appUrl(`/t/${toolId}/tool`))
-      windowLoaded = true
-    }
   } catch (error) {
     console.error(`Could not open ${toolId}: ${String(error)}`)
-    lastToolId = toolId
-    if (windowLoaded) {
-      window.webContents.send("runner:show-tool", { toolId })
-    } else {
-      await window.loadURL(appUrl(`/t/${toolId}/tool`))
-      windowLoaded = true
-    }
+    // The window is already on the tool's route; its requests answered 502
+    // and the page shows the error state, whose Retry boots the sidecar.
   }
   if (!window.isVisible()) window.show()
 }
@@ -830,7 +851,10 @@ async function proxyRequest(
 ): Promise<void> {
   let port: number
   try {
-    port = await ensureSidecar(toolId)
+    // Await readiness (with the same retry a switch uses): a first boot on a
+    // loaded machine can outlast the start timeout, and the page's first
+    // requests now arrive while the sidecar is still starting.
+    port = await ensureSidecarWithRetry(toolId)
   } catch (error) {
     response.writeHead(502, { "Content-Type": "text/plain; charset=utf-8" })
     response.end(`Could not open ${toolId}: ${String(error)}`)
@@ -873,7 +897,7 @@ async function handleAppUpgrade(
   const toolId = decodeURIComponent(match[1])
   let port: number
   try {
-    port = await ensureSidecar(toolId)
+    port = await ensureSidecarWithRetry(toolId)
   } catch {
     socket.destroy()
     return
@@ -901,7 +925,11 @@ async function handleAppUpgrade(
 function serveRenderer(pathname: string, response: ServerResponse): void {
   const root = path.resolve(uiDir)
   let file = path.resolve(root, `.${pathname}`)
-  if (!file.startsWith(root + path.sep) || !fs.existsSync(file) || !fs.statSync(file).isFile()) {
+  if (
+    !file.startsWith(root + path.sep) ||
+    !fs.existsSync(file) ||
+    !fs.statSync(file).isFile()
+  ) {
     file = path.join(root, "index.html")
   }
   if (!fs.existsSync(file)) {
@@ -910,7 +938,9 @@ function serveRenderer(pathname: string, response: ServerResponse): void {
     return
   }
   response.writeHead(200, {
-    "Content-Type": CONTENT_TYPES[path.extname(file).toLowerCase()] ?? "application/octet-stream",
+    "Content-Type":
+      CONTENT_TYPES[path.extname(file).toLowerCase()] ??
+      "application/octet-stream",
     "Cache-Control": "no-cache",
   })
   fs.createReadStream(file).pipe(response)
@@ -1213,6 +1243,136 @@ function registerIpcHandlers(): void {
       return true
     },
   )
+
+  // A run finished while the window is backgrounded: a desktop notification,
+  // thin and never loud (no permission check here, so it fails silently).
+  ipcMain.on(
+    "runner:notify",
+    (_event, payload: { title?: unknown; body?: unknown }): void => {
+      const title = typeof payload?.title === "string" ? payload.title : ""
+      const body = typeof payload?.body === "string" ? payload.body : ""
+      if (title === "" && body === "") return
+      try {
+        if (Notification.isSupported()) {
+          new Notification({ title, body }).show()
+        }
+      } catch (error) {
+        console.error(`Could not show a notification: ${String(error)}`)
+      }
+    },
+  )
+}
+
+// -- the application menu -------------------------------------------------
+
+/**
+ * A menu without the development conveniences Electron ships by default
+ * (Reload, Toggle DevTools). macOS keeps the standard role menus plus a Help
+ * entry for the portal; elsewhere there is no menu bar, so the keyboard
+ * shortcuts people expect (quit, copy/paste) come from the OS.
+ */
+function installApplicationMenu(): void {
+  if (process.platform !== "darwin") {
+    Menu.setApplicationMenu(null)
+    return
+  }
+  const template: MenuItemConstructorOptions[] = [
+    {
+      // The app menu: name/about, then the services and quit.
+      role: "appMenu",
+      submenu: [
+        { role: "about" },
+        { type: "separator" },
+        { role: "services" },
+        { type: "separator" },
+        { role: "hide" },
+        { role: "hideOthers" },
+        { role: "unhide" },
+        { type: "separator" },
+        { role: "quit" },
+      ],
+    },
+    { role: "editMenu" },
+    { role: "windowMenu" },
+    {
+      role: "help",
+      submenu: [
+        {
+          label: "CPG Runner help",
+          enabled: isAllowedExternalUrl(portalBase()),
+          click: () => {
+            const url = portalBase()
+            if (isAllowedExternalUrl(url)) {
+              void shell.openExternal(url)
+            }
+          },
+        },
+      ],
+    },
+  ]
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template))
+}
+
+// -- the main window's size and place --------------------------------
+
+type WindowBounds = {
+  width: number
+  height: number
+  x?: number
+  y?: number
+}
+
+// The bounds from the last run, when they still fit on a connected screen.
+// A window that would open entirely off-screen falls back to the defaults.
+function storedWindowBounds(): WindowBounds | null {
+  try {
+    const raw = JSON.parse(
+      fs.readFileSync(
+        path.join(app.getPath("userData"), WINDOW_BOUNDS_FILE),
+        "utf-8",
+      ),
+    ) as Record<string, unknown>
+    const width = typeof raw.width === "number" ? raw.width : 0
+    const height = typeof raw.height === "number" ? raw.height : 0
+    if (width < MIN_WINDOW_WIDTH || height < MIN_WINDOW_HEIGHT) return null
+    const x = typeof raw.x === "number" ? raw.x : undefined
+    const y = typeof raw.y === "number" ? raw.y : undefined
+    if (x !== undefined && y !== undefined) {
+      const onScreen = screen.getAllDisplays().some((display) => {
+        const area = display.workArea
+        return (
+          x < area.x + area.width &&
+          x + width > area.x &&
+          y < area.y + area.height &&
+          y + height > area.y
+        )
+      })
+      if (!onScreen) return null
+    }
+    return {
+      width,
+      height,
+      ...(x !== undefined ? { x } : {}),
+      ...(y !== undefined ? { y } : {}),
+    }
+  } catch {
+    // No record yet, or one that cannot be read: use the defaults.
+    return null
+  }
+}
+
+function saveWindowBounds(window: BrowserWindow): void {
+  try {
+    const bounds = window.getNormalBounds()
+    if (bounds.width < MIN_WINDOW_WIDTH || bounds.height < MIN_WINDOW_HEIGHT) {
+      return
+    }
+    const file = path.join(app.getPath("userData"), WINDOW_BOUNDS_FILE)
+    fs.mkdirSync(path.dirname(file), { recursive: true })
+    fs.writeFileSync(file, `${JSON.stringify(bounds, null, 2)}\n`)
+  } catch (error) {
+    console.error(`Could not save the window bounds: ${String(error)}`)
+  }
 }
 
 // A pack opened from the file manager arrives before the app is ready, so it is
@@ -1357,9 +1517,21 @@ function start(): void {
     mainWindow.focus()
   })
 
+  // macOS keeps the app (and its sidecars) alive when every window closes,
+  // like any other Cocoa app; the dock icon reopens it. Elsewhere closing the
+  // last window quits, and `before-quit` tears the sidecars down.
   app.on("window-all-closed", () => {
-    closeSplash()
-    app.quit()
+    if (process.platform !== "darwin") {
+      closeSplash()
+      app.quit()
+    }
+  })
+
+  // Clicking the dock icon (or Cmd-Tab) with no window open brings it back.
+  app.on("activate", () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      void showHome()
+    }
   })
 
   app.on("before-quit", () => {
@@ -1371,6 +1543,7 @@ function start(): void {
   app
     .whenReady()
     .then(async () => {
+      installApplicationMenu()
       if (!app.isPackaged && process.platform === "darwin") {
         // The bundle carries the icon; a dev run would show Electron's.
         try {

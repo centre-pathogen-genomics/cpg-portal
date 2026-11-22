@@ -1,8 +1,8 @@
-import { FolderOpen } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { fileName, humanReadableFileSize } from "@/lib/format";
-import type { RunFile } from "../contracts";
-import { openPath, revealPath } from "../lib/desktop";
+import { FolderOpen } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { fileName, humanReadableFileSize } from "@/lib/format"
+import type { RunFile } from "../contracts"
+import { openPath, revealPath } from "../lib/desktop"
 
 /**
  * What the run produced, one row per file, like the portal's Files section.
@@ -12,8 +12,8 @@ export function RunFiles({
   files,
   onOpenOutputFolder,
 }: {
-  files: RunFile[];
-  onOpenOutputFolder?: () => void;
+  files: RunFile[]
+  onOpenOutputFolder?: () => void
 }) {
   return (
     <section className="grid gap-3">
@@ -41,36 +41,39 @@ export function RunFiles({
               key={`${file.path}-${index}`}
               className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3"
             >
-              <div className="min-w-0">
-                <p className="truncate font-mono text-sm" title={file.path}>
-                  {fileName(file.path)}
-                </p>
-                <p className="text-muted-foreground text-xs">
+              <p
+                className="min-w-0 truncate font-mono text-sm"
+                title={file.path}
+              >
+                {fileName(file.path)}
+              </p>
+              <div className="flex items-center gap-x-3">
+                <p className="text-muted-foreground text-xs whitespace-nowrap">
                   {humanReadableFileSize(file.size)}
                 </p>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => openPath(file.path)}
-                >
-                  Open
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => revealPath(file.path)}
-                >
-                  Show in folder
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => openPath(file.path)}
+                  >
+                    Open
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => revealPath(file.path)}
+                  >
+                    Show in folder
+                  </Button>
+                </div>
               </div>
             </li>
           ))}
         </ul>
       )}
     </section>
-  );
+  )
 }

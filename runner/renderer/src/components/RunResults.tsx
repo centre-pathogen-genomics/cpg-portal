@@ -1,11 +1,9 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import FileRenderer, {
-  canRenderFile,
-} from "@/components/Render/FileRenderer"
+import FileRenderer, { canRenderFile } from "@/components/Render/FileRenderer"
 import {
   type FileLoader,
   FileLoaderProvider,
 } from "@/components/Render/fileSource"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { fileName } from "@/lib/format"
 import { api } from "../api"
 import type { FileTypesMap, RunFile } from "../contracts"
@@ -20,9 +18,9 @@ export function RunResults({
   files,
   fileTypes,
 }: {
-  runId: string;
-  files: RunFile[];
-  fileTypes: FileTypesMap;
+  runId: string
+  files: RunFile[]
+  fileTypes: FileTypesMap
 }) {
   const renderable = files
     .map((file, index) => ({
@@ -35,9 +33,11 @@ export function RunResults({
 
   // The index names the output in this run's API, and the key carries the run
   // with it so the app-wide query cache never serves one run's file to another.
-  const keyOf = (index: number) => `${runId}:${index}`;
+  const keyOf = (index: number) => `${runId}:${index}`
   const loader: FileLoader = (target) =>
-    api.blob(`/runs/${runId}/files/${Number(target.key.slice(runId.length + 1))}`)
+    api.blob(
+      `/runs/${runId}/files/${Number(target.key.slice(runId.length + 1))}`,
+    )
 
   return (
     <section className="grid gap-3">

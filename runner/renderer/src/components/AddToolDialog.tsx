@@ -67,11 +67,7 @@ export function AddToolDialog({
             disabled={importing}
             onClick={() => void addFromFile()}
           >
-            {importing ? (
-              <LoaderCircle className="animate-spin" />
-            ) : (
-              <FileUp />
-            )}
+            {importing ? <LoaderCircle className="animate-spin" /> : <FileUp />}
             {importing ? "Reading the pack…" : "Add tool from file system"}
           </Button>
           <Button

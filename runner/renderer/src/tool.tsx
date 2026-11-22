@@ -61,6 +61,22 @@ import cpgLogo from "./assets/cpg-logo.png";
 const FIELD_ERROR =
   /^(?:Missing required parameter|Invalid value for parameter): (.+)$/;
 
+/** Everything the tool page shows about one tool. */
+type ToolPageSnapshot = {
+  tool: ToolConfig;
+  status: StatusPayload;
+  settings: Settings;
+  fileTypes: FileTypesMap;
+};
+
+/**
+ * The last loaded snapshot per tool, so switching back to a tool it already
+ * showed paints at once and refreshes in the background instead of holding a
+ * loading state. One snapshot per installed tool — bounded by the installed
+ * catalogue, not by time.
+ */
+const toolPageCache = new Map<string, ToolPageSnapshot>();
+
 export function ToolPage({ toolId }: { toolId: string }) {
   const navigate = useNavigate();
   const [tool, setTool] = useState<ToolConfig | null>(null);
@@ -114,13 +130,27 @@ export function ToolPage({ toolId }: { toolId: string }) {
         ]);
       if (seq !== loadSeq.current) return;
       const loadedTool = unwrapTool(toolPayload);
+      toolPageCache.set(pendingTool.current, {
+        tool: loadedTool,
+        status: statusPayload,
+        settings: settingsPayload,
+        fileTypes: types,
+      });
       setTool(loadedTool);
       setStatus(statusPayload);
       setSettings(settingsPayload);
       setFileTypes(types);
       setLoadError(null);
     } catch (error) {
-      if (seq === loadSeq.current) setLoadError(errorMessage(error));
+      if (seq !== loadSeq.current) return;
+      // A snapshot fits the tool the page shows: keep it on screen and say
+      // why it could not refresh, instead of dropping the page to its error
+      // state. Without one, the error page (with Retry) is the honest view.
+      if (toolPageCache.has(pendingTool.current)) {
+        toast.error(errorMessage(error));
+      } else {
+        setLoadError(errorMessage(error));
+      }
     }
   }, []);
 
@@ -137,6 +167,23 @@ export function ToolPage({ toolId }: { toolId: string }) {
     setForcedDoctor(null);
     setDescriptionOpen(false);
     setLoadError(null);
+    // A tool the user left and came back to paints at once from its last
+    // snapshot; loadAll below refreshes it in the background. A first visit
+    // drops the tool being left so the page shows its loading state for the
+    // new tool, not the previous one's.
+    const cached = toolPageCache.get(toolId);
+    if (cached) {
+      setTool(cached.tool);
+      setStatus(cached.status);
+      setSettings(cached.settings);
+      setFileTypes(cached.fileTypes);
+      setLoadingTool(false);
+    } else {
+      setTool(null);
+      setStatus(null);
+      setSettings(null);
+      setFileTypes({});
+    }
     // A tool whose files no longer parse still has a page: the reason comes
     // from the app, which is the only place that knows why.
     void window.cpgRunner
@@ -428,7 +475,7 @@ export function ToolPage({ toolId }: { toolId: string }) {
         initialValues={rerunValues}
         initialValuesReady={rerunChecked}
         initialThreads={rerunRun?.cpus ?? null}
-        className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_360px]"
+        className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_400px]"
         renderFilePicker={({ param, values, onChange, disabled }) => (
           <LocalFilePicker
             param={param}
@@ -441,7 +488,7 @@ export function ToolPage({ toolId }: { toolId: string }) {
         extras={
           <div>
             <Label htmlFor="CPG_RUNNER_RUN_NAME">Run name</Label>
-            <p className="mb-2 text-muted-foreground text-xs">
+            <p className="mt-1 mb-2 text-muted-foreground text-xs">
               Optional, named automatically if left blank
             </p>
             <Input
@@ -714,7 +761,7 @@ export function ToolPage({ toolId }: { toolId: string }) {
                   </div>
                 </div>
               </div>
-              <div className="bg-background shrink-0 border-t px-6 py-4">
+              <div className="bg-background shrink-0 border-t px-6 py-2">
                 {submit}
               </div>
             </aside>
