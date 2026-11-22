@@ -40,7 +40,7 @@ export function ToolHeading({
           <img
             src={image}
             alt={name}
-            className="mr-2 size-12 shrink-0 rounded-full border-2 object-cover"
+            className="mr-2 size-12 shrink-0 rounded-md border-2 object-cover"
           />
           <Title className="truncate text-3xl font-bold">{name}</Title>
           {version && (

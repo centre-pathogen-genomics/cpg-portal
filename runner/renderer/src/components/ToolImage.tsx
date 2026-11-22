@@ -34,7 +34,7 @@ export function ToolImage({
     <img
       src={images[id] ?? src ?? placeholderImage(name)}
       alt={name}
-      className={cn("shrink-0 rounded-full border object-cover", className)}
+      className={cn("shrink-0 rounded-md border object-cover", className)}
     />
   )
 }
