@@ -1,8 +1,13 @@
-import { FolderOpen } from "lucide-react"
+import { FolderOpen, Info } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 /** The settings a local run needs beyond the run form: where outputs go and
  * how the container may reach the computer. CPUs are chosen per run in the
@@ -99,10 +104,27 @@ export function ToolSettings({
 
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <Label htmlFor="runner-clean-work">Clean up work folder</Label>
+          <div className="flex items-center gap-1.5">
+            <Label htmlFor="runner-clean-work">Clean up work folder</Label>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  aria-label="About cleaning up the work folder"
+                  className="text-muted-foreground inline-flex size-4 shrink-0 items-center justify-center"
+                >
+                  <Info className="size-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                The .cpg_work folder is deleted once its outputs are copied.
+                Keep it to inspect the files a run left behind.
+              </TooltipContent>
+            </Tooltip>
+          </div>
           <p className="mt-1 text-muted-foreground text-xs">
-            Delete the run&#39;s .cpg_work folder once its outputs are copied.
-            Keep it to inspect the files a run left behind.
+            Delete the run&#39;s temporary work folder.
           </p>
         </div>
         <Switch
@@ -117,12 +139,29 @@ export function ToolSettings({
 
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <Label htmlFor="runner-overwrite-output">
-            Overwrite existing folder
-          </Label>
+          <div className="flex items-center gap-1.5">
+            <Label htmlFor="runner-overwrite-output">
+              Overwrite existing folder
+            </Label>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  aria-label="About overwriting the output folder"
+                  className="text-muted-foreground inline-flex size-4 shrink-0 items-center justify-center"
+                >
+                  <Info className="size-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                Only applies to named runs; unnamed runs always create a new
+                folder.
+              </TooltipContent>
+            </Tooltip>
+          </div>
           <p className="mt-1 text-muted-foreground text-xs">
-            Replace the output folder if it already exists. Only applies to
-            named runs; unnamed runs always create a new folder.
+            Replace an existing output folder.
           </p>
         </div>
         <Switch

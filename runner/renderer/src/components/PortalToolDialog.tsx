@@ -18,10 +18,9 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
-import type { PortalToolDetail, ToolConfig } from "../contracts"
+import type { PortalToolDetail } from "../contracts"
 import { openExternal } from "../lib/desktop"
 import { portalToolUrl } from "../lib/portal"
-import { ToolBadges } from "./ToolBadges"
 import { ToolHeading } from "./ToolHeading"
 import { placeholderImage } from "./ToolImage"
 
@@ -93,17 +92,6 @@ export function PortalToolDialog({
     }
   }
 
-  const tool = detail
-    ? ({
-        ...detail,
-        id: detail.name,
-        explanation_of_results_markdown: null,
-        description: detail.description,
-        params: [],
-        targets: [],
-      } as unknown as ToolConfig)
-    : null
-
   return (
     <Dialog open={target !== null} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
@@ -116,7 +104,6 @@ export function PortalToolDialog({
             name={detail?.name ?? target?.name ?? ""}
             version={detail?.version}
             heading={DialogTitle}
-            badges={tool ? <ToolBadges tool={tool} /> : undefined}
           />
         </DialogHeader>
         {error && <p className="text-destructive text-sm">{error}</p>}

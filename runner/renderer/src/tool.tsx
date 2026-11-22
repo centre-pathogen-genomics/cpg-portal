@@ -39,7 +39,6 @@ import { ApiError, api, errorMessage } from "./api";
 import { DockerSetupDialog } from "./components/DockerSetupDialog";
 import { InstallDialog } from "./components/InstallDialog";
 import { LocalFilePicker } from "./components/LocalFilePicker";
-import { ToolBadges } from "./components/ToolBadges";
 import { ToolHeading } from "./components/ToolHeading";
 import { placeholderImage, useToolImages } from "./components/ToolImage";
 import { ToolSidebar } from "./components/ToolSidebar";
@@ -258,8 +257,8 @@ export function ToolPage({ toolId }: { toolId: string }) {
 
   const blockedReason = !doctorReady
     ? "Docker is not ready."
-    : installState !== "installed"
-      ? "The tool environment is not installed."
+    : needsInstall
+      ? "Install the tool environment to run this tool."
       : null;
 
   // Settings save as they change: there is nothing to confirm afterwards.
@@ -513,7 +512,6 @@ export function ToolPage({ toolId }: { toolId: string }) {
                     }
                     name={tool.name}
                     version={tool.version}
-                    badges={<ToolBadges tool={tool} />}
                   >
                     <div className="flex shrink-0 items-center gap-2">
                       {needsInstall && (
@@ -639,12 +637,6 @@ export function ToolPage({ toolId }: { toolId: string }) {
                             )}
                           </div>
 
-                          {blockedReason && (
-                            <p className="text-muted-foreground text-sm">
-                              {blockedReason}
-                            </p>
-                          )}
-
                           <p className="text-muted-foreground text-xs">
                             Input files stay on this computer; outputs go to
                             the output folder in the run settings.
@@ -659,7 +651,7 @@ export function ToolPage({ toolId }: { toolId: string }) {
 
             <aside className="flex min-h-0 flex-col border-l">
               <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
-                <img src={cpgLogo} alt="CPG" className="mb-6 w-auto" />
+                <img src={cpgLogo} alt="CPG" className="mb-4 size-10 shrink-0 opacity-80" />
                 <div className="grid gap-6">
                   {settingsPanel}
 
@@ -770,7 +762,23 @@ export function ToolPage({ toolId }: { toolId: string }) {
                   </div>
                 </div>
               </div>
-              <div className="bg-background shrink-0 border-t px-6 py-2">
+              <div className="bg-background shrink-0 border-t px-6 py-3">
+                {blockedReason && !doctorReady && (
+                  <p className="text-muted-foreground mb-2 text-sm">
+                    {blockedReason}
+                  </p>
+                )}
+                {needsInstall && (
+                  <p className="mb-2">
+                    <button
+                      type="button"
+                      onClick={() => setInstallDismissed(false)}
+                      className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 text-sm underline-offset-2 hover:underline"
+                    >
+                      Install the tool environment to run this tool.
+                    </button>
+                  </p>
+                )}
                 {submit}
               </div>
             </aside>

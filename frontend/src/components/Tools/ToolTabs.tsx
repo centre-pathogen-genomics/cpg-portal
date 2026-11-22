@@ -1,5 +1,5 @@
 import type { ReactNode } from "react"
-import { BookOpen, ExternalLink, ListTree, SlidersHorizontal } from "lucide-react"
+import { BookOpen, ExternalLink, Info, SlidersHorizontal } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -20,6 +20,7 @@ export type ToolTabsTool = {
   paper_doi?: string | null
   license?: string | null
   github_repo?: string | null
+  badges?: { badge?: string | null; url?: string | null }[]
   tags?: string[]
   command?: string
   explanation_of_results_markdown?: string | null
@@ -76,6 +77,96 @@ function ExternalLinkButton({
 }
 
 /**
+ * The tool's badges as a GitHub-README-style row: the pack's own shields stay
+ * images, everything else becomes a small "label · value" pill linked to its
+ * source. Shown at the top of the Documentation tab.
+ */
+function ReadmeBadges({
+  tool,
+  onOpenExternal,
+}: {
+  tool: ToolTabsTool
+  onOpenExternal?: (url: string) => void
+}) {
+  const pills: ReactNode[] = []
+  const pill = (
+    text: string,
+    url?: string | null,
+    key?: string,
+  ): ReactNode => {
+    const inner = <span>{text}</span>
+    if (!url) return <Badge key={key} variant="secondary">{inner}</Badge>
+    return (
+      <Badge key={key} variant="secondary" asChild>
+        <a
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+          onClick={
+            onOpenExternal
+              ? (event) => {
+                  event.preventDefault()
+                  onOpenExternal(url)
+                }
+              : undefined
+          }
+        >
+          {inner}
+        </a>
+      </Badge>
+    )
+  }
+  const keyOf = (label: string) => `badge-${label}`
+  if (tool.license) pills.push(pill(`license · ${tool.license}`, undefined, keyOf("license")))
+  if (tool.docs_url) pills.push(pill("docs", tool.docs_url, keyOf("docs")))
+  if (tool.paper_doi)
+    pills.push(pill(`doi · ${tool.paper_doi}`, `https://doi.org/${tool.paper_doi}`, keyOf("doi")))
+  if (tool.github_repo)
+    pills.push(pill("github · " + tool.github_repo.replace(/^https?:\/\//, ""), tool.github_repo, keyOf("github")))
+  for (const [index, tag] of (tool.tags ?? []).entries())
+    pills.push(pill(`#${tag}`, undefined, keyOf(`tag-${tag}-${index}`)))
+
+  if (
+    pills.length === 0 &&
+    !tool.badges?.some((entry) => entry.badge?.startsWith("http"))
+  )
+    return null
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {tool.badges?.map((entry, index) =>
+        entry.badge?.startsWith("http") ? (
+          <a
+            key={keyOf(`shield-${index}`)}
+            href={entry.url ?? undefined}
+            target="_blank"
+            rel="noreferrer"
+            onClick={
+              entry.url && onOpenExternal
+                ? (event) => {
+                    event.preventDefault()
+                    onOpenExternal(entry.url as string)
+                  }
+                : undefined
+            }
+          >
+            <img src={entry.badge} alt="" className="h-5" />
+          </a>
+        ) : (
+          pills.push(
+            pill(
+              entry.badge ?? "",
+              entry.url,
+              keyOf(`badge-${index}`),
+            ),
+          )
+        ),
+      )}
+      {pills}
+    </div>
+  )
+}
+
+/**
  * The tool page's three tabs — Configure, Documentation, Details — as one
  * shared component, so the desktop app and the portal show the same tool the
  * same way. Configure is the host's own content (the run form); the other two
@@ -98,7 +189,8 @@ export function ToolTabs({
   const hasDocumentation =
     !!tool.docs_url ||
     !!tool.explanation_of_results_markdown ||
-    !!tool.description
+    !!tool.description ||
+    (tool.badges?.length ?? 0) > 0
   return (
     <Tabs defaultValue={defaultTab} className="w-full">
       <TabsList variant="line" className="w-full justify-start gap-5">
@@ -106,12 +198,18 @@ export function ToolTabs({
           <SlidersHorizontal />
           Configure
         </TabsTrigger>
-        <TabsTrigger value="documentation">
+        <TabsTrigger
+          value="documentation"
+          className="data-[state=inactive]:text-muted-foreground/55 data-[state=inactive]:[&_svg]:size-3.5"
+        >
           <BookOpen />
           Documentation
         </TabsTrigger>
-        <TabsTrigger value="details">
-          <ListTree />
+        <TabsTrigger
+          value="details"
+          className="data-[state=inactive]:text-muted-foreground/55 data-[state=inactive]:[&_svg]:size-3.5"
+        >
+          <Info />
           Details
         </TabsTrigger>
       </TabsList>
@@ -123,6 +221,7 @@ export function ToolTabs({
       <TabsContent value="documentation" className="mt-4">
         {hasDocumentation ? (
           <div className="grid gap-5">
+            <ReadmeBadges tool={tool} onOpenExternal={onOpenExternal} />
             {tool.docs_url && (
               <div>
                 <ExternalLinkButton
@@ -192,6 +291,7 @@ export function ToolTabs({
               </div>
             </DetailRow>
           )}
+          
           <DetailRow label="CPUs">
             {tool.min_cpus !== undefined
               ? `${tool.min_cpus}–${tool.max_cpus ?? "∞"}${
