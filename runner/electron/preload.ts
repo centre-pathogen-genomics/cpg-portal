@@ -53,6 +53,17 @@ contextBridge.exposeInMainWorld("cpgRunner", {
       ipcRenderer.removeListener("runner:update-available", listener)
     }
   },
+  /** The portal's origin as the app currently uses it. */
+  getPortalUrl: (): Promise<string> => ipcRenderer.invoke("runner:get-portal-url"),
+  /** Points the app at another portal; the choice is remembered. */
+  setPortalUrl: (url: string): Promise<void> =>
+    ipcRenderer.invoke("runner:set-portal-url", url),
+  /** The app's native shell follows the page's theme. */
+  setShellTheme: (
+    theme: "dark" | "light" | "system",
+    resolved: "dark" | "light",
+  ): Promise<void> =>
+    ipcRenderer.invoke("runner:set-shell-theme", { theme, resolved }),
   tools: (): Promise<ToolEntry[]> => ipcRenderer.invoke("runner:tools"),
   toolImages: (): Promise<Record<string, string>> =>
     ipcRenderer.invoke("runner:tool-images"),

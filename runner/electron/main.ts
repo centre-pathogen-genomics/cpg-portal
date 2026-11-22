@@ -16,6 +16,7 @@ import {
   ipcMain,
   Menu,
   type MenuItemConstructorOptions,
+  nativeTheme,
   Notification,
   type OpenDialogOptions,
   screen,
@@ -125,8 +126,79 @@ function preloadPath(): string {
 }
 
 // Where the app's own portal lives, e.g. to send the user to the tool list on
-// a first run. Passed in by the dev script or the environment.
-const portalUrl = (process.env.CPG_RUNNER_PORTAL_URL || "").replace(/\/+$/, "")
+// a first run. Passed in by the dev script or the environment; a portal the
+// user chose in Settings replaces it, and is remembered across launches.
+let portalUrl = (process.env.CPG_RUNNER_PORTAL_URL || "").replace(/\/+$/, "")
+
+// The user's choices — a portal and a theme — under the app's own data
+// directory, so the native shell can read them before the window exists.
+const SETTINGS_FILE = "settings.json"
+
+type AppSettings = { portal_url?: unknown; theme?: unknown }
+
+function readSettings(): AppSettings {
+  try {
+    const file = path.join(app.getPath("userData"), SETTINGS_FILE)
+    return JSON.parse(fs.readFileSync(file, "utf-8")) as AppSettings
+  } catch {
+    // No choices yet, or a file that cannot be read: keep the defaults.
+    return {}
+  }
+}
+
+function writeSettings(patch: AppSettings): void {
+  const file = path.join(app.getPath("userData"), SETTINGS_FILE)
+  fs.writeFileSync(
+    file,
+    JSON.stringify({ ...readSettings(), ...patch }, null, 2),
+  )
+}
+
+/** The theme the user chose, or "system" before any choice. */
+function storedShellTheme(): "dark" | "light" | "system" {
+  const stored = readSettings().theme
+  return stored === "dark" || stored === "light" || stored === "system"
+    ? stored
+    : "system"
+}
+
+// The app's own chrome — title bar, menus, dialogs — and the background the
+// window loads onto follow the page's theme, applied before the first paint
+// so the shell never flashes a different colour.
+let shellTheme: "dark" | "light" | "system" = "system"
+
+/** Whether the shell paints dark, resolving "system" against the OS. */
+function shellDark(): boolean {
+  return (
+    shellTheme === "dark" ||
+    (shellTheme === "system" && nativeTheme.shouldUseDarkColors)
+  )
+}
+
+/** The page's background colour for the effective theme. */
+function shellBackground(): string {
+  return shellDark() ? "#0d1b26" : "#f5f9fb"
+}
+
+/** A portal address the app can actually reach: http(s) with no path. */
+function normalizePortalUrl(value: unknown): string {
+  if (typeof value !== "string" || value.trim() === "") {
+    throw new Error(
+      "Enter the portal's address, e.g. https://portal.example.org",
+    )
+  }
+  const url = value.trim().replace(/\/+$/, "")
+  let parsed: URL
+  try {
+    parsed = new URL(url)
+  } catch {
+    throw new Error("That is not a valid portal address")
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    throw new Error("The portal address must start with http:// or https://")
+  }
+  return url
+}
 
 const token = randomUUID()
 
@@ -616,7 +688,7 @@ function showSplash(): void {
   })
   void splashWindow.loadURL(
     `data:text/html;charset=utf-8,${encodeURIComponent(
-      splashHtml(logoDataUrl()),
+      splashHtml(logoDataUrl(), shellDark()),
     )}`,
   )
 }
@@ -642,6 +714,8 @@ function createWindow(): BrowserWindow {
     minWidth: MIN_WINDOW_WIDTH,
     minHeight: MIN_WINDOW_HEIGHT,
     icon: iconFile(),
+    // The page paints over this; matching it stops a flash while it loads.
+    backgroundColor: shellBackground(),
     // Shown once the first page has painted, so the splash stays until then.
     show: false,
     webPreferences: {
@@ -1105,6 +1179,32 @@ function registerIpcHandlers(): void {
   })
 
   ipcMain.handle("runner:tools", (): ToolEntry[] => listTools())
+
+  ipcMain.handle("runner:get-portal-url", (): string => portalUrl)
+
+  ipcMain.handle("runner:set-portal-url", (_event, raw: unknown): void => {
+    portalUrl = normalizePortalUrl(raw)
+    writeSettings({ portal_url: portalUrl })
+  })
+
+  // The page repaints itself; the native chrome and the load background have
+  // to follow, so the shell never shows a different colour.
+  ipcMain.handle(
+    "runner:set-shell-theme",
+    (_event, payload: { theme?: unknown; resolved?: unknown }): void => {
+      const theme = payload?.theme
+      if (theme !== "dark" && theme !== "light" && theme !== "system") return
+      shellTheme = theme
+      nativeTheme.themeSource = theme
+      writeSettings({ theme })
+      if (payload?.resolved === "dark" || payload?.resolved === "light") {
+        mainWindow?.setBackgroundColor(
+          payload.resolved === "dark" ? "#0d1b26" : "#f5f9fb",
+        )
+      }
+    },
+  )
+
   ipcMain.handle("runner:update", () => pendingUpdate)
   ipcMain.handle(
     "runner:tool-images",
@@ -1553,6 +1653,13 @@ function start(): void {
         }
       }
       if (!ensureDataSchema()) return
+      // Choices from Settings outrank what this build ships with.
+      const savedPortal = readSettings().portal_url
+      if (typeof savedPortal === "string" && savedPortal !== "") {
+        portalUrl = savedPortal
+      }
+      shellTheme = storedShellTheme()
+      nativeTheme.themeSource = shellTheme
       registerIpcHandlers()
       await startAppServer()
       // The splash covers the first paint only: opening a tool later shows the

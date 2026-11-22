@@ -182,7 +182,8 @@ function LocalRunner() {
                 download
                 className="text-muted-foreground hover:text-foreground text-xs underline"
               >
-                Previous build: v{app.previous.version}
+                Previous build
+                {app.previous.version ? `: v${app.previous.version}` : ""}
               </a>
             )}
           </section>

@@ -23,6 +23,15 @@ declare global {
       portalUrl: string
       /** This build's version, e.g. "1.0.0"; empty when unknown. */
       appVersion: string
+      /** The portal's origin as the app currently uses it. */
+      getPortalUrl(): Promise<string>
+      /** Points the app at another portal; the choice is remembered. */
+      setPortalUrl(url: string): Promise<void>
+      /** The app's native shell follows the page's theme. */
+      setShellTheme(
+        theme: "dark" | "light" | "system",
+        resolved: "dark" | "light",
+      ): Promise<void>
       /** A newer build the portal already announced, if there is one. */
       update(): Promise<AppUpdatePayload | null>
       /** A newer build was announced after the window loaded. */

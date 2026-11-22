@@ -217,3 +217,29 @@ test("The Local Runner page offers the build the current one replaced", async ({
 
   await page.unroute(APP_PATTERN)
 })
+
+test("The rollback link never shows a bare version", async ({ page }) => {
+  // A build from before manifests existed has no recorded version.
+  await stubApp(page, {
+    version: "1.0.0",
+    build: "build1234",
+    url: "http://localhost:8000/api/v1/runner/app/linux-x64?v=build1234",
+    previous: {
+      version: "",
+      url: "http://localhost:8000/api/v1/runner/app/linux-x64/previous",
+    },
+  })
+
+  await page.goto("/local-runner")
+  await page.getByRole("combobox", { name: "Platform" }).click()
+  await page.getByRole("option", { name: "Linux (x64)" }).click()
+
+  await expect(
+    page.getByRole("link", { name: "Previous build", exact: true }),
+  ).toHaveAttribute(
+    "href",
+    "http://localhost:8000/api/v1/runner/app/linux-x64/previous",
+  )
+
+  await page.unroute(APP_PATTERN)
+})

@@ -1,8 +1,16 @@
+// The two faces of the app, in the portal's palette: what the splash shows
+// has to match the window it hands over to, which follows the user's theme.
+const PALETTES = {
+  light: { background: "#f5f9fb", ink: "#10222e", muted: "#5b7080" },
+  dark: { background: "#0d1b26", ink: "#e6edf2", muted: "#9db8c9" },
+}
+
 /**
  * The window shown while the runner starts: the portal's mark, and a hint that
  * the first start can take a while because the tool environment is installed.
  */
-export function splashHtml(logoSrc: string): string {
+export function splashHtml(logoSrc: string, dark: boolean): string {
+  const palette = dark ? PALETTES.dark : PALETTES.light
   return `<!doctype html>
 <html>
   <head>
@@ -14,8 +22,8 @@ export function splashHtml(logoSrc: string): string {
     <style>
       :root {
         --accent: #0f7c9c;
-        --ink: #e6edf2;
-        --muted: #9db8c9;
+        --ink: ${palette.ink};
+        --muted: ${palette.muted};
       }
       * {
         box-sizing: border-box;
@@ -31,21 +39,12 @@ export function splashHtml(logoSrc: string): string {
         align-items: center;
         justify-content: center;
         gap: 22px;
-        background: #0d1b26;
+        background: ${palette.background};
         color: var(--ink);
         font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
           Helvetica, Arial, sans-serif;
         -webkit-user-select: none;
         user-select: none;
-      }
-      @media (prefers-color-scheme: dark) {
-        body {
-          background: #0d1b26;
-          color: #e6edf2;
-        }
-        .caption {
-          color: #9db8c9;
-        }
       }
       .logo {
         width: 90%;

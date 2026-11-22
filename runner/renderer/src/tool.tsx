@@ -4,10 +4,7 @@ import {
   EllipsisVertical,
   ExternalLink,
   LoaderCircle,
-  Monitor,
-  Moon,
   Settings as SettingsIcon,
-  Sun,
   Trash2,
   Wrench,
 } from "lucide-react";
@@ -18,7 +15,6 @@ import { ConfirmationDialog } from "@/components/Common/ConfirmationDialog";
 import ToolRunForm from "@/components/Tools/ToolRunForm";
 import { ToolSettings } from "@/components/Tools/ToolSettings";
 import { ToolTabs } from "@/components/Tools/ToolTabs";
-import { useTheme } from "@/components/theme-provider";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -43,6 +39,7 @@ import { ApiError, api, errorMessage } from "./api";
 import { DockerSetupDialog } from "./components/DockerSetupDialog";
 import { InstallDialog } from "./components/InstallDialog";
 import { LocalFilePicker } from "./components/LocalFilePicker";
+import { SettingsDialog } from "./components/SettingsDialog";
 import { ToolHeading } from "./components/ToolHeading";
 import { placeholderImage, useToolImages } from "./components/ToolImage";
 import { ToolSidebar } from "./components/ToolSidebar";
@@ -64,9 +61,6 @@ import cpgLogo from "./assets/cpg-logo.png";
 
 const FIELD_ERROR =
   /^(?:Missing required parameter|Invalid value for parameter): (.+)$/;
-
-/** Fixed for the window's lifetime; read once. */
-const appVersion = window.cpgRunner?.appVersion ?? "";
 
 /** Everything the tool page shows about one tool. */
 type ToolPageSnapshot = {
@@ -106,7 +100,7 @@ function readAsideWidth(): number {
 
 export function ToolPage({ toolId }: { toolId: string }) {
   const navigate = useNavigate();
-  const { setTheme } = useTheme();
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [tool, setTool] = useState<ToolConfig | null>(null);
   const [status, setStatus] = useState<StatusPayload | null>(null);
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -728,40 +722,18 @@ export function ToolPage({ toolId }: { toolId: string }) {
                     alt="CPG"
                     className="h-14 w-auto shrink-0"
                   />
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Global settings"
-                      >
-                        <SettingsIcon className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-44">
-                      <DropdownMenuItem onClick={() => setTheme("light")}>
-                        <Sun className="mr-2 h-4 w-4" />
-                        Light
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTheme("dark")}>
-                        <Moon className="mr-2 h-4 w-4" />
-                        Dark
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTheme("system")}>
-                        <Monitor className="mr-2 h-4 w-4" />
-                        System
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        disabled
-                        className="text-muted-foreground focus:bg-transparent"
-                      >
-                        {appVersion
-                          ? `CPG Runner v${appVersion}`
-                          : "CPG Runner"}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Global settings"
+                    onClick={() => setSettingsOpen(true)}
+                  >
+                    <SettingsIcon className="h-4 w-4" />
+                  </Button>
+                  <SettingsDialog
+                    open={settingsOpen}
+                    onOpenChange={setSettingsOpen}
+                  />
                 </div>
                 <h2 className="mb-3 text-lg font-semibold">Run settings</h2>
                 <div className="grid gap-6 [&>*]:min-w-0">
