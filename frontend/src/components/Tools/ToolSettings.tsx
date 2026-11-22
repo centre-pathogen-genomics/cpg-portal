@@ -48,13 +48,13 @@ export function ToolSettings({
             Finished runs are copied here.
           </p>
         </div>
-        <div className="flex shrink-0 flex-col items-end gap-2">
+        <div className="flex min-w-0 flex-col items-end gap-2">
           <Input
             id="runner-output"
             readOnly
             value={settings.output_dir}
             title={settings.output_dir}
-            className="h-9 w-56 font-mono text-xs"
+            className="h-9 w-56 max-w-full font-mono text-xs"
           />
           <div className="flex gap-2">
             <Button

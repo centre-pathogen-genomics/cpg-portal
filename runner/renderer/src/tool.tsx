@@ -756,7 +756,7 @@ if (cached) {
                   </DropdownMenu>
                 </div>
                 <h2 className="mb-3 text-sm font-semibold">Run settings</h2>
-                <div className="grid gap-6">
+                <div className="grid gap-6 [&>*]:min-w-0">
                   {settingsPanel}
 
                   <ToolSettings
