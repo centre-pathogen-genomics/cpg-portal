@@ -11,6 +11,7 @@ import ReactMarkdown from "../../../components/Common/Markdown";
 import DownloadAllFilesButton from "../../../components/Files/DownloadAllFilesButton";
 import FileRenderer, {
   canRenderFile,
+  PreviewLoading,
 } from "../../../components/Render/FileRenderer";
 import { portalRenderable } from "../../../components/Render/portalFileLoader";
 import SendNewickToTrakkaButton from "../../../components/Render/SendNewickToTrakkaButton";
@@ -160,9 +161,7 @@ function RunDetailContent({ run }: { run: RunPublic }) {
                 )}
                 {fileTabs.map((file) => (
                   <TabsContent value={file.id} key={file.id} className="p-4">
-                    <Suspense
-                      fallback={<Skeleton className="h-[240px] w-full" />}
-                    >
+                    <Suspense fallback={<PreviewLoading />}>
                       <FileRenderer
                         file={portalRenderable(file)}
                         showUnsupportedMessage={false}

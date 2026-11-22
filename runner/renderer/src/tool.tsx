@@ -15,8 +15,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import RenderMarkdown from "@/components/Common/Markdown";
 import { ConfirmationDialog } from "@/components/Common/ConfirmationDialog";
-import ToolRunForm from "@/components/Tools/ToolRunForm"
-import { ToolSettings } from "@/components/Tools/ToolSettings"
+import ToolRunForm from "@/components/Tools/ToolRunForm";
+import { ToolSettings } from "@/components/Tools/ToolSettings";
 import { ToolTabs } from "@/components/Tools/ToolTabs";
 import { useTheme } from "@/components/theme-provider";
 import { Badge } from "@/components/ui/badge";
@@ -83,26 +83,26 @@ type ToolPageSnapshot = {
  * loading state. One snapshot per installed tool — bounded by the installed
  * catalogue, not by time.
  */
-const toolPageCache = new Map<string, ToolPageSnapshot>()
+const toolPageCache = new Map<string, ToolPageSnapshot>();
 
-const ASIDE_WIDTH_KEY = "cpg-runner.aside-width"
-const ASIDE_MIN = 320
-const ASIDE_MAX = 640
-const ASIDE_DEFAULT = 400
+const ASIDE_WIDTH_KEY = "cpg-runner.aside-width";
+const ASIDE_MIN = 320;
+const ASIDE_MAX = 640;
+const ASIDE_DEFAULT = 400;
 
 function readAsideWidth(): number {
   try {
-    const raw = localStorage.getItem(ASIDE_WIDTH_KEY)
+    const raw = localStorage.getItem(ASIDE_WIDTH_KEY);
     if (raw !== null && raw !== "") {
-      const value = Number(raw)
+      const value = Number(raw);
       if (Number.isFinite(value))
-        return Math.min(ASIDE_MAX, Math.max(ASIDE_MIN, value))
+        return Math.min(ASIDE_MAX, Math.max(ASIDE_MIN, value));
     }
   } catch {
     // ignore
   }
-  return ASIDE_DEFAULT
-};
+  return ASIDE_DEFAULT;
+}
 
 export function ToolPage({ toolId }: { toolId: string }) {
   const navigate = useNavigate();
@@ -110,7 +110,7 @@ export function ToolPage({ toolId }: { toolId: string }) {
   const [tool, setTool] = useState<ToolConfig | null>(null);
   const [status, setStatus] = useState<StatusPayload | null>(null);
   const [settings, setSettings] = useState<Settings | null>(null);
-  const [fileTypes, setFileTypes] = useState<FileTypesMap>({})
+  const [fileTypes, setFileTypes] = useState<FileTypesMap>({});
   const [environment, setEnvironment] = useState<string | null>(null);
   const [forcedDoctor, setForcedDoctor] = useState<DoctorReport | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -125,34 +125,34 @@ export function ToolPage({ toolId }: { toolId: string }) {
   const [runName, setRunName] = useState("");
   const [descriptionOpen, setDescriptionOpen] = useState(false);
   const images = useToolImages();
-  const [rerunRun, setRerunRun] = useState<RunRecord | null>(null)
-  const [asideWidth, setAsideWidth] = useState(readAsideWidth)
-  const asideWidthRef = useRef(asideWidth)
-  asideWidthRef.current = asideWidth
+  const [rerunRun, setRerunRun] = useState<RunRecord | null>(null);
+  const [asideWidth, setAsideWidth] = useState(readAsideWidth);
+  const asideWidthRef = useRef(asideWidth);
+  asideWidthRef.current = asideWidth;
 
   const startAsideResize = (event: React.PointerEvent) => {
-    event.preventDefault()
-    const startX = event.clientX
-    const startWidth = asideWidthRef.current
+    event.preventDefault();
+    const startX = event.clientX;
+    const startWidth = asideWidthRef.current;
     const move = (ev: PointerEvent) => {
       setAsideWidth(
         Math.min(
           ASIDE_MAX,
           Math.max(ASIDE_MIN, startWidth - (ev.clientX - startX)),
         ),
-      )
-    }
+      );
+    };
     const up = () => {
-      window.removeEventListener("pointermove", move)
-      window.removeEventListener("pointerup", up)
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
       try {
-        localStorage.setItem(ASIDE_WIDTH_KEY, String(asideWidthRef.current))
+        localStorage.setItem(ASIDE_WIDTH_KEY, String(asideWidthRef.current));
       } catch {
         // ignore
       }
-    }
-    window.addEventListener("pointermove", move)
-    window.addEventListener("pointerup", up)
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
   };
   const [rerunChecked, setRerunChecked] = useState(false);
   const [removeOpen, setRemoveOpen] = useState(false);
@@ -185,22 +185,22 @@ export function ToolPage({ toolId }: { toolId: string }) {
           api.get<Settings>("/settings"),
           api.get<FileTypesMap>("/file-types"),
           api.get<{ yml: string | null }>("/environment"),
-        ])
-      if (seq !== loadSeq.current) return
-      const loadedTool = unwrapTool(toolPayload)
+        ]);
+      if (seq !== loadSeq.current) return;
+      const loadedTool = unwrapTool(toolPayload);
       toolPageCache.set(pendingTool.current, {
         tool: loadedTool,
         status: statusPayload,
         settings: settingsPayload,
         fileTypes: types,
         environment: envPayload.yml,
-      })
-      setTool(loadedTool)
-      setStatus(statusPayload)
-      setSettings(settingsPayload)
-      setFileTypes(types)
-      setEnvironment(envPayload.yml)
-      setLoadError(null)
+      });
+      setTool(loadedTool);
+      setStatus(statusPayload);
+      setSettings(settingsPayload);
+      setFileTypes(types);
+      setEnvironment(envPayload.yml);
+      setLoadError(null);
     } catch (error) {
       if (seq !== loadSeq.current) return;
       // A snapshot fits the tool the page shows: keep it on screen and say
@@ -232,19 +232,19 @@ export function ToolPage({ toolId }: { toolId: string }) {
     // drops the tool being left so the page shows its loading state for the
     // new tool, not the previous one's.
     const cached = toolPageCache.get(toolId);
-if (cached) {
-      setTool(cached.tool)
-      setStatus(cached.status)
-      setSettings(cached.settings)
-      setFileTypes(cached.fileTypes)
-      setEnvironment(cached.environment)
-      setLoadingTool(false)
+    if (cached) {
+      setTool(cached.tool);
+      setStatus(cached.status);
+      setSettings(cached.settings);
+      setFileTypes(cached.fileTypes);
+      setEnvironment(cached.environment);
+      setLoadingTool(false);
     } else {
-      setTool(null)
-      setStatus(null)
-      setSettings(null)
-      setFileTypes({})
-      setEnvironment(null)
+      setTool(null);
+      setStatus(null);
+      setSettings(null);
+      setFileTypes({});
+      setEnvironment(null);
     }
     // A tool whose files no longer parse still has a page: the reason comes
     // from the app, which is the only place that knows why.
@@ -704,8 +704,8 @@ if (cached) {
                           </div>
 
                           <p className="text-muted-foreground text-xs">
-                            Input files stay on this computer; outputs go to
-                            the output folder in the run settings.
+                            Input files stay on this computer; outputs go to the
+                            output folder in the run settings.
                           </p>
                         </div>
                       </>
@@ -716,17 +716,25 @@ if (cached) {
             </div>
 
             <aside className="relative flex min-h-0 flex-col border-l">
-      <div
-        aria-hidden
-        onPointerDown={startAsideResize}
-        className="absolute inset-y-0 -left-1 z-10 w-2 cursor-col-resize touch-none"
-      />
-      <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
+              <div
+                aria-hidden
+                onPointerDown={startAsideResize}
+                className="absolute inset-y-0 -left-1 z-10 w-2 cursor-col-resize touch-none"
+              />
+              <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
                 <div className="mb-4 flex items-center justify-between">
-                  <img src={cpgLogo} alt="CPG" className="h-14 w-auto shrink-0 opacity-80" />
+                  <img
+                    src={cpgLogo}
+                    alt="CPG"
+                    className="h-14 w-auto shrink-0"
+                  />
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" aria-label="Global settings">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Global settings"
+                      >
                         <SettingsIcon className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -755,7 +763,7 @@ if (cached) {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
-                <h2 className="mb-3 text-sm font-semibold">Run settings</h2>
+                <h2 className="mb-3 text-lg font-semibold">Run settings</h2>
                 <div className="grid gap-6 [&>*]:min-w-0">
                   {settingsPanel}
 

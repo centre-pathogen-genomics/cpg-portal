@@ -64,6 +64,18 @@ const TooLargeToPreview = ({ limit }: { limit: number }) => (
   </div>
 );
 
+/** Compact stand-in while a chunked viewer downloads. The file page and run
+    detail share it, so every preview pauses alike instead of a full card. */
+export const PreviewLoading = () => (
+  <div
+    className="text-muted-foreground flex items-center gap-2 py-2 text-sm"
+    role="status"
+  >
+    <LoaderCircle className="size-4 animate-spin" />
+    Loading preview…
+  </div>
+);
+
 const FileRenderer = ({
   file,
   showUnsupportedMessage = true,
@@ -78,16 +90,7 @@ const FileRenderer = ({
 
   if (file.size && file.size < fileSizeLimit) {
     return (
-      <Suspense
-        fallback={
-          <div className="flex h-[240px] w-full items-center justify-center rounded-md border bg-muted/30">
-            <LoaderCircle className="mr-2 size-5 animate-spin" />
-            <span className="text-muted-foreground text-sm">
-              Loading preview…
-            </span>
-          </div>
-        }
-      >
+      <Suspense fallback={<PreviewLoading />}>
         {(() => {
           switch (file.file_type) {
             case "json":

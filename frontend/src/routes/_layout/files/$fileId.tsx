@@ -14,7 +14,7 @@ import DeleteFileButton from "../../../components/Files/DeleteFileButton";
 import DownloadAllFilesButton from "../../../components/Files/DownloadAllFilesButton";
 import DownloadFileButton from "../../../components/Files/DownloadFileButton";
 import EditableFileName from "../../../components/Files/EditableFileName";
-import FileRenderer from "../../../components/Render/FileRenderer";
+import FileRenderer, { PreviewLoading } from "../../../components/Render/FileRenderer";
 import { portalRenderable } from "../../../components/Render/portalFileLoader";
 import SendNewickToTrakkaButton from "../../../components/Render/SendNewickToTrakkaButton";
 import { humanReadableDate } from "../../../utils";
@@ -132,14 +132,6 @@ function FileDetailSkeleton() {
   );
 }
 
-function PreviewSkeleton() {
-  return (
-    <div className="flex h-[240px] w-full items-center justify-center rounded-md border bg-muted/30">
-      <p className="text-muted-foreground text-sm">Loading preview…</p>
-    </div>
-  );
-}
-
 function FileDetailContent() {
   const { fileId } = Route.useParams();
   const { groupId } = Route.useSearch();
@@ -187,7 +179,7 @@ function FileDetailContent() {
       {!file.is_group && (
         <div className="mb-2">
           <h2 className="mb-4 text-lg font-semibold">Preview</h2>
-          <Suspense fallback={<PreviewSkeleton />}>
+          <Suspense fallback={<PreviewLoading />}>
             <FileRenderer
               file={portalRenderable(file)}
               newickActions={(newick) => (

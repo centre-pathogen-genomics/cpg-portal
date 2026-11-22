@@ -4,49 +4,49 @@ import {
   PanelLeftOpen,
   Plus,
   TriangleAlert,
-} from "lucide-react"
-import { useEffect, useRef, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
-import { AddToolDialog } from "./AddToolDialog"
-import { PortalToolDialog } from "./PortalToolDialog"
-import { ToolImage, useToolImages } from "./ToolImage"
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { AddToolDialog } from "./AddToolDialog";
+import { PortalToolDialog } from "./PortalToolDialog";
+import { ToolImage, useToolImages } from "./ToolImage";
 
 type ToolEntry = {
-  id: string
-  name: string
-  version: string
-  description: string | null
-  image: string | null
-  problem: string | null
-}
+  id: string;
+  name: string;
+  version: string;
+  description: string | null;
+  image: string | null;
+  problem: string | null;
+};
 
-const COLLAPSED_KEY = "cpg-runner.sidebar"
-const WIDTH_KEY = "cpg-runner.sidebar-width"
-const MIN_WIDTH = 192
-const MAX_WIDTH = 384
-const DEFAULT_WIDTH = 224
+const COLLAPSED_KEY = "cpg-runner.sidebar";
+const WIDTH_KEY = "cpg-runner.sidebar-width";
+const MIN_WIDTH = 192;
+const MAX_WIDTH = 384;
+const DEFAULT_WIDTH = 224;
 
 function readCollapsed(): boolean {
   try {
-    return localStorage.getItem(COLLAPSED_KEY) === "collapsed"
+    return localStorage.getItem(COLLAPSED_KEY) === "collapsed";
   } catch {
-    return false
+    return false;
   }
 }
 
 function readWidth(): number {
   try {
-    const raw = localStorage.getItem(WIDTH_KEY)
+    const raw = localStorage.getItem(WIDTH_KEY);
     if (raw !== null && raw !== "") {
-      const value = Number(raw)
+      const value = Number(raw);
       if (Number.isFinite(value))
-        return Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, value))
+        return Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, value));
     }
   } catch {
     // ignore
   }
-  return DEFAULT_WIDTH
+  return DEFAULT_WIDTH;
 }
 
 /**
@@ -58,93 +58,93 @@ export function ToolSidebar({
   activeToolId,
   beforeOpen,
 }: {
-  activeToolId?: string | null
+  activeToolId?: string | null;
   /** Asked before a tool is opened; false leaves the click to the caller. */
-  beforeOpen?: (toolId: string) => boolean | Promise<boolean>
+  beforeOpen?: (toolId: string) => boolean | Promise<boolean>;
 }) {
-  const bridge = window.cpgRunner
-  const images = useToolImages()
-  const [collapsed, setCollapsed] = useState(readCollapsed)
-  const [width, setWidth] = useState(readWidth)
-  const widthRef = useRef(width)
-  widthRef.current = width
+  const bridge = window.cpgRunner;
+  const images = useToolImages();
+  const [collapsed, setCollapsed] = useState(readCollapsed);
+  const [width, setWidth] = useState(readWidth);
+  const widthRef = useRef(width);
+  widthRef.current = width;
 
   const startResize = (event: React.PointerEvent) => {
-    if (collapsed) return
-    event.preventDefault()
-    const startX = event.clientX
-    const startWidth = widthRef.current
+    if (collapsed) return;
+    event.preventDefault();
+    const startX = event.clientX;
+    const startWidth = widthRef.current;
     const move = (ev: PointerEvent) => {
       setWidth(
         Math.min(
           MAX_WIDTH,
           Math.max(MIN_WIDTH, startWidth + (ev.clientX - startX)),
         ),
-      )
-    }
+      );
+    };
     const up = () => {
-      window.removeEventListener("pointermove", move)
-      window.removeEventListener("pointerup", up)
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
       try {
-        localStorage.setItem(WIDTH_KEY, String(widthRef.current))
+        localStorage.setItem(WIDTH_KEY, String(widthRef.current));
       } catch {
         // ignore
       }
-    }
-    window.addEventListener("pointermove", move)
-    window.addEventListener("pointerup", up)
-  }
-  const [tools, setTools] = useState<ToolEntry[]>([])
-  const [addOpen, setAddOpen] = useState(false)
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+  const [tools, setTools] = useState<ToolEntry[]>([]);
+  const [addOpen, setAddOpen] = useState(false);
   const [portalTarget, setPortalTarget] = useState<{
-    name: string
-    version: string
-  } | null>(null)
-  const [openingId, setOpeningId] = useState<string | null>(null)
+    name: string;
+    version: string;
+  } | null>(null);
+  const [openingId, setOpeningId] = useState<string | null>(null);
 
   useEffect(() => {
     // The bridge is fixed for the window's lifetime.
-    void window.cpgRunner?.tools().then(setTools)
-  }, [])
+    void window.cpgRunner?.tools().then(setTools);
+  }, []);
 
   useEffect(() => {
     try {
-      localStorage.setItem(COLLAPSED_KEY, collapsed ? "collapsed" : "expanded")
+      localStorage.setItem(COLLAPSED_KEY, collapsed ? "collapsed" : "expanded");
     } catch {
       // A window that refuses storage simply forgets the choice.
     }
-  }, [collapsed])
+  }, [collapsed]);
 
   useEffect(() => {
     // A tool removed elsewhere must leave this list too.
     return window.cpgRunner?.onToolsChanged?.(() => {
-      void window.cpgRunner?.tools().then(setTools)
-    })
-  }, [])
+      void window.cpgRunner?.tools().then(setTools);
+    });
+  }, []);
 
   useEffect(() => {
     // A tool added before its picture was kept still has its URL: save it now.
     for (const tool of tools) {
       if (tool.image && !images[tool.id]) {
-        void window.cpgRunner?.cacheToolImage?.(tool.id, tool.image)
+        void window.cpgRunner?.cacheToolImage?.(tool.id, tool.image);
       }
     }
-  }, [tools, images])
+  }, [tools, images]);
 
   async function refreshTools() {
-    if (!bridge) return
-    setTools(await bridge.tools())
+    if (!bridge) return;
+    setTools(await bridge.tools());
   }
 
   async function openTool(toolId: string) {
-    if (!bridge || openingId) return
-    if (beforeOpen && !(await beforeOpen(toolId))) return
-    setOpeningId(toolId)
+    if (!bridge || openingId) return;
+    if (beforeOpen && !(await beforeOpen(toolId))) return;
+    setOpeningId(toolId);
     try {
       // Resolves once the tool's page has loaded; the row spins meanwhile.
-      await bridge.openTool(toolId)
+      await bridge.openTool(toolId);
     } finally {
-      setOpeningId(null)
+      setOpeningId(null);
     }
   }
 
@@ -213,7 +213,7 @@ export function ToolSidebar({
         ) : (
           <ul className="grid grid-cols-1 gap-0.5">
             {tools.map((tool) => {
-              const active = tool.id === activeToolId
+              const active = tool.id === activeToolId;
               return (
                 <li key={tool.id} className="min-w-0">
                   <Button
@@ -269,14 +269,14 @@ export function ToolSidebar({
                         <LoaderCircle className="text-muted-foreground size-3.5 shrink-0 animate-spin" />
                       ) : (
                         tool.version && (
-                          <span className="text-muted-foreground shrink-0 text-xs">
+                          <span className="dark:text-muted-foreground shrink-0 text-xs">
                             {tool.version}
                           </span>
                         )
                       ))}
                   </Button>
                 </li>
-              )
+              );
             })}
           </ul>
         )}
@@ -304,8 +304,8 @@ export function ToolSidebar({
         open={addOpen}
         onOpenChange={setAddOpen}
         onPick={(target) => {
-          setAddOpen(false)
-          setPortalTarget(target)
+          setAddOpen(false);
+          setPortalTarget(target);
         }}
         onAdded={() => void refreshTools()}
       />
@@ -314,10 +314,10 @@ export function ToolSidebar({
         target={portalTarget}
         installed={tools}
         onOpenChange={(open) => {
-          if (!open) setPortalTarget(null)
+          if (!open) setPortalTarget(null);
         }}
         onAdded={() => void refreshTools()}
       />
     </aside>
-  )
+  );
 }
