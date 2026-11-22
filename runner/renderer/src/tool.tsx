@@ -3,8 +3,11 @@ import {
   Download,
   EllipsisVertical,
   ExternalLink,
-  FolderOpen,
   LoaderCircle,
+  Monitor,
+  Moon,
+  Settings as SettingsIcon,
+  Sun,
   Trash2,
   Wrench,
 } from "lucide-react";
@@ -12,13 +15,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import RenderMarkdown from "@/components/Common/Markdown";
 import { ConfirmationDialog } from "@/components/Common/ConfirmationDialog";
-import ToolRunForm from "@/components/Tools/ToolRunForm";
+import ToolRunForm from "@/components/Tools/ToolRunForm"
+import { ToolSettings } from "@/components/Tools/ToolSettings"
+import { ToolTabs } from "@/components/Tools/ToolTabs";
+import { useTheme } from "@/components/theme-provider";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,7 +43,6 @@ import { ApiError, api, errorMessage } from "./api";
 import { DockerSetupDialog } from "./components/DockerSetupDialog";
 import { InstallDialog } from "./components/InstallDialog";
 import { LocalFilePicker } from "./components/LocalFilePicker";
-import { ToolBadges } from "./components/ToolBadges";
 import { ToolHeading } from "./components/ToolHeading";
 import { placeholderImage, useToolImages } from "./components/ToolImage";
 import { ToolSidebar } from "./components/ToolSidebar";
@@ -61,12 +65,16 @@ import cpgLogo from "./assets/cpg-logo.png";
 const FIELD_ERROR =
   /^(?:Missing required parameter|Invalid value for parameter): (.+)$/;
 
+/** Fixed for the window's lifetime; read once. */
+const appVersion = window.cpgRunner?.appVersion ?? "";
+
 /** Everything the tool page shows about one tool. */
 type ToolPageSnapshot = {
   tool: ToolConfig;
   status: StatusPayload;
   settings: Settings;
   fileTypes: FileTypesMap;
+  environment: string | null;
 };
 
 /**
@@ -75,14 +83,35 @@ type ToolPageSnapshot = {
  * loading state. One snapshot per installed tool — bounded by the installed
  * catalogue, not by time.
  */
-const toolPageCache = new Map<string, ToolPageSnapshot>();
+const toolPageCache = new Map<string, ToolPageSnapshot>()
+
+const ASIDE_WIDTH_KEY = "cpg-runner.aside-width"
+const ASIDE_MIN = 320
+const ASIDE_MAX = 640
+const ASIDE_DEFAULT = 400
+
+function readAsideWidth(): number {
+  try {
+    const raw = localStorage.getItem(ASIDE_WIDTH_KEY)
+    if (raw !== null && raw !== "") {
+      const value = Number(raw)
+      if (Number.isFinite(value))
+        return Math.min(ASIDE_MAX, Math.max(ASIDE_MIN, value))
+    }
+  } catch {
+    // ignore
+  }
+  return ASIDE_DEFAULT
+};
 
 export function ToolPage({ toolId }: { toolId: string }) {
   const navigate = useNavigate();
+  const { setTheme } = useTheme();
   const [tool, setTool] = useState<ToolConfig | null>(null);
   const [status, setStatus] = useState<StatusPayload | null>(null);
   const [settings, setSettings] = useState<Settings | null>(null);
-  const [fileTypes, setFileTypes] = useState<FileTypesMap>({});
+  const [fileTypes, setFileTypes] = useState<FileTypesMap>({})
+  const [environment, setEnvironment] = useState<string | null>(null);
   const [forcedDoctor, setForcedDoctor] = useState<DoctorReport | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   // Why this tool's files cannot be read, when the app could not parse them.
@@ -96,7 +125,35 @@ export function ToolPage({ toolId }: { toolId: string }) {
   const [runName, setRunName] = useState("");
   const [descriptionOpen, setDescriptionOpen] = useState(false);
   const images = useToolImages();
-  const [rerunRun, setRerunRun] = useState<RunRecord | null>(null);
+  const [rerunRun, setRerunRun] = useState<RunRecord | null>(null)
+  const [asideWidth, setAsideWidth] = useState(readAsideWidth)
+  const asideWidthRef = useRef(asideWidth)
+  asideWidthRef.current = asideWidth
+
+  const startAsideResize = (event: React.PointerEvent) => {
+    event.preventDefault()
+    const startX = event.clientX
+    const startWidth = asideWidthRef.current
+    const move = (ev: PointerEvent) => {
+      setAsideWidth(
+        Math.min(
+          ASIDE_MAX,
+          Math.max(ASIDE_MIN, startWidth - (ev.clientX - startX)),
+        ),
+      )
+    }
+    const up = () => {
+      window.removeEventListener("pointermove", move)
+      window.removeEventListener("pointerup", up)
+      try {
+        localStorage.setItem(ASIDE_WIDTH_KEY, String(asideWidthRef.current))
+      } catch {
+        // ignore
+      }
+    }
+    window.addEventListener("pointermove", move)
+    window.addEventListener("pointerup", up)
+  };
   const [rerunChecked, setRerunChecked] = useState(false);
   const [removeOpen, setRemoveOpen] = useState(false);
   const [uninstallOpen, setUninstallOpen] = useState(false);
@@ -121,26 +178,29 @@ export function ToolPage({ toolId }: { toolId: string }) {
   const loadAll = useCallback(async () => {
     const seq = ++loadSeq.current;
     try {
-      const [toolPayload, statusPayload, settingsPayload, types] =
+      const [toolPayload, statusPayload, settingsPayload, types, envPayload] =
         await Promise.all([
           api.get<ToolPayload>("/tool"),
           api.get<StatusPayload>("/status"),
           api.get<Settings>("/settings"),
           api.get<FileTypesMap>("/file-types"),
-        ]);
-      if (seq !== loadSeq.current) return;
-      const loadedTool = unwrapTool(toolPayload);
+          api.get<{ yml: string | null }>("/environment"),
+        ])
+      if (seq !== loadSeq.current) return
+      const loadedTool = unwrapTool(toolPayload)
       toolPageCache.set(pendingTool.current, {
         tool: loadedTool,
         status: statusPayload,
         settings: settingsPayload,
         fileTypes: types,
-      });
-      setTool(loadedTool);
-      setStatus(statusPayload);
-      setSettings(settingsPayload);
-      setFileTypes(types);
-      setLoadError(null);
+        environment: envPayload.yml,
+      })
+      setTool(loadedTool)
+      setStatus(statusPayload)
+      setSettings(settingsPayload)
+      setFileTypes(types)
+      setEnvironment(envPayload.yml)
+      setLoadError(null)
     } catch (error) {
       if (seq !== loadSeq.current) return;
       // A snapshot fits the tool the page shows: keep it on screen and say
@@ -172,17 +232,19 @@ export function ToolPage({ toolId }: { toolId: string }) {
     // drops the tool being left so the page shows its loading state for the
     // new tool, not the previous one's.
     const cached = toolPageCache.get(toolId);
-    if (cached) {
-      setTool(cached.tool);
-      setStatus(cached.status);
-      setSettings(cached.settings);
-      setFileTypes(cached.fileTypes);
-      setLoadingTool(false);
+if (cached) {
+      setTool(cached.tool)
+      setStatus(cached.status)
+      setSettings(cached.settings)
+      setFileTypes(cached.fileTypes)
+      setEnvironment(cached.environment)
+      setLoadingTool(false)
     } else {
-      setTool(null);
-      setStatus(null);
-      setSettings(null);
-      setFileTypes({});
+      setTool(null)
+      setStatus(null)
+      setSettings(null)
+      setFileTypes({})
+      setEnvironment(null)
     }
     // A tool whose files no longer parse still has a page: the reason comes
     // from the app, which is the only place that knows why.
@@ -257,8 +319,8 @@ export function ToolPage({ toolId }: { toolId: string }) {
 
   const blockedReason = !doctorReady
     ? "Docker is not ready."
-    : installState !== "installed"
-      ? "The tool environment is not installed."
+    : needsInstall
+      ? "Install the tool environment to run this tool."
       : null;
 
   // Settings save as they change: there is nothing to confirm afterwards.
@@ -453,7 +515,10 @@ export function ToolPage({ toolId }: { toolId: string }) {
       : null;
 
   return (
-    <div className="flex h-full">
+    <div
+      className="flex h-full"
+      style={{ "--aside-w": `${asideWidth}px` } as React.CSSProperties}
+    >
       <ToolSidebar activeToolId={toolId} />
 
       {/* A new tool starts with its own params and a fresh form: its values,
@@ -475,7 +540,7 @@ export function ToolPage({ toolId }: { toolId: string }) {
         initialValues={rerunValues}
         initialValuesReady={rerunChecked}
         initialThreads={rerunRun?.cpus ?? null}
-        className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_400px]"
+        className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_var(--aside-w)]"
         renderFilePicker={({ param, values, onChange, disabled }) => (
           <LocalFilePicker
             param={param}
@@ -488,7 +553,7 @@ export function ToolPage({ toolId }: { toolId: string }) {
         extras={
           <div>
             <Label htmlFor="CPG_RUNNER_RUN_NAME">Run name</Label>
-            <p className="mt-1 mb-2 text-muted-foreground text-xs">
+            <p className="mt-1 mb-2 text-sm text-foreground/70">
               Optional, named automatically if left blank
             </p>
             <Input
@@ -512,7 +577,6 @@ export function ToolPage({ toolId }: { toolId: string }) {
                     }
                     name={tool.name}
                     version={tool.version}
-                    badges={<ToolBadges tool={tool} />}
                   >
                     <div className="flex shrink-0 items-center gap-2">
                       {needsInstall && (
@@ -615,153 +679,112 @@ export function ToolPage({ toolId }: { toolId: string }) {
 
               <section className="min-h-0 flex-1 overflow-y-auto px-8 py-6">
                 <div className="mx-auto max-w-6xl">
-                  <h2 className="mb-4 text-2xl font-semibold">
-                    Configure Tool
-                  </h2>
-                  <div className="grid gap-6">
-                    <div>
-                      {loadingTool ? (
-                        <p
-                          className="text-muted-foreground flex items-center gap-2 text-sm"
-                          role="status"
-                        >
-                          <LoaderCircle className="size-4 animate-spin" />
-                          Loading…
-                        </p>
-                      ) : (
-                        params
-                      )}
-                    </div>
+                  <ToolTabs
+                    tool={tool}
+                    environment={environment}
+                    onOpenExternal={(url) => void openExternal(url)}
+                    configure={
+                      <>
+                        <h2 className="mb-4 text-2xl font-semibold">
+                          Configure tool
+                        </h2>
+                        <div className="grid gap-6">
+                          <div>
+                            {loadingTool ? (
+                              <p
+                                className="text-muted-foreground flex items-center gap-2 text-sm"
+                                role="status"
+                              >
+                                <LoaderCircle className="size-4 animate-spin" />
+                                Loading…
+                              </p>
+                            ) : (
+                              params
+                            )}
+                          </div>
 
-                    {blockedReason && (
-                      <p className="text-muted-foreground text-sm">
-                        {blockedReason}
-                      </p>
-                    )}
-
-                    <p className="text-muted-foreground text-xs">
-                      Input files stay on this computer; outputs go to the
-                      output folder in the run settings.
-                    </p>
-                  </div>
+                          <p className="text-muted-foreground text-xs">
+                            Input files stay on this computer; outputs go to
+                            the output folder in the run settings.
+                          </p>
+                        </div>
+                      </>
+                    }
+                  />
                 </div>
               </section>
             </div>
 
-            <aside className="flex min-h-0 flex-col border-l">
-              <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
-                <img src={cpgLogo} alt="CPG" className="mb-6 w-auto" />
-                <div className="grid gap-6">
+            <aside className="relative flex min-h-0 flex-col border-l">
+      <div
+        aria-hidden
+        onPointerDown={startAsideResize}
+        className="absolute inset-y-0 -left-1 z-10 w-2 cursor-col-resize touch-none"
+      />
+      <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
+                <div className="mb-4 flex items-center justify-between">
+                  <img src={cpgLogo} alt="CPG" className="h-14 w-auto shrink-0 opacity-80" />
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" aria-label="Global settings">
+                        <SettingsIcon className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-44">
+                      <DropdownMenuItem onClick={() => setTheme("light")}>
+                        <Sun className="mr-2 h-4 w-4" />
+                        Light
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setTheme("dark")}>
+                        <Moon className="mr-2 h-4 w-4" />
+                        Dark
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setTheme("system")}>
+                        <Monitor className="mr-2 h-4 w-4" />
+                        System
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        disabled
+                        className="text-muted-foreground focus:bg-transparent"
+                      >
+                        {appVersion
+                          ? `CPG Runner v${appVersion}`
+                          : "CPG Runner"}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                <h2 className="mb-3 text-sm font-semibold">Run settings</h2>
+                <div className="grid gap-6 [&>*]:min-w-0">
                   {settingsPanel}
 
-                  <div>
-                    <Label htmlFor="runner-output">Output folder</Label>
-                    <p className="mb-2 text-muted-foreground text-xs">
-                      Finished runs are copied here.
-                    </p>
-                    <Input
-                      id="runner-output"
-                      readOnly
-                      value={settings.output_dir}
-                      className="font-mono text-xs"
-                    />
-                    <div className="mt-2 flex gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={!doctorReady}
-                        onClick={() => {
-                          void pickDirectory(settings.output_dir).then(
-                            (chosen) => {
-                              if (chosen)
-                                void updateSettings({ output_dir: chosen });
-                            },
-                          );
-                        }}
-                      >
-                        Browse…
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={!doctorReady}
-                        onClick={() => openPath(settings.output_dir)}
-                      >
-                        <FolderOpen />
-                        Open
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <Label htmlFor="runner-network">
-                        Allow network access
-                      </Label>
-                      <p className="text-muted-foreground text-xs">
-                        Turn this off for tools that must run offline.
-                      </p>
-                    </div>
-                    <Switch
-                      id="runner-network"
-                      checked={settings.network}
-                      disabled={!doctorReady}
-                      onCheckedChange={(checked) =>
-                        void updateSettings({ network: checked === true })
-                      }
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <Label htmlFor="runner-clean-work">
-                        Clean up work folder
-                      </Label>
-                      <p className="text-muted-foreground text-xs">
-                        Delete the run&#39;s .cpg_work folder once its outputs
-                        are copied. Keep it to inspect the files a run left
-                        behind.
-                      </p>
-                    </div>
-                    <Switch
-                      id="runner-clean-work"
-                      checked={settings.clean_work_dir}
-                      disabled={!doctorReady}
-                      onCheckedChange={(checked) =>
-                        void updateSettings({
-                          clean_work_dir: checked === true,
-                        })
-                      }
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <Label htmlFor="runner-overwrite-output">
-                        Overwrite existing folder
-                      </Label>
-                      <p className="text-muted-foreground text-xs">
-                        Replace the output folder if it already exists. Only
-                        applies to named runs; unnamed runs always create a new
-                        folder.
-                      </p>
-                    </div>
-                    <Switch
-                      id="runner-overwrite-output"
-                      checked={settings.overwrite_output}
-                      disabled={!doctorReady}
-                      onCheckedChange={(checked) =>
-                        void updateSettings({
-                          overwrite_output: checked === true,
-                        })
-                      }
-                    />
-                  </div>
+                  <ToolSettings
+                    settings={settings}
+                    updateSettings={updateSettings}
+                    disabled={!doctorReady}
+                    onPickDirectory={(current) => pickDirectory(current)}
+                    onOpenPath={(path) => openPath(path)}
+                  />
                 </div>
               </div>
-              <div className="bg-background shrink-0 border-t px-6 py-2">
+              <div className="bg-background shrink-0 border-t px-6 py-3">
+                {blockedReason && !doctorReady && (
+                  <p className="text-muted-foreground mb-2 text-sm">
+                    {blockedReason}
+                  </p>
+                )}
+                {needsInstall && (
+                  <p className="mb-2">
+                    <button
+                      type="button"
+                      onClick={() => setInstallDismissed(false)}
+                      className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 text-sm underline-offset-2 hover:underline"
+                    >
+                      Install the tool environment to run this tool.
+                    </button>
+                  </p>
+                )}
                 {submit}
               </div>
             </aside>

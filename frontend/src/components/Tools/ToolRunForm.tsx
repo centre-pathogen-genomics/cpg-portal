@@ -1,4 +1,4 @@
-import { ChevronDown, HelpCircle, LoaderCircle } from "lucide-react"
+import { ChevronDown, HelpCircle, LoaderCircle, Search } from "lucide-react"
 import {
   type ReactNode,
   useCallback,
@@ -189,6 +189,7 @@ const ToolRunForm = ({
   initialThreads,
 }: ToolRunFormProps) => {
   const [isLoading, setIsLoading] = useState(false)
+  const [paramFilter, setParamFilter] = useState("")
   const [settingsOpen, setSettingsOpen] = useState<boolean>(
     () => readStoredSettingsOpen() ?? true,
   )
@@ -395,12 +396,28 @@ const ToolRunForm = ({
     }
   }
 
+  const filterQuery = paramFilter.trim().toLowerCase()
+
   const paramFields = (
     <>
+      {params.length > 8 && (
+        <div className="relative mb-6">
+          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search parameters"
+            value={paramFilter}
+            onChange={(event) => setParamFilter(event.target.value)}
+            className="pl-9"
+          />
+        </div>
+      )}
       {params.map((param) => {
         if (!visibleParams.get(param.name)) return null
+        if (filterQuery && !param.name.toLowerCase().includes(filterQuery))
+          return null
         return (
-          <div className="pb-4" key={param.name}>
+          <div className="pb-6" key={param.name}>
             <Label htmlFor={param.name}>
               {param.name.toUpperCase()}
               {param.required && " *"}
@@ -411,7 +428,9 @@ const ToolRunForm = ({
               )}
             </Label>
             {param.param_type !== "bool" && (
-              <p className="mb-2 text-sm text-gray-500">{param.description}</p>
+              <p className="mb-2 max-w-[75ch] text-sm text-foreground/70">
+                {param.description}
+              </p>
             )}
             {param.param_type === "str" && (
               <Input

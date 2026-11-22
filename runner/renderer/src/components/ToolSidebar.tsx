@@ -5,7 +5,7 @@ import {
   Plus,
   TriangleAlert,
 } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { AddToolDialog } from "./AddToolDialog"
@@ -22,6 +22,10 @@ type ToolEntry = {
 }
 
 const COLLAPSED_KEY = "cpg-runner.sidebar"
+const WIDTH_KEY = "cpg-runner.sidebar-width"
+const MIN_WIDTH = 192
+const MAX_WIDTH = 384
+const DEFAULT_WIDTH = 224
 
 function readCollapsed(): boolean {
   try {
@@ -29,6 +33,20 @@ function readCollapsed(): boolean {
   } catch {
     return false
   }
+}
+
+function readWidth(): number {
+  try {
+    const raw = localStorage.getItem(WIDTH_KEY)
+    if (raw !== null && raw !== "") {
+      const value = Number(raw)
+      if (Number.isFinite(value))
+        return Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, value))
+    }
+  } catch {
+    // ignore
+  }
+  return DEFAULT_WIDTH
 }
 
 /**
@@ -47,6 +65,35 @@ export function ToolSidebar({
   const bridge = window.cpgRunner
   const images = useToolImages()
   const [collapsed, setCollapsed] = useState(readCollapsed)
+  const [width, setWidth] = useState(readWidth)
+  const widthRef = useRef(width)
+  widthRef.current = width
+
+  const startResize = (event: React.PointerEvent) => {
+    if (collapsed) return
+    event.preventDefault()
+    const startX = event.clientX
+    const startWidth = widthRef.current
+    const move = (ev: PointerEvent) => {
+      setWidth(
+        Math.min(
+          MAX_WIDTH,
+          Math.max(MIN_WIDTH, startWidth + (ev.clientX - startX)),
+        ),
+      )
+    }
+    const up = () => {
+      window.removeEventListener("pointermove", move)
+      window.removeEventListener("pointerup", up)
+      try {
+        localStorage.setItem(WIDTH_KEY, String(widthRef.current))
+      } catch {
+        // ignore
+      }
+    }
+    window.addEventListener("pointermove", move)
+    window.addEventListener("pointerup", up)
+  }
   const [tools, setTools] = useState<ToolEntry[]>([])
   const [addOpen, setAddOpen] = useState(false)
   const [portalTarget, setPortalTarget] = useState<{
@@ -104,10 +151,18 @@ export function ToolSidebar({
   return (
     <aside
       className={cn(
-        "bg-muted/40 flex shrink-0 flex-col border-r",
+        "bg-muted/40 relative flex shrink-0 flex-col border-r",
         collapsed ? "w-14" : "w-56",
       )}
+      style={collapsed ? undefined : { width }}
     >
+      {!collapsed && (
+        <div
+          aria-hidden
+          onPointerDown={startResize}
+          className="absolute inset-y-0 -right-1 z-10 w-2 cursor-col-resize touch-none"
+        />
+      )}
       <div
         className={cn(
           "flex items-center gap-2 py-4",
@@ -170,13 +225,19 @@ export function ToolSidebar({
                     disabled={openingId !== null}
                     title={tool.problem ?? tool.description ?? tool.name}
                     className={cn(
-                      "h-auto w-full gap-2 rounded-md px-2 py-1.5 text-left text-sm",
+                      "relative h-auto w-full gap-2 rounded-md px-2 py-1.5 text-left text-sm",
                       collapsed ? "justify-center" : "justify-between",
                       active
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                        ? "bg-cyan-100 text-cyan-900 font-medium dark:bg-sidebar-accent dark:text-sidebar-accent-foreground"
                         : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                     )}
                   >
+                    {active && !collapsed && (
+                      <span
+                        aria-hidden
+                        className="bg-cyan-600 dark:bg-primary-foreground absolute inset-y-1.5 left-0 w-0.5 rounded-full"
+                      />
+                    )}
                     <span
                       className={cn(
                         "flex min-w-0 items-center gap-2",

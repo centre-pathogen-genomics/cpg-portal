@@ -121,18 +121,45 @@ function RunTimeline({
   const deduced = phases === undefined
   // A completed run's timeline is just a row of ticks; the logs and results
   // are the useful part. Keep it for active runs, and for failed or cancelled
-  // runs where it shows where the run stopped. Explicit phases (installs) stay
-  // visible even when finished.
+  // runs where it shows where the run stopped (with the Finish node reflecting
+  // the failure or cancellation). Explicit phases (installs) stay visible even
+  // when finished.
   if (deduced && (steps.length === 0 || status === "completed")) return null
 
+  // The trailing Finish state: complete only when the run completes; failed or
+  // cancelled runs stop short of it. While running it reads 'Up next' only when
+  // the last real step is the in-progress one (its state is 'active' or, all
+  // steps done and the run is finishing, 'completed'); otherwise it's 'pending'.
+  const finishState: StepState =
+    status === "completed"
+      ? "completed"
+      : status === "failed"
+        ? "failed"
+        : status === "cancelled"
+          ? "skipped"
+          : running &&
+              (states[steps.length - 1] === "active" ||
+                states[steps.length - 1] === "completed")
+            ? "next"
+            : "pending"
+
   const rows: Row[] = deduced
-    ? steps.map((step, index) => ({
-        key: `${step.name}-${index}`,
-        name: step.name,
-        state: states[index],
-        pattern: step.pattern,
-        detail: null,
-      }))
+    ? [
+        ...steps.map((step, index) => ({
+          key: `${step.name}-${index}`,
+          name: step.name,
+          state: states[index],
+          pattern: step.pattern,
+          detail: null,
+        })),
+        {
+          key: "finish",
+          name: "Finish",
+          state: finishState,
+          pattern: null,
+          detail: undefined,
+        },
+      ]
     : phases.map((phase) => ({
         key: phase.id,
         name: phase.name,

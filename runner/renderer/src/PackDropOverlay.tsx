@@ -13,6 +13,23 @@ function packPaths(files: FileList | File[]): string[] {
 }
 
 /**
+ * True only when the drag carries at least one `.cpgpack` file. Inspects
+ * `dataTransfer.items` (kind 'file') via each item's file name so we can
+ * distinguish pack drags from ordinary file drags that must pass through to
+ * children like the LocalFilePicker drop zone. If items are unavailable or
+ * empty we return false and never block.
+ */
+function dragHasPack(event: DragEvent): boolean {
+  const items = event.dataTransfer?.items
+  if (!items || items.length === 0) return false
+  return Array.from(items).some(
+    (item) =>
+      item.kind === "file" &&
+      item.getAsFile()?.name.toLowerCase().endsWith(PACK_EXTENSION) === true,
+  )
+}
+
+/**
  * A full-window drop target for `.cpgpack` files, mounted in the root route so
  * a pack can be imported from any page — not just the empty first-run one. The
  * overlay is purely visual; the drop itself is handled at the window level, so
@@ -50,24 +67,26 @@ export function PackDropOverlay() {
     // null when leaving or entering the window), never element-to-element
     // moves, which would shake the overlay on and off.
     const onDragEnter = (event: DragEvent) => {
-      if (!event.dataTransfer?.types.includes("Files")) return
+      if (!dragHasPack(event)) return
       if (event.relatedTarget) return
       event.preventDefault()
       setDepth((value) => value + 1)
     }
     const onDragOver = (event: DragEvent) => {
-      if (event.dataTransfer?.types.includes("Files")) event.preventDefault()
+      if (dragHasPack(event)) event.preventDefault()
     }
     const onDragLeave = (event: DragEvent) => {
       if (event.relatedTarget) return
       setDepth((value) => Math.max(0, value - 1))
     }
     const onDrop = (event: DragEvent) => {
+      // Mixed-drag choice: when the drag carries a pack the overlay wins and
+      // imports it; any other files in the same drop reach the picker only
+      // when no pack is present (the picker's own onDrop handles those).
+      if (!dragHasPack(event)) return
       event.preventDefault()
       setDepth(0)
-      if (event.dataTransfer?.types.includes("Files")) {
-        void importDropped(event.dataTransfer.files)
-      }
+      void importDropped(event.dataTransfer?.files ?? null)
     }
     window.addEventListener("dragenter", onDragEnter)
     window.addEventListener("dragover", onDragOver)

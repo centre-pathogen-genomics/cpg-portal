@@ -85,7 +85,7 @@ export function PortalToolSearch({
           placeholder="Search the portal"
           disabled={state === "offline"}
         />
-        <CommandList>
+        <CommandList className="max-h-[min(45vh,300px)]">
           {state === "loading" && (
             <div className="text-muted-foreground flex items-center gap-2 px-3 py-3 text-sm">
               <LoaderCircle className="animate-spin" />

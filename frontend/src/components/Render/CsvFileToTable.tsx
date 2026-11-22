@@ -95,14 +95,16 @@ const CsvFileToTable = ({ file, tsv = false }: CsvFileToTableProps) => {
           </TableBody>
         </Table>
       </div>
-      <div className="mt-4 flex justify-start">
-        <PaginationFooter
-          page={currentPage} // 1-based
-          hasNextPage={hasNextPage}
-          hasPreviousPage={hasPreviousPage}
-          onChangePage={handlePageChange}
-        />
-      </div>
+      {totalPages > 1 && (
+        <div className="mt-4 flex justify-start">
+          <PaginationFooter
+            page={currentPage} // 1-based
+            hasNextPage={hasNextPage}
+            hasPreviousPage={hasPreviousPage}
+            onChangePage={handlePageChange}
+          />
+        </div>
+      )}
     </>
   )
 }

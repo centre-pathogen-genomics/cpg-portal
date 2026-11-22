@@ -29,7 +29,15 @@ export function RunResults({
       type: fileTypeOf(file.path, fileTypes),
     }))
     .filter(({ type }) => canRenderFile({ file_type: type }))
-  if (renderable.length === 0) return null
+  if (renderable.length === 0) {
+    if (files.length === 0) return null
+    return (
+      <p className="text-muted-foreground text-sm">
+        No preview is available for these files yet — open one from the Files
+        section.
+      </p>
+    )
+  }
 
   // The index names the output in this run's API, and the key carries the run
   // with it so the app-wide query cache never serves one run's file to another.
@@ -40,10 +48,10 @@ export function RunResults({
     )
 
   return (
-    <section className="grid gap-3">
+    <section className="grid min-w-0 gap-3">
       <h2 className="text-lg font-semibold">Results</h2>
       <FileLoaderProvider loader={loader}>
-        <Tabs defaultValue={renderable[0].file.path}>
+        <Tabs defaultValue={renderable[0].file.path} className="min-w-0">
           <TabsList
             variant="line"
             className="w-full justify-start overflow-x-auto [scrollbar-width:thin]"
