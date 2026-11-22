@@ -83,7 +83,26 @@ type ToolPageSnapshot = {
  * loading state. One snapshot per installed tool — bounded by the installed
  * catalogue, not by time.
  */
-const toolPageCache = new Map<string, ToolPageSnapshot>();
+const toolPageCache = new Map<string, ToolPageSnapshot>()
+
+const ASIDE_WIDTH_KEY = "cpg-runner.aside-width"
+const ASIDE_MIN = 320
+const ASIDE_MAX = 640
+const ASIDE_DEFAULT = 400
+
+function readAsideWidth(): number {
+  try {
+    const raw = localStorage.getItem(ASIDE_WIDTH_KEY)
+    if (raw !== null && raw !== "") {
+      const value = Number(raw)
+      if (Number.isFinite(value))
+        return Math.min(ASIDE_MAX, Math.max(ASIDE_MIN, value))
+    }
+  } catch {
+    // ignore
+  }
+  return ASIDE_DEFAULT
+};
 
 export function ToolPage({ toolId }: { toolId: string }) {
   const navigate = useNavigate();
@@ -106,7 +125,35 @@ export function ToolPage({ toolId }: { toolId: string }) {
   const [runName, setRunName] = useState("");
   const [descriptionOpen, setDescriptionOpen] = useState(false);
   const images = useToolImages();
-  const [rerunRun, setRerunRun] = useState<RunRecord | null>(null);
+  const [rerunRun, setRerunRun] = useState<RunRecord | null>(null)
+  const [asideWidth, setAsideWidth] = useState(readAsideWidth)
+  const asideWidthRef = useRef(asideWidth)
+  asideWidthRef.current = asideWidth
+
+  const startAsideResize = (event: React.PointerEvent) => {
+    event.preventDefault()
+    const startX = event.clientX
+    const startWidth = asideWidthRef.current
+    const move = (ev: PointerEvent) => {
+      setAsideWidth(
+        Math.min(
+          ASIDE_MAX,
+          Math.max(ASIDE_MIN, startWidth - (ev.clientX - startX)),
+        ),
+      )
+    }
+    const up = () => {
+      window.removeEventListener("pointermove", move)
+      window.removeEventListener("pointerup", up)
+      try {
+        localStorage.setItem(ASIDE_WIDTH_KEY, String(asideWidthRef.current))
+      } catch {
+        // ignore
+      }
+    }
+    window.addEventListener("pointermove", move)
+    window.addEventListener("pointerup", up)
+  };
   const [rerunChecked, setRerunChecked] = useState(false);
   const [removeOpen, setRemoveOpen] = useState(false);
   const [uninstallOpen, setUninstallOpen] = useState(false);
@@ -468,7 +515,10 @@ if (cached) {
       : null;
 
   return (
-    <div className="flex h-full">
+    <div
+      className="flex h-full"
+      style={{ "--aside-w": `${asideWidth}px` } as React.CSSProperties}
+    >
       <ToolSidebar activeToolId={toolId} />
 
       {/* A new tool starts with its own params and a fresh form: its values,
@@ -490,7 +540,7 @@ if (cached) {
         initialValues={rerunValues}
         initialValuesReady={rerunChecked}
         initialThreads={rerunRun?.cpus ?? null}
-        className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_400px]"
+        className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_var(--aside-w)]"
         renderFilePicker={({ param, values, onChange, disabled }) => (
           <LocalFilePicker
             param={param}
@@ -665,8 +715,13 @@ if (cached) {
               </section>
             </div>
 
-            <aside className="flex min-h-0 flex-col border-l">
-              <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
+            <aside className="relative flex min-h-0 flex-col border-l">
+      <div
+        aria-hidden
+        onPointerDown={startAsideResize}
+        className="absolute inset-y-0 -left-1 z-10 w-2 cursor-col-resize touch-none"
+      />
+      <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
                 <div className="mb-4 flex items-center justify-between">
                   <img src={cpgLogo} alt="CPG" className="h-14 w-auto shrink-0 opacity-80" />
                   <DropdownMenu>

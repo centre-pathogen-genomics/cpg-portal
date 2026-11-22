@@ -174,7 +174,7 @@ export function RunPage({ toolId, runId }: { toolId: string; runId: string }) {
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <header className="shrink-0 border-b px-8 py-6">
-          <div className="mx-auto mb-3 max-w-[min(72rem,calc(100vw-43rem))]">
+          <div className="mx-auto mb-3 max-w-6xl min-w-0">
             <button
               type="button"
               className="hover:text-primary flex items-center font-semibold whitespace-nowrap"
@@ -183,7 +183,7 @@ export function RunPage({ toolId, runId }: { toolId: string; runId: string }) {
               ← Back to {tool?.name ?? "the tool"}
             </button>
           </div>
-          <div className="mx-auto flex max-w-[min(72rem,calc(100vw-43rem))] flex-wrap items-center justify-between gap-4">
+          <div className="mx-auto flex max-w-6xl flex-wrap min-w-0 items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-3">
               {tool && (
                 <ToolImage
@@ -242,7 +242,7 @@ export function RunPage({ toolId, runId }: { toolId: string; runId: string }) {
         </header>
 
         <main className="min-h-0 flex-1 overflow-auto px-8 py-6">
-          <div className="mx-auto grid max-w-[min(72rem,calc(100vw-43rem))] gap-6">
+          <div className="mx-auto grid max-w-6xl gap-6 min-w-0">
             {loadError && (
               <p className="text-destructive text-sm">{loadError}</p>
             )}
