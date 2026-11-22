@@ -77,9 +77,58 @@ function ExternalLinkButton({
 }
 
 /**
- * The tool's badges as a GitHub-README-style row: the pack's own shields stay
- * images, everything else becomes a small "label · value" pill linked to its
- * source. Shown at the top of the Documentation tab.
+ * A shields.io-style badge: a muted label segment next to a brand-colored
+ * value segment, optionally linking out. Rendered locally so it stays
+ * palette-consistent and works offline; the pack's own shield images are
+ * still shown as images.
+ */
+function ShieldBadge({
+  label,
+  value,
+  url,
+  onOpen,
+}: {
+  label: string
+  value?: string
+  url?: string | null
+  onOpen?: (url: string) => void
+}) {
+  return (
+    <a
+      href={url ?? undefined}
+      target="_blank"
+      rel="noreferrer"
+      className={`text-[10px] leading-none tracking-wide lowercase ${
+        url ? "cursor-pointer" : "cursor-default"
+      }`}
+      onClick={
+        url && onOpen
+          ? (event) => {
+              event.preventDefault()
+              onOpen(url)
+            }
+          : undefined
+      }
+    >
+      <span className="border-border inline-flex h-5 items-center overflow-hidden rounded-[3px] border">
+        <span className="bg-foreground/85 text-background flex h-full items-center px-1.5 font-semibold [text-transform:capitalize]">
+          {label}
+        </span>
+        {value && (
+          <span className="bg-primary text-primary-foreground flex h-full items-center px-1.5 font-semibold [text-transform:capitalize]">
+            {value}
+          </span>
+        )}
+      </span>
+    </a>
+  )
+}
+
+/**
+ * The tool's badges as a GitHub-README-style row of shields: the pack's own
+ * shield images stay images, everything else becomes a locally rendered
+ * shields.io-style badge linked to its source. Shown at the top of the
+ * Documentation tab.
  */
 function ReadmeBadges({
   tool,
@@ -88,51 +137,31 @@ function ReadmeBadges({
   tool: ToolTabsTool
   onOpenExternal?: (url: string) => void
 }) {
-  const pills: ReactNode[] = []
-  const pill = (
-    text: string,
-    url?: string | null,
-    key?: string,
-  ): ReactNode => {
-    const inner = <span>{text}</span>
-    if (!url) return <Badge key={key} variant="secondary">{inner}</Badge>
-    return (
-      <Badge key={key} variant="secondary" asChild>
-        <a
-          href={url}
-          target="_blank"
-          rel="noreferrer"
-          onClick={
-            onOpenExternal
-              ? (event) => {
-                  event.preventDefault()
-                  onOpenExternal(url)
-                }
-              : undefined
-          }
-        >
-          {inner}
-        </a>
-      </Badge>
-    )
-  }
+  const items: { label: string; value?: string; url?: string | null }[] = []
   const keyOf = (label: string) => `badge-${label}`
-  if (tool.license) pills.push(pill(`license · ${tool.license}`, undefined, keyOf("license")))
-  if (tool.docs_url) pills.push(pill("docs", tool.docs_url, keyOf("docs")))
+  if (tool.license) items.push({ label: "license", value: tool.license })
+  if (tool.docs_url) items.push({ label: "docs", value: "docs", url: tool.docs_url })
   if (tool.paper_doi)
-    pills.push(pill(`doi · ${tool.paper_doi}`, `https://doi.org/${tool.paper_doi}`, keyOf("doi")))
+    items.push({
+      label: "doi",
+      value: tool.paper_doi,
+      url: `https://doi.org/${tool.paper_doi}`,
+    })
   if (tool.github_repo)
-    pills.push(pill("github · " + tool.github_repo.replace(/^https?:\/\//, ""), tool.github_repo, keyOf("github")))
-  for (const [index, tag] of (tool.tags ?? []).entries())
-    pills.push(pill(`#${tag}`, undefined, keyOf(`tag-${tag}-${index}`)))
+    items.push({
+      label: "github",
+      value: tool.github_repo.replace(/^https?:\/\//, ""),
+      url: tool.github_repo,
+    })
+  for (const tag of tool.tags ?? [])
+    items.push({ label: "#", value: tag })
 
-  if (
-    pills.length === 0 &&
-    !tool.badges?.some((entry) => entry.badge?.startsWith("http"))
+  const hasShields = tool.badges?.some((entry) =>
+    entry.badge?.startsWith("http"),
   )
-    return null
+  if (items.length === 0 && !hasShields) return null
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-1.5">
       {tool.badges?.map((entry, index) =>
         entry.badge?.startsWith("http") ? (
           <a
@@ -152,16 +181,24 @@ function ReadmeBadges({
             <img src={entry.badge} alt="" className="h-5" />
           </a>
         ) : (
-          pills.push(
-            pill(
-              entry.badge ?? "",
-              entry.url,
-              keyOf(`badge-${index}`),
-            ),
-          )
+          <ShieldBadge
+            key={keyOf(`badge-${index}`)}
+            label="info"
+            value={entry.badge ?? ""}
+            url={entry.url}
+            onOpen={onOpenExternal}
+          />
         ),
       )}
-      {pills}
+      {items.map((item, index) => (
+        <ShieldBadge
+          key={`${keyOf(item.label)}-${index}`}
+          label={item.label}
+          value={item.value}
+          url={item.url}
+          onOpen={onOpenExternal}
+        />
+      ))}
     </div>
   )
 }
