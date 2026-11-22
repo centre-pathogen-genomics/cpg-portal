@@ -12,7 +12,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import RenderMarkdown from "@/components/Common/Markdown";
 import { ConfirmationDialog } from "@/components/Common/ConfirmationDialog";
-import ToolRunForm from "@/components/Tools/ToolRunForm";
+import ToolRunForm from "@/components/Tools/ToolRunForm"
+import { ToolTabs } from "@/components/Tools/ToolTabs";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -615,35 +616,43 @@ export function ToolPage({ toolId }: { toolId: string }) {
 
               <section className="min-h-0 flex-1 overflow-y-auto px-8 py-6">
                 <div className="mx-auto max-w-6xl">
-                  <h2 className="mb-4 text-2xl font-semibold">
-                    Configure Tool
-                  </h2>
-                  <div className="grid gap-6">
-                    <div>
-                      {loadingTool ? (
-                        <p
-                          className="text-muted-foreground flex items-center gap-2 text-sm"
-                          role="status"
-                        >
-                          <LoaderCircle className="size-4 animate-spin" />
-                          Loading…
-                        </p>
-                      ) : (
-                        params
-                      )}
-                    </div>
+                  <ToolTabs
+                    tool={tool}
+                    onOpenExternal={(url) => void openExternal(url)}
+                    configure={
+                      <>
+                        <h2 className="mb-4 text-2xl font-semibold">
+                          Configure tool
+                        </h2>
+                        <div className="grid gap-6">
+                          <div>
+                            {loadingTool ? (
+                              <p
+                                className="text-muted-foreground flex items-center gap-2 text-sm"
+                                role="status"
+                              >
+                                <LoaderCircle className="size-4 animate-spin" />
+                                Loading…
+                              </p>
+                            ) : (
+                              params
+                            )}
+                          </div>
 
-                    {blockedReason && (
-                      <p className="text-muted-foreground text-sm">
-                        {blockedReason}
-                      </p>
-                    )}
+                          {blockedReason && (
+                            <p className="text-muted-foreground text-sm">
+                              {blockedReason}
+                            </p>
+                          )}
 
-                    <p className="text-muted-foreground text-xs">
-                      Input files stay on this computer; outputs go to the
-                      output folder in the run settings.
-                    </p>
-                  </div>
+                          <p className="text-muted-foreground text-xs">
+                            Input files stay on this computer; outputs go to
+                            the output folder in the run settings.
+                          </p>
+                        </div>
+                      </>
+                    }
+                  />
                 </div>
               </section>
             </div>
