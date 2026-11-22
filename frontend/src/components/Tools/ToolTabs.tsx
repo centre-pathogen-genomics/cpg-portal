@@ -29,6 +29,9 @@ export type ToolTabsTool = {
   default_cpus?: number | null
   targets?: { path: string }[]
   setup_files?: { name: string }[]
+  params?: { name: string; param_type?: string; required?: boolean }[]
+  timeline?: { name?: string; title?: string; description?: string }[]
+  environment?: string | null
 }
 
 function DetailRow({
@@ -237,6 +240,7 @@ export function ToolTabs({
   configure,
   onOpenExternal,
   defaultTab = "configure",
+  environment,
 }: {
   tool: ToolTabsTool
   /** The Configure tab's content, owned by the host (usually the run form). */
@@ -244,6 +248,8 @@ export function ToolTabs({
   /** Opens a link in the host's preferred way; defaults to an <a> tag. */
   onOpenExternal?: (url: string) => void
   defaultTab?: "configure" | "documentation" | "details"
+  /** The tool's environment.yml, when the host can provide it. */
+  environment?: string | null
 }) {
   const hasDocumentation =
     !!tool.docs_url ||
@@ -350,6 +356,35 @@ export function ToolTabs({
               </div>
             </DetailRow>
           )}
+          {tool.params && tool.params.length > 0 && (
+            <DetailRow label="Parameters">
+              <div className="flex flex-wrap gap-1.5">
+                {tool.params.map((param) => (
+                  <Badge
+                    key={param.name}
+                    variant="outline"
+                    title={param.param_type ?? undefined}
+                  >
+                    {param.name}
+                    {param.required === true && (
+                      <span className="text-destructive">*</span>
+                    )}
+                  </Badge>
+                ))}
+              </div>
+            </DetailRow>
+          )}
+          {tool.timeline && tool.timeline.length > 0 && (
+            <DetailRow label="Timeline">
+              <div className="flex flex-wrap gap-1.5">
+                {tool.timeline.map((step, index) => (
+                  <Badge key={`${step.title ?? step.name ?? index}-${index}`} variant="secondary">
+                    {step.title ?? step.name}
+                  </Badge>
+                ))}
+              </div>
+            </DetailRow>
+          )}
           
           <DetailRow label="CPUs">
             {tool.min_cpus !== undefined
@@ -371,6 +406,11 @@ export function ToolTabs({
           {tool.command && (
             <DetailRow label="Command">
               <CodeBlock code={tool.command} language="bash" />
+            </DetailRow>
+          )}
+          {(environment ?? tool.environment) && (
+            <DetailRow label="Environment">
+              <CodeBlock code={environment ?? tool.environment ?? ""} language="yaml" />
             </DetailRow>
           )}
         </dl>

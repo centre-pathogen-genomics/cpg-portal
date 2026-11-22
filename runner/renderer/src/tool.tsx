@@ -74,6 +74,7 @@ type ToolPageSnapshot = {
   status: StatusPayload;
   settings: Settings;
   fileTypes: FileTypesMap;
+  environment: string | null;
 };
 
 /**
@@ -90,7 +91,8 @@ export function ToolPage({ toolId }: { toolId: string }) {
   const [tool, setTool] = useState<ToolConfig | null>(null);
   const [status, setStatus] = useState<StatusPayload | null>(null);
   const [settings, setSettings] = useState<Settings | null>(null);
-  const [fileTypes, setFileTypes] = useState<FileTypesMap>({});
+  const [fileTypes, setFileTypes] = useState<FileTypesMap>({})
+  const [environment, setEnvironment] = useState<string | null>(null);
   const [forcedDoctor, setForcedDoctor] = useState<DoctorReport | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   // Why this tool's files cannot be read, when the app could not parse them.
@@ -129,26 +131,29 @@ export function ToolPage({ toolId }: { toolId: string }) {
   const loadAll = useCallback(async () => {
     const seq = ++loadSeq.current;
     try {
-      const [toolPayload, statusPayload, settingsPayload, types] =
+      const [toolPayload, statusPayload, settingsPayload, types, envPayload] =
         await Promise.all([
           api.get<ToolPayload>("/tool"),
           api.get<StatusPayload>("/status"),
           api.get<Settings>("/settings"),
           api.get<FileTypesMap>("/file-types"),
-        ]);
-      if (seq !== loadSeq.current) return;
-      const loadedTool = unwrapTool(toolPayload);
+          api.get<{ yml: string | null }>("/environment"),
+        ])
+      if (seq !== loadSeq.current) return
+      const loadedTool = unwrapTool(toolPayload)
       toolPageCache.set(pendingTool.current, {
         tool: loadedTool,
         status: statusPayload,
         settings: settingsPayload,
         fileTypes: types,
-      });
-      setTool(loadedTool);
-      setStatus(statusPayload);
-      setSettings(settingsPayload);
-      setFileTypes(types);
-      setLoadError(null);
+        environment: envPayload.yml,
+      })
+      setTool(loadedTool)
+      setStatus(statusPayload)
+      setSettings(settingsPayload)
+      setFileTypes(types)
+      setEnvironment(envPayload.yml)
+      setLoadError(null)
     } catch (error) {
       if (seq !== loadSeq.current) return;
       // A snapshot fits the tool the page shows: keep it on screen and say
@@ -180,17 +185,19 @@ export function ToolPage({ toolId }: { toolId: string }) {
     // drops the tool being left so the page shows its loading state for the
     // new tool, not the previous one's.
     const cached = toolPageCache.get(toolId);
-    if (cached) {
-      setTool(cached.tool);
-      setStatus(cached.status);
-      setSettings(cached.settings);
-      setFileTypes(cached.fileTypes);
-      setLoadingTool(false);
+if (cached) {
+      setTool(cached.tool)
+      setStatus(cached.status)
+      setSettings(cached.settings)
+      setFileTypes(cached.fileTypes)
+      setEnvironment(cached.environment)
+      setLoadingTool(false)
     } else {
-      setTool(null);
-      setStatus(null);
-      setSettings(null);
-      setFileTypes({});
+      setTool(null)
+      setStatus(null)
+      setSettings(null)
+      setFileTypes({})
+      setEnvironment(null)
     }
     // A tool whose files no longer parse still has a page: the reason comes
     // from the app, which is the only place that knows why.
@@ -624,6 +631,7 @@ export function ToolPage({ toolId }: { toolId: string }) {
                 <div className="mx-auto max-w-6xl">
                   <ToolTabs
                     tool={tool}
+                    environment={environment}
                     onOpenExternal={(url) => void openExternal(url)}
                     configure={
                       <>

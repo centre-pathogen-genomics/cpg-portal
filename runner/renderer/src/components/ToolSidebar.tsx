@@ -173,14 +173,14 @@ export function ToolSidebar({
                       "relative h-auto w-full gap-2 rounded-md px-2 py-1.5 text-left text-sm",
                       collapsed ? "justify-center" : "justify-between",
                       active
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                        ? "bg-cyan-100 text-cyan-900 font-medium dark:bg-sidebar-accent dark:text-sidebar-accent-foreground"
                         : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                     )}
                   >
                     {active && !collapsed && (
                       <span
                         aria-hidden
-                        className="bg-primary-foreground absolute inset-y-1.5 left-0 w-0.5 rounded-full"
+                        className="bg-cyan-600 dark:bg-primary-foreground absolute inset-y-1.5 left-0 w-0.5 rounded-full"
                       />
                     )}
                     <span

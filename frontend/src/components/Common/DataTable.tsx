@@ -126,15 +126,17 @@ export function DataTable<TData, TValue>({
           </TableBody>
         </Table>
       </div>
-      <PaginatedTableFooter
-        itemLabel="users"
-        onPageChange={(page) => table.setPageIndex(page - 1)}
-        onPageSizeChange={(pageSize) => table.setPageSize(pageSize)}
-        page={Math.min(table.getState().pagination.pageIndex + 1, pageCount)}
-        pageSize={table.getState().pagination.pageSize}
-        pageSizeOptions={[5, 10, 20, 50]}
-        totalCount={data.length}
-      />
+      {table.getPageCount() > 1 && (
+        <PaginatedTableFooter
+          itemLabel="users"
+          onPageChange={(page) => table.setPageIndex(page - 1)}
+          onPageSizeChange={(pageSize) => table.setPageSize(pageSize)}
+          page={Math.min(table.getState().pagination.pageIndex + 1, pageCount)}
+          pageSize={table.getState().pagination.pageSize}
+          pageSizeOptions={[5, 10, 20, 50]}
+          totalCount={data.length}
+        />
+      )}
     </>
   )
 }
