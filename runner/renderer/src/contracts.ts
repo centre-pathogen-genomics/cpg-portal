@@ -150,6 +150,8 @@ export type RunFile = {
   name: string
   path: string
   size: number
+  /** The tool target's declared type, e.g. "text" or "bam". */
+  file_type: string
 }
 
 export type RunRecord = {

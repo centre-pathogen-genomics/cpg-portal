@@ -96,15 +96,17 @@ class FakeDocker:
 
 
 class WritingDocker(FakeDocker):
-    def __init__(self, *, write: bool = True, **kwargs) -> None:
+    def __init__(self, *, write: bool = True, files=None, **kwargs) -> None:
         super().__init__(**kwargs)
         self.write = write
+        self.files = files if files is not None else {"out.txt": "hi"}
 
     def run(self, args, on_line) -> int:
         self.run_args.append(args)
         work = _work_dir(args)
         if self.write and work is not None:
-            (work / "out.txt").write_text("hi")
+            for name, content in self.files.items():
+                (work / name).write_text(content)
         for line in self.run_lines:
             on_line(line)
         return self.returncode

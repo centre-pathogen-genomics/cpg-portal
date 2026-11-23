@@ -79,10 +79,11 @@ The run page's Results section is that rule at its most literal: the drawn
 previews are the portal's `Render/FileRenderer`, which only asks its host where a
 file's bytes come from. The runner answers with a `FileLoaderProvider` reading
 `/runs/<id>/files/<index>`, so the portal's HTTP client and file ids stay out of
-the desktop bundle. Outputs are classified with the backend's own extension
-table, served by the sidecar at `/api/file-types`, and each viewer (csv, tsv,
-markdown, json, fasta, genbank, newick, vega, html, images) is a lazy chunk,
-loaded only when a file of that type is drawn.
+the desktop bundle. An output's type is the `target_type` of the tool target
+that matched it — the runner records it with the file, so nothing guesses from
+the name — and each viewer (csv, tsv, markdown, json, fasta, genbank, newick,
+vega, html, images) is a lazy chunk, loaded only when a file of that type is
+drawn.
 
 ## What a run leaves behind
 

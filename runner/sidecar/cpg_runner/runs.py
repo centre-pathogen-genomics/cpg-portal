@@ -36,6 +36,9 @@ class RunFile(BaseModel):
     name: str
     path: str
     size: int
+    # The type the tool's target declared, e.g. "text" or "bam". The runner
+    # knows it from the target pattern, so nothing has to guess from suffixes.
+    file_type: str = "unknown"
 
 
 class RunRecord(BaseModel):
@@ -391,13 +394,16 @@ class RunManager:
             command = f"{conda_activation(Path(f'/conda/{self.tool.id}'))} && {command}"
         return command
 
-    def _collect_targets(self, record: RunRecord, work_dir: Path) -> list[Path]:
+    def _collect_targets(
+        self, record: RunRecord, work_dir: Path
+    ) -> list[tuple[Path, str]]:
         work_root = work_dir.resolve()
-        matched: list[Path] = []
+        matched: list[tuple[Path, str]] = []
         seen: set[Path] = set()
         missing: list[str] = []
         for target in self.tool.targets:
             rendered = render_target_path(str(target["path"]), record.params)
+            file_type = str(target.get("target_type") or "unknown")
             matches = []
             for path in work_dir.glob(rendered):
                 resolved = path.resolve()
@@ -413,13 +419,13 @@ class RunManager:
                 if path.resolve() in seen:
                     continue
                 seen.add(path.resolve())
-                matched.append(path)
+                matched.append((path, file_type))
         if missing:
             raise RuntimeError(f"Missing required target(s): {', '.join(missing)}")
         return matched
 
     def _write_outputs(
-        self, record: RunRecord, matched: list[Path], output_dir: Path
+        self, record: RunRecord, matched: list[tuple[Path, str]], output_dir: Path
     ) -> None:
         settings = self.store.load_settings()
         files: list[RunFile] = []
@@ -428,7 +434,7 @@ class RunManager:
         results_dir = output_dir / RESULTS_DIR_NAME
         try:
             results_dir.mkdir(parents=True, exist_ok=True)
-            for path in matched:
+            for path, file_type in matched:
                 destination = results_dir / path.name
                 shutil.copy2(path, destination)
                 files.append(
@@ -436,6 +442,7 @@ class RunManager:
                         name=destination.name,
                         path=str(destination),
                         size=os.path.getsize(destination),
+                        file_type=file_type,
                     )
                 )
         except OSError as exc:

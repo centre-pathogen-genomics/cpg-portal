@@ -6,8 +6,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { fileName } from "@/lib/format"
 import { api } from "../api"
-import type { FileTypesMap, RunFile } from "../contracts"
-import { fileTypeOf } from "../lib/file-type"
+import type { RunFile } from "../contracts"
 
 /**
  * The content of the files the run produced, in tabs, like the portal's
@@ -16,19 +15,13 @@ import { fileTypeOf } from "../lib/file-type"
 export function RunResults({
   runId,
   files,
-  fileTypes,
 }: {
   runId: string
   files: RunFile[]
-  fileTypes: FileTypesMap
 }) {
   const renderable = files
-    .map((file, index) => ({
-      file,
-      index,
-      type: fileTypeOf(file.path, fileTypes),
-    }))
-    .filter(({ type }) => canRenderFile({ file_type: type }))
+    .map((file, index) => ({ file, index }))
+    .filter(({ file }) => canRenderFile({ file_type: file.file_type }))
   if (renderable.length === 0) {
     if (files.length === 0) return null
     return (
@@ -62,13 +55,13 @@ export function RunResults({
               </TabsTrigger>
             ))}
           </TabsList>
-          {renderable.map(({ file, index, type }) => (
+          {renderable.map(({ file, index }) => (
             <TabsContent value={file.path} key={file.path}>
               <FileRenderer
                 file={{
                   key: keyOf(index),
                   name: file.path,
-                  file_type: type,
+                  file_type: file.file_type,
                   size: file.size,
                 }}
               />

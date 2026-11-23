@@ -59,6 +59,7 @@ def test_completed_run_copies_outputs_and_streams_status(tmp_path):
     assert (output / "results" / "out.txt").read_text() == "hi"
     assert record.files[0].name == "out.txt"
     assert record.files[0].size == 2
+    assert record.files[0].file_type == "text"
 
     history, _ = manager.subscribe(record.id)
     statuses = [message["status"] for message in history if message["type"] == "status"]
@@ -66,6 +67,27 @@ def test_completed_run_copies_outputs_and_streams_status(tmp_path):
     assert "running" in statuses
     assert statuses[-1] == "completed"
     assert docker.run_args[0][:3] == ["docker", "run", "--rm"]
+
+
+def test_output_files_carry_their_targets_type(tmp_path):
+    """The type comes from the target that matched, not from the suffix."""
+    tool = make_tool(
+        targets=[
+            {"path": "out.txt", "target_type": "text", "required": True},
+            {"path": "table.csv", "target_type": "csv", "required": True},
+        ]
+    )
+    docker = WritingDocker(files={"out.txt": "hi", "table.csv": "a,b\n"})
+    manager = _manager(tmp_path, tool, docker)
+    record = manager.start({}, 1)
+    wait_for(lambda: manager.get(record.id).status in TERMINAL_STATUSES)
+
+    record = manager.get(record.id)
+    assert record.status == "completed"
+    assert {file.name: file.file_type for file in record.files} == {
+        "out.txt": "text",
+        "table.csv": "csv",
+    }
 
 
 def test_required_target_missing_fails(tmp_path):
