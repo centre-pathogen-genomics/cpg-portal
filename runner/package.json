@@ -1,7 +1,7 @@
 {
   "name": "cpg-runner",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "CPG Runner desktop shell: Electron around the local tool sidecar",
   "main": "dist/electron/main.js",
   "scripts": {
