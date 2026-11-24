@@ -192,7 +192,29 @@ You can set several other environment variables:
 * `PROJECT_NAME`: The name of the project, used in the API for the docs and emails.
 * `STACK_NAME`: The name of the stack used for Docker Compose labels and project name, this should be different for `staging`, `production`, etc. You could use the same domain replacing dots with dashes, e.g. `fastapi-project-example-com` and `staging-fastapi-project-example-com`.
 * `BACKEND_CORS_ORIGINS`: A list of allowed CORS origins separated by commas.
-* `FIRST_SUPERUSER`: The email of the first superuser, this superuser will be the one that can create new users.
+* `FIRST_SUPERUSER`: The email of the first superuser.
+
+The superuser account is created only by the server-side bootstrap at startup
+from `FIRST_SUPERUSER` + `FIRST_SUPERUSER_PASSWORD` — deliberately **not** through
+the API. There is a single superuser and the API cannot create, promote, demote,
+modify, or delete it:
+
+* the `users` create and update schemas carry no `is_superuser` field, so no
+  request can mint or promote one (a payload that includes it is ignored);
+* `PATCH /api/v1/users/{id}` and `DELETE /api/v1/users/{id}` return `403` when
+  the target row is the superuser, so a `users:update`/`users:delete` holder
+  cannot take it over, lock it out, or remove it;
+* a partial unique index (`uq_user_single_superuser`) enforces *at most one*
+  superuser row at the database level.
+
+Admin-level capabilities that are not superuser-related (creating and editing
+ordinary accounts, per-user quotas) are handled by the RBAC permissions
+(`users:create`, `users:update`, ...) and the admin UI.
+
+To change the superuser — e.g. transfer it to another account or recover a lost
+one — edit the `user` table directly (`UPDATE "user" SET is_superuser = false
+WHERE ...; UPDATE "user" SET is_superuser = true WHERE ...`) or re-seed on a
+fresh database. There is intentionally no API path for this.
 * `SMTP_HOST`: The SMTP server host to send emails, this would come from your email provider (E.g. Mailgun, Sparkpost, Sendgrid, etc).
 * `SMTP_USER`: The SMTP server user to send emails.
 * `SMTP_PASSWORD`: The SMTP server password to send emails.

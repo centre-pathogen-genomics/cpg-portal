@@ -132,9 +132,18 @@ class UserBase(SQLModel):
     max_storage_files: int = 300
 
 
-# Properties to receive via API on creation
-class UserCreate(UserBase):
+# Properties to receive via API on creation.
+# Deliberately not a UserBase subclass: `is_superuser` and the resource quotas
+# are server-managed. The single superuser is created only by the bootstrap
+# (app/core/db.py), and no API can create or promote one. Quotas are managed
+# per-user through the update schema instead, where the server refuses to touch
+# the superuser row.
+class UserCreate(SQLModel):
+    email: EmailStr = Field(unique=True, index=True, max_length=255)
     password: str = Field(min_length=8, max_length=40)
+    full_name: str | None = Field(default=None, max_length=255)
+    # The signup flow creates accounts inactive until the emailed link is used.
+    is_active: bool = True
 
 
 class UserRegister(SQLModel):
@@ -146,10 +155,20 @@ class UserRegister(SQLModel):
     turnstile_token: str | None = None
 
 
-# Properties to receive via API on update, all are optional
-class UserUpdate(UserBase):
+# Properties to receive via API on update, all are optional.
+# No `is_superuser` here either: superuser status is server-managed and cannot
+# be granted or revoked through the API. `users:update` still manages emails,
+# passwords, activity and quotas of ordinary accounts; the routes refuse to
+# apply any of it to the superuser row.
+class UserUpdate(SQLModel):
     email: EmailStr | None = Field(default=None, max_length=255)
     password: str | None = Field(default=None, min_length=8, max_length=40)
+    full_name: str | None = Field(default=None, max_length=255)
+    is_active: bool | None = None
+    max_runs: int | None = None
+    max_cpus: int | None = None
+    max_storage: int | None = None
+    max_storage_files: int | None = None
 
 
 class UserUpdateMe(SQLModel):

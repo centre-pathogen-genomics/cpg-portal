@@ -34,7 +34,6 @@ export const createUser = async ({
       password,
       full_name: "Test User",
       is_active: true,
-      is_superuser: false,
     }),
   })
   if (!response.ok) {

@@ -4,9 +4,10 @@ from types import SimpleNamespace
 
 import pytest
 from fastapi import HTTPException
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app.api.routes.runs import create_run, delete_runs, read_run_tool_names, read_runs
+from app.core.config import settings
 from app.core.file_types import FileTypeEnum
 from app.models import File, Run, RunStatus, Tool, ToolStatus, User
 from tests.utils.user import create_random_user
@@ -1442,11 +1443,13 @@ def test_create_run_threads_of_an_admin_are_not_capped(
 ) -> None:
     monkeypatch.setattr("app.tasks.run_tool.kiq", _fake_kiq)
     monkeypatch.setattr("app.api.routes.runs.manager.broadcast", _fake_broadcast)
-    owner = create_random_user(db)
-    owner.max_cpus = 2
-    owner.is_superuser = True
-    db.add(owner)
-    db.commit()
+    # The superuser is the bootstrapped account and bypasses per-user CPU
+    # caps; the database enforces that there is exactly one superuser, so the
+    # test uses that account rather than minting an ad-hoc one.
+    owner = db.exec(
+        select(User).where(User.email == settings.FIRST_SUPERUSER)
+    ).first()
+    assert owner is not None
     tool = _tool_with_threads(db, owner, max_cpus=8, default_cpus=4)
 
     run = asyncio.run(

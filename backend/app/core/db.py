@@ -1,8 +1,8 @@
 from sqlmodel import Session, create_engine, select
 
-from app import crud
 from app.core.config import settings
-from app.models import Tool, User, UserCreate
+from app.core.security import get_password_hash
+from app.models import Tool, User
 
 engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
 
@@ -25,12 +25,20 @@ def init_db(session: Session) -> None:
         select(User).where(User.email == settings.FIRST_SUPERUSER)
     ).first()
     if not user:
-        user_in = UserCreate(
+        # The one and only superuser is bootstrapped here from the environment.
+        # There is no API that creates or promotes superusers (the create and
+        # update schemas carry no is_superuser), and the partial unique index
+        # from the single-superuser migration makes "at most one" a database
+        # invariant as well. The bootstrap account skips the default role: a
+        # superuser bypasses the permission checks anyway.
+        user = User(
             email=settings.FIRST_SUPERUSER,
-            password=settings.FIRST_SUPERUSER_PASSWORD,
+            hashed_password=get_password_hash(settings.FIRST_SUPERUSER_PASSWORD),
             is_superuser=True,
+            is_active=True,
         )
-        user = crud.create_user(session=session, user_create=user_in)
+        session.add(user)
+        session.commit()
 
     sleep_tool = session.exec(
         select(Tool).where(Tool.name == "Sleep")

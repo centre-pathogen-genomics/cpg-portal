@@ -58,7 +58,6 @@ const formSchema = z
       .number()
       .int()
       .min(1, { message: "Max CPUs must be at least 1" }),
-    is_superuser: z.boolean().optional(),
     is_active: z.boolean().optional(),
   })
   .refine((data) => !data.password || data.password === data.confirm_password, {
@@ -89,7 +88,6 @@ const EditUser = ({ user, onSuccess }: EditUserProps) => {
       max_storage: user.max_storage ?? 25 * 1024 * 1024 * 1024,
       max_storage_files: user.max_storage_files ?? 300,
       max_cpus: user.max_cpus ?? 4,
-      is_superuser: user.is_superuser,
       is_active: user.is_active,
     },
   })
@@ -310,22 +308,6 @@ const EditUser = ({ user, onSuccess }: EditUserProps) => {
                       />
                     </FormControl>
                     <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="is_superuser"
-                render={({ field }) => (
-                  <FormItem className="flex items-center gap-3 space-y-0">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormLabel className="font-normal">Is superuser?</FormLabel>
                   </FormItem>
                 )}
               />

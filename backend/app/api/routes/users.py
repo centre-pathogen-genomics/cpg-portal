@@ -334,6 +334,14 @@ def update_user(
             status_code=404,
             detail="The user with this id does not exist in the system",
         )
+    # The superuser row is server-managed: no API may change its password,
+    # email, activity or quotas, so a `users:update` holder cannot take the
+    # account over, lock it out, or silently demote it.
+    if db_user.is_superuser:
+        raise HTTPException(
+            status_code=403,
+            detail="The superuser account is managed by the server",
+        )
     if user_in.email:
         existing_user = crud.get_user_by_email(session=session, email=user_in.email)
         if existing_user and existing_user.id != user_id:
@@ -355,6 +363,13 @@ def delete_user(
     user = session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    # The superuser account is bootstrap-managed and cannot be deleted through
+    # the API: deleting it would leave the portal without an administrator.
+    if user.is_superuser:
+        raise HTTPException(
+            status_code=403,
+            detail="The superuser account is managed by the server",
+        )
     if user == current_user:
         raise HTTPException(
             status_code=403, detail="Super users are not allowed to delete themselves"

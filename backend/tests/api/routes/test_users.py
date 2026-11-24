@@ -249,6 +249,73 @@ def test_create_user_by_normal_user(
     assert r.status_code == 403
 
 
+def test_create_user_cannot_promote_to_superuser(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    """The create schema carries no is_superuser: a promoted-looking payload
+    still yields an ordinary account."""
+    username = random_email()
+    password = random_lower_string()
+    data = {"email": username, "password": password, "is_superuser": True}
+    r = client.post(
+        f"{settings.API_V1_STR}/users/",
+        headers=superuser_token_headers,
+        json=data,
+    )
+    assert r.status_code == 200
+    created = r.json()
+    assert created["is_superuser"] is False
+
+
+def test_update_superuser_forbidden(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    """The superuser row is server-managed: users:update cannot modify it,
+    not even its email, password or quotas, and not by the superuser itself."""
+    me = client.get(
+        f"{settings.API_V1_STR}/users/me", headers=superuser_token_headers
+    )
+    superuser_id = me.json()["id"]
+    r = client.patch(
+        f"{settings.API_V1_STR}/users/{superuser_id}",
+        headers=superuser_token_headers,
+        json={"email": random_email()},
+    )
+    assert r.status_code == 403
+    assert r.json() == {"detail": "The superuser account is managed by the server"}
+
+
+def test_delete_superuser_forbidden(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    """The superuser cannot be deleted through the API."""
+    me = client.get(
+        f"{settings.API_V1_STR}/users/me", headers=superuser_token_headers
+    )
+    superuser_id = me.json()["id"]
+    r = client.delete(
+        f"{settings.API_V1_STR}/users/{superuser_id}",
+        headers=superuser_token_headers,
+    )
+    assert r.status_code == 403
+
+
+def test_user_cannot_promote_self(
+    client: TestClient, normal_user_token_headers: dict[str, str]
+) -> None:
+    """A normal account holds no users:update and cannot promote itself."""
+    me = client.get(
+        f"{settings.API_V1_STR}/users/me", headers=normal_user_token_headers
+    )
+    my_id = me.json()["id"]
+    r = client.patch(
+        f"{settings.API_V1_STR}/users/{my_id}",
+        headers=normal_user_token_headers,
+        json={"is_superuser": True},
+    )
+    assert r.status_code == 403
+
+
 def test_retrieve_users(
     client: TestClient, superuser_token_headers: dict[str, str], db: Session
 ) -> None:
@@ -650,7 +717,7 @@ def test_delete_user_current_super_user_error(
         headers=superuser_token_headers,
     )
     assert r.status_code == 403
-    assert r.json()["detail"] == "Super users are not allowed to delete themselves"
+    assert r.json()["detail"] == "The superuser account is managed by the server"
 
 
 def test_delete_user_without_privileges(
