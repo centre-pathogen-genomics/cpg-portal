@@ -88,27 +88,30 @@ const FileRenderer = ({
     return null;
   }
 
-  if (file.size && file.size < fileSizeLimit) {
+  // An empty file has size 0, which is a size we know: it must still render.
+  // Only a missing size is unknown, and then we cannot rule it out as too large.
+  const size = file.size;
+  if (size != null && size < fileSizeLimit) {
     return (
       <Suspense fallback={<PreviewLoading />}>
         {(() => {
           switch (file.file_type) {
             case "json":
-              if (file.size > 1000000) {
+              if (size > 1000000) {
                 return TooLargeToPreview({ limit: 1000000 });
               }
-              if (file.size > 100000) {
+              if (size > 100000) {
                 // For larger JSON files, use TextFile to avoid performance issues
                 return <TextFile file={file} />;
               }
               return <JsonFile file={file} />;
             case "text":
-              if (file.size > 1000000) {
+              if (size > 1000000) {
                 return TooLargeToPreview({ limit: 1000000 });
               }
               return <TextFile file={file} />;
             case "md":
-              if (file.size > 1000000) {
+              if (size > 1000000) {
                 return TooLargeToPreview({ limit: 1000000 });
               }
               return <MarkdownFile file={file} />;
@@ -119,14 +122,14 @@ const FileRenderer = ({
               return (
                 <GenbankFile
                   file={file}
-                  viewer={file.size > 2000000 ? "circular" : "both"}
+                  viewer={size > 2000000 ? "circular" : "both"}
                 />
               );
             case "gfa":
             case "gfa.gz":
               return <GfaFile file={file} />;
             case "newick":
-              if (file.size > 1000000) {
+              if (size > 1000000) {
                 return TooLargeToPreview({ limit: 1000000 });
               }
               return <NewickFile file={file} actions={newickActions} />;
