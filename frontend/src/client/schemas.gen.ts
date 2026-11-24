@@ -1920,7 +1920,7 @@ export const ToolCreateSchema = {
         },
         network: {
             '$ref': '#/components/schemas/ToolNetwork',
-            default: 'default'
+            default: 'none'
         },
         version_sort: {
             anyOf: [
@@ -2386,7 +2386,7 @@ export const ToolPublicSchema = {
         },
         network: {
             '$ref': '#/components/schemas/ToolNetwork',
-            default: 'default'
+            default: 'none'
         },
         favourited: {
             type: 'boolean',
@@ -2780,7 +2780,7 @@ export const ToolUpdateSchema = {
         },
         network: {
             '$ref': '#/components/schemas/ToolNetwork',
-            default: 'default'
+            default: 'none'
         },
         favourited_count: {
             type: 'integer',
@@ -2956,15 +2956,11 @@ export const UserCreateSchema = {
             format: 'email',
             title: 'Email'
         },
-        is_active: {
-            type: 'boolean',
-            title: 'Is Active',
-            default: true
-        },
-        is_superuser: {
-            type: 'boolean',
-            title: 'Is Superuser',
-            default: false
+        password: {
+            type: 'string',
+            maxLength: 40,
+            minLength: 8,
+            title: 'Password'
         },
         full_name: {
             anyOf: [
@@ -2978,31 +2974,10 @@ export const UserCreateSchema = {
             ],
             title: 'Full Name'
         },
-        max_runs: {
-            type: 'integer',
-            title: 'Max Runs',
-            default: 10
-        },
-        max_cpus: {
-            type: 'integer',
-            title: 'Max Cpus',
-            default: 4
-        },
-        max_storage: {
-            type: 'integer',
-            title: 'Max Storage',
-            default: 26843545600
-        },
-        max_storage_files: {
-            type: 'integer',
-            title: 'Max Storage Files',
-            default: 300
-        },
-        password: {
-            type: 'string',
-            maxLength: 40,
-            minLength: 8,
-            title: 'Password'
+        is_active: {
+            type: 'boolean',
+            title: 'Is Active',
+            default: true
         }
     },
     type: 'object',
@@ -3262,15 +3237,18 @@ export const UserUpdateSchema = {
             ],
             title: 'Email'
         },
-        is_active: {
-            type: 'boolean',
-            title: 'Is Active',
-            default: true
-        },
-        is_superuser: {
-            type: 'boolean',
-            title: 'Is Superuser',
-            default: false
+        password: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 40,
+                    minLength: 8
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Password'
         },
         full_name: {
             anyOf: [
@@ -3284,38 +3262,60 @@ export const UserUpdateSchema = {
             ],
             title: 'Full Name'
         },
-        max_runs: {
-            type: 'integer',
-            title: 'Max Runs',
-            default: 10
-        },
-        max_cpus: {
-            type: 'integer',
-            title: 'Max Cpus',
-            default: 4
-        },
-        max_storage: {
-            type: 'integer',
-            title: 'Max Storage',
-            default: 26843545600
-        },
-        max_storage_files: {
-            type: 'integer',
-            title: 'Max Storage Files',
-            default: 300
-        },
-        password: {
+        is_active: {
             anyOf: [
                 {
-                    type: 'string',
-                    maxLength: 40,
-                    minLength: 8
+                    type: 'boolean'
                 },
                 {
                     type: 'null'
                 }
             ],
-            title: 'Password'
+            title: 'Is Active'
+        },
+        max_runs: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Max Runs'
+        },
+        max_cpus: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Max Cpus'
+        },
+        max_storage: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Max Storage'
+        },
+        max_storage_files: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Max Storage Files'
         }
     },
     type: 'object',

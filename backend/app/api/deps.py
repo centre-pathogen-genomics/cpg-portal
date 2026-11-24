@@ -2,7 +2,7 @@ from collections.abc import Callable, Generator
 from typing import Annotated
 
 import jwt
-from fastapi import Depends, HTTPException, Query, status
+from fastapi import Depends, HTTPException, Query, WebSocketException, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from pydantic import ValidationError
@@ -82,15 +82,57 @@ def get_current_user_or_anonymous(
         raise
 
 
-def get_current_user_from_query(
+WS_TOKEN_PURPOSE = "ws"
+
+
+def get_current_user_from_ws_token(
     session: SessionDep, token: Annotated[str | None, Query()] = None
 ) -> User:
+    """
+    Authenticate a websocket connection from the short-lived token minted by
+    POST /api/v1/websockets/token.
+
+    Unlike get_current_user (REST bearer), this only accepts tokens whose
+    ``purpose`` claim is ``ws``: a login JWT put into a socket URL is neither
+    valid here nor useful anywhere else.
+    """
     if token is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated",
+        raise WebSocketException(
+            code=status.WS_1008_POLICY_VIOLATION, reason="Not authenticated"
         )
-    return get_current_user(session, token)
+    try:
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
+        )
+        token_data = TokenPayload(**payload)
+    except (InvalidTokenError, ValidationError):
+        raise WebSocketException(
+            code=status.WS_1008_POLICY_VIOLATION,
+            reason="Could not validate credentials",
+        )
+    if payload.get("purpose") != WS_TOKEN_PURPOSE:
+        raise WebSocketException(
+            code=status.WS_1008_POLICY_VIOLATION,
+            reason="Invalid token purpose",
+        )
+    user = session.get(User, token_data.sub)
+    if not user:
+        raise WebSocketException(
+            code=status.WS_1008_POLICY_VIOLATION,
+            reason="Could not validate credentials",
+        )
+    # Same staleness rules as REST tokens: a token without a version, or minted
+    # before the last password reset / deactivation, is rejected.
+    if token_data.ver is None or token_data.ver != user.token_version:
+        raise WebSocketException(
+            code=status.WS_1008_POLICY_VIOLATION,
+            reason="Could not validate credentials",
+        )
+    if not user.is_active:
+        raise WebSocketException(
+            code=status.WS_1008_POLICY_VIOLATION, reason="Inactive user"
+        )
+    return user
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]

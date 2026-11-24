@@ -1598,37 +1598,17 @@ export type UserCreate = {
      */
     email: string;
     /**
-     * Is Active
+     * Password
      */
-    is_active?: boolean;
-    /**
-     * Is Superuser
-     */
-    is_superuser?: boolean;
+    password: string;
     /**
      * Full Name
      */
     full_name?: string | null;
     /**
-     * Max Runs
+     * Is Active
      */
-    max_runs?: number;
-    /**
-     * Max Cpus
-     */
-    max_cpus?: number;
-    /**
-     * Max Storage
-     */
-    max_storage?: number;
-    /**
-     * Max Storage Files
-     */
-    max_storage_files?: number;
-    /**
-     * Password
-     */
-    password: string;
+    is_active?: boolean;
 };
 
 /**
@@ -1797,37 +1777,33 @@ export type UserUpdate = {
      */
     email?: string | null;
     /**
-     * Is Active
+     * Password
      */
-    is_active?: boolean;
-    /**
-     * Is Superuser
-     */
-    is_superuser?: boolean;
+    password?: string | null;
     /**
      * Full Name
      */
     full_name?: string | null;
     /**
+     * Is Active
+     */
+    is_active?: boolean | null;
+    /**
      * Max Runs
      */
-    max_runs?: number;
+    max_runs?: number | null;
     /**
      * Max Cpus
      */
-    max_cpus?: number;
+    max_cpus?: number | null;
     /**
      * Max Storage
      */
-    max_storage?: number;
+    max_storage?: number | null;
     /**
      * Max Storage Files
      */
-    max_storage_files?: number;
-    /**
-     * Password
-     */
-    password?: string | null;
+    max_storage_files?: number | null;
 };
 
 /**
@@ -4004,6 +3980,22 @@ export type RunnerReadRuntimeImageResponses = {
      */
     200: unknown;
 };
+
+export type WebsocketsCreateWsTokenData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/websockets/token';
+};
+
+export type WebsocketsCreateWsTokenResponses = {
+    /**
+     * Successful Response
+     */
+    200: Token;
+};
+
+export type WebsocketsCreateWsTokenResponse = WebsocketsCreateWsTokenResponses[keyof WebsocketsCreateWsTokenResponses];
 
 export type LlmGenerateRunSummaryData = {
     body?: never;

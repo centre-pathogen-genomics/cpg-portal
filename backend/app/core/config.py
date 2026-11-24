@@ -33,6 +33,10 @@ class Settings(BaseSettings):
     SECRET_KEY: str = secrets.token_urlsafe(32)
     # 60 minutes * 24 hours * 8 days = 8 days
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
+    # Lifetime of the single-purpose token minted for websocket connections
+    # (POST /api/v1/websockets/token). Kept short so a token leaked through a
+    # socket URL, proxy log or history is useless quickly.
+    WS_TOKEN_EXPIRE_SECONDS: int = 120
     FRONTEND_HOST: str = "http://localhost:5173"
     ENVIRONMENT: Literal["local", "staging", "production"] = "local"
 
@@ -97,6 +101,28 @@ class Settings(BaseSettings):
     TURNSTILE_HOSTNAMES: str | None = None
     # The action the check expects back from Cloudflare.
     TURNSTILE_ACTION: str = "signup"
+    # Whether new accounts may register themselves through POST /users/signup.
+    # When False the route answers 403 and accounts can only be created by an
+    # administrator.
+    USERS_OPEN_REGISTRATION: bool = True
+    # Per-account rate limits for public auth endpoints, enforced through a
+    # Redis-backed limiter shared across the uvicorn workers (see
+    # app/core/rate_limit.py). Keys are the submitted email, never the client
+    # IP. RATE_LIMIT_ENABLED defaults to "on outside local development"; an
+    # explicit value overrides that. The limits themselves are the bucket sizes
+    # for one account per endpoint.
+    RATE_LIMIT_ENABLED: bool | None = None
+    RATE_LIMIT_LOGIN: str = "20/minute"
+    RATE_LIMIT_PASSWORD_RECOVERY: str = "5/minute"
+    RATE_LIMIT_SIGNUP: str = "10/hour"
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def rate_limiting_enabled(self) -> bool:
+        if self.RATE_LIMIT_ENABLED is not None:
+            return self.RATE_LIMIT_ENABLED
+        # Local development (and the test suite) logs in and signs up freely.
+        return self.ENVIRONMENT != "local"
     # Runs are sampled for CPU, memory, threads and I/O while they
     # execute. The series is halved whenever it passes the cap.
     RUN_METRICS_INTERVAL: float = 5.0

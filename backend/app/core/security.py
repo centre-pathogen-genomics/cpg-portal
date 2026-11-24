@@ -20,13 +20,20 @@ ALGORITHM = "HS256"
 
 
 def create_access_token(
-    subject: str | Any, expires_delta: timedelta, token_version: int | None = None
+    subject: str | Any,
+    expires_delta: timedelta,
+    token_version: int | None = None,
+    purpose: str | None = None,
 ) -> str:
     expire = datetime.now(UTC) + expires_delta
     to_encode: dict[str, Any] = {"exp": expire, "sub": str(subject)}
     if token_version is not None:
         # user session tokens carry the user's current token_version
         to_encode["ver"] = token_version
+    if purpose is not None:
+        # single-purpose tokens (e.g. websocket auth) carry a purpose claim so
+        # they cannot be replayed against other flows
+        to_encode["purpose"] = purpose
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 

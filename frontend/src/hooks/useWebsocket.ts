@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react"
+import { WebsocketsService } from "../client"
 
 export interface UseWebSocketOptions {
   protocols?: string | string[]
@@ -28,12 +29,7 @@ export const useWebSocket = (
   const [isConnected, setIsConnected] = useState(false)
 
   // Store callbacks in a ref so that changes to them don't trigger a reconnect.
-  const callbacksRef = useRef({
-    onOpen,
-    onMessage,
-    onError,
-    onClose,
-  })
+  const callbacksRef = useRef({ onOpen, onMessage, onError, onClose })
 
   // Update the callbacks ref when any callback changes.
   useEffect(() => {
@@ -50,32 +46,55 @@ export const useWebSocket = (
     if (wsRef.current) {
       wsRef.current.close()
     }
-    const baseURL = import.meta.env.VITE_API_URL || window.location.origin
-    const token = localStorage.getItem("access_token")
-    const wsUrl = new URL(`/api/v1/websockets/${channel}`, baseURL)
-    wsUrl.protocol = wsUrl.protocol === "https:" ? "wss:" : "ws:"
-    if (auth && token) wsUrl.searchParams.set("token", token)
-    const ws = new WebSocket(wsUrl, protocols)
-    wsRef.current = ws
 
-    ws.onopen = (event) => {
-      setIsConnected(true)
-      callbacksRef.current.onOpen?.(event)
+    const openSocket = (wsToken?: string) => {
+      const baseURL = import.meta.env.VITE_API_URL || window.location.origin
+      const wsUrl = new URL(`/api/v1/websockets/${channel}`, baseURL)
+      wsUrl.protocol = wsUrl.protocol === "https:" ? "wss:" : "ws:"
+      // Authenticated sockets carry a short-lived, socket-scoped token minted
+      // with the REST bearer token (POST /api/v1/websockets/token): the
+      // long-lived login JWT never appears in a socket URL.
+      if (wsToken) wsUrl.searchParams.set("token", wsToken)
+      const ws = new WebSocket(wsUrl, protocols)
+      wsRef.current = ws
+
+      ws.onopen = (event) => {
+        setIsConnected(true)
+        callbacksRef.current.onOpen?.(event)
+      }
+
+      ws.onmessage = (event) => {
+        callbacksRef.current.onMessage?.(event)
+      }
+
+      ws.onerror = (event) => {
+        setIsConnected(false)
+        callbacksRef.current.onError?.(event)
+      }
+
+      ws.onclose = (event) => {
+        setIsConnected(false)
+        callbacksRef.current.onClose?.(event)
+      }
     }
 
-    ws.onmessage = (event) => {
-      callbacksRef.current.onMessage?.(event)
+    if (!auth) {
+      // The public event stream is anonymous.
+      openSocket()
+      return
     }
-
-    ws.onerror = (event) => {
-      setIsConnected(false)
-      callbacksRef.current.onError?.(event)
-    }
-
-    ws.onclose = (event) => {
-      setIsConnected(false)
-      callbacksRef.current.onClose?.(event)
-    }
+    // Mint a fresh WS token per connection attempt; the backend rejects any
+    // socket whose token expired (default 120s).
+    WebsocketsService.createWsToken()
+      .then(({ data }) => {
+        openSocket(data?.access_token)
+      })
+      .catch(() => {
+        // No session: falling back to a token-less socket mirrors the old
+        // behaviour and lets the server close it, so callers see onClose.
+        setIsConnected(false)
+        openSocket()
+      })
   }, [auth, channel, protocols])
 
   useEffect(() => {

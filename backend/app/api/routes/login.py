@@ -9,6 +9,7 @@ from app.api.deps import CurrentUser, SessionDep
 from app.api.permission_router import PermissionAPIRouter
 from app.core import security
 from app.core.config import settings
+from app.core.rate_limit import check_rate_limit, effective_limit
 from app.core.security import get_password_hash
 from app.models import AuthTokenPurpose, Message, NewPassword, Token, UserPublic
 from app.utils import (
@@ -21,11 +22,17 @@ router = PermissionAPIRouter(resource="login")
 
 @router.post("/login/access-token", public=True)
 def login_access_token(
-    session: SessionDep, form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
+    session: SessionDep,
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
 ) -> Token:
     """
     OAuth2 compatible token login, get an access token for future requests
     """
+    check_rate_limit(
+        effective_limit(settings.RATE_LIMIT_LOGIN),
+        str(form_data.username).strip().lower(),
+        "login",
+    )
     user = crud.authenticate(
         session=session, email=form_data.username, password=form_data.password
     )
@@ -56,6 +63,11 @@ def recover_password(email: str, session: SessionDep) -> Message:
     """
     Password Recovery
     """
+    check_rate_limit(
+        effective_limit(settings.RATE_LIMIT_PASSWORD_RECOVERY),
+        email.strip().lower(),
+        "password-recovery",
+    )
     user = crud.get_user_by_email(session=session, email=email)
 
     # inactive accounts cannot reset (activation comes first), so no link for them

@@ -11,6 +11,7 @@ from app import crud
 from app.api.deps import CurrentUser, SessionDep
 from app.api.permission_router import PermissionAPIRouter
 from app.core.config import settings
+from app.core.rate_limit import check_rate_limit, effective_limit
 from app.core.rbac import (
     effective_permission_names,
     has_permission,
@@ -242,10 +243,22 @@ def register_user(
     """
     Register a new inactive user and send them an account activation email.
     """
-    # Only asks for anything when a Turnstile secret key is configured.
+    if not settings.USERS_OPEN_REGISTRATION:
+        raise HTTPException(
+            status_code=403, detail="Registration is closed"
+        )
+    check_rate_limit(
+        effective_limit(settings.RATE_LIMIT_SIGNUP),
+        user_in.email.strip().lower(),
+        "signup",
+    )
+    # Only asks for anything when a Turnstile secret key is configured. The
+    # expected action is enforced so a token solved for another widget cannot
+    # be reused here.
     verify_turnstile(
         user_in.turnstile_token,
         request.client.host if request.client else None,
+        action=settings.TURNSTILE_ACTION,
     )
     existing_user = crud.get_user_by_email(session=session, email=user_in.email)
     if existing_user:

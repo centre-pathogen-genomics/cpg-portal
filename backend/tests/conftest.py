@@ -53,6 +53,14 @@ def _cpus_to_spare() -> None:
 
 
 @pytest.fixture(scope="session", autouse=True)
+def _open_registration_for_suite() -> None:
+    """The checked-in .env closes self-registration; the signup tests (and the
+    login/settings tests that rely on fresh users) assume it is open. Tests
+    that exercise the gate toggle the flag themselves."""
+    settings.USERS_OPEN_REGISTRATION = True
+
+
+@pytest.fixture(scope="session", autouse=True)
 def db() -> Generator[Session]:
     with Session(engine) as session:
         init_db(session)
