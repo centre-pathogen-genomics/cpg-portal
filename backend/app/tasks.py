@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Annotated
 
 from jinja2 import Environment as JinjaEnvironment
+from sqlalchemy import text
 from sqlmodel import Session, select
 from taskiq import TaskiqDepends
 
@@ -457,8 +458,8 @@ async def run_tool(
     if run is None:
         return False
 
-    # Clear previous stdout and check statuses.
-    run.stdout = ""
+    # A run that is not pending is already handled: a duplicate delivery must
+    # become a no-op, never mark a completed/cancelled run failed.
     if run.status != "pending":
         return False
     app_settings = get_or_create_app_settings(session)
@@ -476,7 +477,23 @@ async def run_tool(
         )
         return False
 
-    # Update run state to running.
+    # Claim the run atomically: only the delivery that flips the row from
+    # pending gets to start the command. A duplicate delivery (the same task
+    # redelivered, or a run re-dispatched after a stale-claim sweep) finds the
+    # row no longer pending and becomes a no-op here, instead of racing for the
+    # same tmp directory and failing the run.
+    claimed = session.execute(
+        text(
+            "UPDATE run SET status = 'running'"
+            " WHERE id = :id AND status = 'pending'"
+        ),
+        {"id": run_id},
+    )
+    if claimed.rowcount == 0:
+        return False
+
+    # Clear previous stdout and update run state to running.
+    run.stdout = ""
     run.status = "running"
     run.started_at = datetime.utcnow()
     run.conda_env_pinned = run.tool.conda_env_pinned

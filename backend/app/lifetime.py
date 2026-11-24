@@ -1,3 +1,4 @@
+import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -8,7 +9,11 @@ from app.core.db import engine
 from app.core.rbac import sync_rbac
 from app.models import Run, RunStatus, Tool, ToolStatus
 from app.run_records import record_run
-from app.scheduling import dispatch_pending_runs
+from app.scheduling import (
+    STALE_CLAIM_SWEEP_INTERVAL_SECONDS,
+    recover_pending_claims,
+    sweep_stale_claims,
+)
 from app.tasks import install_tool, update_tool
 from app.tkq import broker
 from app.wsmanager import manager
@@ -28,15 +33,10 @@ async def recover_interrupted_tasks(session: Session) -> None:
 
     # Runs that were dispatched to the previous worker are pending again: their
     # task is gone, so forget its id and let the scheduler hand out CPUs to
-    # whatever fits now.
-    pending_runs = session.exec(
-        select(Run).where(Run.status == RunStatus.pending)
-    ).all()
-    for run in pending_runs:
-        run.taskiq_id = None
-        session.add(run)
-    session.commit()
-    await dispatch_pending_runs(session)
+    # whatever fits now. The whole recovery+dispatch runs under the dispatch
+    # lock, so two replicas starting at once cannot both re-dispatch the same
+    # runs.
+    await recover_pending_claims(session)
 
     installing_tools = session.exec(
         select(Tool).where(Tool.status == ToolStatus.installing)
@@ -100,6 +100,22 @@ async def startup_taskiq() -> None:
             await recover_interrupted_tasks(session)
 
 
+async def stale_claim_sweeper() -> None:
+    """Periodically re-queue pending runs whose claimed task never started.
+
+    A task that died before run_tool could start leaves the run wedged:
+    dispatch skips it (taskiq_id set) while its CPUs stay reserved. The sweep
+    forgets claims older than STALE_CLAIM_MINUTES, see sweep_stale_claims.
+    """
+    while True:
+        await asyncio.sleep(STALE_CLAIM_SWEEP_INTERVAL_SECONDS)
+        try:
+            with Session(engine) as session:
+                await sweep_stale_claims(session)
+        except Exception as e:
+            print(f"Error sweeping stale run claims: {e}")
+
+
 async def shutdown_taskiq() -> None:
     if not broker.is_worker_process:
         await broker.shutdown()
@@ -126,8 +142,14 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         sync_rbac(session)
     await startup_taskiq()
     await startup_broadcast()
+    sweeper = asyncio.create_task(stale_claim_sweeper())
     try:
         yield
     finally:
+        sweeper.cancel()
+        try:
+            await sweeper
+        except asyncio.CancelledError:
+            pass
         await shutdown_taskiq()
         await shutdown_broadcast()

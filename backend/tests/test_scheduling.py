@@ -1,6 +1,6 @@
 import asyncio
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
 import pytest
@@ -8,7 +8,12 @@ from sqlmodel import Session, select, update
 
 from app.core.config import settings
 from app.models import Run, RunStatus, Tool, ToolStatus, User
-from app.scheduling import dispatch_pending_runs, reserved_cpus, total_cpus
+from app.scheduling import (
+    dispatch_pending_runs,
+    reserved_cpus,
+    sweep_stale_claims,
+    total_cpus,
+)
 from tests.utils.user import create_random_user
 from tests.utils.utils import random_lower_string
 
@@ -207,3 +212,76 @@ def test_dispatch_holds_runs_until_the_tool_is_installed(
         run.id
     ]
     assert fake_kiq == [run.id]
+
+
+def test_dispatch_does_not_double_claim_a_run_changed_after_kiq(
+    db: Session, monkeypatch
+) -> None:
+    """A crash/race between kiq and the claim commit must not double-dispatch."""
+    monkeypatch.setattr(settings, "TOTAL_CPUS", 10)
+    owner = create_random_user(db)
+    tool = _create_tool(db)
+    run = _create_pending_run(db, owner, tool, cpus=1)
+
+    kiq_calls: list[uuid.UUID] = []
+
+    async def _kiq(run_id: uuid.UUID, _command: str | None):
+        kiq_calls.append(run_id)
+        # While kiq was in flight the run left pending (a duplicate delivery
+        # started it, an admin cancelled it, ...), so the claim below must hit
+        # zero rows and the run must not be dispatched (or CPU-counted) twice.
+        db.exec(
+            update(Run).where(Run.id == run_id).values(status=RunStatus.running)
+        )
+        db.commit()
+        return SimpleNamespace(task_id=f"task-{run_id}")
+
+    monkeypatch.setattr("app.tasks.run_tool.kiq", _kiq)
+
+    # The run is not reported as dispatched, and its CPUs are reserved exactly
+    # once (by the running state the other dispatcher set).
+    assert asyncio.run(dispatch_pending_runs(db)) == []
+    assert kiq_calls == [run.id]
+    assert reserved_cpus(db) == 1
+
+    # A later dispatch does not enqueue it again.
+    assert asyncio.run(dispatch_pending_runs(db)) == []
+    assert kiq_calls == [run.id]
+
+
+def test_sweep_requeues_stale_claims(db: Session, fake_kiq, monkeypatch) -> None:
+    monkeypatch.setattr(settings, "TOTAL_CPUS", 10)
+    owner = create_random_user(db)
+    tool = _create_tool(db)
+    run = _create_pending_run(db, owner, tool, cpus=1)
+    # The run was dispatched, but its task died before the worker started it.
+    run.taskiq_id = "stale-task"
+    run.created_at = datetime.now(UTC).replace(tzinfo=None) - timedelta(hours=2)
+    db.add(run)
+    db.commit()
+
+    cleared = asyncio.run(sweep_stale_claims(db))
+
+    assert cleared == 1
+    db.refresh(run)
+    assert run.status == RunStatus.pending
+    # Re-queued by the sweep itself, no restart involved.
+    assert fake_kiq == [run.id]
+    assert run.taskiq_id == f"task-{run.id}"
+
+
+def test_sweep_keeps_a_fresh_claim(db: Session, fake_kiq, monkeypatch) -> None:
+    monkeypatch.setattr(settings, "TOTAL_CPUS", 10)
+    owner = create_random_user(db)
+    tool = _create_tool(db)
+    run = _create_pending_run(db, owner, tool, cpus=1)
+    run.taskiq_id = "fresh-task"
+    db.add(run)
+    db.commit()
+
+    cleared = asyncio.run(sweep_stale_claims(db))
+
+    assert cleared == 0
+    db.refresh(run)
+    assert run.taskiq_id == "fresh-task"
+    assert fake_kiq == []

@@ -1,13 +1,17 @@
 import asyncio
+import threading
 import uuid
 from datetime import datetime
 from types import SimpleNamespace
 
+from sqlalchemy import text
 from sqlmodel import Session
 
 from app import lifetime
 from app.core.app_settings import get_or_create_app_settings
+from app.core.db import engine
 from app.models import Run, RunStatus, Tool, ToolStatus
+from app.scheduling import DISPATCH_LOCK_KEY
 from tests.utils.user import create_random_user
 from tests.utils.utils import random_lower_string
 
@@ -166,8 +170,12 @@ def test_recover_interrupted_tasks_does_not_requeue_pending_runs_when_paused(
     async def fake_install_kiq(tool_id: uuid.UUID):
         return SimpleNamespace(task_id=f"install-task-{tool_id}")
 
+    async def fake_update_kiq(tool_id: uuid.UUID):
+        return SimpleNamespace(task_id=f"update-task-{tool_id}")
+
     monkeypatch.setattr("app.tasks.run_tool.kiq", fake_run_kiq)
     monkeypatch.setattr(lifetime.install_tool, "kiq", fake_install_kiq)
+    monkeypatch.setattr(lifetime.update_tool, "kiq", fake_update_kiq)
 
     app_settings = get_or_create_app_settings(db)
     app_settings.queue_paused = True
@@ -209,3 +217,87 @@ def test_recover_interrupted_tasks_does_not_requeue_pending_runs_when_paused(
     assert pending_run.taskiq_id is None
     assert pending_run.status == RunStatus.pending
     assert pending_run.id not in run_task_ids
+
+
+def test_recovery_holds_the_dispatch_lock_while_redispatching(
+    monkeypatch, db: Session
+) -> None:
+    """Two replicas booting at once must not double-dispatch: recovery and
+    the re-dispatch run under the advisory dispatch lock."""
+    app_settings = get_or_create_app_settings(db)
+    app_settings.queue_paused = False
+    app_settings.queue_pause_reason = None
+    app_settings.queue_paused_at = None
+    db.add(app_settings)
+    db.commit()
+
+    owner = create_random_user(db)
+    tool = Tool(
+        name=f"lock-tool-{random_lower_string()}",
+        command="echo pending",
+        enabled=True,
+        status=ToolStatus.installed,
+    )
+    db.add(tool)
+    db.commit()
+
+    pending_run = Run(
+        status=RunStatus.pending,
+        created_at=datetime.utcnow(),
+        command="echo pending",
+        params={},
+        tool_id=tool.id,
+        owner_id=owner.id,
+    )
+    db.add(pending_run)
+    db.commit()
+
+    kiq_called = threading.Event()
+    release_kiq = threading.Event()
+
+    async def fake_run_kiq(run_id: uuid.UUID, _command: str | None):
+        # Park inside the delivery while the recovery transaction still holds
+        # the dispatch lock, so the caller can observe the lock from a
+        # separate connection.
+        kiq_called.set()
+        release_kiq.wait(timeout=10)
+        return SimpleNamespace(task_id=f"run-task-{run_id}")
+
+    async def fake_install_kiq(tool_id: uuid.UUID):  # noqa: ARG001
+        return SimpleNamespace(task_id=f"install-task-{tool_id}")
+
+    async def fake_update_kiq(tool_id: uuid.UUID):  # noqa: ARG001
+        return SimpleNamespace(task_id=f"update-task-{tool_id}")
+
+    monkeypatch.setattr("app.tasks.run_tool.kiq", fake_run_kiq)
+    monkeypatch.setattr(lifetime.install_tool, "kiq", fake_install_kiq)
+    monkeypatch.setattr(lifetime.update_tool, "kiq", fake_update_kiq)
+
+    errors: list[BaseException] = []
+
+    def _run_recovery() -> None:
+        try:
+            asyncio.run(lifetime.recover_interrupted_tasks(db))
+        except BaseException as e:  # noqa: BLE001
+            errors.append(e)
+
+    thread = threading.Thread(target=_run_recovery)
+    thread.start()
+    try:
+        assert kiq_called.wait(timeout=10)
+        # The recovery is parked mid-dispatch, so its advisory lock is held: a
+        # separate connection must not be able to take it.
+        with Session(engine) as other:
+            taken = other.execute(
+                text("SELECT pg_try_advisory_xact_lock(:key)"),
+                {"key": DISPATCH_LOCK_KEY},
+            ).scalar_one()
+        assert taken is False
+    finally:
+        release_kiq.set()
+        thread.join(timeout=10)
+
+    assert not thread.is_alive()
+    assert errors == []
+    db.refresh(pending_run)
+    assert pending_run.taskiq_id == f"run-task-{pending_run.id}"
