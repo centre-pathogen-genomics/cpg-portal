@@ -353,7 +353,8 @@ function platformName(): string {
 }
 
 // Downloads a portal tool as a pack and installs it, replacing the local copy
-// of the same name and version (a pack of the same tool has the same id).
+// of the same name and version (matched by name and version, not by the id a
+// pack happens to carry).
 async function addPortalTool(target: {
   name: string
   version?: string
@@ -396,7 +397,12 @@ function dataDir(toolId: string): string {
   return path.join(toolsRoot(), toolId, "data")
 }
 
-function readPack(file: string): { id: string; files: Record<string, string> } {
+function readPack(file: string): {
+  id: string
+  name: string
+  version: string
+  files: Record<string, string>
+} {
   const document = JSON.parse(fs.readFileSync(file, "utf-8")) as PackDocument
   // A pack from a newer app is refused by name rather than half-read.
   if (
@@ -405,11 +411,12 @@ function readPack(file: string): { id: string; files: Record<string, string> } {
   ) {
     throw new Error("This pack was made by a newer CPG Runner; update the app.")
   }
-  const id = document.tool?.tool?.id
+  const tool = document.tool?.tool
+  const id = tool?.id
   if (typeof id !== "string" || id.length === 0) {
     throw new Error("The pack does not name a tool.")
   }
-  if (!document.tool?.tool?.name || !document.runner) {
+  if (!tool?.name || !document.runner) {
     throw new Error("The pack is missing its tool or runner configuration.")
   }
   const files: Record<string, string> = {
@@ -422,7 +429,7 @@ function readPack(file: string): { id: string; files: Record<string, string> } {
   if (document.readme) {
     files["README.txt"] = document.readme
   }
-  return { id, files }
+  return { id, name: tool.name, version: tool.version ?? "", files }
 }
 
 function entryFor(toolId: string): ToolEntry | null {
@@ -527,10 +534,39 @@ function listTools(): ToolEntry[] {
     .sort((left, right) => left.name.localeCompare(right.name))
 }
 
+// A tool's identity to a person is its name and version, not the id a pack
+// carries: that id comes from whichever server made the pack, so the same tool
+// can arrive under different ids (a local portal vs the public one). Importing
+// a pack therefore drops any existing copy with the same name and version,
+// whatever id it has, while a different version keeps its own entry.
+function replaceSameNameAndVersion(
+  name: string,
+  version: string,
+  incomingId: string,
+): void {
+  let ids: string[]
+  try {
+    ids = fs.readdirSync(toolsRoot())
+  } catch {
+    return
+  }
+  for (const candidate of ids) {
+    if (candidate === incomingId) continue
+    const entry = entryFor(candidate)
+    if (!entry || entry.name !== name || entry.version !== version) continue
+    stopSidecar(candidate)
+    fs.rmSync(path.join(toolsRoot(), candidate), {
+      recursive: true,
+      force: true,
+    })
+  }
+}
+
 // One pack per tool: importing replaces what was there, which is how a tool is
 // updated to a new version.
 function importPack(file: string): ToolEntry {
-  const { id, files } = readPack(file)
+  const { id, name, version, files } = readPack(file)
+  replaceSameNameAndVersion(name, version, id)
   const directory = packDir(id)
   fs.mkdirSync(directory, { recursive: true })
   for (const [name, content] of Object.entries(files)) {
