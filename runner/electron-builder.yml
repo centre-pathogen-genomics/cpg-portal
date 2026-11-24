@@ -24,7 +24,7 @@ mac:
   gatekeeperAssess: false
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
-win: { icon: build/icon.png, target: [{ target: zip, arch: [x64] }] }
+win: { icon: build/icon.ico, target: [{ target: zip, arch: [x64] }] }
 linux:
   { icon: build/icon.png, target: [{ target: zip, arch: [x64] }], category: Science }
 asar: true
