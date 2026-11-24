@@ -55,6 +55,12 @@ function LocalRunner() {
   const [app, setApp] = useState<AppManifest | null>(null)
   const [appMissing, setAppMissing] = useState(false)
   const appUrl = runnerAppUrl(platform)
+  // The download stays on this page's own origin: the server's absolute URL
+  // assumes the proxy forwards X-Forwarded-Proto, and a stripped header makes
+  // the server name an http:// URL that an https page can never download (the
+  // browser blocks the redirect as mixed content).
+  const pinnedUrl = app?.build ? `${appUrl}?v=${app.build}` : appUrl
+  const previousUrl = app?.previous ? `${appUrl}/previous` : null
 
   useEffect(() => {
     let cancelled = false
@@ -158,7 +164,7 @@ function LocalRunner() {
               </p>
             ) : (
               <Button variant="outline" asChild>
-                <a href={app?.url ?? appUrl} download>
+                <a href={pinnedUrl} download>
                   {app === null ? (
                     <LoaderCircle className="animate-spin" />
                   ) : (
@@ -173,14 +179,14 @@ function LocalRunner() {
                 build {app.build}
               </span>
             )}
-            {app?.previous && (
+            {previousUrl && (
               <a
-                href={app.previous.url}
+                href={previousUrl}
                 download
                 className="text-muted-foreground hover:text-foreground text-xs underline"
               >
                 Previous build
-                {app.previous.version ? `: v${app.previous.version}` : ""}
+                {app?.previous?.version ? `: v${app.previous.version}` : ""}
               </a>
             )}
           </section>

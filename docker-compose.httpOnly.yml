@@ -178,6 +178,10 @@ services:
       - NATS_URIS=nats://${NATS_USER:?Variable not set}:${NATS_PASSWORD:?Variable not set}@nats:4222/
       - RUNNER_ARTIFACTS_PATH=/runner-artifacts
       - RUNNER_RUNTIME_TAG=${RUNNER_RUNTIME_TAG:-cpg-runner-runtime:1}
+      # TLS terminates outside this stack (the proxy does not forward
+      # X-Forwarded-Proto), so the backend cannot derive the public origin and
+      # would otherwise hand out http:// URLs that the https pages block.
+      - RUNNER_PUBLIC_BASE_URL=https://${DOMAIN?Variable not set}
 
     healthcheck:
       test:

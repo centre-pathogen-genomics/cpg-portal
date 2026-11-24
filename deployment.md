@@ -371,10 +371,16 @@ a bundle. Bump it whenever the image changes, so existing installs download the
 new one instead of using the copy they already have.
 
 `RUNNER_PUBLIC_BASE_URL` is the origin written into `runner.json` as the image
-URL. Leave it empty when the backend sees the proxy's `X-Forwarded-Proto` and
+URL and into the URLs the `/runner/app/<platform>/latest` manifest hands out.
+Leave it empty when the backend sees the proxy's `X-Forwarded-Proto` and
 `X-Forwarded-Host` headers, which it does behind the bundled Traefik; set it to
 something like `https://portal.example.org` when a proxy strips them, otherwise
-app installs fail with a download error.
+app installs fail with a download error. The CPG HTTP-only stack
+(`docker-compose.httpOnly.yml`) is exactly that case — TLS terminates outside
+it and the backend only ever sees plain HTTP — so that compose sets it to
+`https://${DOMAIN}` itself. When the variable is missing there, the browser
+blocks the app download as mixed content: the manifest names an `http://` URL,
+whose redirect to HTTPS an HTTPS page is not allowed to follow.
 
 Until the artifacts exist, the pack download fails with
 `Runner artifacts are not configured` (503), since it reads the runtime image's

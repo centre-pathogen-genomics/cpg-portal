@@ -137,6 +137,31 @@ def test_app_latest_reports_version_and_build(
     assert body["previous"] is None
 
 
+def test_app_latest_uses_the_configured_public_base_url(
+    client: TestClient, _artifacts: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A proxy stripping X-Forwarded-Proto gets https URLs from the config.
+
+    Without the configured origin the backend would name `http://` URLs, which
+    an https page's browser refuses to download (the https redirect counts as
+    mixed content).
+    """
+    monkeypatch.setattr(
+        settings, "RUNNER_PUBLIC_BASE_URL", "https://portal.example.org/"
+    )
+    previous = _artifacts / "apps" / "previous"
+    previous.mkdir()
+    (previous / "mac-arm64.zip").write_bytes(b"old build")
+    (previous / "mac-arm64.json").write_text('{"version": "0.9.0"}')
+
+    body = client.get("/api/v1/runner/app/mac-arm64/latest").json()
+
+    assert body["url"].startswith("https://portal.example.org/api/v1/runner/")
+    assert body["previous"]["url"].startswith(
+        "https://portal.example.org/api/v1/runner/"
+    )
+
+
 def test_app_latest_without_a_manifest_has_no_version(
     client: TestClient, _artifacts: Path
 ) -> None:

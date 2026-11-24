@@ -154,7 +154,11 @@ test("The Local Runner page downloads the app for a chosen platform", async ({
   await stubApp(page, {
     version: "1.0.0",
     build: "build1234",
-    url: "http://localhost:8000/api/v1/runner/app/linux-x64?v=build1234",
+    // The absolute URL the server hands out is deliberately a foreign,
+    // insecure origin: the link must stay on this page's own origin, or a
+    // proxy that strips X-Forwarded-Proto turns the download into mixed
+    // content (http -> https redirect, blocked by the browser).
+    url: "http://evil.invalid/api/v1/runner/app/linux-x64?v=build1234",
     previous: null,
   })
 
@@ -170,11 +174,11 @@ test("The Local Runner page downloads the app for a chosen platform", async ({
   await page.getByRole("option", { name: "Linux (x64)" }).click()
 
   const appLink = page.getByRole("link", { name: "Download CPG Runner" })
-  // The link is the one the server pins to the current build, so a cached
+  // The link pins this page's own origin to the current build, so a cached
   // older build can never be handed out again.
   await expect(appLink).toHaveAttribute(
     "href",
-    "http://localhost:8000/api/v1/runner/app/linux-x64?v=build1234",
+    `${apiUrl}/api/v1/runner/app/linux-x64?v=build1234`,
   )
   await expect(page.getByText("build build1234")).toBeVisible()
   await expect(page.getByRole("link", { name: /^Previous build/ })).toHaveCount(
@@ -195,10 +199,11 @@ test("The Local Runner page offers the build the current one replaced", async ({
   await stubApp(page, {
     version: "1.0.0",
     build: "build1234",
-    url: "http://localhost:8000/api/v1/runner/app/linux-x64?v=build1234",
+    url: "http://evil.invalid/api/v1/runner/app/linux-x64?v=build1234",
     previous: {
       version: "0.9.0",
-      url: "http://localhost:8000/api/v1/runner/app/linux-x64/previous",
+      // Same rejected-server-origin case as the current build's link.
+      url: "http://evil.invalid/api/v1/runner/app/linux-x64/previous",
     },
   })
 
@@ -211,7 +216,7 @@ test("The Local Runner page offers the build the current one replaced", async ({
     page.getByRole("link", { name: "Previous build: v0.9.0" }),
   ).toHaveAttribute(
     "href",
-    "http://localhost:8000/api/v1/runner/app/linux-x64/previous",
+    `${apiUrl}/api/v1/runner/app/linux-x64/previous`,
   )
 
   await page.unroute(APP_PATTERN)
@@ -237,7 +242,7 @@ test("The rollback link never shows a bare version", async ({ page }) => {
     page.getByRole("link", { name: "Previous build", exact: true }),
   ).toHaveAttribute(
     "href",
-    "http://localhost:8000/api/v1/runner/app/linux-x64/previous",
+    `${apiUrl}/api/v1/runner/app/linux-x64/previous`,
   )
 
   await page.unroute(APP_PATTERN)
