@@ -156,7 +156,7 @@ class Installer:
         downloaded = 0
         logged = 0
         self._log("Downloading runtime image…")
-        with httpx.stream("GET", url, follow_redirects=True, timeout=120) as response:
+        with httpx.stream("GET", url, follow_redirects=True, timeout=360) as response:
             response.raise_for_status()
             with open(tar, "wb") as handle:
                 for chunk in response.iter_bytes(DOWNLOAD_CHUNK):
