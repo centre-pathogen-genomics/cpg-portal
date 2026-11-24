@@ -1,0 +1,56 @@
+# Ships every container's Docker JSON log to Loki. Lines from the CPG Portal
+# backend/worker and Traefik are parsed as JSON so their fields become Loki
+# labels (event, status, client_ip, ...); all other containers pass through
+# unmodified so no logs are lost.
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+    relabel_configs:
+      - source_labels: ["__meta_docker_container_name"]
+        regex: "/(.*)"
+        target_label: "container"
+      - source_labels: ["__meta_docker_image"]
+        regex: "(?:[^/]+/)?([^:]+):.*"
+        target_label: "image"
+    pipeline_stages:
+      # Only the JSON-emitting services are parsed as JSON; anything else is
+      # shipped as the raw message so non-JSON logs are not dropped.
+      - match:
+          selector: '{container=~".*(backend|worker|traefik).*"}'
+          stages:
+            - json:
+                expressions:
+                  level: level
+                  logger: logger
+                  event: event
+                  method: method
+                  route: route
+                  path: path
+                  status: status
+                  client_ip: client_ip
+                  request_id: request_id
+                  user_id: user_id
+                  reason: reason
+                  account: account
+                  tool_id: tool_id
+                  run_id: run_id
+                  file_id: file_id
+                  file_size: file_size
+                  duration_ms: duration_ms
+            - labels:
+                level:
+                event:
+                status:
+                client_ip:

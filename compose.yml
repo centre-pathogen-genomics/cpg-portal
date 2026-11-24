@@ -1,7 +1,16 @@
+# Bounded JSON logs on disk so a noisy container cannot fill the host; the same
+# source Promtail ships to Loki. Container stdout stays the single log sink.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
 services:
   db:
     image: postgres:12
     restart: always
+    logging: *default-logging
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -22,6 +31,7 @@ services:
     image: nats:2.11-alpine
     hostname: nats
     restart: always
+    logging: *default-logging
     # Authenticated with a single user: anything on the Docker network can reach
     # the port, so it must not accept unauthenticated clients (see the tool
     # sandbox in deployment.md).
@@ -42,6 +52,7 @@ services:
     image: redis:8.2-alpine
     hostname: redis
     restart: always
+    logging: *default-logging
     command:
       - redis-server
       - --requirepass
@@ -58,6 +69,7 @@ services:
   adminer:
     image: adminer
     restart: always
+    logging: *default-logging
     networks:
       - traefik-public
       - default
@@ -122,6 +134,7 @@ services:
   backend: &backend
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}"
     restart: always
+    logging: *default-logging
     volumes:
       - app-storage-data:/storage
       - app-conda-data:/conda
@@ -167,6 +180,7 @@ services:
       - POSTGRES_USER=${POSTGRES_USER?Variable not set}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
       - SENTRY_DSN=${SENTRY_DSN}
+      - TRUSTED_PROXIES=${TRUSTED_PROXIES:-}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - REDIS_URI=redis://:${REDIS_PASSWORD:?Variable not set}@redis/
       - NATS_URIS=nats://${NATS_USER:?Variable not set}:${NATS_PASSWORD:?Variable not set}@nats:4222/
@@ -211,6 +225,7 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
+    logging: *default-logging
     volumes:
       - app-sandbox-data:/apptainer
     # The only service that may build the sandbox image: apptainer build needs
@@ -260,6 +275,7 @@ services:
   frontend:
     image: "${DOCKER_IMAGE_FRONTEND?Variable not set}:${TAG-latest}"
     restart: always
+    logging: *default-logging
     networks:
       - traefik-public
       - default

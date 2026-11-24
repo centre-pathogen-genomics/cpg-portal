@@ -1,7 +1,7 @@
 from datetime import timedelta
 from typing import Annotated, Any
 
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app import crud
@@ -9,6 +9,7 @@ from app.api.deps import CurrentUser, SessionDep
 from app.api.permission_router import PermissionAPIRouter
 from app.core import security
 from app.core.config import settings
+from app.core.observability import audit
 from app.core.security import get_password_hash
 from app.models import AuthTokenPurpose, Message, NewPassword, Token, UserPublic
 from app.utils import (
@@ -21,7 +22,9 @@ router = PermissionAPIRouter(resource="login")
 
 @router.post("/login/access-token", public=True)
 def login_access_token(
-    session: SessionDep, form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
+    session: SessionDep,
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    request: Request,
 ) -> Token:
     """
     OAuth2 compatible token login, get an access token for future requests
@@ -30,9 +33,28 @@ def login_access_token(
         session=session, email=form_data.username, password=form_data.password
     )
     if not user:
+        audit(
+            "auth.login_failed",
+            request=request,
+            reason="bad_credentials",
+            account=form_data.username,
+        )
         raise HTTPException(status_code=400, detail="Incorrect email or password")
     elif not user.is_active:
+        audit(
+            "auth.login_failed",
+            request=request,
+            reason="inactive",
+            user_id=user.id,
+            account=user.email,
+        )
         raise HTTPException(status_code=400, detail="Inactive user")
+    audit(
+        "auth.login_success",
+        request=request,
+        user_id=user.id,
+        account=user.email,
+    )
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     return Token(
         access_token=security.create_access_token(

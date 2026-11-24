@@ -5,7 +5,12 @@ from starlette.middleware.cors import CORSMiddleware
 
 from app.api.main import api_router
 from app.core.config import settings
+from app.core.observability import AccessLogMiddleware
+from app.core.observability import setup as setup_observability
+from app.core.proxies import ProxyHeaderMiddleware
 from app.lifetime import lifespan
+
+setup_observability()
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
@@ -22,6 +27,16 @@ app = FastAPI(
     redirect_slashes=False,
     lifespan=lifespan,
 )
+
+# Resolve the real client address from trusted proxies (Apache, Traefik)
+# before anything else reads request.client.
+#
+# Middleware ordering in Starlette: the LAST add_middleware call is outermost.
+# AccessLogMiddleware is therefore added last: it runs outside
+# ProxyHeaderMiddleware, and logs client_ip in its finally, after the proxy has
+# resolved the real client. Both sit outside CORS.
+app.add_middleware(ProxyHeaderMiddleware)
+app.add_middleware(AccessLogMiddleware)
 
 # Set all CORS enabled origins
 if settings.all_cors_origins:

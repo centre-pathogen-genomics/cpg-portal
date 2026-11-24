@@ -7,6 +7,11 @@ services:
       # Listen on port 443, default for HTTPS
       - 443:443
     restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
     labels:
       # Enable Traefik for this service, to make it available in the public network
       - traefik.enable=true
@@ -49,14 +54,24 @@ services:
       - --entrypoints.http.address=:80
       # Create an entrypoint "https" listening on port 443
       - --entrypoints.https.address=:443
+      # Accept X-Forwarded-* only from Apache (its address), so the real client
+      # IP is available in Traefik's access log. Never set insecure=true.
+      - --entrypoints.http.forwardedheaders.trustedips=${APACHE_TRUSTED_IP?Variable not set}/32
+      - --entrypoints.https.forwardedheaders.trustedips=${APACHE_TRUSTED_IP?Variable not set}/32
       # Create the certificate resolver "le" for Let's Encrypt, uses the environment variable EMAIL
       - --certificatesresolvers.le.acme.email=${EMAIL?Variable not set}
       # Store the Let's Encrypt certificates in the mounted volume
       - --certificatesresolvers.le.acme.storage=/certificates/acme.json
       # Use the TLS Challenge for Let's Encrypt
       - --certificatesresolvers.le.acme.tlschallenge=true
-      # Enable the access log, with HTTP requests
-      - --accesslog
+      # Enable the access log as JSON, with raw paths, query strings and
+      # headers (auth tokens) dropped so identifiers never reach the feed.
+      - --accesslog.format=json
+      - --accesslog.fields.defaultmode=keep
+      - --accesslog.fields.headers.defaultmode=drop
+      - --accesslog.fields.names.RequestPath=drop
+      - --accesslog.fields.names.RequestQuery=drop
+      - --accesslog.fields.names.ClientUsername=drop
       # Enable the Traefik log, for configurations and errors
       - --log
       # Enable the Dashboard and API

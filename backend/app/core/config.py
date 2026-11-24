@@ -66,6 +66,11 @@ class Settings(BaseSettings):
     # Public origin of this backend, used for the runtime image URL embedded in
     # the app. Unset derives it from the proxy headers of the request.
     RUNNER_PUBLIC_BASE_URL: str = ""
+    # Reverse proxies that may set X-Forwarded-For / X-Forwarded-Proto /
+    # X-Forwarded-Host: comma-separated IPs or CIDR networks (Apache, then
+    # Traefik, in front of this backend). Only these peers are trusted to
+    # supply the real client identity; see app/core/proxies.py.
+    TRUSTED_PROXIES: str = ""
 
     @computed_field  # type: ignore[prop-decorator]
     @property

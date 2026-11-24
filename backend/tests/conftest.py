@@ -14,6 +14,8 @@ from sqlmodel import Session
 # runs from a test session block the development queue for good. Point the
 # suite at its own database before the app settings are loaded below.
 os.environ.setdefault("POSTGRES_DB", "app_test")
+# Trusted-proxy chains for the observability tests (see test_observability.py).
+os.environ.setdefault("TRUSTED_PROXIES", "10.0.0.5,10.0.0.10/32")
 
 from app.core.config import settings
 from app.core.db import engine, init_db

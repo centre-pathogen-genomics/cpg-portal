@@ -1,0 +1,45 @@
+# CPG Portal reverse proxy (Apache -> Traefik) - example VirtualHost.
+#
+# Apache is the first public HTTP hop. It establishes the real visitor's
+# identity, removes anything the visitor sent in forwarding headers, proxies to
+# Traefik, and logs the real client. Review with university IT before enabling:
+# this assumes Apache terminates TLS and nothing else proxies ahead of it.
+#
+# Requires: mod_proxy, mod_proxy_http, mod_headers.
+# If another load balancer / CDN is ahead of Apache, instead configure
+# mod_remoteip with ONLY the trusted upstream address(es), never blindly.
+
+# HTTP -> HTTPS
+<VirtualHost *:80>
+    ServerName portal.cpg.unimelb.edu.au
+    Redirect permanent / https://portal.cpg.unimelb.edu.au/
+</VirtualHost>
+
+<VirtualHost *:443>
+    ServerName portal.cpg.unimelb.edu.au
+
+    SSLEngine on
+    SSLCertificateFile      /etc/ssl/certs/portal.crt
+    SSLCertificateKeyFile   /etc/ssl/private/portal.key
+    SSLCertificateChainFile /etc/ssl/certs/portal-chain.crt
+
+    ProxyRequests Off
+    ProxyPreserveHost On
+    ProxyAddHeaders On
+
+    # Discard client-supplied forwarding identities before mod_proxy builds
+    # the forwarded request, so an attacker cannot forge them.
+    RequestHeader unset X-Forwarded-For
+    RequestHeader unset X-Forwarded-Host
+    RequestHeader unset X-Forwarded-Server
+
+    # Proxy to the Traefik entrypoint (here, Traefik published on the Docker
+    # host's port 80). Substitute the real Traefik endpoint.
+    ProxyPass / http://172.17.0.1:80/
+    ProxyPassReverse / http://172.17.0.1:80/
+
+    # Security access log. %a is the connecting peer: the real visitor because
+    # Apache is the first hop. %D is request duration in microseconds.
+    LogFormat "%a %t \"%r\" %>s %b %D" cpg_security
+    CustomLog /var/log/apache2/cpg-access.log cpg_security
+</VirtualHost>

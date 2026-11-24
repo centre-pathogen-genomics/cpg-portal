@@ -6,7 +6,7 @@ from typing import Any
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import jwt
-from fastapi import HTTPException, Query, UploadFile, status
+from fastapi import HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import FileResponse
 from jwt.exceptions import InvalidTokenError
 from sqlalchemy import and_, desc
@@ -19,6 +19,7 @@ from app.api.permission_router import PermissionAPIRouter
 from app.core import security
 from app.core.config import settings
 from app.core.file_types import FileTypeEnum, FileTypeMetadata, file_types
+from app.core.observability import audit
 from app.core.security import create_access_token
 from app.crud import (
     get_file_stats,
@@ -175,7 +176,11 @@ def get_files_stats(session: SessionDep, current_user: CurrentUser) -> Any:
 
 @router.post("/", response_model=FilePublic)
 def upload_file(
-    *, session: SessionDep, current_user: CurrentUser, file: UploadFile
+    *,
+    session: SessionDep,
+    current_user: CurrentUser,
+    file: UploadFile,
+    request: Request,
 ) -> Any:
     """
     Upload a new file.
@@ -209,6 +214,14 @@ def upload_file(
         file_type=file_type,
         owner_id=current_user.id,
         saved=True,
+    )
+    audit(
+        "file.upload",
+        request=request,
+        user_id=current_user.id,
+        file_id=file_metadata.id,
+        file_size=file.size,
+        file_type=file_type.value,
     )
 
     return file_metadata
@@ -393,7 +406,12 @@ def ungroup_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) 
 
 
 @router.get("/{id}", response_model=FilePublic)
-def read_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
+def read_file(
+    session: SessionDep,
+    current_user: CurrentUser,
+    id: uuid.UUID,
+    request: Request,
+) -> Any:
     """
     Retrieve file metadata.
     """
@@ -401,6 +419,14 @@ def read_file(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> 
     if not file_metadata:
         raise HTTPException(status_code=404, detail="File not found")
     if not check_file_access(session, current_user, file_metadata):
+        audit(
+            "access.file_denied",
+            request=request,
+            user_id=current_user.id,
+            file_id=file_metadata.id,
+            owner_id=file_metadata.owner_id,
+            reason="ownership",
+        )
         raise HTTPException(status_code=400, detail="Not enough permissions")
     return file_metadata
 

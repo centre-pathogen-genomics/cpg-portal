@@ -4,13 +4,14 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from fastapi import HTTPException, Query, status
+from fastapi import HTTPException, Query, Request, status
 from sqlalchemy import and_, desc
 from sqlmodel import Session, func, select
 
 from app.api.deps import CurrentUser, SessionDep
 from app.api.permission_router import PermissionAPIRouter
 from app.core.file_types import FileTypeEnum
+from app.core.observability import audit
 from app.models import (
     File,
     Message,
@@ -150,6 +151,7 @@ async def create_run(
     email_on_completion: bool = False,
     name: str = None,
     cpus: int | None = None,
+    request: Request,
 ) -> Any:
     """
     Create and run a run of a specific tool, validating against predefined tool parameters.
@@ -334,6 +336,15 @@ async def create_run(
                         status_code=404, detail=f"File not found: {file_id}"
                     )
                 if file.owner_id != current_user.id and not current_user.is_superuser:
+                    audit(
+                        "access.file_denied",
+                        request=request,
+                        user_id=current_user.id,
+                        file_id=file_id,
+                        owner_id=file.owner_id,
+                        reason="use_in_run",
+                        tool_id=tool_id,
+                    )
                     raise HTTPException(
                         status_code=403,
                         detail="Not enough permissions to use this file",
@@ -457,6 +468,17 @@ async def create_run(
         json.dumps({"toolname": tool.name, "param_count": len(params)}), "stream"
     )
 
+    audit(
+        "run.submit",
+        request=request,
+        user_id=current_user.id,
+        run_id=run.id,
+        tool_id=tool_id,
+        tool_version=tool.version,
+        file_count=len(files),
+        email_on_completion=email_on_completion,
+    )
+
     return run
 
 
@@ -572,7 +594,12 @@ def read_active_runs(
 
 
 @router.get("/{id}", response_model=RunPublic)
-def read_run(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
+def read_run(
+    session: SessionDep,
+    current_user: CurrentUser,
+    id: uuid.UUID,
+    request: Request,
+) -> Any:
     """
     Retrieve run metadata.
     """
@@ -580,6 +607,14 @@ def read_run(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> A
     if not run:
         raise HTTPException(status_code=404, detail="Run not found")
     if run.owner_id != current_user.id and not run.shared:
+        audit(
+            "access.run_denied",
+            request=request,
+            user_id=current_user.id,
+            run_id=run.id,
+            owner_id=run.owner_id,
+            reason="ownership",
+        )
         raise HTTPException(status_code=400, detail="Not enough permissions")
 
     # Convert to RunPublic and add owner name if shared
