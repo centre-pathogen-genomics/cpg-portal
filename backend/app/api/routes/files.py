@@ -21,6 +21,7 @@ from app.core.config import settings
 from app.core.file_types import FileTypeEnum, FileTypeMetadata, file_types
 from app.core.security import create_access_token
 from app.crud import (
+    UploadLimitError,
     get_file_stats,
 )
 from app.crud import (
@@ -180,13 +181,20 @@ def upload_file(
     """
     Upload a new file.
     """
-    if file.size > settings.MAX_FILE_UPLOAD_SIZE:
-        raise HTTPException(
-            status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail=f"File size is too large. Max allowed size is {settings.MAX_FILE_UPLOAD_SIZE} bytes",
-        )
+    # The declared Content-Length may be missing (chunked) or deliberately
+    # smaller than the real body, so these checks are a fast pre-filter only:
+    # the authoritative enforcement happens on counted bytes in save_file.
+    if file.size is not None:
+        if file.size > settings.MAX_FILE_UPLOAD_SIZE:
+            raise HTTPException(
+                status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail=f"File size is too large. Max allowed size is {settings.MAX_FILE_UPLOAD_SIZE} bytes",
+            )
     storage_stats = get_file_stats(session, current_user)
-    if storage_stats.total_size + file.size > current_user.max_storage:
+    if (
+        file.size is not None
+        and storage_stats.total_size + file.size > current_user.max_storage
+    ):
         raise HTTPException(
             status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail=f"Not enough storage space. Max allowed storage size is {current_user.max_storage} bytes",
@@ -202,14 +210,22 @@ def upload_file(
     file_type = file_types.get_type(file.filename)
 
     print(f"File type: {file_type}")
-    file_metadata = save_file_to_filesystem(
-        session=session,
-        name=file.filename,
-        file=file.file,
-        file_type=file_type,
-        owner_id=current_user.id,
-        saved=True,
-    )
+    try:
+        file_metadata = save_file_to_filesystem(
+            session=session,
+            name=file.filename,
+            file=file.file,
+            file_type=file_type,
+            owner_id=current_user.id,
+            saved=True,
+            max_upload_size=settings.MAX_FILE_UPLOAD_SIZE,
+            existing_storage_used=storage_stats.total_size,
+            max_storage=current_user.max_storage,
+        )
+    except UploadLimitError as exc:
+        raise HTTPException(
+            status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail=exc.detail
+        ) from exc
 
     return file_metadata
 

@@ -1,6 +1,5 @@
 import hashlib
 import secrets
-import shutil
 import uuid
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -25,6 +24,17 @@ from app.models import (
     new_token_version,
 )
 from app.run_spec import sanitise_shell_input
+
+
+class UploadLimitError(Exception):
+    """Raised mid-stream when a saved file exceeds the upload size cap or the
+    owner's storage quota. Carries the message the API route surfaces as the
+    413 detail.
+    """
+
+    def __init__(self, detail: str) -> None:
+        self.detail = detail
+        super().__init__(detail)
 
 
 def create_user(*, session: Session, user_create: UserCreate) -> User:
@@ -185,8 +195,19 @@ def save_file(
     owner_id: uuid.UUID,
     saved: bool = False,
     tags: list[str] = None,
+    max_upload_size: int | None = None,
+    existing_storage_used: int | None = None,
+    max_storage: int | None = None,
 ) -> File:
-    """Save a single file and commit the session."""
+    """Save a single file and commit the session.
+
+    The stream is copied in fixed chunks and every byte written is counted, so
+    the upload size cap and the owner's storage quota are enforced on real
+    bytes rather than on the Content-Length the client declared. The instant a
+    limit is crossed the partial destination is deleted and ``UploadLimitError``
+    is raised (the caller maps it to HTTP 413). ``File.size`` is set from
+    ``stat().st_size``, the authoritative post-write size.
+    """
     file_id = str(uuid.uuid4())
     new_name_sanitised = sanitise_shell_input(name)
 
@@ -200,10 +221,29 @@ def save_file(
     file_storage_location.mkdir(parents=True, exist_ok=True)
     file_storage_location = file_storage_location / f"{file_id}_{new_name_sanitised}"
 
-    with open(file_storage_location, "wb") as fdst:
-        print(f"Copying file content to {file_storage_location}")
-        shutil.copyfileobj(file, fdst, length=16 * 1024 * 1024)  # 16MB buffer
-        print(f"File saved to {file_storage_location}")
+    written = 0
+    try:
+        with open(file_storage_location, "wb") as fdst:
+            print(f"Copying file content to {file_storage_location}")
+            while chunk := file.read(16 * 1024 * 1024):  # 16MB buffer
+                written += len(chunk)
+                if max_upload_size is not None and written > max_upload_size:
+                    raise UploadLimitError(
+                        f"File size is too large. Max allowed size is {max_upload_size} bytes"
+                    )
+                if (
+                    max_storage is not None
+                    and existing_storage_used is not None
+                    and existing_storage_used + written > max_storage
+                ):
+                    raise UploadLimitError(
+                        f"Not enough storage space. Max allowed storage size is {max_storage} bytes"
+                    )
+                fdst.write(chunk)
+            print(f"File saved to {file_storage_location}")
+    except UploadLimitError:
+        file_storage_location.unlink(missing_ok=True)
+        raise
 
     file_metadata = File(
         name=new_name_sanitised,

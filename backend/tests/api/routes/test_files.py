@@ -1,12 +1,15 @@
 import uuid
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 import pytest
 from fastapi import HTTPException
+from fastapi.testclient import TestClient
 from sqlalchemy import event
-from sqlmodel import Session
+from sqlmodel import Session, select
 
+from app import crud
 from app.api.routes.files import (
     create_group,
     create_pair,
@@ -14,10 +17,11 @@ from app.api.routes.files import (
     get_current_file_types,
     read_files,
 )
+from app.core.config import settings
 from app.crud import rename_file as rename_file_crud
-from app.models import File, User
-from tests.utils.user import create_random_user
-from tests.utils.utils import random_lower_string
+from app.models import File, User, UserCreate
+from tests.utils.user import create_random_user, user_authentication_headers
+from tests.utils.utils import random_email, random_lower_string
 
 
 def _utc_now() -> datetime:
@@ -441,3 +445,172 @@ def test_get_current_file_types_includes_only_current_saved_top_level_types(
     current_types = get_current_file_types(session=db, current_user=owner)
 
     assert set(current_types) == {"fastq", "text"}
+
+
+def _make_upload_user(
+    client: TestClient, db: Session
+) -> tuple[User, dict[str, str]]:
+    """A fresh user (default role holds files:create) with a bearer token."""
+    email = random_email()
+    password = random_lower_string()
+    user = crud.create_user(
+        session=db, user_create=UserCreate(email=email, password=password)
+    )
+    return user, user_authentication_headers(
+        client=client, email=email, password=password
+    )
+
+
+def _file_part(
+    *, boundary: str, filename: str, data: bytes, content_length: int | None
+) -> bytes:
+    """A raw multipart file part. The declared Content-Length may be a lie or
+    absent, exactly the inputs the counted copy must not trust."""
+    headers = (
+        f"--{boundary}\r\n"
+        f'Content-Disposition: form-data; name="file"; filename="{filename}"\r\n'
+        "Content-Type: application/octet-stream\r\n"
+    )
+    if content_length is not None:
+        headers += f"Content-Length: {content_length}\r\n"
+    return headers.encode() + b"\r\n" + data + f"\r\n--{boundary}--\r\n".encode()
+
+
+def _upload_raw(
+    client: TestClient, headers: dict[str, str], body: bytes, *, boundary: str
+) -> Any:
+    return client.post(
+        f"{settings.API_V1_STR}/files/",
+        content=body,
+        headers={
+            **headers,
+            "Content-Type": f"multipart/form-data; boundary={boundary}",
+        },
+    )
+
+
+def _saved_files_for(db: Session, owner: User) -> list[File]:
+    return list(db.exec(select(File).where(File.owner_id == owner.id)).all())
+
+
+def _stored_files(storage_path: Path) -> list[Path]:
+    return [p for p in storage_path.rglob("*") if p.is_file()]
+
+
+def test_upload_rejects_lying_content_length_with_413(
+    client: TestClient, db: Session, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Declaring a small Content-Length must not bypass the size cap: the cap
+    is enforced on the bytes actually streamed to storage."""
+    monkeypatch.setattr(settings, "STORAGE_PATH", str(tmp_path))
+    monkeypatch.setattr(settings, "MAX_FILE_UPLOAD_SIZE", 1024)
+    owner, headers = _make_upload_user(client, db)
+    boundary = "lying-upload-boundary"
+
+    response = _upload_raw(
+        client,
+        headers,
+        _file_part(
+            boundary=boundary,
+            filename="payload.bin",
+            data=b"A" * 4096,
+            content_length=10,  # lies: the real body is 4096 bytes
+        ),
+        boundary=boundary,
+    )
+
+    assert response.status_code == 413
+    assert "too large" in response.json()["detail"]
+    assert _saved_files_for(db, owner) == []
+    assert _stored_files(tmp_path) == []
+
+
+def test_upload_part_without_content_length_exceeding_cap_returns_413(
+    client: TestClient, db: Session, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A chunked part (no Content-Length) that exceeds the cap gets a 413, not
+    a 500, and leaves nothing behind."""
+    monkeypatch.setattr(settings, "STORAGE_PATH", str(tmp_path))
+    monkeypatch.setattr(settings, "MAX_FILE_UPLOAD_SIZE", 1024)
+    owner, headers = _make_upload_user(client, db)
+    boundary = "chunked-upload-boundary"
+
+    response = _upload_raw(
+        client,
+        headers,
+        _file_part(
+            boundary=boundary,
+            filename="payload.bin",
+            data=b"B" * 2048,
+            content_length=None,
+        ),
+        boundary=boundary,
+    )
+
+    assert response.status_code == 413
+    assert _saved_files_for(db, owner) == []
+    assert _stored_files(tmp_path) == []
+
+
+def test_upload_exceeding_storage_quota_on_counted_bytes_returns_413(
+    client: TestClient, db: Session, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """An upload that pushes the user past max_storage is aborted mid-stream on
+    the counted bytes, leaving no partial artifact behind."""
+    monkeypatch.setattr(settings, "STORAGE_PATH", str(tmp_path))
+    monkeypatch.setattr(settings, "MAX_FILE_UPLOAD_SIZE", 1024 * 1024)
+    owner, headers = _make_upload_user(client, db)
+    owner.max_storage = 2048
+    db.add(owner)
+    db.commit()
+    db.refresh(owner)
+    _create_saved_file(
+        db=db, owner=owner, name="existing.txt", size=1500, created_at=_utc_now()
+    )
+    boundary = "over-quota-boundary"
+
+    response = _upload_raw(
+        client,
+        headers,
+        _file_part(
+            boundary=boundary,
+            filename="payload.bin",
+            data=b"C" * 4096,
+            content_length=10,
+        ),
+        boundary=boundary,
+    )
+
+    assert response.status_code == 413
+    assert "Not enough storage space" in response.json()["detail"]
+    assert len(_saved_files_for(db, owner)) == 1  # only the pre-existing file
+    assert _stored_files(tmp_path) == []
+
+
+def test_upload_small_file_succeeds_and_records_real_size(
+    client: TestClient, db: Session, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A normal upload still lands on disk with File.size from stat().st_size."""
+    monkeypatch.setattr(settings, "STORAGE_PATH", str(tmp_path))
+    owner, headers = _make_upload_user(client, db)
+    boundary = "happy-upload-boundary"
+    payload = b"hello portal"
+
+    response = _upload_raw(
+        client,
+        headers,
+        _file_part(
+            boundary=boundary,
+            filename="note.txt",
+            data=payload,
+            content_length=len(payload),
+        ),
+        boundary=boundary,
+    )
+
+    assert response.status_code == 200
+    row = db.get(File, uuid.UUID(response.json()["id"]))
+    assert row is not None
+    assert row.owner_id == owner.id
+    assert row.size == len(payload)
+    assert Path(row.location).read_bytes() == payload
