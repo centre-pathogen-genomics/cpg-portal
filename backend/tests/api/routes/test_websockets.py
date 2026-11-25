@@ -146,3 +146,19 @@ def test_websocket_allows_configured_origin(client: TestClient) -> None:
         f"{WS_URL}/stream", headers={"origin": origin}
     ) as websocket:
         websocket.send_text("ping")
+
+
+def test_ws_token_is_rejected_as_rest_bearer(
+    client: TestClient, db: Session
+) -> None:
+    """A minted websocket token must never be accepted as a REST session: it
+    exists so the login JWT stays out of socket URLs, and leaking it grants at
+    most socket access, never REST access."""
+    user, headers = _make_user(client, db)
+    ws_token = _mint_ws_token(client, headers)
+
+    r = client.get(
+        f"{settings.API_V1_STR}/users/me",
+        headers={"Authorization": f"Bearer {ws_token}"},
+    )
+    assert r.status_code == 401

@@ -43,6 +43,15 @@ def get_current_user(session: SessionDep, token: TokenDep) -> User:
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Could not validate credentials",
         )
+    # A token minted for another purpose (the short-lived websocket token) must
+    # never be accepted as a REST bearer session: the two token kinds are
+    # mutually exclusive (REST tokens are rejected by websocket auth, and
+    # websocket tokens are rejected here).
+    if payload.get("purpose") is not None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+        )
     user = session.get(User, token_data.sub)
     if not user:
         raise HTTPException(
