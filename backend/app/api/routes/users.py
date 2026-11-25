@@ -5,6 +5,7 @@ from typing import Any
 
 from fastapi import HTTPException, Request
 from sqlalchemy import delete, update
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import func, select
 
 from app import crud
@@ -247,9 +248,12 @@ def register_user(
         raise HTTPException(
             status_code=403, detail="Registration is closed"
         )
+    # The signup bucket is a single global counter shared by every account: an
+    # email can enroll at most once, so keying by email would only count doomed
+    # re-submissions. This bounds the deployment-wide account-creation rate.
     check_rate_limit(
         effective_limit(settings.RATE_LIMIT_SIGNUP),
-        user_in.email.strip().lower(),
+        "all",
         "signup",
     )
     # Only asks for anything when a Turnstile secret key is configured. The
@@ -269,7 +273,17 @@ def register_user(
 
     user_create = UserCreate.model_validate(user_in)
     user_create.is_active = False
-    user = crud.create_user(session=session, user_create=user_create)
+    try:
+        user = crud.create_user(session=session, user_create=user_create)
+    except IntegrityError:
+        # The existence check above is not atomic: two concurrent signups for
+        # the same new email can both pass it, and one loses the unique-index
+        # insert here. Surface that as the same clean 400 as a plain duplicate.
+        session.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail="The user with this email already exists in the system",
+        )
 
     if settings.emails_enabled and user.email:
         activation_token = crud.create_auth_token(

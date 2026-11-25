@@ -47,6 +47,31 @@ def test_login_rate_limited_per_account(
     assert signup.status_code == 200
 
 
+def test_signup_rate_limited_globally(
+    client: TestClient, monkeypatch
+) -> None:
+    """Signup is a single global bucket, so distinct emails share it: mass
+    account creation is bounded across the whole deployment."""
+    monkeypatch.setattr(settings, "RATE_LIMIT_ENABLED", True)
+    monkeypatch.setattr(settings, "RATE_LIMIT_SIGNUP", "3/minute")
+
+    def _signup() -> int:
+        return client.post(
+            f"{settings.API_V1_STR}/users/signup",
+            json={
+                "email": random_email(),
+                "password": random_lower_string(),
+                "full_name": random_lower_string(),
+            },
+        ).status_code
+
+    statuses = [_signup() for _ in range(4)]
+    # First three distinct-email signups succeed; the fourth is throttled even
+    # though it is a brand-new account.
+    assert statuses[:3] == [200, 200, 200]
+    assert statuses[3] == 429
+
+
 def test_password_recovery_rate_limited_per_account(
     client: TestClient, monkeypatch
 ) -> None:

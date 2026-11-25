@@ -105,16 +105,22 @@ class Settings(BaseSettings):
     # When False the route answers 403 and accounts can only be created by an
     # administrator.
     USERS_OPEN_REGISTRATION: bool = True
-    # Per-account rate limits for public auth endpoints, enforced through a
-    # Redis-backed limiter shared across the uvicorn workers (see
-    # app/core/rate_limit.py). Keys are the submitted email, never the client
-    # IP. RATE_LIMIT_ENABLED defaults to "on outside local development"; an
-    # explicit value overrides that. The limits themselves are the bucket sizes
-    # for one account per endpoint.
+    # Rate limits for public auth endpoints, enforced through a Redis-backed
+    # limiter shared across the uvicorn workers (see app/core/rate_limit.py).
+    # Login and password recovery are keyed per account (the submitted email,
+    # never the client IP); signup is keyed globally - an email can enroll at
+    # most once anyway, so a per-account signup bucket would be a no-op, and
+    # a shared bucket bounds the whole deployment's account-creation rate
+    # instead. RATE_LIMIT_ENABLED defaults to "on outside local development";
+    # an explicit value overrides that. The limits themselves are the bucket
+    # sizes per endpoint.
     RATE_LIMIT_ENABLED: bool | None = None
     RATE_LIMIT_LOGIN: str = "20/minute"
     RATE_LIMIT_PASSWORD_RECOVERY: str = "5/minute"
-    RATE_LIMIT_SIGNUP: str = "10/hour"
+    # New accounts per hour across the whole deployment (all workers share the
+    # bucket). Mass signup means "many distinct emails", so only a global
+    # cap constrains it: per-account would count only doomed re-submissions.
+    RATE_LIMIT_SIGNUP: str = "60/hour"
 
     @computed_field  # type: ignore[prop-decorator]
     @property
