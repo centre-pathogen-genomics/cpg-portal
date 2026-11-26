@@ -148,7 +148,8 @@ export function RunPage({ toolId, runId }: { toolId: string; runId: string }) {
     ? record.stdout.trimEnd().split("\n").slice(-30).join("\n")
     : ""
   // The record carries the history; the socket carries lines since the page
-  // opened. The timeline only needs to see each pattern once.
+  // opened. The timeline needs every marker occurrence, repeats included, so a
+  // tool that loops is shown going back through the steps.
   const timelineLogs = [record?.stdout ?? "", ...logs]
     .filter(Boolean)
     .join("\n")

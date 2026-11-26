@@ -19,12 +19,39 @@ type StepState =
 const terminalStatuses = new Set(["completed", "failed", "cancelled"])
 const ANSI_ESCAPE = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, "g")
 
-const matches = (logs: string, pattern: string) => {
+/** Every log position a step's pattern matches at, in log order.
+ *
+ * The timeline normally advances when a step's marker line appears. A tool
+ * that loops prints the same markers again, so the positions are used to
+ * notice a repeat and start a new pass at that step.
+ */
+const occurrencePositions = (
+  logs: string,
+  pattern: string,
+): { position: number; length: number }[] => {
+  const matches: { position: number; length: number }[] = []
   try {
-    return new RegExp(pattern, "i").test(logs)
+    const regex = new RegExp(pattern, "gi")
+    let match = regex.exec(logs)
+    while (match !== null) {
+      matches.push({ position: match.index, length: match[0].length })
+      // An empty match would not advance lastIndex on its own.
+      if (match[0] === "") regex.lastIndex += 1
+      match = regex.exec(logs)
+    }
+    return matches
   } catch {
     // A pattern that is not valid regex is still useful as plain text.
-    return logs.toLowerCase().includes(pattern.toLowerCase())
+    const needle = pattern.toLowerCase()
+    const haystack = logs.toLowerCase()
+    let from = 0
+    while (from <= haystack.length) {
+      const at = haystack.indexOf(needle, from)
+      if (at === -1) break
+      matches.push({ position: at, length: needle.length })
+      from = at + Math.max(needle.length, 1)
+    }
+    return matches
   }
 }
 
@@ -33,7 +60,7 @@ const stateLabel: Record<StepState, string> = {
   active: "Running",
   next: "Up next",
   pending: "Waiting",
-  skipped: "Missed",
+  skipped: "Skipped",
   failed: "Failed",
 }
 
@@ -74,7 +101,7 @@ interface RunTimelineProps {
   border?: boolean
   /** Explicit steps to render; when given, log pattern-matching is skipped. */
   phases?: TimelinePhase[]
-  /** Heading title, defaults to "Run timeline". */
+  /** Heading title, defaults to "Timeline". */
   title?: string
 }
 
@@ -105,28 +132,64 @@ function RunTimeline({
   const cleanLogs = useMemo(() => logs.replace(ANSI_ESCAPE, ""), [logs])
   const finished = terminalStatuses.has(status)
   const running = status === "running"
-  const states = useMemo(() => {
-    // A step starts running when its line appears in the log — "starting X
-    // analysis" begins the X analysis step — and keeps running until the
-    // next step's line appears or the run ends. A step whose line never
-    // appears never started: before the running step it was missed, after
-    // it it is still to come.
-    const matched = steps.map((step) => matches(cleanLogs, step.pattern))
-    let lastMatched = -1
-    matched.forEach((isMatched, index) => {
-      if (isMatched) lastMatched = index
+  const { states, iteration } = useMemo(() => {
+    // At one log position the most specific (longest) match wins: a short
+    // pattern that only matches because it prefixes a longer step's marker
+    // (e.g. "test" inside "test2") must not read as that earlier step looping.
+    const bestAt = new Map<number, { length: number; step: number }>()
+    steps.forEach((step, index) => {
+      for (const { position, length } of occurrencePositions(
+        cleanLogs,
+        step.pattern,
+      )) {
+        const current = bestAt.get(position)
+        if (
+          current === undefined ||
+          length > current.length ||
+          (length === current.length && index > current.step)
+        ) {
+          bestAt.set(position, { length, step: index })
+        }
+      }
     })
-    return steps.map<StepState>((_step, index) => {
-      if (matched[index]) {
-        if (index < lastMatched) return "completed"
+
+    // Walk the marker lines in log order. A step advances the timeline when
+    // its line appears; a line for a step already reached (or the same step
+    // again) means the tool looped, so the next pass starts there and the
+    // timeline moves back to that step. Within a pass the steps before the
+    // current one are done, the current one is running, and later ones are
+    // still to come; a step skipped earlier in the pass reads as skipped.
+    const sequence = [...bestAt.entries()]
+      .sort((a, b) => a[0] - b[0])
+      .map(([, winner]) => winner.step)
+
+    let cursor = -1
+    let pass = new Set<number>()
+    let iterations = 1
+    for (const stepIndex of sequence) {
+      if (stepIndex <= cursor) {
+        // Back to a step already reached, or the same step again: the next
+        // pass started here.
+        if (cursor >= 0) iterations += 1
+        pass = new Set([stepIndex])
+      } else {
+        pass.add(stepIndex)
+      }
+      cursor = stepIndex
+    }
+
+    const states = steps.map<StepState>((_step, index) => {
+      if (pass.has(index)) {
+        if (index < cursor) return "completed"
         if (!finished) return "active"
         // The run ended while this step was running.
         return status === "completed" ? "completed" : "skipped"
       }
-      if (index < lastMatched) return "skipped"
-      if (!finished && running && index === lastMatched + 1) return "next"
+      if (index < cursor) return "skipped"
+      if (!finished && running && index === cursor + 1) return "next"
       return finished ? "skipped" : "pending"
     })
+    return { states, iteration: iterations }
   }, [cleanLogs, finished, running, status, steps])
 
   const deduced = phases === undefined
@@ -191,11 +254,18 @@ function RunTimeline({
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <History className="size-4 text-muted-foreground" />
-          <h2 className="text-sm font-semibold">{title ?? "Run timeline"}</h2>
+          <h2 className="text-sm font-semibold">{title ?? "Timeline"}</h2>
         </div>
-        <span className="rounded-full bg-muted px-2 py-0.5 text-muted-foreground text-xs tabular-nums">
-          {completed}/{rows.length}
-        </span>
+        <div className="flex items-center gap-2">
+          {deduced && iteration > 1 && (
+            <span className="rounded-full bg-muted px-2 py-0.5 text-muted-foreground text-xs tabular-nums">
+              Iteration {iteration}
+            </span>
+          )}
+          <span className="rounded-full bg-muted px-2 py-0.5 text-muted-foreground text-xs tabular-nums">
+            {completed}/{rows.length}
+          </span>
+        </div>
       </div>
       <ol>
         {rows.map((row, index) => {
@@ -264,14 +334,12 @@ function RunTimeline({
                   )}
                   {state === "active" && (
                     <p className="mt-1 text-muted-foreground text-xs">
-                      {row.detail ??
-                        (row.pattern ? (
-                          <>
-                            Waiting for <code>{row.pattern}</code> in the logs…
-                          </>
-                        ) : (
-                          "Starting…"
-                        ))}
+                      {row.detail ?? "Running…"}
+                    </p>
+                  )}
+                  {state === "next" && row.pattern && (
+                    <p className="mt-1 text-muted-foreground text-xs">
+                      Waiting for <code>{row.pattern}</code> in the logs…
                     </p>
                   )}
                   {state === "failed" && (
