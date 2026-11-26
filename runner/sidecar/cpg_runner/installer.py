@@ -3,6 +3,7 @@
 import hashlib
 import threading
 import time
+from collections import deque
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -21,6 +22,9 @@ from .state import StateStore
 
 DOWNLOAD_CHUNK = 1024 * 256
 DOWNLOAD_LOG_STEP = 10 * 1024 * 1024
+# Lines kept in memory so a failure can show why it happened even after the
+# log file is truncated by the next attempt.
+FAILURE_TAIL_LINES = 200
 
 
 class InstallBlocked(Exception):
@@ -49,6 +53,13 @@ class Installer:
         self.doctor = doctor
         self.store = store
         self.channel = EventChannel()
+        # Durable install log: every line the sidecar emits is appended here, so
+        # a failed install can always be inspected after the dialog closes and
+        # the in-memory stream is gone. Per tool, under the tool's data dir.
+        self.log_path = self.store.data_dir / "environments" / "install.log"
+        # Ring buffer of recent lines, included in a raised failure so the UI
+        # shows why an install failed instead of a bare "installation failed".
+        self._recent: deque[str] = deque(maxlen=FAILURE_TAIL_LINES)
         # Injected by tests to keep the heartbeat quick.
         self.heartbeat_seconds = 5.0
         self._lock = threading.Lock()
@@ -104,10 +115,19 @@ class Installer:
                 raise InstallBlocked(report)
             self._installing = True
             self._failure = None
+            self._recent.clear()
             self.channel.reset()
-            self._publish_state("installing")
-            self._thread = threading.Thread(target=self._install, daemon=True)
-            self._thread.start()
+        # Outside the state lock: file I/O and logging both take the lock
+        # themselves, and re-entering a plain Lock here would deadlock.
+        try:
+            self.log_path.parent.mkdir(parents=True, exist_ok=True)
+            self.log_path.write_text("", encoding="utf-8")
+        except OSError:
+            pass
+        self._log(f"Install log: {self.log_path}")
+        self._publish_state("installing")
+        self._thread = threading.Thread(target=self._install, daemon=True)
+        self._thread.start()
         return "installing"
 
     def remove(self) -> str:
@@ -198,7 +218,7 @@ class Installer:
         )
         returncode = self._run_with_progress(args, "Still installing the environment")
         if returncode != 0:
-            raise RuntimeError("Tool environment installation failed")
+            raise self._raise_with_tail("Tool environment installation failed")
         self._log("Tool environment installed.")
         if self.tool.post_install:
             command = " ".join(self.tool.post_install.split())
@@ -213,7 +233,7 @@ class Installer:
             )
             returncode = self._run_with_progress(args, "Still running post-install")
             if returncode != 0:
-                raise RuntimeError("Post-install failed")
+                raise self._raise_with_tail("Post-install failed")
             self._log("Post-install finished.")
         self.store.write_environment_marker(
             self.tool.id,
@@ -249,7 +269,24 @@ class Installer:
             thread.join(timeout=1.0)
 
     def _log(self, line: str) -> None:
+        with self._lock:
+            self._recent.append(line)
+            try:
+                with open(self.log_path, "a", encoding="utf-8") as handle:
+                    handle.write(line + "\n")
+            except OSError:
+                # The stream still shows the line even if the log cannot be
+                # written (read-only data dir, full disk, ...).
+                pass
         self.channel.publish_threadsafe({"type": "log", "line": line})
+
+    def _raise_with_tail(self, message: str) -> RuntimeError:
+        """Wrap a failure with the recent install output so the reason is not
+        swallowed: without it a mamba/conda error is invisible (mamba runs with
+        --quiet and the dashboard only shows a bare "installation failed")."""
+        with self._lock:
+            tail = "\n".join(self._recent)
+        return RuntimeError(f"{message}\n\n{tail}" if tail else message)
 
     def _publish_state(self, state: str) -> None:
         self.channel.publish_threadsafe({"type": "state", "state": state})

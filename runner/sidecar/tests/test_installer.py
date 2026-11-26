@@ -76,6 +76,46 @@ def test_the_install_log_names_the_post_install_command(tmp_path):
     assert len(docker.run_args) == 2
 
 
+def test_the_install_log_is_persisted_to_disk(tmp_path):
+    """Every line the sidecar emits is appended to a durable per-tool file, so
+    a failed install can be inspected after the dialog and its stream are gone."""
+    environment = tmp_path / "environment.yml"
+    environment.write_text("channels: [conda-forge]\ndependencies: []\n")
+    installer, docker, store = _installer(tmp_path, environment)
+
+    installer.start()
+    marker = store.environment_marker(installer.tool.id)
+    wait_for(marker.is_file)
+
+    log = installer.log_path.read_text(encoding="utf-8")
+    assert f"Install log: {installer.log_path}" in log
+    assert "line one" in log
+    assert "line two" in log
+
+
+def test_a_failed_environment_install_surfaces_the_output_tail(tmp_path):
+    """A failing mamba env create must report *why*, not a bare generic
+    message. The recent output is included in the failure the dashboard shows."""
+    environment = tmp_path / "environment.yml"
+    environment.write_text("channels: [conda-forge]\ndependencies: []\n")
+    installer, docker, store = _installer(tmp_path, environment)
+    docker.returncode = 1
+
+    installer.start()
+    wait_for(lambda: installer.state == "failed")
+
+    failures = [
+        line
+        for line in _lines(installer)
+        if "Tool environment installation failed" in line
+    ]
+    assert failures, "the failure must be logged"
+    assert "line one" in failures[0]
+    assert "line two" in failures[0]
+    # And it is preserved on disk for later inspection.
+    assert "line one" in installer.log_path.read_text(encoding="utf-8")
+
+
 def _lines(installer: Installer) -> list[str]:
     return [
         message["line"] for message in installer.channel.history() if "line" in message
