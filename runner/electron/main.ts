@@ -826,12 +826,107 @@ async function showHome(): Promise<void> {
   if (!window.isVisible()) window.show()
 }
 
-// Deleting a tool takes its pack and runner data; outputs already copied to
-// the output folder stay. The tool's server stops first, then the window is
-// told to leave that tool's route, so no poll is left answering 502s.
+// -- docker leftovers -----------------------------------------------------
+//
+// A tool's conda environment lives in a docker named volume, not under the
+// tool's data dir, so deleting the pack leaves it behind. The same minimal
+// PATH problem applies as in the sidecar (runner/sidecar/cpg_runner/
+// docker_cli.py): an app started from Finder or the Start menu may not find
+// `docker`, so the known install locations are searched too.
+
+function dockerCandidates(): string[] {
+  const home = app.getPath("home")
+  if (process.platform === "darwin") {
+    return [
+      path.join(home, ".docker", "bin", "docker"),
+      "/Applications/Docker.app/Contents/Resources/bin/docker",
+      "/usr/local/bin/docker",
+      "/opt/homebrew/bin/docker",
+    ]
+  }
+  if (process.platform === "win32") {
+    const candidates: string[] = []
+    for (const base of [
+      process.env.ProgramFiles,
+      process.env.LOCALAPPDATA,
+      process.env.ProgramData,
+      "C:\\Program Files",
+    ]) {
+      if (base) {
+        candidates.push(
+          path.join(base, "Docker", "Docker", "resources", "bin", "docker.exe"),
+        )
+      }
+    }
+    candidates.push(path.join(home, ".docker", "bin", "docker.exe"))
+    return candidates
+  }
+  return [
+    path.join(home, ".docker", "bin", "docker"),
+    "/usr/bin/docker",
+    "/usr/local/bin/docker",
+    "/snap/bin/docker",
+  ]
+}
+
+function resolveDockerBinary(): string {
+  const configured = (process.env.DOCKER_BIN ?? "").trim()
+  if (configured && (path.isAbsolute(configured) || configured.includes(path.sep))) {
+    return configured
+  }
+  const name =
+    configured || (process.platform === "win32" ? "docker.exe" : "docker")
+  for (const dir of (process.env.PATH ?? "").split(path.delimiter)) {
+    if (!dir) continue
+    const candidate = path.join(dir, name)
+    if (fs.existsSync(candidate)) return candidate
+  }
+  for (const candidate of dockerCandidates()) {
+    if (fs.existsSync(candidate)) return candidate
+  }
+  return configured || name
+}
+
+function runDocker(args: string[]): Promise<number> {
+  const { promise, resolve } = Promise.withResolvers<number>()
+  const child = spawn(resolveDockerBinary(), args, { stdio: "ignore" })
+  child.on("error", (error) => {
+    console.error(`docker ${args.join(" ")} failed: ${String(error)}`)
+    resolve(1)
+  })
+  child.on("exit", (code) => resolve(code ?? 1))
+  return promise
+}
+
+/**
+ * Delete the docker volumes a removed tool owned. Best effort: a missing
+ * volume or a stopped docker daemon must never block removing the tool, so
+ * failures are logged and the caller carries on.
+ *
+ * `remainingTools` is how many tools are left after this one is gone: the
+ * shared package cache (`cpg-runner-conda-pkgs`, hundreds of MB) is only
+ * dropped when no tool can use it any more.
+ */
+async function removeToolVolumes(
+  toolId: string,
+  remainingTools: number,
+): Promise<void> {
+  await runDocker(["volume", "rm", "-f", `cpg-runner-conda-${toolId}`])
+  if (remainingTools === 0) {
+    await runDocker(["volume", "rm", "-f", "cpg-runner-conda-pkgs"])
+  }
+}
+
+// Deleting a tool takes its pack, runner data and docker volumes; outputs
+// already copied to the output folder stay. The tool's server stops first,
+// then the window is told to leave that tool's route, so no poll is left
+// answering 502s.
 async function removeTool(toolId: string): Promise<void> {
   stopSidecar(toolId)
   fs.rmSync(path.join(toolsRoot(), toolId), { recursive: true, force: true })
+  // The pack/data deletion above does not touch docker: remove the tool's
+  // conda volume (and, once the last tool is gone, the shared package cache).
+  await removeToolVolumes(toolId, listTools().length)
   if (lastToolId === toolId) lastToolId = null
   // The page decides where to go when the tool it shows is the one that went.
   mainWindow?.webContents.send("runner:tool-removed", { toolId })
