@@ -40,6 +40,16 @@ function isHeartbeat(line: string): boolean {
   )
 }
 
+/** A step's detail is exactly one line: flatten any embedded newlines/tabs and
+ * cap the length so a long package-manager line cannot wrap the timeline. */
+const MAX_DETAIL_LENGTH = 120
+function oneLine(line: string): string {
+  const cleaned = line.replace(ANSI_ESCAPE, "").replace(/\s+/g, " ").trim()
+  return cleaned.length > MAX_DETAIL_LENGTH
+    ? `${cleaned.slice(0, MAX_DETAIL_LENGTH - 1)}…`
+    : cleaned
+}
+
 function phaseOf(line: string): string | null {
   if (
     line.startsWith("Downloading runtime image") ||
@@ -88,7 +98,7 @@ function buildTimeline(
         states[id] = "active"
         current = id
         // A heartbeat only says the phase is alive; keep the last real line.
-        if (!isHeartbeat(line)) details[id] = line.replace(/…$/, "")
+        if (!isHeartbeat(line)) details[id] = oneLine(line)
       }
       for (const phase of PHASES) {
         if (phase.id === id) break
@@ -99,7 +109,7 @@ function buildTimeline(
     // Output from the running package manager (and its errors) belongs to the
     // step that is running, so the step's detail tracks the latest line.
     if (current && !isHeartbeat(line)) {
-      const cleaned = line.replace(ANSI_ESCAPE, "").trim()
+      const cleaned = oneLine(line)
       if (cleaned) details[current] = cleaned
     }
   }
@@ -115,7 +125,7 @@ function buildTimeline(
           : cancelled
             ? "skipped"
             : "completed"
-        if (failed && error) details[phase.id] = error
+        if (failed && error) details[phase.id] = oneLine(error)
       }
     }
   }

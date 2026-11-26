@@ -333,7 +333,7 @@ function RunTimeline({
                     </span>
                   )}
                   {state === "active" && (
-                    <p className="mt-1 text-muted-foreground text-xs">
+                    <p className="mt-1 truncate text-muted-foreground text-xs">
                       {row.detail ?? "Running…"}
                     </p>
                   )}
@@ -343,7 +343,7 @@ function RunTimeline({
                     </p>
                   )}
                   {state === "failed" && (
-                    <p className="mt-1 text-destructive text-xs">
+                    <p className="mt-1 truncate text-destructive text-xs">
                       {row.detail || "Failed"}
                     </p>
                   )}
