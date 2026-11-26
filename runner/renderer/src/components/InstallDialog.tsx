@@ -29,6 +29,17 @@ const DONE_LINES = [
   "Post-install finished.",
 ]
 
+const ANSI_ESCAPE = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, "g")
+
+/** The "still going" beats are not progress: a step's detail should show the
+ * latest real output line instead of one of these. */
+function isHeartbeat(line: string): boolean {
+  return (
+    /^Still installing the environment \(\d+s\)$/.test(line) ||
+    /^Still running post-install \(\d+s\)$/.test(line)
+  )
+}
+
 function phaseOf(line: string): string | null {
   if (
     line.startsWith("Downloading runtime image") ||
@@ -65,19 +76,31 @@ function buildTimeline(
   const states: Record<string, TimelinePhase["state"]> = {}
   const details: Record<string, string> = {}
   for (const phase of PHASES) states[phase.id] = "pending"
+  let current: string | null = null
   for (const line of lines) {
     const id = phaseOf(line)
-    if (!id) continue
-    if (DONE_LINES.includes(line)) {
-      states[id] = "completed"
-      details[id] = ""
-    } else {
-      states[id] = "active"
-      details[id] = line.replace(/…$/, "")
+    if (id) {
+      if (DONE_LINES.includes(line)) {
+        states[id] = "completed"
+        details[id] = ""
+        current = null
+      } else {
+        states[id] = "active"
+        current = id
+        // A heartbeat only says the phase is alive; keep the last real line.
+        if (!isHeartbeat(line)) details[id] = line.replace(/…$/, "")
+      }
+      for (const phase of PHASES) {
+        if (phase.id === id) break
+        if (states[phase.id] === "active") states[phase.id] = "completed"
+      }
+      continue
     }
-    for (const phase of PHASES) {
-      if (phase.id === id) break
-      if (states[phase.id] === "active") states[phase.id] = "completed"
+    // Output from the running package manager (and its errors) belongs to the
+    // step that is running, so the step's detail tracks the latest line.
+    if (current && !isHeartbeat(line)) {
+      const cleaned = line.replace(ANSI_ESCAPE, "").trim()
+      if (cleaned) details[current] = cleaned
     }
   }
   if (finished || failed || cancelled) {
