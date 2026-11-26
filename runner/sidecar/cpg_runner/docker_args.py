@@ -91,7 +91,7 @@ def build_env_create_args(
     target = f"/conda/{tool_id}"
     command = (
         "set -euo pipefail; "
-        f"mamba env create --yes --quiet -f /tmp/environment.yml -p {target}"
+        f"mamba env create --yes -f /tmp/environment.yml -p {target}"
     )
     args = [
         docker_bin,
