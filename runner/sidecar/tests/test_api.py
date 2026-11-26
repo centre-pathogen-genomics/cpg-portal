@@ -98,6 +98,15 @@ def test_install_state_transitions(tmp_path):
     assert client.get("/api/status", headers=HEADERS).json()["installing"] is False
 
 
+def test_cancel_install(tmp_path):
+    client, installer = _client(tmp_path)
+    assert client.post("/api/install", headers=HEADERS).status_code == 202
+    response = client.post("/api/install/cancel", headers=HEADERS)
+    assert response.status_code == 202
+    assert response.json() == {"state": "cancelling"}
+    assert installer.state == "not_installed"
+
+
 def test_install_blocked_returns_the_doctor_report(tmp_path):
     installer = FakeInstaller()
     installer.blocked = {"ready": False, "blocking": "docker_cli"}

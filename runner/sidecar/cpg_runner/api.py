@@ -233,6 +233,11 @@ def create_app(
             )
         return JSONResponse(status_code=202, content={"state": state})
 
+    @app.post("/api/install/cancel", dependencies=[auth])
+    def cancel_install() -> JSONResponse:
+        """Stop a running install; the log stream then reports not_installed."""
+        return JSONResponse(status_code=202, content={"state": installer.cancel()})
+
     @app.delete("/api/install", dependencies=[auth])
     def remove_install() -> JSONResponse:
         try:

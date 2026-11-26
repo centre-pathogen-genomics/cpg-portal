@@ -60,6 +60,7 @@ function buildTimeline(
   lines: string[],
   finished: boolean,
   failed: boolean,
+  cancelled = false,
 ): TimelinePhase[] {
   const states: Record<string, TimelinePhase["state"]> = {}
   const details: Record<string, string> = {}
@@ -79,14 +80,18 @@ function buildTimeline(
       if (states[phase.id] === "active") states[phase.id] = "completed"
     }
   }
-  if (finished || failed) {
+  if (finished || failed || cancelled) {
     // The installer's own error is a line that belongs to no step.
     const error = failed
       ? ([...lines].reverse().find((line) => phaseOf(line) === null) ?? "")
       : ""
     for (const phase of PHASES) {
       if (states[phase.id] === "active") {
-        states[phase.id] = failed ? "failed" : "completed"
+        states[phase.id] = failed
+          ? "failed"
+          : cancelled
+            ? "skipped"
+            : "completed"
         if (failed && error) details[phase.id] = error
       }
     }
@@ -118,6 +123,8 @@ export function InstallDialog({
   const [working, setWorking] = useState(false)
   const [failure, setFailure] = useState<string | null>(null)
   const [finished, setFinished] = useState(false)
+  const [cancelled, setCancelled] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
   const socketRef = useRef<WebSocket | null>(null)
 
   const closeSocket = useCallback(() => {
@@ -150,6 +157,16 @@ export function InstallDialog({
           setWorking(false)
           setFinished(true)
           setFailure("Installation failed")
+        } else if (message.state === "not_installed") {
+          // The installer reports this after a cancel: it cleaned up what the
+          // interrupted install made and is ready to be retried.
+          closeSocket()
+          setWorking(false)
+          setCancelling(false)
+          setFinished(true)
+          setCancelled(true)
+          setFailure(null)
+          onRefreshStatus()
         }
       }
     }
@@ -174,6 +191,8 @@ export function InstallDialog({
     setWorking(true)
     setFailure(null)
     setFinished(false)
+    setCancelled(false)
+    setCancelling(false)
     setLines([])
     try {
       await api.post("/install")
@@ -186,9 +205,26 @@ export function InstallDialog({
     subscribe()
   }
 
+  async function cancelInstall() {
+    if (cancelling) return
+    setCancelling(true)
+    try {
+      await api.post("/install/cancel")
+    } catch (error) {
+      toast.error(errorMessage(error))
+      setCancelling(false)
+    }
+  }
+
   const timeline = useMemo(
-    () => buildTimeline(lines, finished && !failure, Boolean(failure)),
-    [lines, finished, failure],
+    () =>
+      buildTimeline(
+        lines,
+        finished && !failure && !cancelled,
+        Boolean(failure),
+        cancelled,
+      ),
+    [lines, finished, failure, cancelled],
   )
   const busy = working || installing
 
@@ -228,6 +264,12 @@ export function InstallDialog({
             <p className="text-destructive mt-3 text-sm">{failure}</p>
           )}
 
+          {cancelled && (
+            <p className="text-muted-foreground mt-3 text-sm">
+              Installation cancelled.
+            </p>
+          )}
+
           {lines.length > 0 && (
             <details className="mt-4">
               <summary className="text-muted-foreground cursor-pointer text-xs">
@@ -239,15 +281,22 @@ export function InstallDialog({
         </div>
 
         <DialogFooter>
-          <Button
-            type="button"
-            disabled={busy}
-            onClick={() => void startInstall()}
-          >
-            {busy ? "Installing…" : failure ? "Retry" : "Install"}
-          </Button>
+          {busy ? (
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={cancelling}
+              onClick={() => void cancelInstall()}
+            >
+              {cancelling ? "Cancelling…" : "Cancel"}
+            </Button>
+          ) : (
+            <Button type="button" onClick={() => void startInstall()}>
+              {failure || cancelled ? "Retry" : "Install"}
+            </Button>
+          )}
           <Button type="button" variant="ghost" onClick={onDismiss}>
-            Cancel
+            Close
           </Button>
         </DialogFooter>
       </DialogContent>

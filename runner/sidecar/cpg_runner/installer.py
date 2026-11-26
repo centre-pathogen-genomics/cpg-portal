@@ -14,6 +14,7 @@ from .docker_args import (
     build_env_create_args,
     build_post_install_args,
     conda_volume_name,
+    install_container_name,
 )
 from .docker_cli import Docker
 from .doctor import Doctor
@@ -35,6 +36,10 @@ class InstallBlocked(Exception):
 
 class InstallAlreadyRunning(Exception):
     pass
+
+
+class InstallCancelled(Exception):
+    """Raised inside the install thread once the user cancels it."""
 
 
 class Installer:
@@ -66,6 +71,9 @@ class Installer:
         self._installing = False
         self._failure: str | None = None
         self._thread: threading.Thread | None = None
+        # Set by cancel(): the install thread checks it between steps and the
+        # running container is killed, so a cancel takes effect promptly.
+        self._cancel = threading.Event()
 
     # -- state -------------------------------------------------------------
 
@@ -115,6 +123,7 @@ class Installer:
                 raise InstallBlocked(report)
             self._installing = True
             self._failure = None
+            self._cancel.clear()
             self._recent.clear()
             self.channel.reset()
         # Outside the state lock: file I/O and logging both take the lock
@@ -143,6 +152,43 @@ class Installer:
             self._publish_state("not_installed")
         return "not_installed"
 
+    def cancel(self) -> str:
+        """Stop a running install.
+
+        The install thread is usually blocked reading a `docker run` command's
+        output, so the install container is removed to make it return; the
+        thread then sees the cancel flag and cleans up instead of reporting a
+        failure. A download in progress stops at the next chunk.
+        """
+        with self._lock:
+            if not self._installing:
+                return self.state
+            self._cancel.set()
+        self._log("Cancelling installation…")
+        self.docker.rm_force(install_container_name(self.tool.id))
+        return "cancelling"
+
+    def _check_cancelled(self) -> None:
+        if self._cancel.is_set():
+            raise InstallCancelled()
+
+    def _cleanup_partial(self) -> None:
+        """Remove what a cancelled install made: the half-built environment,
+        its marker and the downloaded image tar. The runtime image itself is
+        shared and stays installed."""
+        self.docker.rm_force(install_container_name(self.tool.id))
+        self.docker.remove_volume(conda_volume_name(self.tool.id))
+        self.store.environment_marker(self.tool.id).unlink(missing_ok=True)
+        self._runtime_tar().unlink(missing_ok=True)
+
+    def _finish_cancelled(self) -> None:
+        self._log("Installation cancelled.")
+        self._cleanup_partial()
+        with self._lock:
+            self._failure = None
+            self._installing = False
+        self._publish_state("not_installed")
+
     def _runtime_tar(self) -> Path:
         return self.store.runtime_dir / f"{self.runner.docker_arch}.tar"
 
@@ -150,7 +196,16 @@ class Installer:
         try:
             self._install_image()
             self._install_environment()
+            self._check_cancelled()
+        except InstallCancelled:
+            self._finish_cancelled()
+            return
         except Exception as exc:  # noqa: BLE001 - reported to the UI
+            if self._cancel.is_set():
+                # The step failed because cancel killed its container: that is
+                # a cancellation, not an install failure.
+                self._finish_cancelled()
+                return
             message = str(exc)
             self._failure = message
             self._log(message)
@@ -176,10 +231,12 @@ class Installer:
         downloaded = 0
         logged = 0
         self._log("Downloading runtime image…")
+        self._check_cancelled()
         with httpx.stream("GET", url, follow_redirects=True, timeout=360) as response:
             response.raise_for_status()
             with open(tar, "wb") as handle:
                 for chunk in response.iter_bytes(DOWNLOAD_CHUNK):
+                    self._check_cancelled()
                     handle.write(chunk)
                     digest.update(chunk)
                     downloaded += len(chunk)
@@ -187,6 +244,7 @@ class Installer:
                         logged = downloaded
                         megabytes = downloaded // (1024 * 1024)
                         self._log(f"Downloading runtime image … {megabytes} MB")
+        self._check_cancelled()
         expected = (self.runner.runtime_image.sha256 or "").strip().lower()
         if expected and digest.hexdigest() != expected:
             tar.unlink(missing_ok=True)
@@ -196,6 +254,7 @@ class Installer:
             returncode = self.docker.load(tar)
         finally:
             tar.unlink(missing_ok=True)
+        self._check_cancelled()
         if returncode != 0:
             raise RuntimeError("Runtime image could not be loaded")
 
@@ -217,6 +276,7 @@ class Installer:
             environment_yml=environment_yml,
         )
         returncode = self._run_with_progress(args, "Still installing the environment")
+        self._check_cancelled()
         if returncode != 0:
             raise self._raise_with_tail("Tool environment installation failed")
         self._log("Tool environment installed.")
@@ -232,9 +292,11 @@ class Installer:
                 post_install=self.tool.post_install,
             )
             returncode = self._run_with_progress(args, "Still running post-install")
+            self._check_cancelled()
             if returncode != 0:
                 raise self._raise_with_tail("Post-install failed")
             self._log("Post-install finished.")
+        self._check_cancelled()
         self.store.write_environment_marker(
             self.tool.id,
             {

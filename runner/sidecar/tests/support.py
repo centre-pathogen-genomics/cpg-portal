@@ -219,6 +219,11 @@ class FakeInstaller:
         self.state = "not_installed"
         return "not_installed"
 
+    def cancel(self) -> str:
+        self._running = False
+        self.state = "not_installed"
+        return "cancelling"
+
 
 class FakeRunManager:
     def __init__(self) -> None:
